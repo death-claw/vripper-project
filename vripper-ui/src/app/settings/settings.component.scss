@@ -1,0 +1,20 @@
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.container form > * {
+  width: 100%;
+}
+
+.container form section {
+  padding: 10px;
+}
+
+.container form section > * {
+  width: 100%;
+}
+
+.container form section div > * {
+  width: 100%;
+}

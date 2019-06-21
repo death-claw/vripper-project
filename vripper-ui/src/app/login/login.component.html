@@ -1,0 +1,17 @@
+<div style="height: 100%;" fxLayout="row" fxLayoutAlign="center center">
+  <mat-card class="mat-elevation-z4" style="margin: 16px; padding: 0;min-width: 350px">
+    <mat-toolbar color="primary">Log In</mat-toolbar>
+    <form style="padding: 16px" fxLayout="column" (submit)="login($event)" autocomplete="off">
+      <mat-form-field>
+        <input name="username" [(ngModel)]="credentials.username" matInput placeholder="Username">
+      </mat-form-field>
+
+      <mat-form-field>
+        <input name="password" [(ngModel)]="credentials.password" type="password" matInput placeholder="Password">
+      </mat-form-field>
+      <div fxLayout="row" fxLayoutAlign="end">
+        <button mat-flat-button color="primary">Login</button>
+      </div>
+    </form>
+  </mat-card>
+</div>

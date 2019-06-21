@@ -1,0 +1,65 @@
+<div fxLayout="column" class="dialog-container" style="height: 100%;">
+  <div fxFlex="nogrow">
+    <h2 class="no-wrap" mat-dialog-title>Settings</h2>
+  </div>
+  <mat-dialog-content fxFlex="grow">
+    <div class="container">
+      <form #f="ngForm" autocomplete="off">
+        <mat-form-field>
+          <input
+            [(ngModel)]="settings.downloadPath"
+            matInput
+            placeholder="Download Path"
+            name="downloadPath"
+            required
+          />
+        </mat-form-field>
+
+        <mat-form-field>
+          <input
+            [(ngModel)]="settings.maxThreads"
+            type="number"
+            matInput
+            placeholder="Max concurrent downloads"
+            name="maxThreads"
+            min="1"
+            max="8"
+            required
+          />
+        </mat-form-field>
+
+        <mat-checkbox color="primary" [(ngModel)]="settings.autoStart" name="autoStart">Auto start downloads</mat-checkbox>
+
+        <mat-slide-toggle color="primary" [(ngModel)]="settings.vLogin" name="vLogin">
+          ViperGirls Authentication
+        </mat-slide-toggle>
+
+        <section *ngIf="settings.vLogin">
+          <div>
+            <mat-form-field>
+              <input [(ngModel)]="settings.vUsername" matInput placeholder="ViperGirls Username" name="vUsername" />
+            </mat-form-field>
+
+            <mat-form-field>
+              <input
+                [(ngModel)]="settings.vPassword"
+                type="password"
+                matInput
+                placeholder="ViperGirls Password"
+                name="vPassword"
+              />
+            </mat-form-field>
+
+            <mat-checkbox color="primary" [(ngModel)]="settings.vThanks" name="vThanks">Leave thanks</mat-checkbox>
+          </div>
+        </section>
+      </form>
+    </div>
+  </mat-dialog-content>
+  <mat-dialog-actions fxFlex="nogrow" align="end">
+    <button mat-raised-button cdkFocusInitial mat-dialog-close>Close</button>
+    <button mat-raised-button (click)="onSubmit(f)" color="primary" type="submit" [disabled]="f.pristine || f.invalid">
+      Apply
+    </button>
+  </mat-dialog-actions>
+</div>

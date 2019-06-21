@@ -1,0 +1,59 @@
+/* You can add global styles to this file, and also import other style files */
+@import "~@angular/material/prebuilt-themes/indigo-pink.css";
+@import "~ag-grid-community/dist/styles/ag-grid.css";
+@import "~ag-grid-community/dist/styles/ag-theme-material.css";
+body {
+    margin: 0;
+    height: 100vh;
+    width: 100vw;
+}
+
+app-root {
+    height: 100%;
+    width: 100%;
+}
+
+#app-body {
+    margin: 8px;
+}
+
+.overlay {
+    position: fixed;
+    display: block;
+    width: 100%;
+    height: 100%;
+    top: 0; 
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+}
+
+.loading {
+    background-color: rgba(0,0,0,0.8);
+}
+
+.no-connection {
+    background-color: white !important;
+}
+
+#app-container {
+    position: fixed;
+    display: block;
+    width: 100%;
+    height: 100%;
+    top: 0; 
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+div.ag-cell.no-padding {
+    padding: 0;
+}
+
+.no-wrap {
+    overflow: hidden;
+    text-overflow:ellipsis;
+    white-space: nowrap;
+}

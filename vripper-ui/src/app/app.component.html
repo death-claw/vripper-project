@@ -1,0 +1,34 @@
+<div *ngIf="state | async as _state">
+  <div fxLayout="column" *ngIf="connecting(_state)" class="overlay loading" fxLayoutAlign="center center">
+    <mat-spinner></mat-spinner>
+    <h2>Connecting</h2>
+  </div>
+  <div fxLayout="column" *ngIf="noConnectionState(_state)" class="overlay no-connection" fxLayoutAlign="center center">
+    <mat-icon class="overlay-icon">error</mat-icon>
+    <h2>Connection with the server is closed</h2>
+  </div>
+</div>
+<div id="app-container" fxLayout="column" fxLayoutGap="20px">
+  <div id="app-header" fxFlex="nogrow">
+    <mat-toolbar class="mat-elevation-z2" color="primary">
+      <mat-toolbar-row fxLayout="row">
+        <span>Viper Ripper</span>
+        <span fxFlex="grow"></span>
+        <div>
+          <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="settings">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button (click)="openSettings()" mat-menu-item>
+              <mat-icon>settings</mat-icon>
+              <span>Settings</span>
+            </button>
+          </mat-menu>
+        </div>
+      </mat-toolbar-row>
+    </mat-toolbar>
+  </div>
+  <div id="app-body" fxFlex="grow">
+    <router-outlet></router-outlet>
+  </div>
+</div>

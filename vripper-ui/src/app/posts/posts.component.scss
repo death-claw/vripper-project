@@ -1,0 +1,17 @@
+$menu-width: 60px;
+$cell-space: 8px;
+
+.title-cell {
+    flex: 2 0 calc(60% - $menu-width);
+    margin-right: $cell-space;
+}
+
+.progress-cell {
+    flex: 1 0 calc(30% - $menu-width);
+}
+
+.menu-cell {
+    flex: 0 0 $menu-width;
+    justify-content: flex-end;
+    margin-left: $cell-space;
+}

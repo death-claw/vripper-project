@@ -1,0 +1,100 @@
+package tn.mnlr.vripper.web.restendpoints;
+
+import lombok.Getter;
+import lombok.ToString;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import tn.mnlr.vripper.AppSettings;
+import tn.mnlr.vripper.entities.Post;
+import tn.mnlr.vripper.q.DownloadQ;
+import tn.mnlr.vripper.services.AppStateService;
+import tn.mnlr.vripper.services.PostParser;
+import tn.mnlr.vripper.services.VipergirlsAuthService;
+
+import java.util.List;
+
+@RestController
+@CrossOrigin(value = "*")
+public class PostRestEndpoint {
+
+    Logger logger = LoggerFactory.getLogger(PostRestEndpoint.class);
+    @Autowired
+    private AppStateService appStateService;
+
+    @Autowired
+    private AppSettings appSettings;
+
+    @Autowired
+    private VipergirlsAuthService authService;
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity handleException(Exception e) {
+        logger.error("Error when process request", e);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(e.getMessage());
+    }
+
+    @Autowired
+    private DownloadQ downloadQ;
+
+    @Autowired
+    private PostParser postParser;
+
+    @PostMapping("/post")
+    @ResponseStatus(value = HttpStatus.OK)
+    public ResponseEntity processPost(@RequestBody ThreadUrl url) throws Exception {
+        this.logger.info(String.format("Starting to process thread: %s", url.url));
+        if (url.url == null || url.url.isEmpty()) {
+            return new ResponseEntity("Failed to process empty request", HttpStatus.BAD_REQUEST);
+        } else if (!url.url.startsWith("https://vipergirls.to")) {
+            return new ResponseEntity("ViperGirls only links are supported", HttpStatus.BAD_REQUEST);
+        }
+        List<Post> parsed = this.postParser.parse(url.url);
+        this.logger.debug(String.format("%d posts found from thread %s", parsed.size(), url.url));
+        parsed.forEach(p -> {
+            try {
+                authService.leaveThanks(p.getUrl(), p.getPostId());
+            } catch (Exception e) {
+                logger.error(String.format("Failed to leave thanks for %s", p.getUrl()), e);
+            }
+        });
+        if(this.appSettings.isAutoStart()) {
+            this.logger.info("Auto start downloads option is enabled");
+            this.logger.debug(String.format("Starting to enqueue %d jobs for %s", parsed.stream().flatMap(e -> e.getImages().stream()).count(), url.url));
+            parsed.forEach(post -> this.downloadQ.enqueue(post));
+            this.logger.debug(String.format("Done enqueuing jobs for %s", url.url));
+        } else {
+            this.logger.info("Auto start downloads option is disabled");
+        }
+        this.logger.info(String.format("Done processing thread: %s", url.url));
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @PostMapping("/post/restart")
+    @ResponseStatus(value = HttpStatus.OK)
+    public void restartPost(@RequestBody PostId postId) throws Exception {
+        this.downloadQ.restart(postId.getPostId());
+    }
+
+    @PostMapping("/post/stop")
+    @ResponseStatus(value = HttpStatus.OK)
+    public void stop(@RequestBody PostId postId) throws Exception {
+        this.downloadQ.stop(postId.getPostId());
+    }
+
+    @Getter
+    @ToString
+    private static class ThreadUrl {
+        private String url;
+    }
+
+    @Getter
+    private static class PostId {
+        private String postId;
+    }
+}
