@@ -70,7 +70,7 @@ public class PostParser {
 
         Document document;
         try {
-            logger.info(String.format("Cleaning HTML response for XML parsing: %s", postResponse));
+            logger.debug(String.format("Cleaning HTML response for XML parsing: %s", postResponse));
             document = htmlProcessorService.clean(postResponse);
         } catch (Exception e) {
             throw new PostParseException(e);

@@ -67,7 +67,7 @@ public class ImxHost extends Host {
             }
             logger.info(String.format("Requesting %s", httpPost));
             try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(httpPost)) {
-                logger.info(String.format("Cleaning response for %s", httpPost));
+                logger.debug(String.format("Cleaning response for %s", httpPost));
                 doc = htmlProcessorService.clean(EntityUtils.toString(response.getEntity()));
                 EntityUtils.consumeQuietly(response.getEntity());
             } catch (IOException | HtmlProcessorException e) {
