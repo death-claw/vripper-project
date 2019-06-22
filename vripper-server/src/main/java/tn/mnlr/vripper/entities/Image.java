@@ -68,7 +68,7 @@ public class Image {
         }
         imageStateProcessor = BehaviorProcessor.create();
         subscription = imageStateProcessor
-                .onBackpressureBuffer()
+                .onBackpressureLatest()
                 .doOnNext(appStateService::onImageUpdate)
                 .subscribe();
 

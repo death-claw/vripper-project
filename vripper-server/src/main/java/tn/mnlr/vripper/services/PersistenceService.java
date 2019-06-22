@@ -39,7 +39,7 @@ public class PersistenceService {
         om.addMixIn(Image.class, ImagePersistanceMixin.class);
         om.addMixIn(Post.class, PostPersistanceMixin.class);
         processor
-                .onBackpressureBuffer()
+                .onBackpressureLatest()
                 .buffer(10, TimeUnit.SECONDS)
                 .filter(e -> !e.isEmpty())
                 .map(e -> e.get(0))
