@@ -47,7 +47,7 @@ public class Post {
         total = images.size();
         status = Status.PENDING;
         appStateService.getCurrentPosts().put(postId, this);
-        appStateService.getSnapshotPostsState().onNext(this);
+        appStateService.getLivePostsState().onNext(this);
     }
 
     public void increase() {

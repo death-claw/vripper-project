@@ -85,12 +85,12 @@ public class PersistenceService {
         read.values().stream().flatMap(e -> e.getImages().stream()).forEach(e -> {
             e.setAppStateService(stateService);
             stateService.getCurrentImages().put(e.getUrl(), e);
-            stateService.getAllImageState().onNext(e);
+//            stateService.getAllImageState().onNext(e);
         });
 
         read.values().forEach(e -> {
             e.setAppStateService(stateService);
-            stateService.getSnapshotPostsState().onNext(e);
+//            stateService.getSnapshotPostsState().onNext(e);
         });
     }
 }

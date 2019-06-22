@@ -46,7 +46,7 @@ public class Image {
         status = Status.PENDING;
         imageStateProcessor = BehaviorProcessor.create();
         appStateService.getCurrentImages().put(this.url, this);
-        appStateService.getAllImageState().onNext(this);
+        appStateService.getLiveImageUpdates().onNext(this);
         init();
     }
 

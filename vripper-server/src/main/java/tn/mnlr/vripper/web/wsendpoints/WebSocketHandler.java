@@ -2,7 +2,6 @@ package tn.mnlr.vripper.web.wsendpoints;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.processors.FlowableProcessor;
 import io.reactivex.schedulers.Schedulers;
 import lombok.Getter;
 import org.slf4j.Logger;
@@ -85,10 +84,17 @@ public class WebSocketHandler extends TextWebSocketHandler {
         if (postsSubscriptions.containsKey(session.getId())) {
             postsSubscriptions.get(session.getId()).dispose();
         }
-        postsSubscriptions.put(session.getId(), FlowableProcessor.merge(appStateService.getSnapshotPostsState(), appStateService.getLivePostsState())
+
+        try {
+            send(session, new TextMessage(om.writeValueAsString(appStateService.getCurrentPosts().values())));
+        } catch (Exception e) {
+            logger.error("Unexpected error occurred", e);
+        }
+
+        postsSubscriptions.put(session.getId(), appStateService.getLivePostsState()
                 .onBackpressureBuffer()
                 .observeOn(Schedulers.io())
-                .buffer(1000, TimeUnit.MILLISECONDS, 5)
+                .buffer(2, TimeUnit.SECONDS)
                 .filter(e -> !e.isEmpty())
                 .map(e -> e.stream().distinct().collect(Collectors.toList()))
                 .map(om::writeValueAsString)
@@ -103,11 +109,24 @@ public class WebSocketHandler extends TextWebSocketHandler {
         if (postDetailsSubscriptions.containsKey(session.getId())) {
             postDetailsSubscriptions.get(session.getId()).dispose();
         }
-        postDetailsSubscriptions.put(session.getId(), FlowableProcessor.merge(appStateService.getAllImageState(), appStateService.getLiveImageUpdates())
+
+        try {
+            send(session, new TextMessage(om.writeValueAsString(
+                    appStateService.getCurrentImages()
+                            .values()
+                            .stream()
+                            .filter(e -> e.getPostId().equals(postId))
+                            .collect(Collectors.toList())))
+            );
+        } catch (Exception e) {
+            logger.error("Unexpected error occurred", e);
+        }
+
+        postDetailsSubscriptions.put(session.getId(), appStateService.getLiveImageUpdates()
                 .onBackpressureBuffer()
                 .observeOn(Schedulers.io())
                 .filter(e -> e.getPostId().equals(postId))
-                .buffer(1000, TimeUnit.MILLISECONDS, 50)
+                .buffer(2, TimeUnit.SECONDS)
                 .filter(e -> !e.isEmpty())
                 .map(e -> e.stream().distinct().collect(Collectors.toList()))
                 .map(om::writeValueAsString)

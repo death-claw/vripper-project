@@ -27,9 +27,9 @@ public class AppStateService {
 
     private PublishProcessor<Image> liveImageUpdates = PublishProcessor.create();
 
-    private ReplayProcessor<Image> allImageState = ReplayProcessor.create();
+//    private ReplayProcessor<Image> allImageState = ReplayProcessor.create();
 
-    private ReplayProcessor<Post> snapshotPostsState = ReplayProcessor.create();
+//    private ReplayProcessor<Post> snapshotPostsState = ReplayProcessor.create();
 
     private PublishProcessor<Post> livePostsState = PublishProcessor.create();
 
