@@ -42,49 +42,49 @@ public class Image {
         this.postId = postId;
         this.postName = postName;
         this.host = host;
-        this.status = Status.PENDING;
         this.appStateService = appStateService;
-        this.imageStateProcessor = BehaviorProcessor.create();
-        this.appStateService.getCurrentImages().put(this.url, this);
-        this.appStateService.getAllImageState().onNext(this);
-        this.init();
+        status = Status.PENDING;
+        imageStateProcessor = BehaviorProcessor.create();
+        appStateService.getCurrentImages().put(this.url, this);
+        appStateService.getAllImageState().onNext(this);
+        init();
     }
 
     public void setStatus(Status status) {
         this.status = status;
-        this.update();
+        update();
     }
 
     public boolean isCompleted() {
-        return this.status.equals(Status.COMPLETE);
+        return status.equals(Status.COMPLETE);
     }
 
     public void init() {
-        if (this.imageStateProcessor != null) {
-            this.imageStateProcessor.onComplete();
+        if (imageStateProcessor != null) {
+            imageStateProcessor.onComplete();
         }
-        if (this.subscription != null) {
-            this.subscription.dispose();
+        if (subscription != null) {
+            subscription.dispose();
         }
-        this.imageStateProcessor = BehaviorProcessor.create();
-        this.subscription = imageStateProcessor
+        imageStateProcessor = BehaviorProcessor.create();
+        subscription = imageStateProcessor
                 .onBackpressureBuffer()
                 .doOnNext(appStateService::onImageUpdate)
                 .subscribe();
 
-        this.current.set(0);
-        this.status = Status.PENDING;
+        current.set(0);
+        status = Status.PENDING;
         imageStateProcessor.onNext(this);
     }
 
     public void setCurrent(int current) {
         this.current.set(current);
-        this.update();
+        update();
     }
 
     public void increase(int read) {
-        this.current.addAndGet(read);
-        this.update();
+        current.addAndGet(read);
+        update();
     }
 
     private void update() {
@@ -94,8 +94,8 @@ public class Image {
         imageStateProcessor.onNext(this);
         if (isCompleted()) {
             imageStateProcessor.onComplete();
-            this.subscription.dispose();
-            this.imageStateProcessor = null;
+            subscription.dispose();
+            imageStateProcessor = null;
         }
     }
 

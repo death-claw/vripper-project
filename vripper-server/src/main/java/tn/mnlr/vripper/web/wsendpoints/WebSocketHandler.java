@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @Component
 public class WebSocketHandler extends TextWebSocketHandler {
 
-    private Logger logger = LoggerFactory.getLogger(WebSocketHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(WebSocketHandler.class);
 
     @Getter
     private static class WSMessage {
@@ -69,11 +69,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 subscribeForPostDetails(session, wsMessage.getPayload());
                 break;
             case POST_DETAILS_UNSUB:
-                logger.debug("unsubscribe from post details");
+                logger.info(String.format("Client %s unsubscribed from post details", session.getId()));
                 Optional.ofNullable(postDetailsSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
                 break;
             case POSTS_UNSUB:
-                logger.debug("unsubscribe from posts");
+                logger.info(String.format("Client %s unsubscribed from posts", session.getId()));
                 Optional.ofNullable(postsSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
                 break;
         }
@@ -81,7 +81,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private void subscribeForPosts(WebSocketSession session) {
 
-        logger.debug(String.format("Client %s subscribed for posts", session.getId()));
+        logger.info(String.format("Client %s subscribed for posts", session.getId()));
         if (postsSubscriptions.containsKey(session.getId())) {
             postsSubscriptions.get(session.getId()).dispose();
         }
@@ -93,13 +93,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 .map(e -> e.stream().distinct().collect(Collectors.toList()))
                 .map(om::writeValueAsString)
                 .map(TextMessage::new)
-                .subscribe(msg -> this.send(session, msg), e -> logger.error("Failed to send data to client", e))
+                .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))
         );
     }
 
     private void subscribeForPostDetails(WebSocketSession session, String postId) {
 
-        logger.debug(String.format("Client %s subscribed for post details with id = %s", session.getId(), postId));
+        logger.info(String.format("Client %s subscribed for post details with id = %s", session.getId(), postId));
         if (postDetailsSubscriptions.containsKey(session.getId())) {
             postDetailsSubscriptions.get(session.getId()).dispose();
         }
@@ -112,7 +112,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 .map(e -> e.stream().distinct().collect(Collectors.toList()))
                 .map(om::writeValueAsString)
                 .map(TextMessage::new)
-                .subscribe(msg -> this.send(session, msg), e -> logger.error("Failed to send data to client", e))
+                .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))
         );
     }
 

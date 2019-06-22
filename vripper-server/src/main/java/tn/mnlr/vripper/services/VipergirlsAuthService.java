@@ -23,7 +23,7 @@ import java.util.List;
 @Service
 public class VipergirlsAuthService {
 
-    private Logger logger = LoggerFactory.getLogger(VipergirlsAuthService.class);
+    private static final Logger logger = LoggerFactory.getLogger(VipergirlsAuthService.class);
 
     @Autowired
     private ConnectionManager cm;
@@ -44,11 +44,11 @@ public class VipergirlsAuthService {
     public void authenticate() throws VripperException {
 
         logger.info("Authenticating using ViperGirls credentials");
-        this.authenticated = false;
+        authenticated = false;
 
         if(!appSettings.isVLogin()) {
             logger.warn("Authentication option is disabled");
-            this.cookies = null;
+            cookies = null;
             return;
         }
 
@@ -102,7 +102,7 @@ public class VipergirlsAuthService {
         } catch (Exception e) {
             throw new VripperException(e);
         }
-        this.authenticated = true;
+        authenticated = true;
         logger.info(String.format("Authenticated: %s", username));
     }
 
@@ -143,7 +143,7 @@ public class VipergirlsAuthService {
             String postPage = EntityUtils.toString(response.getEntity());
             Document document = htmlProcessorService.clean(postPage);
 
-            String thanksUrl = this.xpathService
+            String thanksUrl = xpathService
                     .getAsNode(document, "//li[contains(@id,'post_')][not(contains(@id,'post_thank'))]//a[@class='post_thanks_button']")
                     .getAttributes()
                     .getNamedItem("href")

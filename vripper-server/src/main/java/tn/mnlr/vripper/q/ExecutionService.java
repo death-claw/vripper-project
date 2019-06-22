@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @Service
 public class ExecutionService {
 
-    Logger logger = LoggerFactory.getLogger(ExecutionService.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExecutionService.class);
 
     @Autowired
     private DownloadQ downloadQ;
@@ -70,12 +70,12 @@ public class ExecutionService {
     }
 
     public void stop(String postId) {
-        List<DownloadJob> data = this.running
+        List<DownloadJob> data = running
                 .stream()
                 .filter(e -> e.getImage().getPostId().equals(postId))
                 .peek(e -> e.getImage().setStatus(Image.Status.STOPPED))
                 .collect(Collectors.toList());
-        logger.debug(String.format("Interrupting %d jobs for post id %s", data.size(), postId));
+        logger.warn(String.format("Interrupting %d jobs for post id %s", data.size(), postId));
 
         data.forEach(e -> {
             futures.get(e.getImage().getUrl()).cancel(true);
@@ -85,7 +85,7 @@ public class ExecutionService {
 
     boolean canRun() {
         boolean canRun = threadCount.get() < settings.getMaxThreads();
-        if (canRun && this.downloadQ.isNotPauseQ()) {
+        if (canRun && downloadQ.isNotPauseQ()) {
             threadCount.incrementAndGet();
             return true;
         }
@@ -97,7 +97,7 @@ public class ExecutionService {
             if (canRun()) {
                 DownloadJob take = null;
                 try {
-                    take = this.downloadQ.take();
+                    take = downloadQ.take();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -109,15 +109,15 @@ public class ExecutionService {
                     Failsafe.with(retryPolicy)
                             .onFailure(e -> {
                                 if (e.getFailure() instanceof InterruptedException || (e.getFailure() instanceof FailsafeException && e.getFailure().getCause() instanceof InterruptedException)) {
-                                    logger.debug("Job successfully interrupted");
+                                    logger.info("Job successfully interrupted");
                                     return;
                                 }
                                 logger.error(String.format("Failed to download %s after %d tries", finalTake.getImage().getUrl(), e.getAttemptCount()), e.getFailure());
                                 finalTake.getImage().setStatus(Image.Status.ERROR);
                             })
                             .onComplete(e -> {
-                                this.appStateService.doneDownloadJob(finalTake.getImage());
-                                logger.debug(String.format("Finished downloading %s", finalTake.getImage().getUrl()));
+                                appStateService.doneDownloadJob(finalTake.getImage());
+                                logger.info(String.format("Finished downloading %s", finalTake.getImage().getUrl()));
                                 synchronized (threadCount) {
                                     int i = threadCount.decrementAndGet();
                                     running.remove(finalTake);
@@ -127,7 +127,7 @@ public class ExecutionService {
                             })
                             .get(finalTake::call);
                 };
-                logger.debug(String.format("Scheduling a job for %s", finalTake.getImage().getUrl()));
+                logger.info(String.format("Scheduling a job for %s", finalTake.getImage().getUrl()));
                 futures.put(finalTake.getImage().getUrl(), executor.submit(task));
             } else {
                 synchronized (threadCount) {

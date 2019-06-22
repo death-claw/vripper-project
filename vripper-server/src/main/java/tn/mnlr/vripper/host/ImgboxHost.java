@@ -1,26 +1,23 @@
 package tn.mnlr.vripper.host;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import tn.mnlr.vripper.exception.HostException;
-import tn.mnlr.vripper.exception.HtmlProcessorException;
 import tn.mnlr.vripper.exception.XpathException;
 import tn.mnlr.vripper.q.ImageFileData;
 import tn.mnlr.vripper.services.ConnectionManager;
 
-import java.io.IOException;
-
 @Service
 public class ImgboxHost extends Host {
 
-    String host = "imgbox.com";
-    boolean https = true;
+    private static final Logger logger = LoggerFactory.getLogger(ImgboxHost.class);
+
+    private static final String host = "imgbox.com";
+    public static final String IMG_XPATH = "//img[@id='img']";
 
     @Autowired
     private ConnectionManager cm;
@@ -33,45 +30,25 @@ public class ImgboxHost extends Host {
     @Override
     protected void setNameAndUrl(final String url, final ImageFileData imageFileData) throws HostException {
 
-        String basePage;
+        Document doc = getDocument(url);
 
-        HttpClient client = this.cm.getClient().build();
-        HttpGet httpGet = this.cm.buildHttpGet(url);
-
-        try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(httpGet)) {
-            basePage = EntityUtils.toString(response.getEntity());
-            EntityUtils.consumeQuietly(response.getEntity());
-        } catch (IOException e) {
-            throw new HostException(e);
-        }
-
-        Document doc = null;
+        Node imgNode;
         try {
-            doc = htmlProcessorService.clean(basePage);
-        } catch (HtmlProcessorException e) {
-            throw new HostException(e);
-        }
-
-        Node imgNode = null;
-        try {
-            imgNode = xpathService.getAsNode(doc, "//img[@id='img']");
+            logger.info(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url));
+            imgNode = xpathService.getAsNode(doc, IMG_XPATH);
         } catch (XpathException e) {
             throw new HostException(e);
         }
 
-        String imgTitle = imgNode.getAttributes().getNamedItem("title").getTextContent().trim();
-        String imgUrl = imgNode.getAttributes().getNamedItem("src").getTextContent().trim();
+        try {
+            logger.info(String.format("Resolving name and image url for %s", url));
+            String imgTitle = imgNode.getAttributes().getNamedItem("title").getTextContent().trim();
+            String imgUrl = imgNode.getAttributes().getNamedItem("src").getTextContent().trim();
 
-        imageFileData.setImageUrl(imgUrl);
-        imageFileData.setImageName(imgTitle.substring(8));
-
-    }
-
-    @Override
-    protected void setImageRequest(ImageFileData imageFileData) throws IOException {
-
-        HttpGet httpGet = this.cm.buildHttpGet(imageFileData.getImageUrl());
-        httpGet.addHeader("Referer", imageFileData.getPageUrl());
-        imageFileData.setImageRequest(httpGet);
+            imageFileData.setImageUrl(imgUrl);
+            imageFileData.setImageName(imgTitle.substring(8));
+        } catch (Exception e) {
+            throw new HostException("Unexpected error occurred", e);
+        }
     }
 }

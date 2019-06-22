@@ -38,7 +38,7 @@ public class AppStateService {
 
     public void onImageUpdate(Image imageState) {
 
-        this.persistenceService.getProcessor().onNext(currentPosts);
+        persistenceService.getProcessor().onNext(currentPosts);
 
         liveImageUpdates.onNext(imageState);
         if (imageState.isCompleted()) {
@@ -57,24 +57,24 @@ public class AppStateService {
     }
 
     public Post getPost(String postId) {
-        return this.currentPosts.get(postId);
+        return currentPosts.get(postId);
     }
 
     public synchronized void newDownloadJob(DownloadJob downloadJob) {
         String postId = downloadJob.getImage().getPostId();
         checkKeyRunningPosts(postId);
-        int i = this.runningPosts.get(postId).incrementAndGet();
+        int i = runningPosts.get(postId).incrementAndGet();
         if (i > 0) {
-            Post post = this.currentPosts.get(postId);
+            Post post = currentPosts.get(postId);
             post.setStatus(Post.Status.DOWNLOADING);
-            this.livePostsState.onNext(post);
+            livePostsState.onNext(post);
         }
     }
 
     public void doneDownloadJob(Image image) {
         String postId = image.getPostId();
-        int i = this.runningPosts.get(postId).decrementAndGet();
-        Post post = this.currentPosts.get(postId);
+        int i = runningPosts.get(postId).decrementAndGet();
+        Post post = currentPosts.get(postId);
         if(image.getStatus().equals(Image.Status.ERROR)) {
             post.setStatus(Post.Status.PARTIAL);
         }
@@ -84,13 +84,13 @@ public class AppStateService {
             } else {
                 post.setStatus(Post.Status.COMPLETE);
             }
-            this.livePostsState.onNext(post);
+            livePostsState.onNext(post);
         }
     }
 
     private synchronized void checkKeyRunningPosts(String key) {
-        if (!this.runningPosts.containsKey(key)) {
-            this.runningPosts.put(key, new AtomicInteger(0));
+        if (!runningPosts.containsKey(key)) {
+            runningPosts.put(key, new AtomicInteger(0));
         }
     }
 }

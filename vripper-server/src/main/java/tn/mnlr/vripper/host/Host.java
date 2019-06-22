@@ -2,13 +2,18 @@ package tn.mnlr.vripper.host;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.w3c.dom.Document;
 import tn.mnlr.vripper.AppSettings;
 import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.HostException;
+import tn.mnlr.vripper.exception.HtmlProcessorException;
 import tn.mnlr.vripper.q.ImageFileData;
 import tn.mnlr.vripper.services.ConnectionManager;
 import tn.mnlr.vripper.services.HtmlProcessorService;
@@ -23,6 +28,10 @@ import java.util.Random;
 @Service
 abstract public class Host {
 
+    private static final Logger logger = LoggerFactory.getLogger(Host.class);
+
+    private static final int READ_BUFFER_SIZE = 8192;
+
     @Autowired
     protected HtmlProcessorService htmlProcessorService;
 
@@ -34,8 +43,6 @@ abstract public class Host {
 
     @Autowired
     private ConnectionManager cm;
-
-    int readBufferSize = 8192;
 
     abstract protected String getHost();
 
@@ -52,7 +59,12 @@ abstract public class Host {
             /**
              * HOST SPECIFIC
              */
+            logger.info(String.format("Getting image url and name from %s using %s", image.getUrl(), this.getHost()));
             setNameAndUrl(image.getUrl(), imageFileData);
+            logger.info(String.format("Resolved name for %s: %s", image.getUrl(), imageFileData.getImageName()));
+            logger.info(String.format("Resolved image url for %s: %s", image.getUrl(), imageFileData.getImageUrl()));
+
+            logger.info(String.format("Building image request for %s", image.getUrl()));
             setImageRequest(imageFileData);
             /**
              * END HOST SPECIFIC
@@ -62,13 +74,18 @@ abstract public class Host {
                 imageFileData.setImageName(imageFileData.getImageName() + ".jpg");
             }
 
-            File destinationFolder = new File(appSettings.getDownloadPath(), this.sanitize(image.getPostName()));
+            File destinationFolder = new File(appSettings.getDownloadPath(), sanitize(image.getPostName()));
+            logger.info(String.format("Saving to %s", destinationFolder.getPath()));
             if (!destinationFolder.exists()) {
+                logger.info(String.format("Creating %s", destinationFolder.getPath()));
                 destinationFolder.mkdirs();
+            } else {
+                logger.warn(String.format("%s already exists, the file will be overridden", destinationFolder.getPath()));
             }
 
-            HttpClient client = this.cm.getClient().build();
+            HttpClient client = cm.getClient().build();
 
+            logger.info(String.format("Downloading %s", imageFileData.getImageUrl()));
             try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(imageFileData.getImageRequest())) {
 
                 if(response.getStatusLine().getStatusCode() / 100 != 2) {
@@ -82,11 +99,12 @@ abstract public class Host {
                 ) {
 
                     image.setTotal(response.getEntity().getContentLength());
+                    logger.info(String.format("%s length is %d", imageFileData.getImageUrl(), image.getTotal()));
+                    logger.info(String.format("Starting data transfer for %s", imageFileData.getImageUrl()));
 
-                    byte[] buffer = new byte[readBufferSize];
+                    byte[] buffer = new byte[READ_BUFFER_SIZE];
                     int read;
-                    while ((read = downloadStream.read(buffer, 0, readBufferSize)) != -1) {
-//                                    randomFail();
+                    while ((read = downloadStream.read(buffer, 0, READ_BUFFER_SIZE)) != -1) {
                         fos.write(buffer, 0, read);
                         image.increase(read);
                     }
@@ -101,6 +119,10 @@ abstract public class Host {
         }
     }
 
+    /**
+     * Just for testing, you may ignore
+     * @throws Exception
+     */
     private void randomFail() throws Exception {
         Random random = new Random();
         int i = random.nextInt(100);
@@ -109,11 +131,48 @@ abstract public class Host {
         }
     }
 
-    protected String sanitize(String folderName) {
-        return folderName.replaceAll("\\.|\\\\|/|\\||:|\\?|\\*|\"|<|>|\\p{Cntrl}", "_");
+
+
+    protected final String sanitize(final String folderName) {
+        String sanitizedFolderName = folderName.replaceAll("\\.|\\\\|/|\\||:|\\?|\\*|\"|<|>|\\p{Cntrl}", "_");
+        logger.debug(String.format("%s sanitized to %s", folderName, sanitizedFolderName));
+        return sanitizedFolderName;
     }
 
-    protected abstract void setImageRequest(ImageFileData imageFileData) throws IOException;
+    protected final String getDefaultImageName(final String imgUrl) {
+        String imageTitle  = imgUrl.substring(imgUrl.lastIndexOf('/') + 1);
+        logger.debug(String.format("Extracting name from url %s: %s", imgUrl, imageTitle));
+        return imgUrl;
+    }
 
-    protected abstract void setNameAndUrl(String url, ImageFileData imageFileData) throws HostException;
+    protected final Document getDocument(final String url) throws HostException {
+        String basePage;
+
+        HttpClient client = cm.getClient().build();
+        HttpGet httpGet = cm.buildHttpGet(url);
+
+        logger.info(String.format("Requesting %s", url));
+        try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(httpGet)) {
+            basePage = EntityUtils.toString(response.getEntity());
+            logger.debug(String.format("%s response: %n%s", url, basePage));
+            EntityUtils.consumeQuietly(response.getEntity());
+        } catch (IOException e) {
+            throw new HostException(e);
+        }
+
+        try {
+            logger.info(String.format("Cleaning %s response", url));
+            return htmlProcessorService.clean(basePage);
+        } catch (HtmlProcessorException e) {
+            throw new HostException(e);
+        }
+    }
+
+    protected void setImageRequest(final ImageFileData imageFileData) {
+        HttpGet httpGet = cm.buildHttpGet(imageFileData.getImageUrl());
+        httpGet.addHeader("Referer", imageFileData.getPageUrl());
+        imageFileData.setImageRequest(httpGet);
+    }
+
+    protected abstract void setNameAndUrl(final String url, final ImageFileData imageFileData) throws HostException;
 }

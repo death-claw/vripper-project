@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import tn.mnlr.vripper.Main;
+import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.entities.mixin.persistance.ImagePersistanceMixin;
@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class PersistenceService {
 
-    private Logger logger = LoggerFactory.getLogger(PersistenceService.class);
+    private static final Logger logger = LoggerFactory.getLogger(PersistenceService.class);
 
     @Autowired
     private AppStateService stateService;
@@ -48,7 +48,7 @@ public class PersistenceService {
     }
 
     public void persist(Map<String, Post> currentPosts) {
-        try(PrintWriter out = new PrintWriter(Main.dataPath)) {
+        try(PrintWriter out = new PrintWriter(VripperApplication.dataPath)) {
             out.print(om.writeValueAsString(currentPosts));
         } catch (IOException e) {
             logger.error("Failed to persist app state", e);
@@ -70,13 +70,13 @@ public class PersistenceService {
 
         String jsonContent;
         try {
-            jsonContent = new String(Files.readAllBytes(Paths.get(Main.dataPath)));
+            jsonContent = new String(Files.readAllBytes(Paths.get(VripperApplication.dataPath)));
         } catch (Exception e) {
             logger.warn("data file not found, previous state cannot be restored", e);
             return;
         }
 
-        Map<String, Post> read = this.read(jsonContent);
+        Map<String, Post> read = read(jsonContent);
 
         stateService.getCurrentPosts().clear();
         stateService.getCurrentPosts().putAll(read);

@@ -21,7 +21,7 @@ import java.util.prefs.Preferences;
 @Setter
 public class AppSettings {
 
-    private Logger logger = LoggerFactory.getLogger(AppSettings.class);
+    private static final Logger logger = LoggerFactory.getLogger(AppSettings.class);
 
     private Preferences prefs = Preferences.userNodeForPackage(tn.mnlr.vripper.AppSettings.class);
 
@@ -51,24 +51,24 @@ public class AppSettings {
 
     public void restore() {
 
-        this.downloadPath = prefs.get(DOWNLOAD_PATH, "");
-        this.maxThreads = prefs.getInt(MAX_THREADS, 1);
-        this.autoStart = prefs.getBoolean(AUTO_START, false);
-        this.vLogin = prefs.getBoolean(V_LOGIN, false);
-        this.vUsername = prefs.get(V_USERNAME, "");
-        this.vPassword = prefs.get(V_PASSWORD, "");
-        this.vThanks = prefs.getBoolean(V_THANKS, false);
+        downloadPath = prefs.get(DOWNLOAD_PATH, "");
+        maxThreads = prefs.getInt(MAX_THREADS, 1);
+        autoStart = prefs.getBoolean(AUTO_START, false);
+        vLogin = prefs.getBoolean(V_LOGIN, false);
+        vUsername = prefs.get(V_USERNAME, "");
+        vPassword = prefs.get(V_PASSWORD, "");
+        vThanks = prefs.getBoolean(V_THANKS, false);
     }
 
     public void save() {
 
-        prefs.put(DOWNLOAD_PATH, this.downloadPath);
-        prefs.putInt(MAX_THREADS, this.maxThreads);
-        prefs.putBoolean(AUTO_START, this.autoStart);
-        prefs.putBoolean(V_LOGIN, this.vLogin);
-        prefs.put(V_USERNAME, this.vUsername);
-        prefs.put(V_PASSWORD, this.vPassword);
-        prefs.putBoolean(V_THANKS, this.vThanks);
+        prefs.put(DOWNLOAD_PATH, downloadPath);
+        prefs.putInt(MAX_THREADS, maxThreads);
+        prefs.putBoolean(AUTO_START, autoStart);
+        prefs.putBoolean(V_LOGIN, vLogin);
+        prefs.put(V_USERNAME, vUsername);
+        prefs.put(V_PASSWORD, vPassword);
+        prefs.putBoolean(V_THANKS, vThanks);
 
         try {
             prefs.sync();

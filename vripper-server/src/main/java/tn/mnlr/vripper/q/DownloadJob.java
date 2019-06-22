@@ -10,13 +10,13 @@ import java.util.concurrent.Callable;
 
 public class DownloadJob implements Callable<Image> {
 
-    private Logger logger = LoggerFactory.getLogger(DownloadJob.class);
+    private static final Logger logger = LoggerFactory.getLogger(DownloadJob.class);
 
     @Getter
-    final Image image;
+    private final Image image;
 
     @Getter
-    final ImageFileData imageFileData = new ImageFileData();
+    private final ImageFileData imageFileData = new ImageFileData();
 
     public DownloadJob(Image image) {
         this.image = image;
@@ -25,12 +25,12 @@ public class DownloadJob implements Callable<Image> {
     @Override
     public Image call() throws Exception {
 
-        logger.debug(String.format("Starting downloading %s", image.getUrl()));
-        this.image.setStatus(Image.Status.DOWNLOADING);
-        this.image.setCurrent(0);
-        this.image.getHost().download(this.image, this.imageFileData);
-        this.image.setStatus(Image.Status.COMPLETE);
-        return this.image;
+        logger.info(String.format("Starting downloading %s", image.getUrl()));
+        image.setStatus(Image.Status.DOWNLOADING);
+        image.setCurrent(0);
+        image.getHost().download(image, imageFileData);
+        image.setStatus(Image.Status.COMPLETE);
+        return image;
     }
 
     @Override

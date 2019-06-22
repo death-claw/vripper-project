@@ -23,13 +23,14 @@ import java.util.List;
 @Service
 public class PostParser {
 
+    private static final Logger logger = LoggerFactory.getLogger(PostParser.class);
+
     private final static String VIPER_GIRLS_BASE_ADRESS = "https://vipergirls.to/";
     private final static String POSTS_XPATH = "//li[contains(@id,'post_')][not(contains(@id,'post_thank'))]";
     private final static String REAL_THREAD_XPATH = ".//a[@class='postcounter']";
     private final static String THREAD_TITLE_XPATH = "//li[contains(@class, 'lastnavbit')]/span";
     private final static String POST_TITLE_XPATH = ".//h2";
     private final static String POST_LINKS_XPATH = ".//a";
-    private Logger logger = LoggerFactory.getLogger(PostParser.class);
 
     @Autowired
     private ConnectionManager cm;
@@ -48,14 +49,14 @@ public class PostParser {
 
     public List<Post> parse(String threadUrl) throws PostParseException {
 
-        logger.debug(String.format("Parsing thread %s", threadUrl));
+        logger.info(String.format("Parsing thread %s", threadUrl));
         List<Post> posts = new ArrayList<>();
         String postResponse;
 
-        HttpClient connection = this.cm.getClient().build();
-        HttpGet httpGet = this.cm.buildHttpGet(threadUrl);
+        HttpClient connection = cm.getClient().build();
+        HttpGet httpGet = cm.buildHttpGet(threadUrl);
 
-        logger.debug(String.format("Requesting %s", httpGet));
+        logger.info(String.format("Requesting %s", httpGet));
         try (CloseableHttpResponse response = (CloseableHttpResponse) connection.execute(httpGet)) {
             if (response.getStatusLine().getStatusCode() / 100 != 2) {
                 throw new DownloadException(String.format("Unexpected response code '%d' for %s", response.getStatusLine().getStatusCode(), httpGet));
@@ -69,7 +70,7 @@ public class PostParser {
 
         Document document;
         try {
-            logger.debug(String.format("Cleaning HTML response for XML parsing: %s", postResponse));
+            logger.info(String.format("Cleaning HTML response for XML parsing: %s", postResponse));
             document = htmlProcessorService.clean(postResponse);
         } catch (Exception e) {
             throw new PostParseException(e);
@@ -77,11 +78,11 @@ public class PostParser {
 
         String threadTitle = null;
         try {
-            logger.debug(String.format("Looking for thread title using xpath: %s", THREAD_TITLE_XPATH));
+            logger.info(String.format("Looking for thread title using xpath: %s", THREAD_TITLE_XPATH));
             Node threadTitleNode = xpathService.getAsNode(document, THREAD_TITLE_XPATH);
             if (threadTitleNode != null) {
                 threadTitle = threadTitleNode.getTextContent().trim();
-                logger.debug(String.format("Thread title found %s", threadTitle));
+                logger.info(String.format("Thread title found %s", threadTitle));
             }
             if (threadTitle == null) {
                 logger.warn("Cannot find thread's title");
@@ -92,33 +93,33 @@ public class PostParser {
 
         NodeList postsNodeList;
         try {
-            logger.debug(String.format("Looking for posts using xpath: %s", POSTS_XPATH));
+            logger.info(String.format("Looking for posts using xpath: %s", POSTS_XPATH));
             postsNodeList = xpathService.getAsNodeList(document, POSTS_XPATH);
         } catch (Exception e) {
             throw new PostParseException(e);
         }
 
-        logger.debug(String.format("Found %d posts in thread %s", postsNodeList.getLength(), threadUrl));
+        logger.info(String.format("Found %d posts in thread %s", postsNodeList.getLength(), threadUrl));
 
         for (int i = 0; i < postsNodeList.getLength(); i++) {
             String realUrl;
-            logger.debug(String.format("Parsing post #%d", i + 1));
+            logger.info(String.format("Parsing post #%d", i + 1));
             try {
-                logger.debug(String.format("Finding posts's link"));
+                logger.info(String.format("Finding posts's link"));
                 realUrl = VIPER_GIRLS_BASE_ADRESS.concat(xpathService
                         .getAsNode(postsNodeList.item(i), REAL_THREAD_XPATH)
                         .getAttributes()
                         .getNamedItem("href")
                         .getTextContent()
                         .trim());
-                logger.debug(String.format("Post's link: %s", realUrl));
+                logger.info(String.format("Post's link: %s", realUrl));
             } catch (Exception e) {
                 throw new PostParseException(e);
             }
 
-            logger.debug("Finding posts's id");
+            logger.info("Finding posts's id");
             String postId = realUrl.substring(realUrl.indexOf("#")).replace("#post", "");
-            logger.debug(String.format("Post's id: %s", postId));
+            logger.info(String.format("Post's id: %s", postId));
 
             if (appStateService.getCurrentPosts().containsKey(postId)) {
                 logger.warn(String.format("Post with id %s is already loaded, skipping", postId));
@@ -127,18 +128,18 @@ public class PostParser {
 
             String postTitle;
             try {
-                logger.debug(String.format("Finding post's title"));
+                logger.info(String.format("Finding post's title"));
                 Node titleNode = xpathService.getAsNode(postsNodeList.item(i), POST_TITLE_XPATH);
                 if (titleNode != null) {
                     postTitle = titleNode.getTextContent().trim();
-                    logger.debug(String.format("Found post's title: %s", postTitle));
+                    logger.info(String.format("Found post's title: %s", postTitle));
                 } else {
-                    logger.debug("Cannot find post's title");
+                    logger.info("Cannot find post's title");
                     if (threadTitle != null) {
-                        logger.debug("Falling back to thread title to generate a post name");
+                        logger.info("Falling back to thread title to generate a post name");
                         postTitle = threadTitle + "#" + postId;
                     } else {
-                        logger.debug("Falling back to post id to generate a post name");
+                        logger.info("Falling back to post id to generate a post name");
                         postTitle = "#" + postId;
                     }
                 }
@@ -148,7 +149,7 @@ public class PostParser {
 
             ArrayList<Image> imagesList = new ArrayList<>();
             try {
-                logger.debug(String.format("Finding all links for post with id %s using xpath %s", postId, POST_LINKS_XPATH));
+                logger.info(String.format("Finding all links for post with id %s using xpath %s", postId, POST_LINKS_XPATH));
                 NodeList imagesNodeList = xpathService.getAsNodeList(postsNodeList.item(i), POST_LINKS_XPATH);
                 for (int j = 0; j < imagesNodeList.getLength(); j++) {
 
@@ -156,14 +157,14 @@ public class PostParser {
                     Host foundHost;
                     if (imageHref != null) {
                         String imageUrl = imageHref.getTextContent().trim();
-                        logger.debug(String.format("Scanning %s", imageUrl));
+                        logger.info(String.format("Scanning %s", imageUrl));
                         foundHost = supportedHosts.stream().filter(host -> host.isSupported(imageUrl)).findFirst().orElse(null);
                     } else {
                         logger.warn("href is null, skipping");
                         continue;
                     }
                     if (foundHost != null) {
-                        logger.debug(String.format("Found supported host %s for %s", foundHost.getClass().getSimpleName(), imageHref));
+                        logger.info(String.format("Found supported host %s for %s", foundHost.getClass().getSimpleName(), imageHref));
                         imagesList.add(appStateService.createImage(imageHref.getTextContent(), postId, postTitle, foundHost));
                     } else {
                         logger.warn(String.format("unsupported host for %s, skipping", imageHref));
@@ -175,7 +176,7 @@ public class PostParser {
             }
 
             if (!imagesList.isEmpty()) {
-                logger.debug(String.format("Found %d images for post with id %s", imagesList.size(), postId));
+                logger.info(String.format("Found %d images for post with id %s", imagesList.size(), postId));
                 posts.add(appStateService.createPost(postTitle, realUrl, imagesList, null, postId));
             } else {
                 logger.warn(String.format("No images found for post with id %s, skipping", postId));

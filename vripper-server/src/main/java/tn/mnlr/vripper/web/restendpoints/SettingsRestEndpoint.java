@@ -15,7 +15,7 @@ import tn.mnlr.vripper.services.VipergirlsAuthService;
 @CrossOrigin(value = "*")
 public class SettingsRestEndpoint {
 
-    private Logger logger = LoggerFactory.getLogger(SettingsRestEndpoint.class);
+    private static final Logger logger = LoggerFactory.getLogger(SettingsRestEndpoint.class);
 
     @Autowired
     private AppSettings settings;
@@ -68,13 +68,13 @@ public class SettingsRestEndpoint {
     public AppSettings.Settings getSettings() throws Exception {
 
         return new AppSettings.Settings(
-                this.settings.getDownloadPath(),
-                this.settings.getMaxThreads(),
-                this.settings.isAutoStart(),
-                this.settings.isVLogin(),
-                this.settings.getVUsername(),
-                this.settings.getVPassword(),
-                this.settings.isVThanks()
+                settings.getDownloadPath(),
+                settings.getMaxThreads(),
+                settings.isAutoStart(),
+                settings.isVLogin(),
+                settings.getVUsername(),
+                settings.getVPassword(),
+                settings.isVThanks()
         );
     }
 
