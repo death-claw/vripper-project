@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tn.mnlr.vripper.AppSettings;
+import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.exception.ValidationException;
 import tn.mnlr.vripper.services.VipergirlsAuthService;
 
@@ -18,7 +18,7 @@ public class SettingsRestEndpoint {
     private static final Logger logger = LoggerFactory.getLogger(SettingsRestEndpoint.class);
 
     @Autowired
-    private AppSettings settings;
+    private AppSettingsService settings;
 
     @Autowired
     private VipergirlsAuthService vipergirlsAuthService;
@@ -33,7 +33,7 @@ public class SettingsRestEndpoint {
 
     @PostMapping("/settings")
     @ResponseStatus(value = HttpStatus.OK)
-    public ResponseEntity postSettings(@RequestBody AppSettings.Settings settings) throws Exception {
+    public ResponseEntity postSettings(@RequestBody AppSettingsService.Settings settings) throws Exception {
 
         try {
             this.settings.check(settings);
@@ -65,9 +65,9 @@ public class SettingsRestEndpoint {
 
     @GetMapping("/settings")
     @ResponseStatus(value = HttpStatus.OK)
-    public AppSettings.Settings getSettings() throws Exception {
+    public AppSettingsService.Settings getSettings() throws Exception {
 
-        return new AppSettings.Settings(
+        return new AppSettingsService.Settings(
                 settings.getDownloadPath(),
                 settings.getMaxThreads(),
                 settings.isAutoStart(),

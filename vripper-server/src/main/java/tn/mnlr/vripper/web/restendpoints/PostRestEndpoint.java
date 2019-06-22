@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tn.mnlr.vripper.AppSettings;
+import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.q.DownloadQ;
 import tn.mnlr.vripper.services.AppStateService;
@@ -27,7 +27,7 @@ public class PostRestEndpoint {
     private AppStateService appStateService;
 
     @Autowired
-    private AppSettings appSettings;
+    private AppSettingsService appSettingsService;
 
     @Autowired
     private VipergirlsAuthService authService;
@@ -64,7 +64,7 @@ public class PostRestEndpoint {
                 logger.error(String.format("Failed to leave thanks for %s", p.getUrl()), e);
             }
         });
-        if(appSettings.isAutoStart()) {
+        if(appSettingsService.isAutoStart()) {
             logger.info("Auto start downloads option is enabled");
             logger.info(String.format("Starting to enqueue %d jobs for %s", parsed.stream().flatMap(e -> e.getImages().stream()).count(), url.url));
             parsed.forEach(post -> downloadQ.enqueue(post));

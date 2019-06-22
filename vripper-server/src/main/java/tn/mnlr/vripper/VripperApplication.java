@@ -8,13 +8,17 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.stereotype.Component;
 import tn.mnlr.vripper.exception.VripperException;
+import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.services.PersistenceService;
 import tn.mnlr.vripper.services.VipergirlsAuthService;
 
 import java.io.File;
+import java.util.prefs.Preferences;
 
 @SpringBootApplication
 public class VripperApplication {
+
+    private static final Logger logger = LoggerFactory.getLogger(VripperApplication.class);
 
     public static final String dataPath = System.getProperty("vripper.datapath", ".") + File.separator + "data.json";
 
@@ -25,8 +29,6 @@ public class VripperApplication {
     @Component
     public class AppCommandRunner implements CommandLineRunner {
 
-        private final Logger logger = LoggerFactory.getLogger(AppCommandRunner.class);
-
         @Autowired
         private VipergirlsAuthService authService;
 
@@ -34,12 +36,12 @@ public class VripperApplication {
         private PersistenceService persistenceService;
 
         @Autowired
-        private AppSettings appSettings;
+        private AppSettingsService appSettingsService;
 
         @Override
         public void run(String... args) {
             persistenceService.restore();
-            appSettings.restore();
+            appSettingsService.restore();
 
             try {
                 authService.authenticate();

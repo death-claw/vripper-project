@@ -7,14 +7,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import tn.mnlr.vripper.AppSettings;
+import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.services.AppStateService;
 
 import javax.annotation.PostConstruct;
-import java.net.ConnectException;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,7 +33,7 @@ public class ExecutionService {
     private DownloadQ downloadQ;
 
     @Autowired
-    private AppSettings settings;
+    private AppSettingsService settings;
 
     @Autowired
     private AppStateService appStateService;

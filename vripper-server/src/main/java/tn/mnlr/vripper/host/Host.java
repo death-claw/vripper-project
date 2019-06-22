@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
-import tn.mnlr.vripper.AppSettings;
+import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.HostException;
@@ -39,7 +39,7 @@ abstract public class Host {
     protected XpathService xpathService;
 
     @Autowired
-    private AppSettings appSettings;
+    private AppSettingsService appSettingsService;
 
     @Autowired
     private ConnectionManager cm;
@@ -74,7 +74,7 @@ abstract public class Host {
                 imageFileData.setImageName(imageFileData.getImageName() + ".jpg");
             }
 
-            File destinationFolder = new File(appSettings.getDownloadPath(), sanitize(image.getPostName()));
+            File destinationFolder = new File(appSettingsService.getDownloadPath(), sanitize(image.getPostName()));
             logger.info(String.format("Saving to %s", destinationFolder.getPath()));
             if (!destinationFolder.exists()) {
                 logger.info(String.format("Creating %s", destinationFolder.getPath()));

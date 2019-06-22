@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
-import tn.mnlr.vripper.AppSettings;
 import tn.mnlr.vripper.exception.VripperException;
 
 import java.util.ArrayList;
@@ -35,7 +34,7 @@ public class VipergirlsAuthService {
     private XpathService xpathService;
 
     @Autowired
-    private AppSettings appSettings;
+    private AppSettingsService appSettingsService;
 
     private String cookies;
 
@@ -46,14 +45,14 @@ public class VipergirlsAuthService {
         logger.info("Authenticating using ViperGirls credentials");
         authenticated = false;
 
-        if(!appSettings.isVLogin()) {
+        if(!appSettingsService.isVLogin()) {
             logger.warn("Authentication option is disabled");
             cookies = null;
             return;
         }
 
-        String username = appSettings.getVUsername();
-        String password = appSettings.getVPassword();
+        String username = appSettingsService.getVUsername();
+        String password = appSettingsService.getVPassword();
 
         if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
             logger.error("Cannot authenticate with ViperGirls credentials, username or password is empty");
@@ -108,11 +107,11 @@ public class VipergirlsAuthService {
 
     public void leaveThanks(String postUrl, String postId) throws VripperException {
 
-        if (!appSettings.isVLogin()) {
+        if (!appSettingsService.isVLogin()) {
             logger.warn("Authentication with ViperGirls option is disabled");
             return;
         }
-        if (!appSettings.isVThanks()) {
+        if (!appSettingsService.isVThanks()) {
             logger.warn("Leave thanks option is disabled");
             return;
         }
