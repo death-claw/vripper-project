@@ -1,0 +1,15 @@
+<div fxLayout="column" class="dialog-container" style="height: 100%;">
+    <div fxFlex="nogrow">
+      <h2 class="no-wrap" mat-dialog-title>Confirmation</h2>
+    </div>
+    <mat-dialog-content fxFlex="grow">
+      <div class="container">
+        <p>Are you sure you want to shutdown the server</p>
+      </div>
+    </mat-dialog-content>
+    <mat-dialog-actions fxFlex="nogrow" align="end">
+      <button mat-raised-button mat-dialog-close="no">No</button>
+      <button mat-raised-button cdkFocusInitial mat-dialog-close="yes" color="primary">Yes</button>
+    </mat-dialog-actions>
+  </div>
+  

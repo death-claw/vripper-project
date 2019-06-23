@@ -20,7 +20,11 @@ import { PostDetails } from './post-details.model';
         class="progress-bar-back"
         fxLayout="row"
         fxLayoutAlign="space-between"
-        [ngClass]="{ error: postDetails.status === 'ERROR', stopped: postDetails.status === 'STOPPED' }"
+        [ngClass]="{
+          error: postDetails.status === 'ERROR',
+          stopped: postDetails.status === 'STOPPED',
+          pending: postDetails.status === 'PENDING'
+        }"
       >
         <div>{{ postDetails.url }}</div>
         <div>{{ trunc(postDetails.progress) + '%' }}</div>
@@ -45,7 +49,7 @@ import { PostDetails } from './post-details.model';
         background-color: #3865a3;
       }
       .pending {
-        background-color: #a8a8a8;
+        background-color: white;
       }
       .error {
         background-color: #eb6060;

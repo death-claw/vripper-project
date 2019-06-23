@@ -19,6 +19,7 @@ import { LoginComponent } from './login/login.component';
 import { XhrInterceptorService } from './xhr-interceptor.service';
 import { HomeComponent } from './home/home.component';
 import { SettingsComponent } from './settings/settings.component';
+import { ShutdownComponent } from './shutdown/shutdown.component';
 
 @NgModule({
   declarations: [
@@ -30,11 +31,13 @@ import { SettingsComponent } from './settings/settings.component';
     PostDetailsProgressRendererComponent,
     LoginComponent,
     HomeComponent,
-    SettingsComponent
+    SettingsComponent,
+    ShutdownComponent
   ],
   entryComponents: [
     PostDetailComponent,
-    SettingsComponent
+    SettingsComponent,
+    ShutdownComponent
   ],
   imports: [
     BrowserAnimationsModule,

@@ -22,7 +22,7 @@ import { Subscription } from 'rxjs';
         class="progress-bar-back"
         fxLayout="row"
         fxLayoutAlign="space-between"
-        [ngClass]="{ error: postState.status === 'ERROR' }"
+        [ngClass]="{ error: postState.status === 'ERROR', pending: postState.status === 'PENDING' }"
       >
         <div>{{ postState.title }}</div>
         <div>{{ trunc(postState.progress) + '%' }}</div>
@@ -47,7 +47,7 @@ import { Subscription } from 'rxjs';
         background-color: #3865a3;
       }
       .pending {
-        background-color: #a8a8a8;
+        background-color: white;
       }
       .error {
         background-color: #eb6060;

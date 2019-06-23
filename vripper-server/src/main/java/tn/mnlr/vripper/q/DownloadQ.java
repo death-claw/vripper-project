@@ -31,15 +31,11 @@ public class DownloadQ {
     @Getter
     private boolean notPauseQ = true;
 
-    public synchronized void put(Image image) {
-        try {
-            logger.info(String.format("Enqueuing a job for %s", image.getUrl()));
-            DownloadJob downloadJob = new DownloadJob(image);
-            downloadQ.put(downloadJob);
-            appStateService.newDownloadJob(downloadJob);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+    public synchronized void put(Image image) throws InterruptedException {
+        logger.info(String.format("Enqueuing a job for %s", image.getUrl()));
+        DownloadJob downloadJob = new DownloadJob(image);
+        downloadQ.put(downloadJob);
+        appStateService.newDownloadJob(downloadJob);
     }
 
     public DownloadJob take() throws InterruptedException {
@@ -48,13 +44,14 @@ public class DownloadQ {
         return downloadJob;
     }
 
-    public void enqueue(Post post) {
+    public void enqueue(Post post) throws InterruptedException {
 
-        post.getImages()
-                .forEach(this::put);
+        for (Image image : post.getImages()) {
+            put(image);
+        }
     }
 
-    public void restart(String postId) {
+    public void restart(String postId) throws InterruptedException {
         if (appStateService.getRunningPosts().get(postId) != null && appStateService.getRunningPosts().get(postId).get() > 0) {
             logger.warn(String.format("Cannot restart, jobs are currently running for post id %s", postId));
             return;
@@ -69,10 +66,10 @@ public class DownloadQ {
         }
         appStateService.getPost(postId).setStatus(Post.Status.PENDING);
         logger.info(String.format("Restarting %d jobs for post id %s", images.size(), postId));
-        images.forEach(image -> {
+        for (Image image : images) {
             image.init();
             put(image);
-        });
+        }
     }
 
     public void removeScheduled(Image image) {

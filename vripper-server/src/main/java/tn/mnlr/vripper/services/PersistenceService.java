@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -80,17 +81,20 @@ public class PersistenceService {
 
         stateService.getCurrentPosts().clear();
         stateService.getCurrentPosts().putAll(read);
+        stateService.getCurrentPosts().values().forEach(p -> {
+            if(Arrays.asList(Post.Status.DOWNLOADING, Post.Status.PARTIAL).contains(p.getStatus())) {
+                p.setStatus(Post.Status.STOPPED);
+            }
+        });
 
         stateService.getCurrentImages().clear();
         read.values().stream().flatMap(e -> e.getImages().stream()).forEach(e -> {
             e.setAppStateService(stateService);
             stateService.getCurrentImages().put(e.getUrl(), e);
-//            stateService.getAllImageState().onNext(e);
         });
 
         read.values().forEach(e -> {
             e.setAppStateService(stateService);
-//            stateService.getSnapshotPostsState().onNext(e);
         });
     }
 }

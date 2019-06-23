@@ -67,7 +67,9 @@ public class PostRestEndpoint {
         if(appSettingsService.isAutoStart()) {
             logger.info("Auto start downloads option is enabled");
             logger.info(String.format("Starting to enqueue %d jobs for %s", parsed.stream().flatMap(e -> e.getImages().stream()).count(), url.url));
-            parsed.forEach(post -> downloadQ.enqueue(post));
+            for (Post post : parsed) {
+                downloadQ.enqueue(post);
+            }
             logger.info(String.format("Done enqueuing jobs for %s", url.url));
         } else {
             logger.info("Auto start downloads option is disabled");

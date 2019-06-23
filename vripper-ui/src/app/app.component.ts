@@ -4,6 +4,9 @@ import { MatDialog } from '@angular/material';
 import { BreakpointObserver, BreakpointState, Breakpoints } from '@angular/cdk/layout';
 import { Observable } from 'rxjs';
 import { WsConnectionService, WSState } from './ws-connection.service';
+import { ShutdownComponent } from './shutdown/shutdown.component';
+import { HttpClient } from '@angular/common/http';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -11,7 +14,12 @@ import { WsConnectionService, WSState } from './ws-connection.service';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
-  constructor(public dialog: MatDialog, private breakpointObserver: BreakpointObserver, private ws: WsConnectionService) {
+  constructor(
+    public dialog: MatDialog,
+    private breakpointObserver: BreakpointObserver,
+    private ws: WsConnectionService,
+    private httpClient: HttpClient
+  ) {
     this.state = this.ws.state;
     this.state.subscribe(e => {
       if (e === WSState.CLOSE) {
@@ -41,6 +49,32 @@ export class AppComponent implements OnInit {
     });
 
     dialogRef.afterClosed().subscribe(result => {
+      smallDialogSubscription.unsubscribe();
+    });
+  }
+
+  shutdown(): void {
+    const dialogRef = this.dialog.open(ShutdownComponent, {
+      width: '400px',
+      height: '200px',
+      maxWidth: '100vw',
+      maxHeight: '100vh'
+    });
+
+    const smallDialogSubscription = this.isExtraSmall.subscribe(result => {
+      if (result.matches) {
+        dialogRef.updateSize('100%', '100%');
+      } else {
+        dialogRef.updateSize('400px', '200px');
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      switch (result) {
+        case 'yes':
+          this.httpClient.post(environment.localhost + '/shutdown', null).subscribe();
+          break;
+      }
       smallDialogSubscription.unsubscribe();
     });
   }

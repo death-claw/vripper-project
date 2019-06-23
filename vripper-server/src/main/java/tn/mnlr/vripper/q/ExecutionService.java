@@ -12,15 +12,13 @@ import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.services.AppStateService;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -42,6 +40,8 @@ public class ExecutionService {
 
     private ExecutorService executor = Executors.newFixedThreadPool(10);
 
+    private Thread executionThread;
+
     private RetryPolicy<Object> retryPolicy;
 
     private List<DownloadJob> running = Collections.synchronizedList(new ArrayList<>());
@@ -57,14 +57,21 @@ public class ExecutionService {
                 .withMaxRetries(2)
                 .abortOn(InterruptedException.class)
                 .onFailedAttempt(e -> logger.warn(String.format("#%d tries failed", e.getAttemptCount()), e.getLastFailure()));
+
+        executionThread = new Thread(this::start, "Executor thread");
+        executionThread.start();
     }
 
-    private ExecutionService() {
-    }
-
-    @PostConstruct
-    private void runExecutorThread() {
-        new Thread(this::start, "Executor thread").start();
+    @PreDestroy
+    private void destroy() throws InterruptedException {
+        logger.info("Shutting down ExecutionService");
+        executionThread.interrupt();
+        executor.shutdown();
+        appStateService.getCurrentPosts().keySet().forEach(p -> {
+            logger.info(String.format("Stopping download jobs for %s", p));
+            this.stop(p);
+        });
+        executor.awaitTermination(10, TimeUnit.SECONDS);
     }
 
     public void stop(String postId) {
@@ -91,13 +98,14 @@ public class ExecutionService {
     }
 
     public void start() {
-        while (true) {
+        while (!Thread.interrupted()) {
             if (canRun()) {
                 DownloadJob take = null;
                 try {
                     take = downloadQ.take();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
+                    break;
                 }
 
                 DownloadJob finalTake = take;
@@ -133,6 +141,7 @@ public class ExecutionService {
                         threadCount.wait(2_000);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
+                        break;
                     }
                 }
             }

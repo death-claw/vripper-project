@@ -67,7 +67,7 @@ export class WsConnectionService {
     return this.websocket
       .pipe(
         map(e => JSON.parse(e)),
-        filter(e => e[0].type === 'post'),
+        filter(e => e.length > 0 && e[0].type === 'post'),
         map(e => {
           const values = [];
           (<Array<any>>e).forEach(element => {
@@ -91,7 +91,7 @@ export class WsConnectionService {
     return this.websocket
       .pipe(
         map(e => JSON.parse(e)),
-        filter(e => e[0].type === 'img'),
+        filter(e => e.length > 0 && e[0].type === 'img'),
         map(e => {
           const values = [];
           (<Array<any>>e).forEach(element => {
