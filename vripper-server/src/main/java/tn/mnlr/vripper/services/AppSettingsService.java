@@ -52,8 +52,8 @@ public class AppSettingsService {
     public void restore() {
 
         downloadPath = prefs.get(DOWNLOAD_PATH, System.getProperty("user.dir"));
-        maxThreads = prefs.getInt(MAX_THREADS, 1);
-        autoStart = prefs.getBoolean(AUTO_START, false);
+        maxThreads = prefs.getInt(MAX_THREADS, 4);
+        autoStart = prefs.getBoolean(AUTO_START, true);
         vLogin = prefs.getBoolean(V_LOGIN, false);
         vUsername = prefs.get(V_USERNAME, "");
         vPassword = prefs.get(V_PASSWORD, "");

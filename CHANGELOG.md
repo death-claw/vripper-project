@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0] - 2019-07-04
+### Changed
+- Change default setting for autostart false -> true
+- Change default setting for max concurrent downloads 1 -> 4
+### Added
+- Desktop app built with electron
+- Add the option to remove a post
+
 ## [1.2.0] - 2019-06-23
 ### Added
 - Add a shutdown button to gracefully shutdown the app

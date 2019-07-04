@@ -6,17 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import tn.mnlr.vripper.exception.VripperException;
-import tn.mnlr.vripper.services.AppSettingsService;
-import tn.mnlr.vripper.services.PersistenceService;
-import tn.mnlr.vripper.services.VipergirlsAuthService;
+import tn.mnlr.vripper.services.*;
 
-import java.awt.*;
 import java.io.File;
-import java.net.URI;
 
 @SpringBootApplication
 public class VripperApplication {
@@ -35,14 +29,15 @@ public class VripperApplication {
         }
 
         SpringApplicationBuilder builder = new SpringApplicationBuilder(VripperApplication.class);
-        builder.headless(VripperApplication.headless).run(args);
+        try {
+            builder.headless(VripperApplication.headless).run(args);
+        } catch (Exception e) {
+            logger.error("Failed to run the application", e);
+        }
     }
 
     @Component
     public class AppCommandRunner implements CommandLineRunner {
-
-        @Autowired
-        Environment environment;
 
         @Autowired
         private VipergirlsAuthService authService;
@@ -55,10 +50,9 @@ public class VripperApplication {
 
         @Override
         public void run(String... args) {
+
             persistenceService.restore();
             appSettingsService.restore();
-
-            openInBrowser();
             registerShutdownHook();
 
             try {
@@ -71,35 +65,6 @@ public class VripperApplication {
         private void registerShutdownHook() {
             Runtime.getRuntime().addShutdownHook(new Thread(SpringContext::close));
         }
-
-        private void openInBrowser() {
-
-            if (VripperApplication.headless) {
-                logger.warn("Headless mode is activated, skipping open in browser");
-                return;
-            } else {
-                logger.info("Not in headless mode, good to open default browser");
-            }
-
-            try {
-                if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-
-                    new Thread(() -> {
-                        try {
-                            String serverPort = environment.getProperty("server.port", "8080");
-                            Desktop.getDesktop().browse(new URI(String.format("http://localhost:%s", serverPort)));
-                        } catch (Exception e) {
-                            logger.error("Unable to open link in browser", e);
-                        }
-                    }).start();
-                } else {
-                    logger.warn("Current platform does not support browser opening");
-                }
-            } catch (Exception e) {
-                logger.error("Unable to verify Desktop compatibility", e);
-            }
-        }
-
     }
 }
 

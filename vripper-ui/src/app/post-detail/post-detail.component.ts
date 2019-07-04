@@ -1,6 +1,6 @@
 import { PostDetailsProgressRendererComponent } from './post-details-progress.component';
 import { WsConnectionService } from './../ws-connection.service';
-import { Component, OnInit, ViewChild, Inject, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewChild, Inject, OnDestroy, NgZone } from '@angular/core';
 import { MatSort, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { PostDetailsDataSource } from './post-details.datasource';
 import { PostState } from '../posts/post-state.model';
@@ -16,7 +16,8 @@ export class PostDetailComponent implements OnInit, OnDestroy {
   constructor(
     public dialogRef: MatDialogRef<PostDetailComponent>,
     @Inject(MAT_DIALOG_DATA) public dialogData: PostState,
-    private wsConnection: WsConnectionService) {
+    private wsConnection: WsConnectionService,
+    private zone: NgZone) {
 
     this.gridOptions = <GridOptions> {
       columnDefs: [
@@ -39,7 +40,7 @@ export class PostDetailComponent implements OnInit, OnDestroy {
       getRowNodeId: (data) => data['url'],
       onGridReady: () => {
         this.gridOptions.api.sizeColumnsToFit();
-        this.dataSource = new PostDetailsDataSource(this.wsConnection, this.gridOptions, this.dialogData.postId);
+        this.dataSource = new PostDetailsDataSource(this.wsConnection, this.gridOptions, this.dialogData.postId, this.zone);
         this.dataSource.connect();
       },
       onGridSizeChanged: () => this.gridOptions.api.sizeColumnsToFit(),

@@ -1,8 +1,9 @@
 import { WsConnectionService } from '../ws-connection.service';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { AgRendererComponent } from 'ag-grid-angular';
 import { Subscription } from 'rxjs';
 import { PostDetails } from './post-details.model';
+import { WsHandler } from '../ws-handler';
 
 @Component({
   selector: 'app-progress-cell',
@@ -64,8 +65,14 @@ import { PostDetails } from './post-details.model';
   ]
 })
 export class PostDetailsProgressRendererComponent implements AgRendererComponent, OnInit, OnDestroy {
-  constructor(private wsConnectionService: WsConnectionService) {}
+  constructor(
+    private wsConnectionService: WsConnectionService,
+    private zone: NgZone
+    ) {
+    this.websocketHandlerPromise = this.wsConnectionService.getConnection();
+  }
 
+  websocketHandlerPromise: Promise<WsHandler>;
   subscription: Subscription;
   params: any;
   postDetails: PostDetails;
@@ -75,11 +82,15 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
   }
 
   ngOnInit(): void {
-    this.subscription = this.wsConnectionService.subscribeForPostDetails(e => {
-      e.forEach(v => {
-        if (this.postDetails.url === v.url) {
-          this.postDetails = v;
-        }
+    this.websocketHandlerPromise.then((handler: WsHandler) => {
+      this.subscription = handler.subscribeForPostDetails(e => {
+        this.zone.run(() => {
+          e.forEach(v => {
+            if (this.postDetails.url === v.url) {
+              this.postDetails = v;
+            }
+          });
+        });
       });
     });
   }

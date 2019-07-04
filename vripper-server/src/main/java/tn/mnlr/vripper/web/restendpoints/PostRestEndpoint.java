@@ -90,6 +90,14 @@ public class PostRestEndpoint {
         downloadQ.stop(postId.getPostId());
     }
 
+    @PostMapping("/post/remove")
+    @ResponseStatus(value = HttpStatus.OK)
+    public void remove(@RequestBody PostId postId) throws Exception {
+        downloadQ.stop(postId.getPostId());
+        Thread.sleep(1500);
+        appStateService.remove(postId.getPostId());
+    }
+
     @Getter
     @ToString
     private static class ThreadUrl {

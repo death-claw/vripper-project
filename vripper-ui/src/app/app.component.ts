@@ -1,12 +1,10 @@
+import { ElectronService } from 'ngx-electron';
 import { SettingsComponent } from './settings/settings.component';
 import { Component, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material';
 import { BreakpointObserver, BreakpointState, Breakpoints } from '@angular/cdk/layout';
 import { Observable } from 'rxjs';
 import { WsConnectionService, WSState } from './ws-connection.service';
-import { ShutdownComponent } from './shutdown/shutdown.component';
-import { HttpClient } from '@angular/common/http';
-import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -18,17 +16,18 @@ export class AppComponent implements OnInit {
     public dialog: MatDialog,
     private breakpointObserver: BreakpointObserver,
     private ws: WsConnectionService,
-    private httpClient: HttpClient
-  ) {
-    this.state = this.ws.state;
-    this.state.subscribe(e => {
-      if (e === WSState.CLOSE) {
-        this.dialog.closeAll();
-      }
-    });
-  }
+    public electronService: ElectronService
+    ) {
+      this.currentState = WSState.INIT;
+      this.ws.state.subscribe(e => {
+        this.currentState = e;
+        if (this.currentState === WSState.CLOSE || this.currentState === WSState.ERROR) {
+          this.dialog.closeAll();
+        }
+      });
+    }
 
-  state: Observable<WSState>;
+  currentState: WSState;
 
   isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
 
@@ -53,39 +52,14 @@ export class AppComponent implements OnInit {
     });
   }
 
-  shutdown(): void {
-    const dialogRef = this.dialog.open(ShutdownComponent, {
-      width: '400px',
-      height: '200px',
-      maxWidth: '100vw',
-      maxHeight: '100vh'
-    });
-
-    const smallDialogSubscription = this.isExtraSmall.subscribe(result => {
-      if (result.matches) {
-        dialogRef.updateSize('100%', '100%');
-      } else {
-        dialogRef.updateSize('400px', '200px');
-      }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      switch (result) {
-        case 'yes':
-          this.httpClient.post(environment.localhost + '/shutdown', null).subscribe();
-          break;
-      }
-      smallDialogSubscription.unsubscribe();
-    });
+  noConnectionState(): boolean {
+    return this.currentState === WSState.CLOSE || this.currentState === WSState.ERROR;
   }
 
-  noConnectionState(state: WSState): boolean {
-    return state === WSState.CLOSE;
+  connecting(): boolean {
+    return this.currentState === WSState.INIT || this.currentState === WSState.CONNECTING;
   }
 
-  connecting(state: WSState): boolean {
-    return state === WSState.CONNECTING;
+  ngOnInit() {
   }
-
-  ngOnInit() {}
 }

@@ -84,7 +84,9 @@ public class ExecutionService {
 
         data.forEach(e -> {
             futures.get(e.getImage().getUrl()).cancel(true);
-            e.getImageFileData().getImageRequest().abort();
+            if(e.getImageFileData().getImageRequest() != null) {
+                e.getImageFileData().getImageRequest().abort();
+            }
         });
     }
 

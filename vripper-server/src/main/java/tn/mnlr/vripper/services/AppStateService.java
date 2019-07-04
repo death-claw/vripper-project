@@ -10,6 +10,7 @@ import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.q.DownloadJob;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,6 +20,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Getter
 public class AppStateService {
 
+    @Getter
+    class Action {
+        public Action(StateAction stateAction, String payload) {
+            this.stateAction = stateAction;
+            this.payload = payload;
+        }
+        private final String type = "action";
+        private StateAction stateAction;
+        private String payload;
+    }
+
+    enum StateAction {
+        REMOVE
+    }
+
     private Map<String, Image> currentImages = new ConcurrentHashMap<>();
 
     private Map<String, Post> currentPosts = new ConcurrentHashMap<>();
@@ -27,11 +43,9 @@ public class AppStateService {
 
     private PublishProcessor<Image> liveImageUpdates = PublishProcessor.create();
 
-//    private ReplayProcessor<Image> allImageState = ReplayProcessor.create();
-
-//    private ReplayProcessor<Post> snapshotPostsState = ReplayProcessor.create();
-
     private PublishProcessor<Post> livePostsState = PublishProcessor.create();
+
+    private PublishProcessor<Action> liveActions = PublishProcessor.create();
 
     @Autowired
     private PersistenceService persistenceService;
@@ -92,5 +106,19 @@ public class AppStateService {
         if (!runningPosts.containsKey(key)) {
             runningPosts.put(key, new AtomicInteger(0));
         }
+    }
+
+    public synchronized void remove(String postId) {
+        runningPosts.remove(postId);
+        currentPosts.remove(postId);
+        Iterator<Map.Entry<String, Image>> iterator = currentImages.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, Image> entry = iterator.next();
+            if(entry.getValue().getPostId().equals(postId)) {
+                iterator.remove();
+            }
+        }
+        persistenceService.getProcessor().onNext(currentPosts);
+        liveActions.onNext(new Action(StateAction.REMOVE, postId));
     }
 }

@@ -10,7 +10,7 @@ import { PostDetailComponent } from './post-detail/post-detail.component';
 import { FlexLayoutModule } from '@angular/flex-layout';
 import { AppRoutingModule } from './app-routing.module';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AgGridModule } from 'ag-grid-angular';
 import { PostProgressRendererComponent } from './posts/post-progress.renderer.component';
 import { MenuRendererComponent } from './posts/menu.renderer.component';
@@ -19,7 +19,9 @@ import { LoginComponent } from './login/login.component';
 import { XhrInterceptorService } from './xhr-interceptor.service';
 import { HomeComponent } from './home/home.component';
 import { SettingsComponent } from './settings/settings.component';
-import { ShutdownComponent } from './shutdown/shutdown.component';
+
+import { NgxElectronModule } from 'ngx-electron';
+import { ServerService } from './server-service';
 
 @NgModule({
   declarations: [
@@ -31,13 +33,11 @@ import { ShutdownComponent } from './shutdown/shutdown.component';
     PostDetailsProgressRendererComponent,
     LoginComponent,
     HomeComponent,
-    SettingsComponent,
-    ShutdownComponent
+    SettingsComponent
   ],
   entryComponents: [
     PostDetailComponent,
-    SettingsComponent,
-    ShutdownComponent
+    SettingsComponent
   ],
   imports: [
     BrowserAnimationsModule,
@@ -46,9 +46,11 @@ import { ShutdownComponent } from './shutdown/shutdown.component';
     MaterialModule,
     FlexLayoutModule,
     AppRoutingModule,
+    NgxElectronModule,
+    ReactiveFormsModule,
     AgGridModule.withComponents([PostProgressRendererComponent, MenuRendererComponent, PostDetailsProgressRendererComponent])
   ],
-  providers: [AppService, WsConnectionService, { provide: HTTP_INTERCEPTORS, useClass: XhrInterceptorService, multi: true }],
+  providers: [AppService, WsConnectionService, { provide: HTTP_INTERCEPTORS, useClass: XhrInterceptorService, multi: true }, ServerService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -13,6 +13,7 @@ import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.entities.mixin.persistance.ImagePersistanceMixin;
 import tn.mnlr.vripper.entities.mixin.persistance.PostPersistanceMixin;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -36,6 +37,19 @@ public class PersistenceService {
     private PublishProcessor<Map<String, Post>> processor = PublishProcessor.create();
 
     private PersistenceService() {
+        File dataFile = new File(VripperApplication.dataPath);
+        if(!dataFile.exists()) {
+            try {
+                if(dataFile.createNewFile()) {
+                    logger.info("Data file successfully created");
+                } else {
+                    logger.info("Data file already exists");
+                }
+            } catch (IOException e) {
+                logger.error("Unable to create data file", e);
+                System.exit(-1);
+            }
+        }
         om = new ObjectMapper();
         om.addMixIn(Image.class, ImagePersistanceMixin.class);
         om.addMixIn(Post.class, PostPersistanceMixin.class);

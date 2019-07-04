@@ -1,9 +1,9 @@
-import { Component, OnInit, HostBinding } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { environment } from 'src/environments/environment';
 import { finalize } from 'rxjs/operators';
 import { MatSnackBar } from '@angular/material';
 import { NgForm } from '@angular/forms';
+import { ServerService } from '../server-service';
 
 @Component({
   selector: 'app-home',
@@ -14,7 +14,8 @@ export class HomeComponent implements OnInit {
 
   constructor(
     private httpClient: HttpClient,
-    private _snackBar: MatSnackBar
+    private _snackBar: MatSnackBar,
+    private serverService: ServerService
   ) { }
 
   loading = false;
@@ -26,7 +27,7 @@ export class HomeComponent implements OnInit {
   submit(form: NgForm) {
     this.loading = true;
     this.httpClient
-      .post(environment.localhost + '/post', { url: this.input })
+      .post(this.serverService.baseUrl + '/post', { url: this.input })
       .pipe(finalize(() => {
         this.loading = false;
         this.input = null;

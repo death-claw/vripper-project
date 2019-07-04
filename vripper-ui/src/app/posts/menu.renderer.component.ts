@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { AgRendererComponent } from 'ag-grid-angular';
 import { PostState } from './post-state.model';
 import { PostDetailComponent } from '../post-detail/post-detail.component';
@@ -8,6 +8,8 @@ import { HttpClient } from '@angular/common/http';
 import { BreakpointObserver, BreakpointState, Breakpoints } from '@angular/cdk/layout';
 import { Observable, Subscription } from 'rxjs';
 import { WsConnectionService } from '../ws-connection.service';
+import { WsHandler } from '../ws-handler';
+import { ServerService } from '../server-service';
 
 @Component({
   selector: 'app-menu-cell',
@@ -42,10 +44,25 @@ import { WsConnectionService } from '../ws-connection.service';
         <mat-icon>details</mat-icon>
         <span>Details</span>
       </button>
+      <button (click)="remove()" mat-menu-item>
+        <mat-icon>delete</mat-icon>
+        <span>Remove</span>
+      </button>
     </mat-menu>
   `
 })
 export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererComponent {
+  constructor(
+    public dialog: MatDialog,
+    private httpClient: HttpClient,
+    private breakpointObserver: BreakpointObserver,
+    private wsConnectionService: WsConnectionService,
+    private serverService: ServerService,
+    private zone: NgZone
+  ) {
+    this.websocketHandlerPromise = this.wsConnectionService.getConnection();
+  }
+
   isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
 
   params: any;
@@ -54,21 +71,20 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
 
   subscription: Subscription;
 
-  constructor(
-    public dialog: MatDialog,
-    private httpClient: HttpClient,
-    private breakpointObserver: BreakpointObserver,
-    private wsConnectionService: WsConnectionService
-  ) {}
+  websocketHandlerPromise: Promise<WsHandler>;
 
   ngOnInit(): void {
-    this.subscription = this.wsConnectionService.subscribeForPosts(e => {
-      e.forEach(v => {
-        if (this.postData.postId === v.postId) {
-          this.postData = v;
-        }
+    this.websocketHandlerPromise.then((handler: WsHandler) => {
+      this.subscription = handler.subscribeForPosts(e => {
+        this.zone.run(() => {
+          e.forEach(v => {
+            if (this.postData.postId === v.postId) {
+              this.postData = v;
+            }
+          });
+        });
       });
-    });
+    })
   }
 
   ngOnDestroy(): void {
@@ -98,7 +114,16 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
   }
 
   restart() {
-    this.httpClient.post(environment.localhost + '/post/restart', { postId: this.postData.postId }).subscribe(
+    this.httpClient.post(this.serverService.baseUrl + '/post/restart', { postId: this.postData.postId }).subscribe(
+      data => {},
+      error => {
+        console.error(error);
+      }
+    );
+  }
+
+  remove() {
+    this.httpClient.post(this.serverService.baseUrl + '/post/remove', { postId: this.postData.postId }).subscribe(
       data => {},
       error => {
         console.error(error);
@@ -107,7 +132,7 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
   }
 
   stop() {
-    this.httpClient.post(environment.localhost + '/post/stop', { postId: this.postData.postId }).subscribe(
+    this.httpClient.post(this.serverService.baseUrl + '/post/stop', { postId: this.postData.postId }).subscribe(
       data => {},
       error => {
         console.error(error);

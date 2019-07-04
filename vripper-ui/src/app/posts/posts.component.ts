@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { PostsDataSource } from './post.datasource';
 import { WsConnectionService } from '../ws-connection.service';
 import { GridOptions } from 'ag-grid-community';
@@ -13,7 +13,10 @@ import { Subject } from 'rxjs';
 })
 export class PostsComponent implements OnInit, OnDestroy {
 
-  constructor(private wsConnection: WsConnectionService) {
+  constructor(
+    private wsConnection: WsConnectionService,
+    private zone: NgZone
+    ) {
     this.gridOptions = <GridOptions> {
       columnDefs: [
         {
@@ -45,7 +48,7 @@ export class PostsComponent implements OnInit, OnDestroy {
       getRowNodeId: (data) => data['postId'],
       onGridReady: () => {
         this.gridOptions.api.sizeColumnsToFit();
-        this.dataSource = new PostsDataSource(this.wsConnection, this.gridOptions);
+        this.dataSource = new PostsDataSource(this.wsConnection, this.gridOptions, this.zone);
         this.dataSource.connect();
       },
       onGridSizeChanged: () => this.gridOptions.api.sizeColumnsToFit(),

@@ -2,6 +2,7 @@ package tn.mnlr.vripper.web.wsendpoints;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.processors.PublishProcessor;
 import io.reactivex.schedulers.Schedulers;
 import lombok.Getter;
 import org.slf4j.Logger;
@@ -91,7 +92,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             logger.error("Unexpected error occurred", e);
         }
 
-        postsSubscriptions.put(session.getId(), appStateService.getLivePostsState()
+        postsSubscriptions.put(session.getId(), PublishProcessor.merge(appStateService.getLivePostsState(), appStateService.getLiveActions())
                 .onBackpressureBuffer()
                 .observeOn(Schedulers.io())
                 .buffer(2, TimeUnit.SECONDS)

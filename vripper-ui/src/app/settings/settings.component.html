@@ -4,20 +4,23 @@
   </div>
   <mat-dialog-content fxFlex="grow">
     <div class="container">
-      <form #f="ngForm" autocomplete="off">
-        <mat-form-field>
-          <input
-            [(ngModel)]="settings.downloadPath"
-            matInput
-            placeholder="Download Path"
-            name="downloadPath"
-            required
-          />
-        </mat-form-field>
+      <form [formGroup]="settingsForm" autocomplete="off">
+        <div fxLayout="row" fxLayoutGap="20px" fxLayoutAlign="center center">
+            <mat-form-field fxFlex="grow">
+                <input
+                formControlName="downloadPath"
+                  matInput
+                  placeholder="Download Path"
+                  name="downloadPath"
+                  required
+                />
+              </mat-form-field>
+              <button fxFlex="100px" (click)="browse()" mat-raised-button *ngIf="electronService.isElectronApp">Browse</button>
+        </div>
 
         <mat-form-field>
           <input
-            [(ngModel)]="settings.maxThreads"
+          formControlName="maxThreads"
             type="number"
             matInput
             placeholder="Max concurrent downloads"
@@ -28,21 +31,21 @@
           />
         </mat-form-field>
 
-        <mat-checkbox color="primary" [(ngModel)]="settings.autoStart" name="autoStart">Auto start downloads</mat-checkbox>
+        <mat-checkbox color="primary" formControlName="autoStart" name="autoStart">Auto start downloads</mat-checkbox>
 
-        <mat-slide-toggle color="primary" [(ngModel)]="settings.vLogin" name="vLogin">
+        <mat-slide-toggle color="primary" formControlName="vLogin" name="vLogin">
           ViperGirls Authentication
         </mat-slide-toggle>
 
-        <section *ngIf="settings.vLogin">
+        <section *ngIf="settingsForm.get('vLogin').value">
           <div>
             <mat-form-field>
-              <input [(ngModel)]="settings.vUsername" matInput placeholder="ViperGirls Username" name="vUsername" />
+              <input formControlName="vUsername" matInput placeholder="ViperGirls Username" name="vUsername" />
             </mat-form-field>
 
             <mat-form-field>
               <input
-                [(ngModel)]="settings.vPassword"
+              formControlName="vPassword"
                 type="password"
                 matInput
                 placeholder="ViperGirls Password"
@@ -50,7 +53,7 @@
               />
             </mat-form-field>
 
-            <mat-checkbox color="primary" [(ngModel)]="settings.vThanks" name="vThanks">Leave thanks</mat-checkbox>
+            <mat-checkbox color="primary" formControlName="vThanks" name="vThanks">Leave thanks</mat-checkbox>
           </div>
         </section>
       </form>
@@ -58,7 +61,7 @@
   </mat-dialog-content>
   <mat-dialog-actions fxFlex="nogrow" align="end">
     <button mat-raised-button cdkFocusInitial mat-dialog-close>Close</button>
-    <button mat-raised-button (click)="onSubmit(f)" color="primary" type="submit" [disabled]="f.pristine || f.invalid">
+    <button mat-raised-button (click)="onSubmit()" color="primary" type="submit" [disabled]="settingsForm.pristine || settingsForm.invalid">
       Apply
     </button>
   </mat-dialog-actions>
