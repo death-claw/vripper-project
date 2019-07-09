@@ -1,3 +1,4 @@
+import { ClipboardService } from './clipboard.service';
 import { ElectronService } from 'ngx-electron';
 import { SettingsComponent } from './settings/settings.component';
 import { Component, OnInit } from '@angular/core';
@@ -16,13 +17,16 @@ export class AppComponent implements OnInit {
     public dialog: MatDialog,
     private breakpointObserver: BreakpointObserver,
     private ws: WsConnectionService,
-    public electronService: ElectronService
+    public electronService: ElectronService,
+    private clipboardService: ClipboardService
     ) {
       this.currentState = WSState.INIT;
       this.ws.state.subscribe(e => {
         this.currentState = e;
         if (this.currentState === WSState.CLOSE || this.currentState === WSState.ERROR) {
           this.dialog.closeAll();
+        } else if(this.currentState === WSState.OPEN) {
+          this.clipboardService.init();
         }
       });
     }

@@ -31,7 +31,7 @@ public class TurboImageHost extends Host {
     @Override
     protected void setNameAndUrl(final String url, final ImageFileData imageFileData) throws HostException {
 
-        Document doc = getDocument(url);
+        Document doc = getResponse(url).getDocument();
 
         String title;
         try {

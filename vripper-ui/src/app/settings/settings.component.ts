@@ -1,19 +1,11 @@
+import { ClipboardService } from './../clipboard.service';
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormGroup, FormControl } from '@angular/forms';
 import { MatSnackBar } from '@angular/material';
 import { ServerService } from '../server-service';
 import { ElectronService } from 'ngx-electron';
-
-export interface Settings {
-  downloadPath: string;
-  maxThreads: number;
-  autoStart: boolean;
-  vLogin: boolean;
-  vUsername: string;
-  vPassword: string;
-  vThanks: boolean;
-}
+import { Settings } from '../common/settings.model';
 
 @Component({
   selector: 'app-settings',
@@ -25,10 +17,11 @@ export class SettingsComponent implements OnInit {
     private httpClient: HttpClient,
     private _snackBar: MatSnackBar,
     private serverService: ServerService,
-    public electronService: ElectronService
+    public electronService: ElectronService,
+    private clipboardService: ClipboardService
   ) {}
 
-  settingsForm = new FormGroup({
+  generalSettingsForm = new FormGroup({
     downloadPath: new FormControl(''),
     maxThreads: new FormControl(''),
     autoStart: new FormControl(false),
@@ -38,20 +31,15 @@ export class SettingsComponent implements OnInit {
     vThanks: new FormControl(false)
   });
 
-  // settings: Settings = {
-  //   downloadPath: null,
-  //   maxThreads: null,
-  //   autoStart: false,
-  //   vLogin: false,
-  //   vUsername: null,
-  //   vPassword: null,
-  //   vThanks: false
-  // };
+  desktopSettingsForm = new FormGroup({
+    desktopClipboard: new FormControl(false)
+  });
 
   ngOnInit() {
     this.httpClient.get<Settings>(this.serverService.baseUrl + '/settings').subscribe(
       data => {
-        this.settingsForm.reset(data);
+        this.generalSettingsForm.reset(data);
+        this.desktopSettingsForm.reset(data);
       },
       error => {
         console.error(error);
@@ -68,26 +56,32 @@ export class SettingsComponent implements OnInit {
     );
 
     if (result !== undefined) {
-      this.settingsForm.get('downloadPath').setValue(result[0]);
-      this.settingsForm.get('downloadPath').markAsDirty();
-      this.settingsForm.get('downloadPath').markAsTouched();
+      this.generalSettingsForm.get('downloadPath').setValue(result[0]);
+      this.generalSettingsForm.get('downloadPath').markAsDirty();
+      this.generalSettingsForm.get('downloadPath').markAsTouched();
     }
   }
 
   onSubmit(): void {
-    this.httpClient.post(this.serverService.baseUrl + '/settings', this.settingsForm.value).subscribe(
-      () => {
-        this._snackBar.open('Settings updated', null, {
-          duration: 5000
-        });
-        this.settingsForm.markAsUntouched();
-        this.settingsForm.markAsPristine();
-      },
-      error => {
-        this._snackBar.open(error.error.message, null, {
-          duration: 5000
-        });
-      }
-    );
+    this.httpClient
+      .post<Settings>(this.serverService.baseUrl + '/settings', {
+        ...this.generalSettingsForm.value,
+        ...this.desktopSettingsForm.value
+      })
+      .subscribe(
+        data => {
+          this._snackBar.open('Settings updated', null, {
+            duration: 5000
+          });
+          this.generalSettingsForm.reset(data);
+          this.desktopSettingsForm.reset(data);
+          this.clipboardService.init(data);
+        },
+        error => {
+          this._snackBar.open(error.error.message, null, {
+            duration: 5000
+          });
+        }
+      );
   }
 }

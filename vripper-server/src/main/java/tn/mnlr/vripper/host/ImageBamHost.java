@@ -1,11 +1,9 @@
 package tn.mnlr.vripper.host;
 
-import org.apache.http.NameValuePair;
+import org.apache.http.Header;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,17 +18,17 @@ import tn.mnlr.vripper.q.ImageFileData;
 import tn.mnlr.vripper.services.ConnectionManager;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 @Service
-public class ImxHost extends Host {
+public class ImageBamHost extends Host {
 
-    private static final Logger logger = LoggerFactory.getLogger(ImxHost.class);
+    private static final Logger logger = LoggerFactory.getLogger(ImageBamHost.class);
 
-    private static final String host = "imx.to";
-    public static final String CONTINUE_BUTTON_XPATH = "//div[@id='continuetoimage']";
-    public static final String IMG_XPATH = "//img[@class='centred']";
+    private static final String host = "imagebam.com";
+    public static final String CONTINUE_BUTTON_XPATH = "//a[@title='Continue to your image']";
+    public static final String IMG_XPATH = "//img[@class='image']";
 
     @Autowired
     private ConnectionManager cm;
@@ -43,7 +41,14 @@ public class ImxHost extends Host {
     @Override
     protected void setNameAndUrl(final String url, final ImageFileData imageFileData) throws HostException {
 
-        Document doc = getResponse(url).getDocument();
+        Response response = getResponse(url);
+        Document doc = response.getDocument();
+        Header[] headers = response.getHeaders();
+        String cookies = Arrays.asList(headers)
+                .stream()
+                .filter(e -> e.getName().toLowerCase().contains("Set-Cookie".toLowerCase()))
+                .map(e -> e.getValue().split(";")[0].trim())
+                .collect(Collectors.joining("; "));
 
         Node contDiv;
         try {
@@ -54,22 +59,19 @@ public class ImxHost extends Host {
         }
 
         if (contDiv != null) {
+            logger.info(String.format("Getting cookies to use for %s", url));
             logger.info(String.format("Click button found for %s", url));
             HttpClient client = cm.getClient().build();
-            HttpPost httpPost = cm.buildHttpPost(url);
-            httpPost.addHeader("Referer", url);
-            List<NameValuePair> params = new ArrayList<>();
-            params.add(new BasicNameValuePair("imgContinue", "Continue to image ... "));
-            try {
-                httpPost.setEntity(new UrlEncodedFormEntity(params));
-            } catch (Exception e) {
-                throw new HostException(e);
-            }
-            logger.info(String.format("Requesting %s", httpPost));
-            try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(httpPost)) {
-                logger.debug(String.format("Cleaning response for %s", httpPost));
-                doc = htmlProcessorService.clean(EntityUtils.toString(response.getEntity()));
-                EntityUtils.consumeQuietly(response.getEntity());
+            HttpGet httpGet = cm.buildHttpGet(url);
+            httpGet.addHeader("Referer", url);
+            httpGet.addHeader("Cookie", cookies);
+            logger.info(String.format("Requesting %s", httpGet));
+            try (CloseableHttpResponse res = (CloseableHttpResponse) client.execute(httpGet)) {
+                String s = EntityUtils.toString(res.getEntity());
+                logger.debug(String.format("%s response is:%n%s", httpGet, s));
+                logger.debug(String.format("Cleaning response for %s", httpGet));
+                doc = htmlProcessorService.clean(s);
+                EntityUtils.consumeQuietly(res.getEntity());
             } catch (IOException | HtmlProcessorException e) {
                 throw new HostException(e);
             }
@@ -85,7 +87,7 @@ public class ImxHost extends Host {
 
         try {
             logger.info(String.format("Resolving name and image url for %s", url));
-            String imgTitle = imgNode.getAttributes().getNamedItem("alt").getTextContent().trim();
+            String imgTitle = imgNode.getAttributes().getNamedItem("id").getTextContent().trim();
             String imgUrl = imgNode.getAttributes().getNamedItem("src").getTextContent().trim();
 
             imageFileData.setImageUrl(imgUrl);

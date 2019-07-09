@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0] - 2019-07-08
+### Changed
+- Better error handling on startup
+- Better support for linux AppImage
+### Added
+- Clear all completed
+- Add clipboard support
+
 ## [1.3.0-rc0] - 2019-07-04
 ### Changed
 - Change default setting for autostart false -> true

@@ -9,8 +9,9 @@
 <div [ngClass]="{'electron': electronService.isElectronApp}" id="app-container" fxLayout="column" fxLayoutGap="20px">
   <div id="app-header" fxFlex="nogrow">
     <mat-toolbar class="mat-elevation-z2" color="primary">
-      <mat-toolbar-row fxLayout="row">
-        <span>Viper Ripper</span>
+      <mat-toolbar-row fxLayout="row" fxLayoutAlign="center center">
+        <span id="logo" fxFlex="0 0 48px"></span>
+        <span id="title">Viper Ripper</span>
         <span fxFlex="grow"></span>
         <div>
           <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="settings">

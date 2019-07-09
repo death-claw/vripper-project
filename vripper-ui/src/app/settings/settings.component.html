@@ -4,64 +4,85 @@
   </div>
   <mat-dialog-content fxFlex="grow">
     <div class="container">
-      <form [formGroup]="settingsForm" autocomplete="off">
-        <div fxLayout="row" fxLayoutGap="20px" fxLayoutAlign="center center">
-            <mat-form-field fxFlex="grow">
+      <mat-tab-group dynamicHeight="true">
+        <mat-tab label="General Settings">
+          <form [formGroup]="generalSettingsForm" autocomplete="off">
+            <div fxLayout="row" fxLayoutGap="20px" fxLayoutAlign="center center">
+              <mat-form-field fxFlex="grow">
                 <input
-                formControlName="downloadPath"
+                  formControlName="downloadPath"
                   matInput
                   placeholder="Download Path"
                   name="downloadPath"
                   required
                 />
               </mat-form-field>
-              <button fxFlex="100px" (click)="browse()" mat-raised-button *ngIf="electronService.isElectronApp">Browse</button>
-        </div>
-
-        <mat-form-field>
-          <input
-          formControlName="maxThreads"
-            type="number"
-            matInput
-            placeholder="Max concurrent downloads"
-            name="maxThreads"
-            min="1"
-            max="8"
-            required
-          />
-        </mat-form-field>
-
-        <mat-checkbox color="primary" formControlName="autoStart" name="autoStart">Auto start downloads</mat-checkbox>
-
-        <mat-slide-toggle color="primary" formControlName="vLogin" name="vLogin">
-          ViperGirls Authentication
-        </mat-slide-toggle>
-
-        <section *ngIf="settingsForm.get('vLogin').value">
-          <div>
-            <mat-form-field>
-              <input formControlName="vUsername" matInput placeholder="ViperGirls Username" name="vUsername" />
-            </mat-form-field>
+              <button fxFlex="100px" (click)="browse()" mat-raised-button *ngIf="electronService.isElectronApp">
+                Browse
+              </button>
+            </div>
 
             <mat-form-field>
               <input
-              formControlName="vPassword"
-                type="password"
+                formControlName="maxThreads"
+                type="number"
                 matInput
-                placeholder="ViperGirls Password"
-                name="vPassword"
+                placeholder="Max concurrent downloads"
+                name="maxThreads"
+                min="1"
+                max="8"
+                required
               />
             </mat-form-field>
 
-            <mat-checkbox color="primary" formControlName="vThanks" name="vThanks">Leave thanks</mat-checkbox>
-          </div>
-        </section>
-      </form>
+            <mat-checkbox color="primary" formControlName="autoStart" name="autoStart"
+              >Auto start downloads</mat-checkbox
+            >
+
+            <mat-slide-toggle color="primary" formControlName="vLogin" name="vLogin">
+              ViperGirls Authentication
+            </mat-slide-toggle>
+
+            <section *ngIf="generalSettingsForm.get('vLogin').value">
+              <div>
+                <mat-form-field>
+                  <input formControlName="vUsername" matInput placeholder="ViperGirls Username" name="vUsername" />
+                </mat-form-field>
+
+                <mat-form-field>
+                  <input
+                    formControlName="vPassword"
+                    type="password"
+                    matInput
+                    placeholder="ViperGirls Password"
+                    name="vPassword"
+                  />
+                </mat-form-field>
+
+                <mat-checkbox color="primary" formControlName="vThanks" name="vThanks">Leave thanks</mat-checkbox>
+              </div>
+            </section>
+          </form>
+        </mat-tab>
+        <mat-tab label="Desktop Integration" *ngIf="electronService.isElectronApp">
+          <form [formGroup]="desktopSettingsForm" autocomplete="off">
+            <mat-checkbox color="primary" formControlName="desktopClipboard" name="desktopClipboard"
+              >Monitor Clipboard</mat-checkbox
+            >
+          </form>
+        </mat-tab>
+      </mat-tab-group>
     </div>
   </mat-dialog-content>
   <mat-dialog-actions fxFlex="nogrow" align="end">
-    <button mat-raised-button cdkFocusInitial mat-dialog-close>Close</button>
-    <button mat-raised-button (click)="onSubmit()" color="primary" type="submit" [disabled]="settingsForm.pristine || settingsForm.invalid">
+    <button mat-raised-button mat-dialog-close>Close</button>
+    <button
+      mat-raised-button
+      (click)="onSubmit()"
+      color="primary"
+      type="submit"
+      [disabled]="(generalSettingsForm.pristine && desktopSettingsForm.pristine) || generalSettingsForm.invalid || desktopSettingsForm.invalid"
+    >
       Apply
     </button>
   </mat-dialog-actions>

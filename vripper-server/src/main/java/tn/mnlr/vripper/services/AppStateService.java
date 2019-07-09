@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Service
 @Getter
@@ -120,5 +121,16 @@ public class AppStateService {
         }
         persistenceService.getProcessor().onNext(currentPosts);
         liveActions.onNext(new Action(StateAction.REMOVE, postId));
+    }
+
+    public synchronized int removeAll() {
+        List<String> toRemove = this.currentPosts
+                .values()
+                .stream()
+                .filter(e -> e.getStatus().equals(Post.Status.COMPLETE) && e.getDone().get() >= e.getTotal())
+                .map(Post::getPostId)
+                .collect(Collectors.toList());
+        toRemove.forEach(this::remove);
+        return toRemove.size();
     }
 }

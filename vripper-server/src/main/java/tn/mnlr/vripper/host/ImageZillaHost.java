@@ -1,6 +1,5 @@
 package tn.mnlr.vripper.host;
 
-import org.apache.http.client.methods.HttpGet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,8 +10,6 @@ import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.XpathException;
 import tn.mnlr.vripper.q.ImageFileData;
 import tn.mnlr.vripper.services.ConnectionManager;
-
-import java.io.IOException;
 
 @Service
 public class ImageZillaHost extends Host {
@@ -33,7 +30,7 @@ public class ImageZillaHost extends Host {
     @Override
     protected void setNameAndUrl(final String url, final ImageFileData imageFileData) throws HostException {
 
-        Document doc = getDocument(url);
+        Document doc = getResponse(url).getDocument();
 
         String title;
         try {

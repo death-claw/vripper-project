@@ -13,7 +13,8 @@ import {
     MatCardModule,
     MatSlideToggleModule,
     MatSnackBarModule,
-    MatSnackBar
+    MatSnackBar,
+    MatTabsModule
 } from '@angular/material';
 
 @NgModule({
@@ -30,7 +31,8 @@ import {
         MatDialogModule,
         MatCardModule,
         MatSlideToggleModule,
-        MatSnackBarModule
+        MatSnackBarModule,
+        MatTabsModule
     ],
     providers: [MatSnackBar]
 })

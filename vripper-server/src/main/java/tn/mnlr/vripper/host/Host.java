@@ -1,5 +1,7 @@
 package tn.mnlr.vripper.host;
 
+import lombok.Getter;
+import org.apache.http.Header;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -145,14 +147,15 @@ abstract public class Host {
         return imgUrl;
     }
 
-    protected final Document getDocument(final String url) throws HostException {
+    protected final Response getResponse(final String url) throws HostException {
         String basePage;
 
         HttpClient client = cm.getClient().build();
         HttpGet httpGet = cm.buildHttpGet(url);
-
+        Header[] headers;
         logger.info(String.format("Requesting %s", url));
         try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(httpGet)) {
+            headers = response.getAllHeaders();
             basePage = EntityUtils.toString(response.getEntity());
             logger.debug(String.format("%s response: %n%s", url, basePage));
             EntityUtils.consumeQuietly(response.getEntity());
@@ -162,7 +165,7 @@ abstract public class Host {
 
         try {
             logger.info(String.format("Cleaning %s response", url));
-            return htmlProcessorService.clean(basePage);
+            return new Response(htmlProcessorService.clean(basePage), headers);
         } catch (HtmlProcessorException e) {
             throw new HostException(e);
         }
@@ -175,4 +178,14 @@ abstract public class Host {
     }
 
     protected abstract void setNameAndUrl(final String url, final ImageFileData imageFileData) throws HostException;
+
+    @Getter
+    public static class Response {
+        protected Response(Document document, Header[] headers) {
+            this.document = document;
+            this.headers = headers;
+        }
+        private Document document;
+        private Header[] headers;
+    }
 }

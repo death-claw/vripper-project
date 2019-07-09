@@ -56,11 +56,12 @@ public class SettingsRestEndpoint {
             this.settings.setVPassword("");
             this.settings.setVThanks(false);
         }
+        this.settings.setDesktopClipboard(settings.isDesktopClipboard());
 
         this.settings.save();
 
         vipergirlsAuthService.authenticate();
-        return new ResponseEntity(HttpStatus.OK);
+        return ResponseEntity.ok(getSettings());
     }
 
     @GetMapping("/settings")
@@ -74,7 +75,8 @@ public class SettingsRestEndpoint {
                 settings.isVLogin(),
                 settings.getVUsername(),
                 settings.getVPassword(),
-                settings.isVThanks()
+                settings.isVThanks(),
+                settings.isDesktopClipboard()
         );
     }
 

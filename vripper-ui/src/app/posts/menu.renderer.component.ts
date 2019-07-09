@@ -24,7 +24,7 @@ import { ServerService } from '../server-service';
       <button
         *ngIf="
           postData.status === 'PENDING' ||
-          postData.status === 'COMPLETE' ||
+          postData.status === 'COMPLETE' && postData.progress !== 100 ||
           postData.status === 'ERROR' ||
           postData.status === 'STOPPED'
         "

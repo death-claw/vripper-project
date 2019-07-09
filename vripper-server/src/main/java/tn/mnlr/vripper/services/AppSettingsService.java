@@ -32,6 +32,7 @@ public class AppSettingsService {
     private final String V_USERNAME = "VUSERNAME";
     private final String V_PASSWORD = "VPASSWORD";
     private final String V_THANKS = "VTHANKS";
+    private final String DESKTOP_CLIPBOARD = "DESKTOP_CLIPBOARD";
 
     private String downloadPath;
     private int maxThreads;
@@ -40,6 +41,7 @@ public class AppSettingsService {
     private String vUsername;
     private String vPassword;
     private boolean vThanks;
+    private boolean desktopClipboard;
 
     public void setVPassword(String vPassword) {
         if(vPassword.isEmpty()) {
@@ -58,6 +60,7 @@ public class AppSettingsService {
         vUsername = prefs.get(V_USERNAME, "");
         vPassword = prefs.get(V_PASSWORD, "");
         vThanks = prefs.getBoolean(V_THANKS, false);
+        desktopClipboard = prefs.getBoolean(DESKTOP_CLIPBOARD, false);
     }
 
     public void save() {
@@ -69,6 +72,7 @@ public class AppSettingsService {
         prefs.put(V_USERNAME, vUsername);
         prefs.put(V_PASSWORD, vPassword);
         prefs.putBoolean(V_THANKS, vThanks);
+        prefs.putBoolean(DESKTOP_CLIPBOARD, desktopClipboard);
 
         try {
             prefs.sync();
@@ -113,8 +117,10 @@ public class AppSettingsService {
         private String vPassword;
         @JsonProperty("vThanks")
         private boolean vThanks;
+        @JsonProperty("desktopClipboard")
+        private boolean desktopClipboard;
 
-        public Settings(String downloadPath, int maxThreads, boolean autoStart, boolean vLogin, String vUsername, String vPassword, boolean vThanks) {
+        public Settings(String downloadPath, int maxThreads, boolean autoStart, boolean vLogin, String vUsername, String vPassword, boolean vThanks, boolean desktopClipboard) {
             this.downloadPath = downloadPath;
             this.maxThreads = maxThreads;
             this.autoStart = autoStart;
@@ -122,6 +128,7 @@ public class AppSettingsService {
             this.vUsername = vUsername;
             this.vPassword = vPassword;
             this.vThanks = vThanks;
+            this.desktopClipboard = desktopClipboard;
         }
     }
 }

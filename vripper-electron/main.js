@@ -4,9 +4,28 @@ const url = require("url");
 const getPort = require("get-port");
 const { spawn } = require("child_process");
 const { ipcMain } = require("electron");
+const commandExists = require("command-exists").sync;
+const { dialog } = require("electron");
+const appDir = process.env.APPDIR;
+
+console.log('App path', path.join(app.getPath('exe'), "../bin/vripper-server.jar"));
+console.log('App image path', appDir);
 
 let win;
 let vripperServer;
+
+process.on("uncaughtException", err => {
+  dialog.showErrorBox(err.message, err.stack);
+  process.exit(1);
+});
+
+if (!commandExists("java")) {
+  dialog.showErrorBox(
+    "Java command is missing",
+    "Java cannot be found on your PATH, make sure to install java before running Viper Ripper"
+  );
+  process.exit(1);
+}
 
 function createWindow() {
   win = new BrowserWindow({
@@ -28,7 +47,7 @@ function createWindow() {
     })
   );
 
-  // win.webContents.openDevTools();
+  win.webContents.openDevTools();
 
   win.on("closed", () => {
     win = null;
@@ -37,15 +56,14 @@ function createWindow() {
 
 getPort().then(port => {
   ipcMain.on("get-port", event => {
-    setTimeout(() => {
-      event.reply("port", port);
-    }, 5000);
+    event.reply("port", port);
   });
   vripperServer = spawn("java", [
     "-Dvripper.server.port=" + port,
     "-jar",
-    "bin/vripper-server.jar"
-  ], {stdio: 'inherit'});
+    appDir !== undefined ? path.join(appDir, "bin/vripper-server.jar") :
+    path.join(app.getPath('exe'), "../bin/vripper-server.jar")
+  ]);
 });
 
 const gotTheLock = app.requestSingleInstanceLock();
@@ -64,7 +82,9 @@ if (!gotTheLock) {
 
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") {
-      vripperServer.kill("SIGTERM");
+      if(vripperServer != null) {
+        vripperServer.kill("SIGTERM");
+      }
       app.quit();
     }
   });

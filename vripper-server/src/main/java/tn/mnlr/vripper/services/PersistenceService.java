@@ -13,15 +13,16 @@ import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.entities.mixin.persistance.ImagePersistanceMixin;
 import tn.mnlr.vripper.entities.mixin.persistance.PostPersistanceMixin;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
+import javax.annotation.PostConstruct;
+import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 public class PersistenceService {
@@ -32,6 +33,8 @@ public class PersistenceService {
     private AppStateService stateService;
 
     private ObjectMapper om;
+
+    private PrintWriter out;
 
     @Getter
     private PublishProcessor<Map<String, Post>> processor = PublishProcessor.create();
@@ -63,8 +66,17 @@ public class PersistenceService {
     }
 
     public void persist(Map<String, Post> currentPosts) {
-        try(PrintWriter out = new PrintWriter(VripperApplication.dataPath)) {
+        if(out == null) {
+            try {
+                out = new PrintWriter(VripperApplication.dataPath, "UTF-8");
+            } catch (FileNotFoundException | UnsupportedEncodingException e) {
+                logger.error(String.format("Failed to create output data file %s", VripperApplication.dataPath));
+                System.exit(-1);
+            }
+        }
+        try {
             out.print(om.writeValueAsString(currentPosts));
+            out.flush();
         } catch (IOException e) {
             logger.error("Failed to persist app state", e);
         }
@@ -85,7 +97,7 @@ public class PersistenceService {
 
         String jsonContent;
         try {
-            jsonContent = new String(Files.readAllBytes(Paths.get(VripperApplication.dataPath)));
+            jsonContent = Files.readAllLines(Paths.get(VripperApplication.dataPath), Charset.forName("UTF-8")).stream().collect(Collectors.joining());
         } catch (Exception e) {
             logger.warn("data file not found, previous state cannot be restored", e);
             return;

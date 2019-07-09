@@ -75,7 +75,13 @@ public class PostRestEndpoint {
             logger.info("Auto start downloads option is disabled");
         }
         logger.info(String.format("Done processing thread: %s", url.url));
-        return new ResponseEntity(HttpStatus.OK);
+        return ResponseEntity.ok(new ParseResult(parsed.size()));
+    }
+
+    @PostMapping("/clipboard/post")
+    @ResponseStatus(value = HttpStatus.OK)
+    public ResponseEntity processPostFromClipboard(@RequestBody ThreadUrl url) throws Exception {
+        return this.processPost(url);
     }
 
     @PostMapping("/post/restart")
@@ -98,6 +104,12 @@ public class PostRestEndpoint {
         appStateService.remove(postId.getPostId());
     }
 
+    @PostMapping("/post/remove/all")
+    @ResponseStatus(value = HttpStatus.OK)
+    public ResponseEntity removeAll() {
+        return ResponseEntity.ok(new RemoveAllResult(appStateService.removeAll()));
+    }
+
     @Getter
     @ToString
     private static class ThreadUrl {
@@ -107,5 +119,21 @@ public class PostRestEndpoint {
     @Getter
     private static class PostId {
         private String postId;
+    }
+
+    @Getter
+    private static class ParseResult {
+        ParseResult(int parsed) {
+            this.parsed = parsed;
+        }
+        private int parsed;
+    }
+
+    @Getter
+    private static class RemoveAllResult {
+        RemoveAllResult(int removed) {
+            this.removed = removed;
+        }
+        private int removed;
     }
 }
