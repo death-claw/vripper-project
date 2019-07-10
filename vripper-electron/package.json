@@ -21,8 +21,8 @@
       "!**/{appveyor.yml,.travis.yml,circle.yml}",
       "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}",
       {
-        "from": "./build/vripper-ui",
-        "to": "vripper-ui"
+        "from": "./build/",
+        "to": "."
       }
     ],
     "extraFiles": [

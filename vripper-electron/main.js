@@ -28,13 +28,20 @@ if (!commandExists("java")) {
 }
 
 function createWindow() {
+  let icon;
+  if(process.platform === "win32") {
+    icon = path.join(__dirname, `icon.ico`);
+  } else {
+    icon = path.join(__dirname, `icon.icns`);
+  }
   win = new BrowserWindow({
     width: 1024,
     height: 768,
     frame: false,
     webPreferences: {
       nodeIntegration: true
-    }
+    },
+    icon: icon
   });
 
   win.removeMenu();
