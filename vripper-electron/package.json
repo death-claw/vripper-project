@@ -1,6 +1,6 @@
 {
   "name": "vripper-electron",
-  "version": "1.4.0",
+  "version": "1.4.0-SNAPSHOT",
   "description": "",
   "main": "main.js",
   "author": "",
@@ -27,11 +27,8 @@
     ],
     "extraFiles": [
       {
-        "from": "../vripper-server/target/vripper-server-1.4.0-1.3.0-rc0-dirty.jar",
-        "to": "bin/vripper-server.jar",
-        "filter": [
-          "vripper-server*.jar"
-        ]
+        "from": "../vripper-server/target/vripper-server-${version}.jar",
+        "to": "bin/vripper-server.jar"
       }
     ],
     "win": {

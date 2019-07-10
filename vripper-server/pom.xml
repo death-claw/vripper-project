@@ -5,7 +5,7 @@
     <parent>
         <groupId>tn.mnlr</groupId>
         <artifactId>vripper</artifactId>
-        <version>1.4.0</version>
+        <version>1.4.0-SNAPSHOT</version>
     </parent>
     <artifactId>vripper-server</artifactId>
     <name>vripper-server</name>
@@ -73,7 +73,7 @@
     </dependencies>
 
     <build>
-        <finalName>${project.artifactId}-${project.version}-${git.commit.id.describe-short}</finalName>
+        <finalName>${project.artifactId}-${project.version}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
