@@ -1,6 +1,7 @@
 package tn.mnlr.vripper.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.processors.PublishProcessor;
 import lombok.Getter;
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import tn.mnlr.vripper.entities.mixin.persistance.ImagePersistanceMixin;
 import tn.mnlr.vripper.entities.mixin.persistance.PostPersistanceMixin;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -36,6 +38,8 @@ public class PersistenceService {
 
     private PrintWriter out;
 
+    private Disposable subscription;
+
     @Getter
     private PublishProcessor<Map<String, Post>> processor = PublishProcessor.create();
 
@@ -56,13 +60,21 @@ public class PersistenceService {
         om = new ObjectMapper();
         om.addMixIn(Image.class, ImagePersistanceMixin.class);
         om.addMixIn(Post.class, PostPersistanceMixin.class);
-        processor
+        subscription = processor
                 .onBackpressureLatest()
                 .buffer(10, TimeUnit.SECONDS)
                 .filter(e -> !e.isEmpty())
                 .map(e -> e.get(0))
                 .doOnNext(this::persist)
                 .subscribe();
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        this.subscription.dispose();
+        logger.info(String.format("Destroying %s", PersistenceService.class.getSimpleName()));
+        logger.info("Persisting data before destroying");
+        this.persist(stateService.getCurrentPosts());
     }
 
     public void persist(Map<String, Post> currentPosts) {
