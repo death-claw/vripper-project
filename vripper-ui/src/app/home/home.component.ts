@@ -100,7 +100,7 @@ export class HomeComponent implements OnInit {
       maxWidth: '100vw',
       height: '200px',
       width: '60%',
-      data: {header: 'Confirmation', content: 'Are you sure you want to remove all threads ?'}
+      data: {header: 'Confirmation', content: 'Are you sure you want to remove all items ?'}
     })
     .afterClosed()
     .pipe(

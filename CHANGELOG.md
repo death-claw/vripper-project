@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.4.3] - 2019-07-14
+### Changed
+- Update some messages
+- Fix scrolling issue
+
 ## [1.4.2] - 2019-07-14
 ### Changed
 - Fix layout issue in web mode

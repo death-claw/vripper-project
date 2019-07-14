@@ -120,7 +120,7 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
   restart() {
     this.httpClient.post(this.serverService.baseUrl + '/post/restart', { postId: this.postData.postId }).subscribe(
       () => {
-        this._snackBar.open('Thread started', null, {
+        this._snackBar.open('Download started', null, {
           duration: 5000
         });
       },
@@ -137,7 +137,7 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
         maxWidth: '100vw',
         height: '200px',
         width: '60%',
-        data: { header: 'Confirmation', content: 'Are you sure you want to remove this thread ?' }
+        data: { header: 'Confirmation', content: 'Are you sure you want to remove this item ?' }
       })
       .afterClosed()
       .pipe(
@@ -166,7 +166,7 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
   stop() {
     this.httpClient.post(this.serverService.baseUrl + '/post/stop', { postId: this.postData.postId }).subscribe(
       () => {
-        this._snackBar.open('Thread stopped', null, {
+        this._snackBar.open('Download stopped', null, {
           duration: 5000
         });
       },
