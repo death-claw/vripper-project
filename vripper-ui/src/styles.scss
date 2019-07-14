@@ -2,10 +2,18 @@
 @import "~@angular/material/prebuilt-themes/indigo-pink.css";
 @import "~ag-grid-community/dist/styles/ag-grid.css";
 @import "~ag-grid-community/dist/styles/ag-theme-material.css";
-body {
-    margin: 0;
+
+html {
+    border: 3px solid rgb(63, 81, 181);
+    box-sizing: border-box;
     height: 100vh;
     width: 100vw;
+}
+
+body {
+    & .window-title {
+        font-family: "Arial";
+    }
 }
 
 app-root {
@@ -56,4 +64,8 @@ div.ag-cell.no-padding {
     overflow: hidden;
     text-overflow:ellipsis;
     white-space: nowrap;
+}
+
+.ag-body-viewport {
+    overflow: hidden !important;
 }
