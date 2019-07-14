@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.1] - 2019-07-14
+### Changed
+- Change title's font
+### Added
+- Add borders
+
 ## [1.4.0] - 2019-07-14
 ### Changed
 - Better error handling on startup
