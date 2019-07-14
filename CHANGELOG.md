@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.4.2] - 2019-07-14
+### Changed
+- Fix layout issue in web mode
+
 ## [1.4.1] - 2019-07-14
 ### Changed
 - Change title's font
