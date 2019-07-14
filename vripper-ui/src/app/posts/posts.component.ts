@@ -60,6 +60,22 @@ export class PostsComponent implements OnInit, OnDestroy {
   gridOptions: GridOptions;
   dataSource: PostsDataSource;
 
+  removeRows(postIds: string[]): void {
+    if (postIds == null) {
+      return;
+    }
+
+    const toRemove = [];
+
+    postIds.forEach(p => {
+      const nodeToDelete = this.gridOptions.api.getRowNode(p);
+      if (nodeToDelete != null) {
+        toRemove.push(nodeToDelete.data);
+      }
+    });
+    this.gridOptions.api.updateRowData({ remove: toRemove });
+  }
+
   ngOnInit() {
   }
 

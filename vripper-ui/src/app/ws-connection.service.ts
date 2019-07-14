@@ -23,10 +23,14 @@ export class WsConnectionService {
   private state$: BehaviorSubject<WSState> = new BehaviorSubject(WSState.INIT);
   private sock;
   private _state: WSState = WSState.INIT;
-  private wsHandler: Promise<WsHandler>;
+  private wsHandlerPromise: Promise<WsHandler>;
+  private wsHandler: WsHandler;
 
   constructor(private electronService: ElectronService, private serverService: ServerService) {
-    this.wsHandler = new Promise((resolve, reject) => {
+    this.wsHandlerPromise = new Promise((resolve, reject) => {
+      if (this.wsHandler != null) {
+        return this.wsHandler;
+      }
       if (this.electronService.isElectronApp) {
         this.electronService.ipcRenderer.send('get-port');
 
@@ -52,7 +56,8 @@ export class WsConnectionService {
     this.connect();
     const subscription: Subscription = this.state$.subscribe(e => {
       if (e === WSState.OPEN) {
-        resolve(new WsHandler(this.websocket));
+        this.wsHandler = new WsHandler(this.websocket);
+        resolve(this.wsHandler);
       }
     });
     const interval = setInterval(() => {
@@ -110,7 +115,7 @@ export class WsConnectionService {
   }
 
   getConnection(): Promise<WsHandler> {
-    return this.wsHandler;
+    return this.wsHandlerPromise;
   }
 
   disconnect() {

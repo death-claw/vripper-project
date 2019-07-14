@@ -10,4 +10,8 @@ public abstract class PostPersistanceMixin {
 
     @JsonIgnore
     private AppStateService appStateService;
+
+
+    @JsonIgnore
+    private boolean removed;
 }

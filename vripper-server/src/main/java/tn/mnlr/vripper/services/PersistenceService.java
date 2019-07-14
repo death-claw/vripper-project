@@ -14,9 +14,10 @@ import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.entities.mixin.persistance.ImagePersistanceMixin;
 import tn.mnlr.vripper.entities.mixin.persistance.PostPersistanceMixin;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -35,8 +36,6 @@ public class PersistenceService {
     private AppStateService stateService;
 
     private ObjectMapper om;
-
-    private PrintWriter out;
 
     private Disposable subscription;
 
@@ -78,17 +77,9 @@ public class PersistenceService {
     }
 
     public void persist(Map<String, Post> currentPosts) {
-        if(out == null) {
-            try {
-                out = new PrintWriter(VripperApplication.dataPath, "UTF-8");
-            } catch (FileNotFoundException | UnsupportedEncodingException e) {
-                logger.error(String.format("Failed to create output data file %s", VripperApplication.dataPath));
-                System.exit(-1);
-            }
-        }
-        try {
+
+        try (PrintWriter out = new PrintWriter(VripperApplication.dataPath, "UTF-8")) {
             out.print(om.writeValueAsString(currentPosts));
-            out.flush();
         } catch (IOException e) {
             logger.error("Failed to persist app state", e);
         }

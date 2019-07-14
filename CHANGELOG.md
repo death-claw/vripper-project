@@ -1,12 +1,14 @@
 # Changelog
 
-## [1.4.0] - 2019-07-08
+## [1.4.0] - 2019-07-14
 ### Changed
 - Better error handling on startup
 - Better support for linux AppImage
 ### Added
 - Clear all completed
 - Add clipboard support
+- Add option to remove all posts
+- Add confirmation on remove
 
 ## [1.3.0-rc0] - 2019-07-04
 ### Changed

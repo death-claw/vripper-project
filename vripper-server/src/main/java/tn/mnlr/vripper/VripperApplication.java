@@ -4,11 +4,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.stereotype.Component;
 import tn.mnlr.vripper.exception.VripperException;
-import tn.mnlr.vripper.services.*;
+import tn.mnlr.vripper.services.AppSettingsService;
+import tn.mnlr.vripper.services.PersistenceService;
+import tn.mnlr.vripper.services.VipergirlsAuthService;
 
 import java.io.File;
 
@@ -19,18 +21,10 @@ public class VripperApplication {
 
     public static final String dataPath = System.getProperty("vripper.datapath", ".") + File.separator + "data.json";
 
-    public static boolean headless = false;
-
     public static void main(String[] args) {
 
-        String headless = System.getProperty("java.awt.headless");
-        if (headless != null && headless.trim().toLowerCase().equals("true")) {
-            VripperApplication.headless = true;
-        }
-
-        SpringApplicationBuilder builder = new SpringApplicationBuilder(VripperApplication.class);
         try {
-            builder.headless(VripperApplication.headless).run(args);
+            SpringApplication.run(VripperApplication.class, args);
         } catch (Exception e) {
             logger.error("Failed to run the application", e);
         }

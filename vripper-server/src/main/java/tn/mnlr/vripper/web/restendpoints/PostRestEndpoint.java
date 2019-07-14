@@ -8,9 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.q.DownloadQ;
+import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.services.AppStateService;
 import tn.mnlr.vripper.services.PostParser;
 import tn.mnlr.vripper.services.VipergirlsAuthService;
@@ -92,16 +92,22 @@ public class PostRestEndpoint {
 
     @PostMapping("/post/stop")
     @ResponseStatus(value = HttpStatus.OK)
-    public void stop(@RequestBody PostId postId) throws Exception {
+    public void stop(@RequestBody PostId postId) {
         downloadQ.stop(postId.getPostId());
     }
 
     @PostMapping("/post/remove")
     @ResponseStatus(value = HttpStatus.OK)
-    public void remove(@RequestBody PostId postId) throws Exception {
+    public ResponseEntity remove(@RequestBody PostId postId) {
         downloadQ.stop(postId.getPostId());
-        Thread.sleep(1500);
         appStateService.remove(postId.getPostId());
+        return ResponseEntity.ok(new RemoveResult(postId.getPostId()));
+    }
+
+    @PostMapping("/post/clear/all")
+    @ResponseStatus(value = HttpStatus.OK)
+    public ResponseEntity clearAll() {
+        return ResponseEntity.ok(new RemoveAllResult(appStateService.clearAll()));
     }
 
     @PostMapping("/post/remove/all")
@@ -131,9 +137,21 @@ public class PostRestEndpoint {
 
     @Getter
     private static class RemoveAllResult {
-        RemoveAllResult(int removed) {
-            this.removed = removed;
-        }
+        private List<String> postIds;
         private int removed;
+
+        RemoveAllResult(List<String> postIds) {
+            this.removed = postIds.size();
+            this.postIds = postIds;
+        }
+    }
+
+    @Getter
+    private static class RemoveResult {
+        private String postId;
+
+        RemoveResult(String postId) {
+            this.postId = postId;
+        }
     }
 }

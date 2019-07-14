@@ -4,6 +4,7 @@ import { AgRendererComponent } from 'ag-grid-angular';
 import { Subscription } from 'rxjs';
 import { PostDetails } from './post-details.model';
 import { WsHandler } from '../ws-handler';
+import { ICellRendererParams } from 'ag-grid-community';
 
 @Component({
   selector: 'app-progress-cell',
@@ -74,7 +75,7 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
 
   websocketHandlerPromise: Promise<WsHandler>;
   subscription: Subscription;
-  params: any;
+  params: ICellRendererParams;
   postDetails: PostDetails;
 
   trunc(value: number): number {
@@ -99,12 +100,12 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
     this.subscription.unsubscribe();
   }
 
-  agInit(params: any): void {
+  agInit(params: ICellRendererParams): void {
     this.params = params;
     this.postDetails = params.data;
   }
 
-  refresh(params: any): boolean {
+  refresh(params: ICellRendererParams): boolean {
     this.postDetails = params.data;
     return true;
   }

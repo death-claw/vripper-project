@@ -3,18 +3,30 @@
 </div>
 <div fxLayout="column" fxLayoutGap="10px" style="height: 100%">
   <div fxFlex="nogrow">
-    <form #f="ngForm" fxLayout="row" fxLayoutAlign="center center" fxLayoutGap="20px" autocomplete="off" (ngSubmit)="submit(f)">
+    <form
+      #f="ngForm"
+      (ngSubmit)="submit(f)"
+      autocomplete="off"
+      fxLayout="row"
+      fxLayoutAlign="center center"
+      fxLayoutGap="20px"
+    >
       <mat-form-field fxFlex="grow">
-        <input name="url" [(ngModel)]="input" matInput placeholder="Put a vipergirls.to link" required>
+        <input [(ngModel)]="input" matInput name="url" placeholder="Put a vipergirls.to link" required/>
       </mat-form-field>
       <div>
         <button type="submit" mat-raised-button color="primary" [disabled]="f.invalid">Grab</button>
       </div>
     </form>
   </div>
-  <div fxLayout="row" fxLayoutAlign="end">
-    <button (click)="clear()" mat-mini-fab color="primary" title="Clear completed" aria-label="Clear completed">
-      <mat-icon>clear</mat-icon>
+  <div fxLayout="row" fxLayoutAlign="end" fxLayoutGap="10px">
+    <button (click)="clear()" aria-label="Clear completed" color="primary" mat-stroked-button title="Clear completed">
+      Clear completed
+      <mat-icon>clear_all</mat-icon>
+    </button>
+    <button (click)="remove()" aria-label="Remove All" color="primary" mat-stroked-button title="Remove All">
+      Remove All
+      <mat-icon>delete_forever</mat-icon>
     </button>
   </div>
   <div fxLayout="column" fxFlex="grow">

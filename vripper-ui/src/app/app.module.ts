@@ -22,6 +22,7 @@ import { SettingsComponent } from './settings/settings.component';
 
 import { NgxElectronModule } from 'ngx-electron';
 import { ServerService } from './server-service';
+import { ConfirmDialogComponent } from './common/confirmation-component/confirmation-dialog';
 
 @NgModule({
   declarations: [
@@ -33,11 +34,13 @@ import { ServerService } from './server-service';
     PostDetailsProgressRendererComponent,
     LoginComponent,
     HomeComponent,
-    SettingsComponent
+    SettingsComponent,
+    ConfirmDialogComponent
   ],
   entryComponents: [
     PostDetailComponent,
-    SettingsComponent
+    SettingsComponent,
+    ConfirmDialogComponent
   ],
   imports: [
     BrowserAnimationsModule,

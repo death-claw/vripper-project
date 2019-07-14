@@ -52,7 +52,7 @@ public class ImageZillaHost extends Host {
 
         try {
             imageFileData.setImageUrl(url.replace("show", "images"));
-            imageFileData.setImageName(title.substring(8));
+            imageFileData.setImageName(title);
         } catch (Exception e) {
             throw new HostException("Unexpected error occurred", e);
         }

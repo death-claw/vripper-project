@@ -2,7 +2,6 @@ package tn.mnlr.vripper.web.wsendpoints;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.processors.PublishProcessor;
 import io.reactivex.schedulers.Schedulers;
 import lombok.Getter;
 import org.slf4j.Logger;
@@ -92,15 +91,17 @@ public class WebSocketHandler extends TextWebSocketHandler {
             logger.error("Unexpected error occurred", e);
         }
 
-        postsSubscriptions.put(session.getId(), PublishProcessor.merge(appStateService.getLivePostsState(), appStateService.getLiveActions())
-                .onBackpressureBuffer()
-                .observeOn(Schedulers.io())
-                .buffer(2, TimeUnit.SECONDS)
-                .filter(e -> !e.isEmpty())
-                .map(e -> e.stream().distinct().collect(Collectors.toList()))
-                .map(om::writeValueAsString)
-                .map(TextMessage::new)
-                .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))
+        postsSubscriptions.put(session.getId(),
+                appStateService.getLivePostsState()
+                        .onBackpressureBuffer()
+                        .observeOn(Schedulers.io())
+                        .filter(e -> !e.isRemoved())
+                        .buffer(500, TimeUnit.MILLISECONDS, 50)
+                        .filter(e -> !e.isEmpty())
+                        .map(e -> e.stream().distinct().collect(Collectors.toList()))
+                        .map(om::writeValueAsString)
+                        .map(TextMessage::new)
+                        .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))
         );
     }
 
@@ -127,7 +128,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 .onBackpressureBuffer()
                 .observeOn(Schedulers.io())
                 .filter(e -> e.getPostId().equals(postId))
-                .buffer(2, TimeUnit.SECONDS)
+                .buffer(500, TimeUnit.MILLISECONDS, 50)
                 .filter(e -> !e.isEmpty())
                 .map(e -> e.stream().distinct().collect(Collectors.toList()))
                 .map(om::writeValueAsString)

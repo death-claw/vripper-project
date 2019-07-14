@@ -1,7 +1,6 @@
 package tn.mnlr.vripper.services;
 
 import io.reactivex.processors.PublishProcessor;
-import io.reactivex.processors.ReplayProcessor;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,21 +20,6 @@ import java.util.stream.Collectors;
 @Getter
 public class AppStateService {
 
-    @Getter
-    class Action {
-        public Action(StateAction stateAction, String payload) {
-            this.stateAction = stateAction;
-            this.payload = payload;
-        }
-        private final String type = "action";
-        private StateAction stateAction;
-        private String payload;
-    }
-
-    enum StateAction {
-        REMOVE
-    }
-
     private Map<String, Image> currentImages = new ConcurrentHashMap<>();
 
     private Map<String, Post> currentPosts = new ConcurrentHashMap<>();
@@ -45,8 +29,6 @@ public class AppStateService {
     private PublishProcessor<Image> liveImageUpdates = PublishProcessor.create();
 
     private PublishProcessor<Post> livePostsState = PublishProcessor.create();
-
-    private PublishProcessor<Action> liveActions = PublishProcessor.create();
 
     @Autowired
     private PersistenceService persistenceService;
@@ -110,6 +92,7 @@ public class AppStateService {
     }
 
     public synchronized void remove(String postId) {
+        currentPosts.get(postId).setRemoved(true);
         runningPosts.remove(postId);
         currentPosts.remove(postId);
         Iterator<Map.Entry<String, Image>> iterator = currentImages.entrySet().iterator();
@@ -120,10 +103,9 @@ public class AppStateService {
             }
         }
         persistenceService.getProcessor().onNext(currentPosts);
-        liveActions.onNext(new Action(StateAction.REMOVE, postId));
     }
 
-    public synchronized int removeAll() {
+    public synchronized List<String> clearAll() {
         List<String> toRemove = this.currentPosts
                 .values()
                 .stream()
@@ -131,6 +113,16 @@ public class AppStateService {
                 .map(Post::getPostId)
                 .collect(Collectors.toList());
         toRemove.forEach(this::remove);
-        return toRemove.size();
+        return toRemove;
+    }
+
+    public synchronized List<String> removeAll() {
+        List<String> toRemove = this.currentPosts
+                .values()
+                .stream()
+                .map(Post::getPostId)
+                .collect(Collectors.toList());
+        toRemove.forEach(this::remove);
+        return toRemove;
     }
 }

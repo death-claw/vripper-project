@@ -39,17 +39,9 @@ export class PostDetailsDataSource {
           });
         })
       );
-    });
 
-    this.subscriptions.push(
-      this.wsConnectionService.state.subscribe(e => {
-        if (e === WSState.OPEN) {
-          this.websocketHandlerPromise.then((handler: WsHandler) => {
-            handler.send(new WSMessage(CMD.POST_DETAILS_SUB.toString(), this.postId));
-          });
-        }
-      })
-    );
+      handler.send(new WSMessage(CMD.POST_DETAILS_SUB.toString(), this.postId));
+    });
   }
 
   disconnect() {

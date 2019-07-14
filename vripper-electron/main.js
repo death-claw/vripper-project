@@ -70,7 +70,7 @@ getPort().then(port => {
     "-jar",
     appDir !== undefined ? path.join(appDir, "bin/vripper-server.jar") :
     path.join(app.getPath('exe'), "../bin/vripper-server.jar")
-  ]);
+  ], {stdio: 'ignore'});
 });
 
 const gotTheLock = app.requestSingleInstanceLock();

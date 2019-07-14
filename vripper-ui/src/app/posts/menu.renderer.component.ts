@@ -2,14 +2,17 @@ import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { AgRendererComponent } from 'ag-grid-angular';
 import { PostState } from './post-state.model';
 import { PostDetailComponent } from '../post-detail/post-detail.component';
-import { MatDialog } from '@angular/material';
-import { environment } from 'src/environments/environment';
+import { MatDialog, MatSnackBar } from '@angular/material';
 import { HttpClient } from '@angular/common/http';
 import { BreakpointObserver, BreakpointState, Breakpoints } from '@angular/cdk/layout';
 import { Observable, Subscription } from 'rxjs';
 import { WsConnectionService } from '../ws-connection.service';
 import { WsHandler } from '../ws-handler';
 import { ServerService } from '../server-service';
+import { ICellRendererParams } from 'ag-grid-community';
+import { RemoveResponse } from '../common/remove-response.model';
+import { ConfirmDialogComponent } from '../common/confirmation-component/confirmation-dialog';
+import { filter, flatMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-menu-cell',
@@ -24,7 +27,7 @@ import { ServerService } from '../server-service';
       <button
         *ngIf="
           postData.status === 'PENDING' ||
-          postData.status === 'COMPLETE' && postData.progress !== 100 ||
+          (postData.status === 'COMPLETE' && postData.progress !== 100) ||
           postData.status === 'ERROR' ||
           postData.status === 'STOPPED'
         "
@@ -41,7 +44,7 @@ import { ServerService } from '../server-service';
         </ng-container>
       </button>
       <button (click)="seeDetails()" mat-menu-item>
-        <mat-icon>details</mat-icon>
+        <mat-icon>list</mat-icon>
         <span>Details</span>
       </button>
       <button (click)="remove()" mat-menu-item>
@@ -58,14 +61,15 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
     private breakpointObserver: BreakpointObserver,
     private wsConnectionService: WsConnectionService,
     private serverService: ServerService,
-    private zone: NgZone
+    private zone: NgZone,
+    private _snackBar: MatSnackBar
   ) {
     this.websocketHandlerPromise = this.wsConnectionService.getConnection();
   }
 
   isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
 
-  params: any;
+  params: ICellRendererParams;
 
   postData: PostState;
 
@@ -84,7 +88,7 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
           });
         });
       });
-    })
+    });
   }
 
   ngOnDestroy(): void {
@@ -115,7 +119,11 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
 
   restart() {
     this.httpClient.post(this.serverService.baseUrl + '/post/restart', { postId: this.postData.postId }).subscribe(
-      data => {},
+      () => {
+        this._snackBar.open('Thread started', null, {
+          duration: 5000
+        });
+      },
       error => {
         console.error(error);
       }
@@ -123,29 +131,57 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
   }
 
   remove() {
-    this.httpClient.post(this.serverService.baseUrl + '/post/remove', { postId: this.postData.postId }).subscribe(
-      data => {},
-      error => {
-        console.error(error);
-      }
-    );
+    this.dialog
+      .open(ConfirmDialogComponent, {
+        maxHeight: '100vh',
+        maxWidth: '100vw',
+        height: '200px',
+        width: '60%',
+        data: { header: 'Confirmation', content: 'Are you sure you want to remove this thread ?' }
+      })
+      .afterClosed()
+      .pipe(
+        filter(e => e === 'yes'),
+        flatMap(e =>
+          this.httpClient.post<RemoveResponse>(this.serverService.baseUrl + '/post/remove', {
+            postId: this.postData.postId
+          })
+        )
+      )
+      .subscribe(
+        data => {
+          const toRemove = [];
+          const nodeToDelete = this.params.api.getRowNode(data.postId);
+          if (nodeToDelete != null) {
+            toRemove.push(nodeToDelete.data);
+          }
+          this.params.api.updateRowData({ remove: toRemove });
+        },
+        error => {
+          console.error(error);
+        }
+      );
   }
 
   stop() {
     this.httpClient.post(this.serverService.baseUrl + '/post/stop', { postId: this.postData.postId }).subscribe(
-      data => {},
+      () => {
+        this._snackBar.open('Thread stopped', null, {
+          duration: 5000
+        });
+      },
       error => {
         console.error(error);
       }
     );
   }
 
-  agInit(params: any): void {
+  agInit(params: ICellRendererParams): void {
     this.params = params;
     this.postData = params.data;
   }
 
-  refresh(params: any): boolean {
+  refresh(params: ICellRendererParams): boolean {
     return false;
   }
 }

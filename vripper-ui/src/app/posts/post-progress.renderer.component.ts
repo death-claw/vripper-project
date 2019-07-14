@@ -4,6 +4,7 @@ import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { AgRendererComponent } from 'ag-grid-angular';
 import { Subscription } from 'rxjs';
 import { WsHandler } from '../ws-handler';
+import { ICellRendererParams } from 'ag-grid-community';
 
 @Component({
   selector: 'app-progress-cell',
@@ -74,7 +75,7 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
   }
 
   websocketHandlerPromise: Promise<WsHandler>;
-  params: any;
+  params: ICellRendererParams;
   postState: PostState;
   subscription: Subscription;
 
@@ -100,12 +101,12 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
     this.subscription.unsubscribe();
   }
 
-  agInit(params: any): void {
+  agInit(params: ICellRendererParams): void {
     this.params = params;
     this.postState = params.data;
   }
 
-  refresh(params: any): boolean {
+  refresh(params: ICellRendererParams): boolean {
     this.postState = params.data;
     return true;
   }

@@ -1,4 +1,3 @@
-import { Action } from './../common/action.model';
 import { PostState } from './post-state.model';
 import { CMD } from './../common/cmd.enum';
 import { WSMessage } from './../common/ws-message.model';
@@ -14,7 +13,7 @@ export class PostsDataSource {
     private gridOptions: GridOptions,
     private zone: NgZone
   ) {
-    this.websocketHandlerPromise = wsConnectionService.getConnection();
+    this.websocketHandlerPromise = this.wsConnectionService.getConnection();
   }
 
   websocketHandlerPromise: Promise<WsHandler>;
@@ -24,36 +23,31 @@ export class PostsDataSource {
     this.websocketHandlerPromise.then((handler: WsHandler) => {
       console.log('Connecting to posts datasource');
       this.subscriptions.push(
-        handler.subscribeForPosts((e: PostState[], a: Action[]) => {
+        handler.subscribeForPosts((e: PostState[]) => {
           this.zone.run(() => {
             const toAdd = [];
             const toUpdate = [];
             const toRemove = [];
             e.forEach(v => {
+              if (v.removed) {
+                if (this.gridOptions.api.getRowNode(v.postId) != null) {
+                  toRemove.push(this.gridOptions.api.getRowNode(v.postId).data);
+                }
+                return;
+              }
+
               if (this.gridOptions.api.getRowNode(v.postId) == null) {
                 toAdd.push(v);
               } else {
                 toUpdate.push(v);
               }
             });
-            a.forEach(v => {
-              if (v.stateAction === 'REMOVE') {
-                toRemove.push(this.gridOptions.api.getRowNode(v.payload).data);
-              }
-            });
             this.gridOptions.api.updateRowData({ update: toUpdate, add: toAdd, remove: toRemove });
           });
         })
       );
+      handler.send(new WSMessage(CMD.POSTS_SUB.toString()));
     });
-
-    this.subscriptions.push(
-      this.wsConnectionService.state.subscribe(e => {
-        this.websocketHandlerPromise.then((handler: WsHandler) => {
-          handler.send(new WSMessage(CMD.POSTS_SUB.toString()));
-        });
-      })
-    );
   }
 
   disconnect() {

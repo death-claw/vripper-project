@@ -37,6 +37,8 @@ public class Post {
 
     private int total;
 
+    private boolean removed = false;
+
     public Post(String title, String url, List<Image> images, Map<String, String> metadata, String postId, AppStateService appStateService) {
         this.title = title;
         this.url = url;
@@ -47,6 +49,11 @@ public class Post {
         total = images.size();
         status = Status.PENDING;
         appStateService.getCurrentPosts().put(postId, this);
+        appStateService.getLivePostsState().onNext(this);
+    }
+
+    public void setRemoved(boolean removed) {
+        this.removed = removed;
         appStateService.getLivePostsState().onNext(this);
     }
 
