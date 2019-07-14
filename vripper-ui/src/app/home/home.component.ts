@@ -1,3 +1,4 @@
+import { ElectronService } from 'ngx-electron';
 import { ClipboardService } from './../clipboard.service';
 import { ParseResponse } from './../common/parse-response.model';
 import { Component, OnInit, ViewChild, Inject } from '@angular/core';
@@ -21,7 +22,8 @@ export class HomeComponent implements OnInit {
     private _snackBar: MatSnackBar,
     private serverService: ServerService,
     private clipboardService: ClipboardService,
-    public dialog: MatDialog
+    public dialog: MatDialog,
+    public electronService: ElectronService
   ) {
     this.clipboardService.links.subscribe(e => {
       this.loading = true;

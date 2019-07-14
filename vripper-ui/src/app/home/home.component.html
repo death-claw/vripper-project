@@ -30,6 +30,7 @@
     </button>
   </div>
   <div fxLayout="column" fxFlex="grow">
-    <app-posts fxFlex="nogrow" style="height: calc(100% - 27px); width: 100%;"></app-posts>
+    <app-posts [ngStyle]="{'height': electronService.isElectronApp ? 'calc(100% - 27px)' : '100%'}" fxFlex="nogrow"
+               style="width: 100%; overflow-x: hidden"></app-posts>
   </div>
 </div>
