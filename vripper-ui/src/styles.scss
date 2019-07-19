@@ -65,3 +65,11 @@ div.ag-cell.no-padding {
     text-overflow:ellipsis;
     white-space: nowrap;
 }
+
+.ag-body-horizontal-scroll {
+    display: none !important;
+}
+
+.ag-center-cols-viewport {
+    overflow: hidden !important;
+}

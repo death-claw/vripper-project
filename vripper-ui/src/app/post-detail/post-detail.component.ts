@@ -30,6 +30,7 @@ export class PostDetailComponent implements OnInit, OnDestroy {
           cellClass: 'no-padding'
         }
       ],
+      enableBrowserTooltips: true,
       rowHeight: 48,
       rowData: [],
       frameworkComponents: {

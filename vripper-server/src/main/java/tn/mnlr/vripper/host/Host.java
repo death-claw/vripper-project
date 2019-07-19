@@ -11,12 +11,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
-import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.HtmlProcessorException;
 import tn.mnlr.vripper.q.ImageFileData;
+import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.services.ConnectionManager;
 import tn.mnlr.vripper.services.HtmlProcessorService;
 import tn.mnlr.vripper.services.XpathService;
@@ -76,7 +76,7 @@ abstract public class Host {
                 imageFileData.setImageName(imageFileData.getImageName() + ".jpg");
             }
 
-            File destinationFolder = new File(appSettingsService.getDownloadPath(), sanitize(image.getPostName()));
+            File destinationFolder = new File(appSettingsService.getDownloadPath(), sanitize(image.getPostName() + "_" + image.getPostId()));
             logger.info(String.format("Saving to %s", destinationFolder.getPath()));
             if (!destinationFolder.exists()) {
                 logger.info(String.format("Creating %s", destinationFolder.getPath()));

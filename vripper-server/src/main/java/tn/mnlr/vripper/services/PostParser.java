@@ -29,7 +29,8 @@ public class PostParser {
     private final static String POSTS_XPATH = "//li[contains(@id,'post_')][not(contains(@id,'post_thank'))]";
     private final static String REAL_THREAD_XPATH = ".//a[@class='postcounter']";
     private final static String THREAD_TITLE_XPATH = "//li[contains(@class, 'lastnavbit')]/span";
-    private final static String POST_TITLE_XPATH = ".//h2";
+    private final static String POST_TITLE_XPATH = ".//h2[contains(@class, 'title')]";
+    private final static String POST_COUNTER_XPATH = ".//a[contains(@class, 'postcounter')]";
     private final static String POST_LINKS_XPATH = ".//a";
 
     @Autowired
@@ -147,6 +148,20 @@ public class PostParser {
                 throw new PostParseException(e);
             }
 
+            String postCounter;
+            try {
+                logger.info(String.format("Finding post's counter"));
+                Node counterNode = xpathService.getAsNode(postsNodeList.item(i), POST_COUNTER_XPATH);
+                if (counterNode != null) {
+                    postCounter = counterNode.getTextContent().trim();
+                    logger.info(String.format("Found post's counter: %s", postCounter));
+                } else {
+                    postCounter = "";
+                }
+            } catch (Exception e) {
+                throw new PostParseException(e);
+            }
+
             ArrayList<Image> imagesList = new ArrayList<>();
             try {
                 logger.info(String.format("Finding all links for post with id %s using xpath %s", postId, POST_LINKS_XPATH));
@@ -177,7 +192,7 @@ public class PostParser {
 
             if (!imagesList.isEmpty()) {
                 logger.info(String.format("Found %d images for post with id %s", imagesList.size(), postId));
-                posts.add(appStateService.createPost(postTitle, realUrl, imagesList, null, postId));
+                posts.add(appStateService.createPost(postTitle, realUrl, imagesList, null, postId, postCounter));
             } else {
                 logger.warn(String.format("No images found for post with id %s, skipping", postId));
             }

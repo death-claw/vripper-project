@@ -7,8 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.entities.Image;
+import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.services.AppStateService;
 
 import javax.annotation.PostConstruct;
@@ -105,6 +105,9 @@ public class ExecutionService {
                 DownloadJob take = null;
                 try {
                     take = downloadQ.take();
+                    if (take == null) {
+                        continue;
+                    }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
@@ -127,7 +130,7 @@ public class ExecutionService {
                                 appStateService.doneDownloadJob(finalTake.getImage());
                                 logger.info(String.format("Finished downloading %s", finalTake.getImage().getUrl()));
                                 synchronized (threadCount) {
-                                    int i = threadCount.decrementAndGet();
+                                    threadCount.decrementAndGet();
                                     running.remove(finalTake);
                                     futures.remove(finalTake.getImage().getUrl());
                                     threadCount.notify();
@@ -148,5 +151,9 @@ public class ExecutionService {
                 }
             }
         }
+    }
+
+    public int runningCount() {
+        return running.size();
     }
 }

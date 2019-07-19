@@ -119,4 +119,8 @@ public class DownloadQ {
             notPauseQ = true;
         }
     }
+
+    public int size() {
+        return downloadQ.size();
+    }
 }

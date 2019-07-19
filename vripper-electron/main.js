@@ -6,13 +6,17 @@ const { spawn } = require("child_process");
 const { ipcMain } = require("electron");
 const commandExists = require("command-exists").sync;
 const { dialog } = require("electron");
+const axios = require('axios');
 const appDir = process.env.APPDIR;
-
-console.log('App path', path.join(app.getPath('exe'), "../bin/vripper-server.jar"));
-console.log('App image path', appDir);
 
 let win;
 let vripperServer;
+let serverPort;
+
+const maxTerminationAttemps = 5;
+let terminationAttemps = 0;
+let terminationInteval;
+let terminated = false;
 
 process.on("uncaughtException", err => {
   dialog.showErrorBox(err.message, err.stack);
@@ -62,6 +66,7 @@ function createWindow() {
 }
 
 getPort().then(port => {
+  serverPort = port;
   ipcMain.on("get-port", event => {
     event.reply("port", port);
   });
@@ -70,7 +75,14 @@ getPort().then(port => {
     "-jar",
     appDir !== undefined ? path.join(appDir, "bin/vripper-server.jar") :
     path.join(app.getPath('exe'), "../bin/vripper-server.jar")
-  ], {stdio: 'ignore'});
+  ], {
+    stdio: 'ignore'
+  });
+  vripperServer.on('exit', (code, signal) => {
+    console.log(`vripper server terminated, code = ${code}, signal = ${signal}`);
+    terminated = true;
+    app.quit();
+  });
 });
 
 const gotTheLock = app.requestSingleInstanceLock();
@@ -89,10 +101,30 @@ if (!gotTheLock) {
 
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") {
-      if(vripperServer != null) {
-        vripperServer.kill("SIGTERM");
-      }
-      app.quit();
+      axios.post('http://localhost:' + serverPort + '/actuator/shutdown', {}, {
+        headers: { 'content-type': 'application/json' },
+      }).then((response) => {
+        terminationInteval=  setInterval(() => {
+          terminationAttemps++;
+          if(terminated) {
+            console.log('viper server terminated');
+            clearInterval(terminationInteval);
+            app.quit();
+          } else if(terminationAttemps > maxTerminationAttemps) {
+            console.log('viper server is not terminated');
+            console.log('Proceed to kill');
+            vripperServer.kill('SIGKILL');
+            clearInterval(terminationInteval);
+            app.quit();
+          }
+        }, 1000);
+      })
+      .catch((error) => {
+        // Terminate immediately
+        vripperServer.kill('SIGKILL');
+        terminated = true;
+        app.quit();
+      });
     }
   });
 

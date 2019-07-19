@@ -49,8 +49,8 @@ public class AppStateService {
         return new Image(pageUrl, postId, postName, host, this);
     }
 
-    public Post createPost(String title, String url, List<Image> images, Map<String, String> metadata, String postId) {
-        return new Post(title, url, images, metadata, postId, this);
+    public Post createPost(String title, String url, List<Image> images, Map<String, String> metadata, String postId, String postCounter) {
+        return new Post(title, url, images, metadata, postId, postCounter, this);
     }
 
     public Post getPost(String postId) {

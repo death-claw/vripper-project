@@ -37,6 +37,7 @@ export class PostsComponent implements OnInit, OnDestroy {
           suppressAutoSize: true
         }
       ],
+      enableBrowserTooltips: true,
       rowHeight: 48,
       rowData: [],
       frameworkComponents: {

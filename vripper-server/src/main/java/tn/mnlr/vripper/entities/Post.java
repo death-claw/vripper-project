@@ -27,6 +27,8 @@ public class Post {
 
     private String title;
 
+    private String postCounter;
+
     private String url;
 
     private List<Image> images;
@@ -39,12 +41,13 @@ public class Post {
 
     private boolean removed = false;
 
-    public Post(String title, String url, List<Image> images, Map<String, String> metadata, String postId, AppStateService appStateService) {
+    public Post(String title, String url, List<Image> images, Map<String, String> metadata, String postId, String postCounter, AppStateService appStateService) {
         this.title = title;
         this.url = url;
         this.images = images;
         this.metadata = metadata;
         this.postId = postId;
+        this.postCounter = postCounter;
         this.appStateService = appStateService;
         total = images.size();
         status = Status.PENDING;

@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import tn.mnlr.vripper.exception.ValidationException;
 
+import javax.annotation.PreDestroy;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -63,6 +64,7 @@ public class AppSettingsService {
         desktopClipboard = prefs.getBoolean(DESKTOP_CLIPBOARD, false);
     }
 
+    @PreDestroy
     public void save() {
 
         prefs.put(DOWNLOAD_PATH, downloadPath);

@@ -7,7 +7,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
-import tn.mnlr.vripper.services.PersistenceService;
 
 import java.util.Map;
 
@@ -17,8 +16,6 @@ public class SpringContext implements ApplicationContextAware {
     private static final Logger logger = LoggerFactory.getLogger(SpringContext.class);
 
     private static ConfigurableApplicationContext context;
-
-    private PersistenceService persistenceService;
 
     /**
      * Returns the Spring managed bean instance of the given class type (if it exists).

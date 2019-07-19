@@ -17,8 +17,10 @@ import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.entities.mixin.ui.ImageUIMixin;
 import tn.mnlr.vripper.entities.mixin.ui.PostUIMixin;
 import tn.mnlr.vripper.services.AppStateService;
+import tn.mnlr.vripper.services.GlobalStateService;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,24 +32,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(WebSocketHandler.class);
 
-    @Getter
-    private static class WSMessage {
-
-        private String cmd;
-        private String payload;
-
-        enum CMD {
-            POSTS_SUB,
-            POST_DETAILS_SUB,
-            POSTS_UNSUB,
-            POST_DETAILS_UNSUB
-        }
-    }
+    private Map<String, Disposable> stateSubscriptions = new ConcurrentHashMap<>();
 
     public WebSocketHandler() {
         om.addMixIn(Image.class, ImageUIMixin.class).addMixIn(Post.class, PostUIMixin.class);
     }
 
+    @Autowired
+    private GlobalStateService globalStateService;
     private Map<String, Disposable> postsSubscriptions = new ConcurrentHashMap<>();
     private Map<String, Disposable> postDetailsSubscriptions = new ConcurrentHashMap<>();
     private ObjectMapper om = new ObjectMapper();
@@ -61,6 +53,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
         WSMessage wsMessage = om.readValue(message.getPayload(), WSMessage.class);
         WSMessage.CMD cmd = WSMessage.CMD.valueOf(wsMessage.getCmd());
         switch (cmd) {
+            case GLOBAL_STATE_SUB:
+                subscribeForGlobalState(session);
+                break;
             case POSTS_SUB:
                 subscribeForPosts(session);
                 break;
@@ -75,7 +70,43 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 logger.info(String.format("Client %s unsubscribed from posts", session.getId()));
                 Optional.ofNullable(postsSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
                 break;
+            case GLOBAL_STATE_UNSUB:
+                logger.info(String.format("Client %s unsubscribed from global state", session.getId()));
+                Optional.ofNullable(stateSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+                break;
         }
+    }
+
+    private void subscribeForGlobalState(WebSocketSession session) {
+
+        logger.info(String.format("Client %s subscribed for global state", session.getId()));
+        if (stateSubscriptions.containsKey(session.getId())) {
+            stateSubscriptions.get(session.getId()).dispose();
+        }
+
+        try {
+            send(session, new TextMessage(om.writeValueAsString(Arrays.asList(globalStateService.getCurrentState()))));
+        } catch (Exception e) {
+            logger.error("Unexpected error occurred", e);
+        }
+
+        stateSubscriptions.put(session.getId(),
+                globalStateService.getLiveGlobalState()
+                        .onBackpressureBuffer()
+                        .observeOn(Schedulers.io())
+                        .map(Arrays::asList)
+                        .map(om::writeValueAsString)
+                        .map(TextMessage::new)
+                        .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))
+        );
+    }
+
+    @Override
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+
+        Optional.ofNullable(postsSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+        Optional.ofNullable(postDetailsSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+        Optional.ofNullable(stateSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
     }
 
     private void subscribeForPosts(WebSocketSession session) {
@@ -146,10 +177,19 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     }
 
-    @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+    @Getter
+    private static class WSMessage {
 
-        Optional.ofNullable(postsSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
-        Optional.ofNullable(postDetailsSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+        private String cmd;
+        private String payload;
+
+        enum CMD {
+            POSTS_SUB,
+            POST_DETAILS_SUB,
+            POSTS_UNSUB,
+            POST_DETAILS_UNSUB,
+            GLOBAL_STATE_SUB,
+            GLOBAL_STATE_UNSUB
+        }
     }
 }

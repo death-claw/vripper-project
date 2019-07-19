@@ -12,6 +12,7 @@ import { ServerService } from './server-service';
 export class ClipboardService {
   private links$: Subject<string> = new Subject();
   private interval: NodeJS.Timer;
+  private lastText = '';
   constructor(
     private electronService: ElectronService,
     private serverService: ServerService,
@@ -47,12 +48,11 @@ export class ClipboardService {
     }
 
     const clipboard: Clipboard = this.electronService.clipboard;
-    let lastText = '';
     this.interval = setInterval(() => {
       const text = clipboard.readText();
 
-      if (this.textHasDiff(text, lastText)) {
-        lastText = text;
+      if (this.textHasDiff(text, this.lastText)) {
+        this.lastText = text;
         if (text.indexOf('https://vipergirls.to/threads') !== -1) {
           this.links$.next(text);
         }
