@@ -19,17 +19,22 @@
       </div>
     </form>
   </div>
-  <div fxLayout="row" fxLayoutAlign="end" fxLayoutGap="10px">
-    <button (click)="clear()" aria-label="Clear completed" color="primary" mat-stroked-button title="Clear completed">
-      Clear completed
+  <div fxLayout="row" fxLayoutAlign="end" fxLayoutGap="10px" id="controls">
+    <button aria-label="Start" color="primary" mat-icon-button title="Start">
+      <mat-icon>play_arrow</mat-icon>
+    </button>
+    <button aria-label="Stop" color="primary" mat-icon-button title="Stop">
+      <mat-icon>stop</mat-icon>
+    </button>
+    <div fxFlex="grow"></div>
+    <button (click)="clear()" aria-label="Clear completed" color="primary" mat-icon-button title="Clear completed">
       <mat-icon>clear_all</mat-icon>
     </button>
-    <button (click)="remove()" aria-label="Remove All" color="primary" mat-stroked-button title="Remove All">
-      Remove All
+    <button (click)="remove()" aria-label="Remove All" color="primary" mat-icon-button title="Remove All">
       <mat-icon>delete_forever</mat-icon>
     </button>
   </div>
-  <div fxFlex="0 0 calc(100% - 180px)">
+  <div [fxFlex]="electronService.isElectronApp ? '0 0 calc(100% - 180px)' : '0 0 calc(100% - 153px)'">
     <app-posts [ngStyle]="{'height': electronService.isElectronApp ? 'calc(100% - 27px)' : '100%'}"
                style="width: 100%;"></app-posts>
   </div>

@@ -72,7 +72,7 @@ abstract public class Host {
              * END HOST SPECIFIC
              */
 
-            if(!imageFileData.getImageName().toLowerCase().endsWith(".jpg")) {
+            if (!imageFileData.getImageName().toLowerCase().endsWith(".jpg") && !imageFileData.getImageName().toLowerCase().endsWith(".jpeg")) {
                 imageFileData.setImageName(imageFileData.getImageName() + ".jpg");
             }
 
@@ -155,6 +155,9 @@ abstract public class Host {
         Header[] headers;
         logger.info(String.format("Requesting %s", url));
         try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(httpGet)) {
+            if (response.getStatusLine().getStatusCode() / 100 != 2) {
+                throw new HostException(String.format("Unexpected response code: %d", response.getStatusLine().getStatusCode()));
+            }
             headers = response.getAllHeaders();
             basePage = EntityUtils.toString(response.getEntity());
             logger.debug(String.format("%s response: %n%s", url, basePage));

@@ -46,7 +46,7 @@ public class ImgboxHost extends Host {
             String imgUrl = imgNode.getAttributes().getNamedItem("src").getTextContent().trim();
 
             imageFileData.setImageUrl(imgUrl);
-            imageFileData.setImageName(imgTitle.substring(8));
+            imageFileData.setImageName(imgTitle);
         } catch (Exception e) {
             throw new HostException("Unexpected error occurred", e);
         }
