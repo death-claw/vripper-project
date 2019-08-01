@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.4] - 2019-08-01
+### Changed
+- Fix names for ImgboxHost
+- Enhance UI
+- Minor fixes
+### Added
+- Add start and stop button
+
 ## [1.4.3] - 2019-07-14
 ### Changed
 - Update some messages

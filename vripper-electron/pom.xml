@@ -5,19 +5,10 @@
   <parent>
     <groupId>tn.mnlr</groupId>
     <artifactId>vripper</artifactId>
-    <version>1.4.4-SNAPSHOT</version>
+    <version>1.4.4</version>
   </parent>
   <artifactId>vripper-electron</artifactId>
   <name>vripper-electron</name>
-  <dependencies>
-    <dependency>
-      <groupId>tn.mnlr</groupId>
-      <artifactId>vripper-server</artifactId>
-      <version>${project.version}</version>
-      <scope>runtime</scope>
-      <classifier>${buildClassifier}</classifier>
-    </dependency>
-  </dependencies>
   <build>
     <plugins>
       <plugin>
@@ -31,12 +22,18 @@
   <profiles>
     <profile>
       <id>electron</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
       <properties>
         <buildClassifier>electron</buildClassifier>
       </properties>
+      <dependencies>
+        <dependency>
+          <groupId>tn.mnlr</groupId>
+          <artifactId>vripper-server</artifactId>
+          <version>${project.version}</version>
+          <scope>runtime</scope>
+          <classifier>${buildClassifier}</classifier>
+        </dependency>
+      </dependencies>
       <build>
         <plugins>
           <plugin>

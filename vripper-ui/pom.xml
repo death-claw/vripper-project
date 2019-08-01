@@ -5,7 +5,7 @@
   <parent>
     <groupId>tn.mnlr</groupId>
     <artifactId>vripper</artifactId>
-    <version>1.4.4-SNAPSHOT</version>
+    <version>1.4.4</version>
   </parent>
   <artifactId>vripper-ui</artifactId>
   <name>vripper-ui</name>
