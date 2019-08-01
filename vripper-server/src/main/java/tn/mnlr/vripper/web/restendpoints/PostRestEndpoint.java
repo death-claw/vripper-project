@@ -90,10 +90,22 @@ public class PostRestEndpoint {
         downloadQ.restart(postId.getPostId());
     }
 
+    @PostMapping("/post/restart/all")
+    @ResponseStatus(value = HttpStatus.OK)
+    public void restartPost() throws Exception {
+        downloadQ.restartAll();
+    }
+
     @PostMapping("/post/stop")
     @ResponseStatus(value = HttpStatus.OK)
     public void stop(@RequestBody PostId postId) {
         downloadQ.stop(postId.getPostId());
+    }
+
+    @PostMapping("/post/stop/all")
+    @ResponseStatus(value = HttpStatus.OK)
+    public void stopAll() {
+        downloadQ.stopAll();
     }
 
     @PostMapping("/post/remove")

@@ -15,5 +15,6 @@
     <modules>
         <module>vripper-server</module>
         <module>vripper-ui</module>
+        <module>vripper-electron</module>
     </modules>
 </project>

@@ -152,6 +152,38 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
   }
 
+  stopAll() {
+    this.ngZone.run(() => {
+        this.httpClient.post(this.serverService.baseUrl + '/post/stop/all', {})
+        .subscribe(
+          () => {
+            this._snackBar.open(`Download stopped`, null, { duration: 5000 });
+          },
+          error => {
+            this._snackBar.open(error.error, null, {
+              duration: 5000
+            });
+          }
+        );
+    });
+  }
+
+  restartAll() {
+    this.ngZone.run(() => {
+        this.httpClient.post(this.serverService.baseUrl + '/post/restart/all', {})
+        .subscribe(
+          () => {
+            this._snackBar.open(`Download started`, null, { duration: 5000 });
+          },
+          error => {
+            this._snackBar.open(error.error, null, {
+              duration: 5000
+            });
+          }
+        );
+    });
+  }
+
   ngOnDestroy() {
     this.subscriptions.forEach(e => e.unsubscribe());
     this.websocketHandlerPromise.then((handler: WsHandler) => {

@@ -20,22 +20,23 @@
     </form>
   </div>
   <div fxLayout="row" fxLayoutAlign="end" fxLayoutGap="10px" id="controls">
-    <button aria-label="Start" color="primary" mat-icon-button title="Start">
+    <button (click)="restartAll()" aria-label="Start" color="primary" mat-mini-fab title="Start">
       <mat-icon>play_arrow</mat-icon>
     </button>
-    <button aria-label="Stop" color="primary" mat-icon-button title="Stop">
+    <button (click)="stopAll()" aria-label="Stop" color="primary" mat-mini-fab title="Stop">
       <mat-icon>stop</mat-icon>
     </button>
     <div fxFlex="grow"></div>
-    <button (click)="clear()" aria-label="Clear completed" color="primary" mat-icon-button title="Clear completed">
+    <button (click)="clear()" aria-label="Clear completed" color="primary" mat-mini-fab title="Clear completed">
       <mat-icon>clear_all</mat-icon>
     </button>
-    <button (click)="remove()" aria-label="Remove All" color="primary" mat-icon-button title="Remove All">
+    <button (click)="remove()" aria-label="Remove All" color="primary" mat-mini-fab title="Remove All">
       <mat-icon>delete_forever</mat-icon>
     </button>
   </div>
-  <div [fxFlex]="electronService.isElectronApp ? '0 0 calc(100% - 180px)' : '0 0 calc(100% - 153px)'">
-    <app-posts [ngStyle]="{'height': electronService.isElectronApp ? 'calc(100% - 27px)' : '100%'}"
+  <mat-divider></mat-divider>
+  <div [fxFlex]="electronService.isElectronApp ? '0 0 calc(100% - 190px)' : '0 0 calc(100% - 163px)'">
+    <app-posts [ngStyle]="{'height': electronService.isElectronApp ? 'calc(100% - 37px)' : '100%'}"
                style="width: 100%;"></app-posts>
   </div>
   <div style="text-align: end">Downloading: {{ globalState!.running }} | Queued: {{ globalState!.queued }} | Remaining:

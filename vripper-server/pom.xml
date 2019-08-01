@@ -72,33 +72,29 @@
             <artifactId>vripper-ui</artifactId>
             <version>${project.version}</version>
             <scope>runtime</scope>
+            <classifier>${buildClassifier}</classifier>
         </dependency>
     </dependencies>
 
     <build>
-        <finalName>${project.artifactId}-${project.version}</finalName>
         <plugins>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <classifier>${buildClassifier}</classifier>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>copy-resources</id>
-                        <phase>validate</phase>
+                        <id>repackage</id>
                         <goals>
-                            <goal>copy-resources</goal>
+                            <goal>repackage</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.directory}/classes/static</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${project.parent.basedir}/vripper-ui/dist/vripper-ui/
-                                    </directory>
-                                </resource>
-                            </resources>
+                            <classifier>${buildClassifier}</classifier>
                         </configuration>
                     </execution>
                 </executions>
@@ -152,4 +148,47 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>web</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <buildClassifier>web</buildClassifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-resources</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/classes/static</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/vripper-ui/dist/vripper-ui/
+                                            </directory>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>electron</id>
+            <properties>
+                <buildClassifier>electron</buildClassifier>
+            </properties>
+        </profile>
+    </profiles>
 </project>

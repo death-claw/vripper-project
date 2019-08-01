@@ -123,4 +123,15 @@ public class DownloadQ {
     public int size() {
         return downloadQ.size();
     }
+
+    public synchronized void stopAll() {
+        appStateService.getCurrentPosts().values().stream().map(Post::getPostId).forEach(this::stop);
+    }
+
+    public synchronized void restartAll() throws InterruptedException {
+        for (Post post : appStateService.getCurrentPosts().values()) {
+            String postId = post.getPostId();
+            restart(postId);
+        }
+    }
 }

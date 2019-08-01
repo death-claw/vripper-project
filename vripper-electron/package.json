@@ -27,7 +27,7 @@
     ],
     "extraFiles": [
       {
-        "from": "../vripper-server/target/vripper-server-${version}.jar",
+        "from": "../vripper-server/target/vripper-server-${version}-electron.jar",
         "to": "bin/vripper-server.jar"
       }
     ],
@@ -36,7 +36,7 @@
     },
     "linux": {
       "target": [
-        "AppImage"
+        "zip"
       ]
     }
   },
