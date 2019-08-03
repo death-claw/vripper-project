@@ -21,7 +21,7 @@ public class DownloadSpeedService {
         this.read.addAndGet(read);
     }
 
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedDelay = 1000)
     private void calc() {
         readBytesPerSecond.onNext(read.getAndSet(0));
     }
