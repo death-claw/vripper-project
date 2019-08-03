@@ -79,7 +79,9 @@ public class AppStateService {
             if (post.getImages().stream().map(Image::getStatus).filter(e -> e.equals(Image.Status.ERROR)).count() > 0) {
                 post.setStatus(Post.Status.ERROR);
             } else {
-                post.setStatus(Post.Status.COMPLETE);
+                if (!Post.Status.STOPPED.equals(post.getStatus())) {
+                    post.setStatus(Post.Status.COMPLETE);
+                }
             }
             livePostsState.onNext(post);
         }

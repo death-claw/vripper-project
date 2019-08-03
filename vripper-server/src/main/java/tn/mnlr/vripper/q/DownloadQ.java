@@ -9,6 +9,7 @@ import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.services.AppStateService;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -17,6 +18,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class DownloadQ {
+
+    private static final List<Post.Status> FINISHED = Arrays.asList(Post.Status.ERROR, Post.Status.COMPLETE, Post.Status.STOPPED);
 
     private static final Logger logger = LoggerFactory.getLogger(DownloadQ.class);
 
@@ -102,6 +105,9 @@ public class DownloadQ {
 
     public synchronized void stop(String postId) {
         try {
+            if (FINISHED.contains(appStateService.getPost(postId).getStatus())) {
+                return;
+            }
             notPauseQ = false;
             appStateService.getPost(postId).setStatus(Post.Status.STOPPED);
             List<Image> images = appStateService.getPost(postId)

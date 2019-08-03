@@ -16,10 +16,7 @@ import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.HtmlProcessorException;
 import tn.mnlr.vripper.q.ImageFileData;
-import tn.mnlr.vripper.services.AppSettingsService;
-import tn.mnlr.vripper.services.ConnectionManager;
-import tn.mnlr.vripper.services.HtmlProcessorService;
-import tn.mnlr.vripper.services.XpathService;
+import tn.mnlr.vripper.services.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -45,6 +42,9 @@ abstract public class Host {
 
     @Autowired
     private ConnectionManager cm;
+
+    @Autowired
+    private DownloadSpeedService downloadSpeedService;
 
     abstract protected String getHost();
 
@@ -109,6 +109,7 @@ abstract public class Host {
                     while ((read = downloadStream.read(buffer, 0, READ_BUFFER_SIZE)) != -1) {
                         fos.write(buffer, 0, read);
                         image.increase(read);
+                        downloadSpeedService.increase(read);
                     }
                     EntityUtils.consumeQuietly(response.getEntity());
                 }

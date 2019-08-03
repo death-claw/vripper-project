@@ -39,7 +39,8 @@
     <app-posts [ngStyle]="{'height': electronService.isElectronApp ? 'calc(100% - 37px)' : '100%'}"
                style="width: 100%;"></app-posts>
   </div>
-  <div style="text-align: end">Downloading: {{ globalState!.running }} | Queued: {{ globalState!.queued }} | Remaining:
+  <div style="text-align: end">{{ downloadSpeed!.speed + '/s' }} | Downloading: {{ globalState!.running }} | Queued: {{
+    globalState!.queued }} | Remaining:
     {{ globalState!.remaining }} | Error: {{ globalState!.error }}
   </div>
 </div>

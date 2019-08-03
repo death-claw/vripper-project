@@ -4,6 +4,7 @@ import { PostState } from './posts/post-state.model';
 import { map, filter } from 'rxjs/operators';
 import { PostDetails } from './post-detail/post-details.model';
 import { GlobalState } from './common/global-state.model';
+import { DownloadSpeed } from './common/download-speed.model';
 
 export class WsHandler {
   constructor(private websocket: Subject<any>) {}
@@ -26,6 +27,28 @@ export class WsHandler {
             );
           });
           return state;
+        })
+      )
+      .subscribe(e => {
+        callback(e);
+      });
+  }
+
+  subscribeForSpeed(callback: (speedStream: Array<DownloadSpeed>) => void): Subscription {
+    return this.websocket
+      .pipe(
+        map(e => JSON.parse(e)),
+        filter(e => e.length > 0 && e.filter(v => v.type === 'downSpeed').length > 0),
+        map(e => {
+          const speed: Array<DownloadSpeed> = [];
+          (<Array<any>>e).forEach(element => {
+            speed.push(
+              new DownloadSpeed(
+                element.speed
+              )
+            );
+          });
+          return speed;
         })
       )
       .subscribe(e => {

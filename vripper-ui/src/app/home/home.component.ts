@@ -16,6 +16,7 @@ import { WsHandler } from '../ws-handler';
 import { Subscription } from 'rxjs';
 import { WSMessage } from '../common/ws-message.model';
 import { CMD } from '../common/cmd.enum';
+import { DownloadSpeed } from '../common/download-speed.model';
 
 @Component({
   selector: 'app-home',
@@ -44,6 +45,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   websocketHandlerPromise: Promise<WsHandler>;
   subscriptions: Subscription[] = [];
   globalState: GlobalState = new GlobalState(0, 0, 0, 0);
+  downloadSpeed: DownloadSpeed = new DownloadSpeed('0 B');
 
   ngOnInit() {
     this.clipboardService.links.subscribe(e => {
@@ -70,7 +72,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
 
     this.websocketHandlerPromise.then((handler: WsHandler) => {
-      console.log('Connecting to global state');
+      console.log('Connecting to global state and download speed');
       this.subscriptions.push(
         handler.subscribeForGlobalState((e: GlobalState[]) => {
           this.ngZone.run(() => {
@@ -78,7 +80,15 @@ export class HomeComponent implements OnInit, OnDestroy {
           });
         })
       );
+      this.subscriptions.push(
+        handler.subscribeForSpeed((e: DownloadSpeed[]) => {
+          this.ngZone.run(() => {
+            this.downloadSpeed = e[0];
+          });
+        })
+      );
       handler.send(new WSMessage(CMD.GLOBAL_STATE_SUB.toString()));
+      handler.send(new WSMessage(CMD.SPEED_SUB.toString()));
     });
   }
 

@@ -17,6 +17,8 @@ import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.entities.mixin.ui.ImageUIMixin;
 import tn.mnlr.vripper.entities.mixin.ui.PostUIMixin;
 import tn.mnlr.vripper.services.AppStateService;
+import tn.mnlr.vripper.services.DownloadSpeed;
+import tn.mnlr.vripper.services.DownloadSpeedService;
 import tn.mnlr.vripper.services.GlobalStateService;
 
 import java.io.IOException;
@@ -32,20 +34,25 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(WebSocketHandler.class);
 
-    private Map<String, Disposable> stateSubscriptions = new ConcurrentHashMap<>();
-
     public WebSocketHandler() {
         om.addMixIn(Image.class, ImageUIMixin.class).addMixIn(Post.class, PostUIMixin.class);
     }
 
     @Autowired
     private GlobalStateService globalStateService;
-    private Map<String, Disposable> postsSubscriptions = new ConcurrentHashMap<>();
-    private Map<String, Disposable> postDetailsSubscriptions = new ConcurrentHashMap<>();
-    private ObjectMapper om = new ObjectMapper();
 
     @Autowired
     private AppStateService appStateService;
+
+    @Autowired
+    private DownloadSpeedService downloadSpeedService;
+
+    private Map<String, Disposable> postsSubscriptions = new ConcurrentHashMap<>();
+    private Map<String, Disposable> postDetailsSubscriptions = new ConcurrentHashMap<>();
+    private Map<String, Disposable> stateSubscriptions = new ConcurrentHashMap<>();
+    private Map<String, Disposable> downloadSpeedSubscriptions = new ConcurrentHashMap<>();
+
+    private ObjectMapper om = new ObjectMapper();
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
@@ -55,6 +62,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
         switch (cmd) {
             case GLOBAL_STATE_SUB:
                 subscribeForGlobalState(session);
+                break;
+            case SPEED_SUB:
+                subscribeForSpeed(session);
                 break;
             case POSTS_SUB:
                 subscribeForPosts(session);
@@ -73,6 +83,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
             case GLOBAL_STATE_UNSUB:
                 logger.info(String.format("Client %s unsubscribed from global state", session.getId()));
                 Optional.ofNullable(stateSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+                break;
+            case SPEED_UNSUB:
+                logger.info(String.format("Client %s unsubscribed from download speed info", session.getId()));
+                Optional.ofNullable(downloadSpeedSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
                 break;
         }
     }
@@ -95,18 +109,39 @@ public class WebSocketHandler extends TextWebSocketHandler {
                         .onBackpressureBuffer()
                         .observeOn(Schedulers.io())
                         .map(Arrays::asList)
+                        .filter(e -> !e.isEmpty())
+                        .map(e -> e.subList(0, 1))
                         .map(om::writeValueAsString)
                         .map(TextMessage::new)
                         .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))
         );
     }
 
-    @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+    private void subscribeForSpeed(WebSocketSession session) {
 
-        Optional.ofNullable(postsSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
-        Optional.ofNullable(postDetailsSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
-        Optional.ofNullable(stateSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+        logger.info(String.format("Client %s subscribed for download speed info", session.getId()));
+        if (downloadSpeedSubscriptions.containsKey(session.getId())) {
+            downloadSpeedSubscriptions.get(session.getId()).dispose();
+        }
+
+        try {
+            send(session, new TextMessage(om.writeValueAsString(Arrays.asList(new DownloadSpeed(0)))));
+        } catch (Exception e) {
+            logger.error("Unexpected error occurred", e);
+        }
+
+        downloadSpeedSubscriptions.put(session.getId(),
+                downloadSpeedService.getReadBytesPerSecond()
+                        .onBackpressureBuffer()
+                        .observeOn(Schedulers.io())
+                        .map(Arrays::asList)
+                        .filter(e -> !e.isEmpty())
+                        .map(e -> e.subList(0, 1))
+                        .map(e -> e.stream().map(DownloadSpeed::new).collect(Collectors.toList()))
+                        .map(om::writeValueAsString)
+                        .map(TextMessage::new)
+                        .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))
+        );
     }
 
     private void subscribeForPosts(WebSocketSession session) {
@@ -177,6 +212,15 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     }
 
+    @Override
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+
+        Optional.ofNullable(postsSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+        Optional.ofNullable(postDetailsSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+        Optional.ofNullable(stateSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+        Optional.ofNullable(downloadSpeedSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+    }
+
     @Getter
     private static class WSMessage {
 
@@ -189,7 +233,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
             POSTS_UNSUB,
             POST_DETAILS_UNSUB,
             GLOBAL_STATE_SUB,
-            GLOBAL_STATE_UNSUB
+            GLOBAL_STATE_UNSUB,
+            SPEED_SUB,
+            SPEED_UNSUB
         }
     }
 }

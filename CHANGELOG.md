@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.5] - 2019-08-03
+### Changed
+- Add min width and height for electron app
+### Added
+- Add download speed to status bar
+
 ## [1.4.4] - 2019-08-01
 ### Changed
 - Fix names for ImgboxHost
