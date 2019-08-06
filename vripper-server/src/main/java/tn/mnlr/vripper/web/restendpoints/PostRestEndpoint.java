@@ -79,20 +79,20 @@ public class PostRestEndpoint {
         if (threadId == null || threadId.isEmpty()) {
             return new ResponseEntity<>("Failed to process empty request", HttpStatus.BAD_REQUEST);
         }
-        List<Post> parsed = postParser.parse(url.url);
-        logger.info(String.format("%d posts found from thread %s", parsed.size(), url.url));
+        List<Post> parsed = postParser.parseByThreadId(threadId);
+        logger.info(String.format("%d posts found from thread %s", parsed.size(), threadId));
         parsed.forEach(p -> authService.leaveThanks(p.getUrl(), p.getPostId()));
         if(appSettingsService.isAutoStart()) {
             logger.info("Auto start downloads option is enabled");
-            logger.info(String.format("Starting to enqueue %d jobs for %s", parsed.stream().flatMap(e -> e.getImages().stream()).count(), url.url));
+            logger.info(String.format("Starting to enqueue %d jobs for thread %s", parsed.stream().flatMap(e -> e.getImages().stream()).count(), threadId));
             for (Post post : parsed) {
                 downloadQ.enqueue(post);
             }
-            logger.info(String.format("Done enqueuing jobs for %s", url.url));
+            logger.info(String.format("Done enqueuing jobs for %s", threadId));
         } else {
             logger.info("Auto start downloads option is disabled");
         }
-        logger.info(String.format("Done processing thread: %s", url.url));
+        logger.info(String.format("Done processing thread: %s", threadId));
         return ResponseEntity.ok(new ParseResult(parsed.size()));
     }
 
