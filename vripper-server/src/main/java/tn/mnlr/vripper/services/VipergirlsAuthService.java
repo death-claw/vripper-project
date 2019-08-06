@@ -1,5 +1,6 @@
 package tn.mnlr.vripper.services;
 
+import lombok.Getter;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -15,9 +16,13 @@ import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import tn.mnlr.vripper.exception.VripperException;
 
+import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class VipergirlsAuthService {
@@ -36,9 +41,19 @@ public class VipergirlsAuthService {
     @Autowired
     private AppSettingsService appSettingsService;
 
+    @Getter
     private String cookies;
 
+    private ExecutorService executorService = Executors.newFixedThreadPool(6);
+
     private boolean authenticated = false;
+
+    @PreDestroy
+    private void destroy() throws InterruptedException {
+        logger.info("Shutting down VipergirlsAuthService");
+        executorService.shutdown();
+        executorService.awaitTermination(10, TimeUnit.SECONDS);
+    }
 
     public void authenticate() throws VripperException {
 
@@ -105,25 +120,26 @@ public class VipergirlsAuthService {
         logger.info(String.format("Authenticated: %s", username));
     }
 
-    public void leaveThanks(String postUrl, String postId) throws VripperException {
-
-        if (!appSettingsService.isVLogin()) {
-            logger.warn("Authentication with ViperGirls option is disabled");
-            return;
-        }
-        if (!appSettingsService.isVThanks()) {
-            logger.warn("Leave thanks option is disabled");
-            return;
-        }
-        if (!authenticated) {
-            logger.error("You are not authenticated");
-            return;
-        }
-        try {
-            postThanks(postId, getSecurityToken(postUrl));
-        } catch (VripperException e) {
-            throw new VripperException(e);
-        }
+    public void leaveThanks(String postUrl, String postId) {
+        executorService.submit(() -> {
+            if (!appSettingsService.isVLogin()) {
+                logger.warn("Authentication with ViperGirls option is disabled");
+                return;
+            }
+            if (!appSettingsService.isVThanks()) {
+                logger.warn("Leave thanks option is disabled");
+                return;
+            }
+            if (!authenticated) {
+                logger.error("You are not authenticated");
+                return;
+            }
+            try {
+                postThanks(postId, getSecurityToken(postUrl));
+            } catch (Exception e) {
+                logger.error(String.format("Failed to leave a thanks for url %s, post id %s", postUrl, postId), e);
+            }
+        });
     }
 
     private String getSecurityToken(String url) throws VripperException {
@@ -183,7 +199,6 @@ public class VipergirlsAuthService {
         CloseableHttpClient client = cm.getClient().build();
 
         try (CloseableHttpResponse response = client.execute(postThanks)) {
-
             EntityUtils.consumeQuietly(response.getEntity());
         } catch (Exception e) {
             throw new VripperException(e);

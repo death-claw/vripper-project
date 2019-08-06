@@ -53,7 +53,7 @@ public class ExecutionService {
 
         retryPolicy = new RetryPolicy<>()
                 .handleIf(e -> !(e instanceof InterruptedException))
-                .withDelay(Duration.ofSeconds(20))
+                .withDelay(Duration.ofSeconds(5))
                 .withMaxRetries(2)
                 .abortOn(InterruptedException.class)
                 .onFailedAttempt(e -> logger.warn(String.format("#%d tries failed", e.getAttemptCount()), e.getLastFailure()));

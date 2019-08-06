@@ -57,13 +57,31 @@ public class PostRestEndpoint {
         }
         List<Post> parsed = postParser.parse(url.url);
         logger.info(String.format("%d posts found from thread %s", parsed.size(), url.url));
-        parsed.forEach(p -> {
-            try {
-                authService.leaveThanks(p.getUrl(), p.getPostId());
-            } catch (Exception e) {
-                logger.error(String.format("Failed to leave thanks for %s", p.getUrl()), e);
+        parsed.forEach(p -> authService.leaveThanks(p.getUrl(), p.getPostId()));
+        if (appSettingsService.isAutoStart()) {
+            logger.info("Auto start downloads option is enabled");
+            logger.info(String.format("Starting to enqueue %d jobs for %s", parsed.stream().flatMap(e -> e.getImages().stream()).count(), url.url));
+            for (Post post : parsed) {
+                downloadQ.enqueue(post);
             }
-        });
+            logger.info(String.format("Done enqueuing jobs for %s", url.url));
+        } else {
+            logger.info("Auto start downloads option is disabled");
+        }
+        logger.info(String.format("Done processing thread: %s", url.url));
+        return ResponseEntity.ok(new ParseResult(parsed.size()));
+    }
+
+    @PostMapping("/post/{threadId}")
+    @ResponseStatus(value = HttpStatus.OK)
+    public ResponseEntity processPostByThreadId(@PathVariable("threadId") String threadId) throws Exception {
+        logger.info(String.format("Starting to process thread: %s", threadId));
+        if (threadId == null || threadId.isEmpty()) {
+            return new ResponseEntity<>("Failed to process empty request", HttpStatus.BAD_REQUEST);
+        }
+        List<Post> parsed = postParser.parse(url.url);
+        logger.info(String.format("%d posts found from thread %s", parsed.size(), url.url));
+        parsed.forEach(p -> authService.leaveThanks(p.getUrl(), p.getPostId()));
         if(appSettingsService.isAutoStart()) {
             logger.info("Auto start downloads option is enabled");
             logger.info(String.format("Starting to enqueue %d jobs for %s", parsed.stream().flatMap(e -> e.getImages().stream()).count(), url.url));

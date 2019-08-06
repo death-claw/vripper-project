@@ -17,12 +17,18 @@ public class DownloadSpeedService {
     @Getter
     private PublishProcessor<Long> readBytesPerSecond = PublishProcessor.create();
 
+    private boolean allowWrite = false;
+
     public void increase(long read) {
-        this.read.addAndGet(read);
+        if (allowWrite) {
+            this.read.addAndGet(read);
+        }
     }
 
     @Scheduled(fixedDelay = 1000)
     private void calc() {
+        allowWrite = false;
         readBytesPerSecond.onNext(read.getAndSet(0));
+        allowWrite = true;
     }
 }

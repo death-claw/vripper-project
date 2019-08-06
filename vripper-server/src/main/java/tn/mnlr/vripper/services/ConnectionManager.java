@@ -10,6 +10,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
+
 @Service
 public class ConnectionManager {
 
@@ -50,5 +52,11 @@ public class ConnectionManager {
         HttpPost httpPost = new HttpPost(url);
         httpPost.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
         return httpPost;
+    }
+
+    public HttpGet buildHttpGet(URI uri) {
+        HttpGet httpGet = new HttpGet(uri);
+        httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
+        return httpGet;
     }
 }
