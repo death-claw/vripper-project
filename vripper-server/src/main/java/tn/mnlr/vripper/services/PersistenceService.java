@@ -16,9 +16,10 @@ import tn.mnlr.vripper.entities.mixin.persistance.PostPersistanceMixin;
 
 import javax.annotation.PreDestroy;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -48,6 +49,9 @@ public class PersistenceService {
             try {
                 if(dataFile.createNewFile()) {
                     logger.info("Data file successfully created");
+                    try (FileWriter fw = new FileWriter(dataFile)) {
+                        fw.write("{}");
+                    }
                 } else {
                     logger.info("Data file already exists");
                 }
@@ -100,7 +104,7 @@ public class PersistenceService {
 
         String jsonContent;
         try {
-            jsonContent = Files.readAllLines(Paths.get(VripperApplication.dataPath), Charset.forName("UTF-8")).stream().collect(Collectors.joining());
+            jsonContent = Files.readAllLines(Paths.get(VripperApplication.dataPath), StandardCharsets.UTF_8).stream().collect(Collectors.joining());
         } catch (Exception e) {
             logger.warn("data file not found, previous state cannot be restored", e);
             return;
