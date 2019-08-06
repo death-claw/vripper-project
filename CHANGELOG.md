@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.6] - 2019-08-06
+### Changed
+- Fixed a bug when creating image file names
+- Remove unnecessary logs
+- Fix data.json init 
+
 ## [1.4.5] - 2019-08-03
 ### Changed
 - Add min width and height for electron app

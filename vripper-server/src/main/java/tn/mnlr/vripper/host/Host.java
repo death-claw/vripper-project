@@ -81,8 +81,6 @@ abstract public class Host {
             if (!destinationFolder.exists()) {
                 logger.info(String.format("Creating %s", destinationFolder.getPath()));
                 destinationFolder.mkdirs();
-            } else {
-                logger.warn(String.format("%s already exists, the file will be overridden", destinationFolder.getPath()));
             }
 
             HttpClient client = cm.getClient().build();
@@ -97,7 +95,7 @@ abstract public class Host {
 
                 try (
                         InputStream downloadStream = response.getEntity().getContent();
-                        FileOutputStream fos = new FileOutputStream(destinationFolder.getPath() + File.separator + imageFileData.getImageName())
+                        FileOutputStream fos = new FileOutputStream(destinationFolder.getPath() + File.separator + sanitize(imageFileData.getImageName()))
                 ) {
 
                     image.setTotal(response.getEntity().getContentLength());
