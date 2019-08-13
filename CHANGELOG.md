@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.4.8] - 2019-08-13
+### Changed
+- Add option to force image ordering
+
 ## [1.4.7] - 2019-08-13
 ### Changed
 - Fixed a bug in image filename extensions 
