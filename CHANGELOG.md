@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.4.9] - 2019-08-13
+### Changed
+- Update Built-By to be generic
+
 ## [1.4.8] - 2019-08-13
 ### Changed
 - Add option to force image ordering
