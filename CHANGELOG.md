@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.4.7] - 2019-08-13
+### Changed
+- Fixed a bug in image filename extensions 
+
 ## [1.4.6] - 2019-08-06
 ### Changed
 - Fixed a bug when creating image file names
