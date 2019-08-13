@@ -18,10 +18,14 @@ import tn.mnlr.vripper.exception.HtmlProcessorException;
 import tn.mnlr.vripper.q.ImageFileData;
 import tn.mnlr.vripper.services.*;
 
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Iterator;
 import java.util.Random;
 
 @Service
@@ -72,10 +76,7 @@ abstract public class Host {
              * END HOST SPECIFIC
              */
 
-            if (!imageFileData.getImageName().toLowerCase().endsWith(".jpg") && !imageFileData.getImageName().toLowerCase().endsWith(".jpeg")) {
-                imageFileData.setImageName(imageFileData.getImageName() + ".jpg");
-            }
-
+            imageFileData.setImageName(formatImageFileName(imageFileData.getImageName()));
             File destinationFolder = new File(appSettingsService.getDownloadPath(), sanitize(image.getPostName() + "_" + image.getPostId()));
             logger.info(String.format("Saving to %s", destinationFolder.getPath()));
             if (!destinationFolder.exists()) {
@@ -93,9 +94,10 @@ abstract public class Host {
                     throw new DownloadException(String.format("Server returned code %d", response.getStatusLine().getStatusCode()));
                 }
 
+                File outputFile = new File(destinationFolder.getPath() + File.separator + imageFileData.getImageName() + ".tmp");
                 try (
                         InputStream downloadStream = response.getEntity().getContent();
-                        FileOutputStream fos = new FileOutputStream(destinationFolder.getPath() + File.separator + sanitize(imageFileData.getImageName()))
+                        FileOutputStream fos = new FileOutputStream(outputFile)
                 ) {
 
                     image.setTotal(response.getEntity().getContentLength());
@@ -110,6 +112,7 @@ abstract public class Host {
                         downloadSpeedService.increase(read);
                     }
                     EntityUtils.consumeQuietly(response.getEntity());
+                    checkImageTypeAndRename(outputFile, imageFileData.getImageName());
                 }
             }
         } catch (Exception e) {
@@ -118,6 +121,42 @@ abstract public class Host {
             }
             throw new DownloadException(e);
         }
+    }
+
+    private void checkImageTypeAndRename(File outputFile, String imageName) throws HostException {
+        try {
+            ImageInputStream iis = ImageIO.createImageInputStream(outputFile);
+            Iterator<ImageReader> it = ImageIO.getImageReaders(iis);
+            if (!it.hasNext()) {
+                throw new HostException("Image file is not recognized!");
+            }
+            ImageReader reader = it.next();
+            String formatName = reader.getFormatName();
+            if (formatName.toUpperCase().equals("JPEG")) {
+                formatName = "JPG";
+            }
+            String outImageName = imageName + "." + formatName.toUpperCase();
+            outputFile.renameTo(new File(outputFile.getParent(), outImageName));
+        } catch (Exception e) {
+            throw new HostException("Failed to rename output file", e);
+        }
+    }
+
+    /**
+     * Will sanitize the image name and remove extension
+     *
+     * @param imageName
+     * @return
+     */
+    protected String formatImageFileName(String imageName) {
+        int extensionIndex = imageName.lastIndexOf('.');
+        String fileName;
+        if (extensionIndex != -1) {
+            fileName = imageName.substring(0, extensionIndex);
+        } else {
+            fileName = imageName;
+        }
+        return sanitize(fileName);
     }
 
     /**
