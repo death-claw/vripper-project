@@ -7,8 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.exception.ValidationException;
+import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.services.VipergirlsAuthService;
 
 @RestController
@@ -57,6 +57,7 @@ public class SettingsRestEndpoint {
             this.settings.setVThanks(false);
         }
         this.settings.setDesktopClipboard(settings.isDesktopClipboard());
+        this.settings.setForceOrder(settings.isForceOrder());
 
         this.settings.save();
 
@@ -76,7 +77,8 @@ public class SettingsRestEndpoint {
                 settings.getVUsername(),
                 settings.getVPassword(),
                 settings.isVThanks(),
-                settings.isDesktopClipboard()
+                settings.isDesktopClipboard(),
+                settings.isForceOrder()
         );
     }
 

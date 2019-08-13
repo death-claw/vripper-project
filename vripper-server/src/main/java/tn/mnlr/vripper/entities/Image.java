@@ -9,7 +9,6 @@ import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.services.AppStateService;
 
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Getter
@@ -30,6 +29,8 @@ public class Image {
 
     private String url;
 
+    private int index;
+
     private AtomicLong current = new AtomicLong(0);
     private Status status;
     private BehaviorProcessor<Image> imageStateProcessor;
@@ -37,12 +38,13 @@ public class Image {
     @Setter
     private long total = 0;
 
-    public Image(String url, String postId, String postName, Host host, AppStateService appStateService) {
+    public Image(String url, String postId, String postName, Host host, AppStateService appStateService, int index) {
         this.url = url;
         this.postId = postId;
         this.postName = postName;
         this.host = host;
         this.appStateService = appStateService;
+        this.index = index;
         status = Status.PENDING;
         imageStateProcessor = BehaviorProcessor.create();
         appStateService.getCurrentImages().put(this.url, this);

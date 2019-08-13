@@ -34,6 +34,7 @@ public class AppSettingsService {
     private final String V_PASSWORD = "VPASSWORD";
     private final String V_THANKS = "VTHANKS";
     private final String DESKTOP_CLIPBOARD = "DESKTOP_CLIPBOARD";
+    private final String FORCE_ORDER = "FORCE_ORDER";
 
     private String downloadPath;
     private int maxThreads;
@@ -43,6 +44,7 @@ public class AppSettingsService {
     private String vPassword;
     private boolean vThanks;
     private boolean desktopClipboard;
+    private boolean forceOrder;
 
     public void setVPassword(String vPassword) {
         if(vPassword.isEmpty()) {
@@ -62,6 +64,7 @@ public class AppSettingsService {
         vPassword = prefs.get(V_PASSWORD, "");
         vThanks = prefs.getBoolean(V_THANKS, false);
         desktopClipboard = prefs.getBoolean(DESKTOP_CLIPBOARD, false);
+        forceOrder = prefs.getBoolean(FORCE_ORDER, false);
     }
 
     @PreDestroy
@@ -75,6 +78,7 @@ public class AppSettingsService {
         prefs.put(V_PASSWORD, vPassword);
         prefs.putBoolean(V_THANKS, vThanks);
         prefs.putBoolean(DESKTOP_CLIPBOARD, desktopClipboard);
+        prefs.putBoolean(FORCE_ORDER, forceOrder);
 
         try {
             prefs.sync();
@@ -121,8 +125,10 @@ public class AppSettingsService {
         private boolean vThanks;
         @JsonProperty("desktopClipboard")
         private boolean desktopClipboard;
+        @JsonProperty("forceOrder")
+        private boolean forceOrder;
 
-        public Settings(String downloadPath, int maxThreads, boolean autoStart, boolean vLogin, String vUsername, String vPassword, boolean vThanks, boolean desktopClipboard) {
+        public Settings(String downloadPath, int maxThreads, boolean autoStart, boolean vLogin, String vUsername, String vPassword, boolean vThanks, boolean desktopClipboard, boolean forceOrder) {
             this.downloadPath = downloadPath;
             this.maxThreads = maxThreads;
             this.autoStart = autoStart;
@@ -131,6 +137,7 @@ public class AppSettingsService {
             this.vPassword = vPassword;
             this.vThanks = vThanks;
             this.desktopClipboard = desktopClipboard;
+            this.forceOrder = forceOrder;
         }
     }
 }

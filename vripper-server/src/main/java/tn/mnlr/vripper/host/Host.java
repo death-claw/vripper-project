@@ -112,7 +112,7 @@ abstract public class Host {
                         downloadSpeedService.increase(read);
                     }
                     EntityUtils.consumeQuietly(response.getEntity());
-                    checkImageTypeAndRename(outputFile, imageFileData.getImageName());
+                    checkImageTypeAndRename(outputFile, imageFileData.getImageName(), image.getIndex());
                 }
             }
         } catch (Exception e) {
@@ -123,9 +123,8 @@ abstract public class Host {
         }
     }
 
-    private void checkImageTypeAndRename(File outputFile, String imageName) throws HostException {
-        try {
-            ImageInputStream iis = ImageIO.createImageInputStream(outputFile);
+    private void checkImageTypeAndRename(File outputFile, String imageName, int index) throws HostException {
+        try (ImageInputStream iis = ImageIO.createImageInputStream(outputFile)) {
             Iterator<ImageReader> it = ImageIO.getImageReaders(iis);
             if (!it.hasNext()) {
                 throw new HostException("Image file is not recognized!");
@@ -133,9 +132,9 @@ abstract public class Host {
             ImageReader reader = it.next();
             String formatName = reader.getFormatName();
             if (formatName.toUpperCase().equals("JPEG")) {
-                formatName = "JPG";
+                formatName = "jpg";
             }
-            String outImageName = imageName + "." + formatName.toUpperCase();
+            String outImageName = (appSettingsService.isForceOrder() ? String.format("%03d_", index) : "") + imageName + "." + formatName.toLowerCase();
             outputFile.renameTo(new File(outputFile.getParent(), outImageName));
         } catch (Exception e) {
             throw new HostException("Failed to rename output file", e);
