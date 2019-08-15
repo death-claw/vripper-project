@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.Iterator;
 import java.util.Random;
 
@@ -95,11 +96,9 @@ abstract public class Host {
                 }
 
                 File outputFile = new File(destinationFolder.getPath() + File.separator + imageFileData.getImageName() + ".tmp");
-                try (
-                        InputStream downloadStream = response.getEntity().getContent();
-                        FileOutputStream fos = new FileOutputStream(outputFile)
-                ) {
-
+                InputStream downloadStream = response.getEntity().getContent();
+                FileOutputStream fos = new FileOutputStream(outputFile);
+                try {
                     image.setTotal(response.getEntity().getContentLength());
                     logger.info(String.format("%s length is %d", imageFileData.getImageUrl(), image.getTotal()));
                     logger.info(String.format("Starting data transfer for %s", imageFileData.getImageUrl()));
@@ -112,8 +111,15 @@ abstract public class Host {
                         downloadSpeedService.increase(read);
                     }
                     EntityUtils.consumeQuietly(response.getEntity());
-                    checkImageTypeAndRename(outputFile, imageFileData.getImageName(), image.getIndex());
+                } finally {
+                    if (downloadStream != null) {
+                        downloadStream.close();
+                    }
+                    if (fos != null) {
+                        fos.close();
+                    }
                 }
+                checkImageTypeAndRename(outputFile, imageFileData.getImageName(), image.getIndex());
             }
         } catch (Exception e) {
             if(Thread.interrupted()) {
@@ -124,20 +130,25 @@ abstract public class Host {
     }
 
     private void checkImageTypeAndRename(File outputFile, String imageName, int index) throws HostException {
+        String formatName;
         try (ImageInputStream iis = ImageIO.createImageInputStream(outputFile)) {
             Iterator<ImageReader> it = ImageIO.getImageReaders(iis);
             if (!it.hasNext()) {
                 throw new HostException("Image file is not recognized!");
             }
             ImageReader reader = it.next();
-            String formatName = reader.getFormatName();
+            formatName = reader.getFormatName();
             if (formatName.toUpperCase().equals("JPEG")) {
                 formatName = "jpg";
             }
-            String outImageName = (appSettingsService.isForceOrder() ? String.format("%03d_", index) : "") + imageName + "." + formatName.toLowerCase();
-            outputFile.renameTo(new File(outputFile.getParent(), outImageName));
         } catch (Exception e) {
-            throw new HostException("Failed to rename output file", e);
+            throw new HostException("Failed to guess image format", e);
+        }
+        try {
+            String outImageName = (appSettingsService.isForceOrder() ? String.format("%03d_", index) : "") + imageName + "." + formatName.toLowerCase();
+            Files.move(outputFile.toPath(), new File(outputFile.getParent(), outImageName).toPath());
+        } catch (Exception e) {
+            throw new HostException("Failed to rename the image", e);
         }
     }
 
