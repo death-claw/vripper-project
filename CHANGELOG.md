@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.4.10] - 2019-08-15
+### Changed
+- Fix a rename issue on windows
+
 ## [1.4.9] - 2019-08-13
 ### Changed
 - Update Built-By to be generic
