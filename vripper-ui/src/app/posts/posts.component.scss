@@ -15,3 +15,7 @@ $cell-space: 8px;
     justify-content: flex-end;
     margin-left: $cell-space;
 }
+
+:host ::ng-deep .ag-row-hover {
+    background-color: transparent !important;
+}

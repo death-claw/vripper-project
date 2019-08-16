@@ -36,7 +36,7 @@ public class ImxHost extends Host {
     private ConnectionManager cm;
 
     @Override
-    protected String getHost() {
+    public String getHost() {
         return host;
     }
 

@@ -5,6 +5,8 @@ import io.reactivex.processors.BehaviorProcessor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.services.AppStateService;
 
@@ -15,8 +17,10 @@ import java.util.concurrent.atomic.AtomicLong;
 @NoArgsConstructor
 public class Image {
 
-    @Setter
+    private static final Logger logger = LoggerFactory.getLogger(Image.class);
+
     private AppStateService appStateService;
+
     private Disposable subscription;
 
     private final String type = "img";
@@ -38,18 +42,20 @@ public class Image {
     @Setter
     private long total = 0;
 
-    public Image(String url, String postId, String postName, Host host, AppStateService appStateService, int index) {
+    public Image(String url, String postId, String postName, Host host, int index) {
         this.url = url;
         this.postId = postId;
         this.postName = postName;
         this.host = host;
-        this.appStateService = appStateService;
         this.index = index;
         status = Status.PENDING;
         imageStateProcessor = BehaviorProcessor.create();
+    }
+
+    public void setAppStateService(AppStateService appStateService) {
+        this.appStateService = appStateService;
         appStateService.getCurrentImages().put(this.url, this);
         appStateService.getLiveImageUpdates().onNext(this);
-        init();
     }
 
     public void setStatus(Status status) {
@@ -62,12 +68,11 @@ public class Image {
     }
 
     public void init() {
-        if (imageStateProcessor != null) {
-            imageStateProcessor.onComplete();
+        if (appStateService == null) {
+            logger.warn("Attempting to init the image whilst the App State is null, unexpected behaviour could occur from this");
+            return;
         }
-        if (subscription != null) {
-            subscription.dispose();
-        }
+        cleanup();
         imageStateProcessor = BehaviorProcessor.create();
         subscription = imageStateProcessor
                 .onBackpressureLatest()
@@ -77,6 +82,15 @@ public class Image {
         current.set(0);
         status = Status.PENDING;
         imageStateProcessor.onNext(this);
+    }
+
+    public void cleanup() {
+        if (imageStateProcessor != null) {
+            imageStateProcessor.onComplete();
+        }
+        if (subscription != null) {
+            subscription.dispose();
+        }
     }
 
     public void setCurrent(int current) {

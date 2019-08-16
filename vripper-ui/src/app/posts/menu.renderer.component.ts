@@ -13,11 +13,13 @@ import { ICellRendererParams } from 'ag-grid-community';
 import { RemoveResponse } from '../common/remove-response.model';
 import { ConfirmDialogComponent } from '../common/confirmation-component/confirmation-dialog';
 import { filter, flatMap } from 'rxjs/operators';
+import { ElectronService } from 'ngx-electron';
+import { DownloadPath } from '../common/download-path.model';
 
 @Component({
   selector: 'app-menu-cell',
   template: `
-    <div fxLayout="column" fxLayoutAlign="center center" style="height: 100%">
+    <div fxLayout="column" fxLayoutAlign="center center" style="height: 48px">
       <button fxFlex="nogrow" mat-icon-button [matMenuTriggerFor]="menu">
         <mat-icon>more_vert</mat-icon>
       </button>
@@ -51,6 +53,10 @@ import { filter, flatMap } from 'rxjs/operators';
         <mat-icon>delete</mat-icon>
         <span>Remove</span>
       </button>
+      <button *ngIf="electronService.isElectronApp" (click)="open()" mat-menu-item>
+        <mat-icon>open_in_new</mat-icon>
+        <span>Download Location</span>
+      </button>
     </mat-menu>
   `
 })
@@ -62,9 +68,13 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
     private wsConnectionService: WsConnectionService,
     private serverService: ServerService,
     private zone: NgZone,
-    private _snackBar: MatSnackBar
+    private _snackBar: MatSnackBar,
+    public electronService: ElectronService
   ) {
     this.websocketHandlerPromise = this.wsConnectionService.getConnection();
+    if (this.electronService.isElectronApp) {
+      this.fs = this.electronService.remote.require('fs');
+    }
   }
 
   isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
@@ -76,6 +86,8 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
   subscription: Subscription;
 
   websocketHandlerPromise: Promise<WsHandler>;
+
+  fs;
 
   ngOnInit(): void {
     this.websocketHandlerPromise.then((handler: WsHandler) => {
@@ -163,6 +175,34 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
       );
   }
 
+  open() {
+    if (!this.electronService.isElectronApp) {
+      console.error('Cannot open downloader folder, not electron app');
+      return;
+    }
+    // Request the server to give the correct file location
+    this.httpClient.get<DownloadPath>(this.serverService.baseUrl + '/post/path/' + this.postData.postId).subscribe(
+      path => {
+        if (this.fs.existsSync(path.path)) {
+          this.electronService.shell.openItem(path.path);
+        } else {
+          if(this.postData.done <= 0) {
+            this._snackBar.open('Download has not been started yet for this post', null, {
+              duration: 5000
+            });
+          } else {
+            this._snackBar.open(path.path + ' does not exist, you probably removed it', null, {
+              duration: 5000
+            });
+          }
+        }
+      },
+      error => {
+        console.error(error);
+      }
+    );
+  }
+
   stop() {
     this.httpClient.post(this.serverService.baseUrl + '/post/stop', { postId: this.postData.postId }).subscribe(
       () => {
@@ -182,6 +222,8 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
   }
 
   refresh(params: ICellRendererParams): boolean {
-    return false;
+    this.params = params;
+    this.postData = params.data;
+    return true;
   }
 }

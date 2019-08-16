@@ -14,6 +14,8 @@ public class DownloadSpeedService {
 
     private AtomicLong read = new AtomicLong(0);
 
+    private long currentValue;
+
     @Getter
     private PublishProcessor<Long> readBytesPerSecond = PublishProcessor.create();
 
@@ -28,7 +30,11 @@ public class DownloadSpeedService {
     @Scheduled(fixedDelay = 1000)
     private void calc() {
         allowWrite = false;
-        readBytesPerSecond.onNext(read.getAndSet(0));
+        long newValue = read.getAndSet(0);
+        if (newValue != currentValue) {
+            currentValue = newValue;
+            readBytesPerSecond.onNext(currentValue);
+        }
         allowWrite = true;
     }
 }

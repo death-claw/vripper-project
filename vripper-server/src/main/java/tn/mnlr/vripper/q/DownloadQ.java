@@ -36,6 +36,7 @@ public class DownloadQ {
 
     public synchronized void put(Image image) throws InterruptedException {
         logger.info(String.format("Enqueuing a job for %s", image.getUrl()));
+        image.init();
         DownloadJob downloadJob = new DownloadJob(image);
         downloadQ.put(downloadJob);
         appStateService.newDownloadJob(downloadJob);
@@ -48,7 +49,6 @@ public class DownloadQ {
     }
 
     public void enqueue(Post post) throws InterruptedException {
-
         for (Image image : post.getImages()) {
             put(image);
         }
@@ -70,7 +70,6 @@ public class DownloadQ {
         appStateService.getPost(postId).setStatus(Post.Status.PENDING);
         logger.info(String.format("Restarting %d jobs for post id %s", images.size(), postId));
         for (Image image : images) {
-            image.init();
             put(image);
         }
     }
@@ -95,6 +94,8 @@ public class DownloadQ {
         if(!removed) {
             logger.warn(String.format("Job for %s does not exist", image.getUrl()));
         }
+
+        image.cleanup();
     }
 
     public void removeRunning(String postId) {

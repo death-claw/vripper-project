@@ -73,6 +73,8 @@ getPort().then(port => {
     event.reply("port", port);
   });
   vripperServer = spawn("java", [
+    "-Xms256m",
+    "-Xmx1024m",
     "-Dvripper.server.port=" + port,
     "-jar",
     appDir !== undefined ? path.join(appDir, "bin/vripper-server.jar") :

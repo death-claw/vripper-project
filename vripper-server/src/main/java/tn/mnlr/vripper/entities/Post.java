@@ -2,21 +2,22 @@ package tn.mnlr.vripper.entities;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
+import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.services.AppStateService;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Getter
 @ToString
 @NoArgsConstructor
 public class Post {
 
-    @Setter
     private AppStateService appStateService;
 
     private Status status;
@@ -24,6 +25,8 @@ public class Post {
     private final String type = "post";
 
     private String postId;
+
+    private String threadId;
 
     private String title;
 
@@ -33,40 +36,61 @@ public class Post {
 
     private List<Image> images;
 
-    private Map<String, String> metadata;
+    private Map<String, Object> metadata;
 
     private AtomicInteger done = new AtomicInteger(0);
 
     private int total;
 
+    private Set<String> hosts;
+
     private boolean removed = false;
 
-    public Post(String title, String url, List<Image> images, Map<String, String> metadata, String postId, String postCounter, AppStateService appStateService) {
+    public Post(String title, String url, List<Image> images, Map<String, Object> metadata, String postId, String threadId) {
         this.title = title;
         this.url = url;
         this.images = images;
         this.metadata = metadata;
         this.postId = postId;
-        this.postCounter = postCounter;
-        this.appStateService = appStateService;
+        this.threadId = threadId;
+        if (this.images.contains(null)) {
+            System.out.println("Oops");
+        }
+        this.images.stream().map(e -> {
+            if (e == null) {
+                System.out.println("Am the cause");
+            }
+            return e.getHost();
+        }).collect(Collectors.toSet());
+        this.images.stream().map(e -> e.getHost()).map(Host::getHost).collect(Collectors.toSet());
+        this.hosts = this.images.stream().map(e -> e.getHost()).map(Host::getHost).collect(Collectors.toSet());
         total = images.size();
         status = Status.PENDING;
-        appStateService.getCurrentPosts().put(postId, this);
-        appStateService.getLivePostsState().onNext(this);
+
+    }
+
+    public void setAppStateService(AppStateService appStateService) {
+        this.appStateService = appStateService;
+        this.appStateService.getCurrentPosts().put(postId, this);
+        this.appStateService.getLivePostsState().onNext(this);
     }
 
     public void setRemoved(boolean removed) {
         this.removed = removed;
-        appStateService.getLivePostsState().onNext(this);
+        updateNotification();
     }
 
     public void increase() {
         done.incrementAndGet();
-        appStateService.getLivePostsState().onNext(this);
+        updateNotification();
     }
 
     public void setStatus(Status status) {
         this.status = status;
+        updateNotification();
+    }
+
+    private void updateNotification() {
         if (appStateService != null) {
             appStateService.getLivePostsState().onNext(this);
         }

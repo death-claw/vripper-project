@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.0] - 2019-08-24
+### Added
+- Display logged in user
+- Add post details when clicking on main list items (Status, Post URL, Host)
+- Add open download location on main list items menu
+- Add support for multi-post threads (Show a menu to select posts to download)
+- Add link to image from details list
+
 ## [1.4.10] - 2019-08-15
 ### Changed
 - Fix a rename issue on windows

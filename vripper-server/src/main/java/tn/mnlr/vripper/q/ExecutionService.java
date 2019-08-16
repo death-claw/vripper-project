@@ -87,6 +87,7 @@ public class ExecutionService {
             if(e.getImageFileData().getImageRequest() != null) {
                 e.getImageFileData().getImageRequest().abort();
             }
+            e.getImage().cleanup();
         });
     }
 

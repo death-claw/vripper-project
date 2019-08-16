@@ -67,7 +67,7 @@ public class SettingsRestEndpoint {
 
     @GetMapping("/settings")
     @ResponseStatus(value = HttpStatus.OK)
-    public AppSettingsService.Settings getSettings() throws Exception {
+    public AppSettingsService.Settings getSettings() {
 
         return new AppSettingsService.Settings(
                 settings.getDownloadPath(),

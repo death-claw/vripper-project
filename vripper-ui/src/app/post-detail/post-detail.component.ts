@@ -25,13 +25,12 @@ export class PostDetailComponent implements OnInit, OnDestroy {
           headerName: 'URL',
           field: 'url',
           sortable: true,
-          tooltipField: 'url',
           cellRenderer: 'progressCellRenderer',
           cellClass: 'no-padding'
         }
       ],
-      enableBrowserTooltips: true,
       rowHeight: 48,
+      animateRows: true,
       rowData: [],
       frameworkComponents: {
         progressCellRenderer: PostDetailsProgressRendererComponent

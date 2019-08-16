@@ -1,11 +1,11 @@
+import { MultiPostComponent } from './../multi-post/multi-post.component';
 import { GlobalState } from './../common/global-state.model';
 import { ElectronService } from 'ngx-electron';
 import { ClipboardService } from './../clipboard.service';
-import { ParseResponse } from './../common/parse-response.model';
 import { Component, OnInit, ViewChild, Inject, NgZone, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { finalize, filter, flatMap } from 'rxjs/operators';
-import { MatSnackBar, MatDialog } from '@angular/material';
+import { filter, flatMap, finalize } from 'rxjs/operators';
+import { MatSnackBar, MatDialog, MatDialogRef } from '@angular/material';
 import { NgForm } from '@angular/forms';
 import { ServerService } from '../server-service';
 import { RemoveAllResponse } from '../common/remove-all-response.model';
@@ -26,8 +26,13 @@ import { DownloadSpeed } from '../common/download-speed.model';
 export class HomeComponent implements OnInit, OnDestroy {
   @ViewChild(PostsComponent)
   private postsComponent: PostsComponent;
+
   loading = false;
+  spinnerMode = 'indeterminate';
+  spinnerValue = 0;
   input: string;
+
+  parseEndSubscription: Subscription;
 
   constructor(
     private httpClient: HttpClient,
@@ -37,7 +42,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     public dialog: MatDialog,
     public electronService: ElectronService,
     private ngZone: NgZone,
-    private wsConnectionService: WsConnectionService,
+    private wsConnectionService: WsConnectionService
   ) {
     this.websocketHandlerPromise = this.wsConnectionService.getConnection();
   }
@@ -46,29 +51,17 @@ export class HomeComponent implements OnInit, OnDestroy {
   subscriptions: Subscription[] = [];
   globalState: GlobalState = new GlobalState(0, 0, 0, 0);
   downloadSpeed: DownloadSpeed = new DownloadSpeed('0 B');
+  // parsingState: ThreadParsingState = new ThreadParsingState(0, 0);
 
   ngOnInit() {
     this.clipboardService.links.subscribe(e => {
-      this.ngZone.run(() => {
-        this.loading = true;
-        this.httpClient
-          .post<ParseResponse>(this.serverService.baseUrl + '/clipboard/post', { url: e })
-          .pipe(
-            finalize(() => {
-              this.loading = false;
-            })
-          )
-          .subscribe(
-            data => {
-              this._snackBar.open(`${data.parsed} posts parsed`, null, { duration: 5000 });
-            },
-            error => {
-              this._snackBar.open(error.error, null, {
-                duration: 5000
-              });
-            }
-          );
-      });
+      if (this.loading) {
+        this._snackBar.open(e + ' was not processed, the app is beasy parsing another thread', null, {
+          duration: 5000
+        });
+        return;
+      }
+      this.processUrl(e);
     });
 
     this.websocketHandlerPromise.then((handler: WsHandler) => {
@@ -93,28 +86,49 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   submit(form: NgForm) {
+    this.processUrl(this.input, form);
+  }
+
+  processUrl(url: string, form?: NgForm) {
     this.ngZone.run(() => {
       this.loading = true;
-      this.httpClient
-        .post<ParseResponse>(this.serverService.baseUrl + '/post', { url: this.input })
-        .pipe(
-          finalize(() => {
-            this.loading = false;
-            this.input = null;
-            form.resetForm();
-          })
-        )
-        .subscribe(
-          data => {
-            this._snackBar.open(`${data.parsed} posts parsed`, null, { duration: 5000 });
-          },
-          error => {
-            this._snackBar.open(error.error, null, {
-              duration: 5000
-            });
-          }
-        );
     });
+    let dialog: MatDialogRef<MultiPostComponent>;
+    this.httpClient
+      .post<{ threadId: string, postId: string}>(this.serverService.baseUrl + '/post', { url: url })
+      .pipe(finalize(() => {
+        this.ngZone.run(() => {
+          this.loading = false;
+        });
+        if(form != null) {
+          form.resetForm();
+          this.input = null;
+        }
+      }))
+      .subscribe(response => {
+        if (response.postId != null) {
+          this.httpClient.post(this.serverService.baseUrl + '/post/add', [response]).subscribe(
+            () => {
+              this._snackBar.open('Adding posts to queue', null, {
+                duration: 5000
+              });
+            },
+            error => {
+              this._snackBar.open(error.error, null, {
+                duration: 5000
+              });
+            }
+          );
+          return;
+        }
+        dialog = this.dialog.open(MultiPostComponent, {
+          maxHeight: '100vh',
+          maxWidth: '100vw',
+          height: '70%',
+          width: '70%',
+          data: { threadId: response.threadId, threadUrl: url }
+        });
+      });
   }
 
   clear() {
@@ -164,33 +178,31 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   stopAll() {
     this.ngZone.run(() => {
-        this.httpClient.post(this.serverService.baseUrl + '/post/stop/all', {})
-        .subscribe(
-          () => {
-            this._snackBar.open(`Download stopped`, null, { duration: 5000 });
-          },
-          error => {
-            this._snackBar.open(error.error, null, {
-              duration: 5000
-            });
-          }
-        );
+      this.httpClient.post(this.serverService.baseUrl + '/post/stop/all', {}).subscribe(
+        () => {
+          this._snackBar.open(`Download stopped`, null, { duration: 5000 });
+        },
+        error => {
+          this._snackBar.open(error.error, null, {
+            duration: 5000
+          });
+        }
+      );
     });
   }
 
   restartAll() {
     this.ngZone.run(() => {
-        this.httpClient.post(this.serverService.baseUrl + '/post/restart/all', {})
-        .subscribe(
-          () => {
-            this._snackBar.open(`Download started`, null, { duration: 5000 });
-          },
-          error => {
-            this._snackBar.open(error.error, null, {
-              duration: 5000
-            });
-          }
-        );
+      this.httpClient.post(this.serverService.baseUrl + '/post/restart/all', {}).subscribe(
+        () => {
+          this._snackBar.open(`Download started`, null, { duration: 5000 });
+        },
+        error => {
+          this._snackBar.open(error.error, null, {
+            duration: 5000
+          });
+        }
+      );
     });
   }
 

@@ -1,3 +1,4 @@
+import { AppPreviewDirective } from './common/preview-tooltip.directive';
 import { WsConnectionService } from './ws-connection.service';
 import { AppService } from './app.service';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -23,6 +24,11 @@ import { SettingsComponent } from './settings/settings.component';
 import { NgxElectronModule } from 'ngx-electron';
 import { ServerService } from './server-service';
 import { ConfirmDialogComponent } from './common/confirmation-component/confirmation-dialog';
+import { SharedService } from './posts/shared.service';
+import { MultiPostComponent } from './multi-post/multi-post.component';
+import { OverlayModule } from '@angular/cdk/overlay';
+import { AppPreviewComponent } from './common/preview-tooltip.component';
+import { UrlRendererComponent } from './multi-post/url-renderer.component';
 
 @NgModule({
   declarations: [
@@ -35,13 +41,13 @@ import { ConfirmDialogComponent } from './common/confirmation-component/confirma
     LoginComponent,
     HomeComponent,
     SettingsComponent,
-    ConfirmDialogComponent
+    ConfirmDialogComponent,
+    MultiPostComponent,
+    AppPreviewComponent,
+    AppPreviewDirective,
+    UrlRendererComponent
   ],
-  entryComponents: [
-    PostDetailComponent,
-    SettingsComponent,
-    ConfirmDialogComponent
-  ],
+  entryComponents: [PostDetailComponent, SettingsComponent, ConfirmDialogComponent, MultiPostComponent, AppPreviewComponent],
   imports: [
     BrowserAnimationsModule,
     FormsModule,
@@ -51,9 +57,21 @@ import { ConfirmDialogComponent } from './common/confirmation-component/confirma
     AppRoutingModule,
     NgxElectronModule,
     ReactiveFormsModule,
-    AgGridModule.withComponents([PostProgressRendererComponent, MenuRendererComponent, PostDetailsProgressRendererComponent])
+    AgGridModule.withComponents([
+      PostProgressRendererComponent,
+      MenuRendererComponent,
+      PostDetailsProgressRendererComponent,
+      UrlRendererComponent
+    ]),
+    OverlayModule
   ],
-  providers: [AppService, WsConnectionService, { provide: HTTP_INTERCEPTORS, useClass: XhrInterceptorService, multi: true }, ServerService],
+  providers: [
+    AppService,
+    WsConnectionService,
+    { provide: HTTP_INTERCEPTORS, useClass: XhrInterceptorService, multi: true },
+    ServerService,
+    SharedService
+  ],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {}

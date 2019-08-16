@@ -51,7 +51,10 @@ abstract public class Host {
     @Autowired
     private DownloadSpeedService downloadSpeedService;
 
-    abstract protected String getHost();
+    @Autowired
+    private PathService pathService;
+
+    abstract public String getHost();
 
     public boolean isSupported(String url) {
         return url.contains(getHost());
@@ -77,8 +80,10 @@ abstract public class Host {
              * END HOST SPECIFIC
              */
 
-            imageFileData.setImageName(formatImageFileName(imageFileData.getImageName()));
-            File destinationFolder = new File(appSettingsService.getDownloadPath(), sanitize(image.getPostName() + "_" + image.getPostId()));
+            String formatImageFileName = pathService.formatImageFileName(imageFileData.getImageName());
+            logger.info(String.format("Sanitizing image name from %s to %s", imageFileData.getImageName(), formatImageFileName));
+            imageFileData.setImageName(formatImageFileName);
+            File destinationFolder = pathService.getDownloadDestinationFolder(image.getPostId());
             logger.info(String.format("Saving to %s", destinationFolder.getPath()));
             if (!destinationFolder.exists()) {
                 logger.info(String.format("Creating %s", destinationFolder.getPath()));
@@ -145,28 +150,14 @@ abstract public class Host {
             throw new HostException("Failed to guess image format", e);
         }
         try {
-            String outImageName = (appSettingsService.isForceOrder() ? String.format("%03d_", index) : "") + imageName + "." + formatName.toLowerCase();
-            Files.move(outputFile.toPath(), new File(outputFile.getParent(), outImageName).toPath());
+            File outImage = new File(outputFile.getParent(), (appSettingsService.isForceOrder() ? String.format("%03d_", index) : "") + imageName + "." + formatName.toLowerCase());
+            if (outImage.exists()) {
+                outImage.delete();
+            }
+            Files.move(outputFile.toPath(), outImage.toPath());
         } catch (Exception e) {
             throw new HostException("Failed to rename the image", e);
         }
-    }
-
-    /**
-     * Will sanitize the image name and remove extension
-     *
-     * @param imageName
-     * @return
-     */
-    protected String formatImageFileName(String imageName) {
-        int extensionIndex = imageName.lastIndexOf('.');
-        String fileName;
-        if (extensionIndex != -1) {
-            fileName = imageName.substring(0, extensionIndex);
-        } else {
-            fileName = imageName;
-        }
-        return sanitize(fileName);
     }
 
     /**
@@ -179,14 +170,6 @@ abstract public class Host {
         if (i < 50) {
             throw new Exception("Purpose error");
         }
-    }
-
-
-
-    protected final String sanitize(final String folderName) {
-        String sanitizedFolderName = folderName.replaceAll("\\.|\\\\|/|\\||:|\\?|\\*|\"|<|>|\\p{Cntrl}", "_");
-        logger.debug(String.format("%s sanitized to %s", folderName, sanitizedFolderName));
-        return sanitizedFolderName;
     }
 
     protected final String getDefaultImageName(final String imgUrl) {
@@ -238,5 +221,10 @@ abstract public class Host {
         }
         private Document document;
         private Header[] headers;
+    }
+
+    @Override
+    public String toString() {
+        return getHost();
     }
 }

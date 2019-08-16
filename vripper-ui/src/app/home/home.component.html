@@ -1,5 +1,5 @@
 <div *ngIf="loading" class="overlay loading" fxLayout="row" fxLayoutAlign="center center">
-  <mat-spinner></mat-spinner>
+  <mat-progress-spinner [mode]="spinnerMode" [value]="spinnerValue" style="position: absolute;"></mat-progress-spinner>
 </div>
 <div fxLayout="column" fxLayoutGap="10px" style="height: 100%">
   <div fxFlex="nogrow">
@@ -15,7 +15,7 @@
         <input [(ngModel)]="input" matInput name="url" placeholder="Put a vipergirls.to link" required/>
       </mat-form-field>
       <div>
-        <button type="submit" mat-raised-button color="primary" [disabled]="f.invalid">Grab</button>
+        <button [disabled]="f.invalid" color="primary" mat-raised-button type="submit">Scan</button>
       </div>
     </form>
   </div>

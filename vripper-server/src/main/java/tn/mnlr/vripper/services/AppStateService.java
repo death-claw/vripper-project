@@ -2,11 +2,13 @@ package tn.mnlr.vripper.services;
 
 import io.reactivex.processors.PublishProcessor;
 import lombok.Getter;
+import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.entities.Post;
-import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.q.DownloadJob;
 
 import java.util.Iterator;
@@ -19,6 +21,8 @@ import java.util.stream.Collectors;
 @Service
 @Getter
 public class AppStateService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AppStateService.class);
 
     private Map<String, Image> currentImages = new ConcurrentHashMap<>();
 
@@ -43,14 +47,6 @@ public class AppStateService {
             Post postState = currentPosts.get(imageState.getPostId());
             postState.increase();
         }
-    }
-
-    public Image createImage(String pageUrl, String postId, String postName, Host host, int index) {
-        return new Image(pageUrl, postId, postName, host, this, index);
-    }
-
-    public Post createPost(String title, String url, List<Image> images, Map<String, String> metadata, String postId, String postCounter) {
-        return new Post(title, url, images, metadata, postId, postCounter, this);
     }
 
     public Post getPost(String postId) {
@@ -126,5 +122,15 @@ public class AppStateService {
                 .collect(Collectors.toList());
         toRemove.forEach(this::remove);
         return toRemove;
+    }
+
+    @Getter
+    public static class CachedThread {
+
+        private Map<String, Post> posts = new ConcurrentHashMap<>();
+        private AtomicInteger parsed = new AtomicInteger(0);
+
+        @Setter
+        private int total = 0;
     }
 }

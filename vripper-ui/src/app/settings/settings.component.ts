@@ -79,7 +79,7 @@ export class SettingsComponent implements OnInit {
           this.clipboardService.init(data);
         },
         error => {
-          this._snackBar.open(error.error.message, null, {
+          this._snackBar.open(error.error, null, {
             duration: 5000
           });
         }

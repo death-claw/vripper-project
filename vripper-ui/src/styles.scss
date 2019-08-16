@@ -1,4 +1,5 @@
 /* You can add global styles to this file, and also import other style files */
+@import '~@angular/cdk/overlay-prebuilt.css';
 @import "~@angular/material/prebuilt-themes/indigo-pink.css";
 @import "~ag-grid-community/dist/styles/ag-grid.css";
 @import "~ag-grid-community/dist/styles/ag-theme-material.css";
@@ -26,7 +27,7 @@ app-root {
 }
 
 .overlay {
-    position: fixed;
+    position: absolute;
     display: block;
     width: 100%;
     height: 100%;
@@ -34,7 +35,7 @@ app-root {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 2;
+    z-index: 2000;
 }
 
 .loading {
@@ -72,4 +73,18 @@ div.ag-cell.no-padding {
 
 .ag-center-cols-viewport {
     overflow: hidden !important;
+}
+
+.ag-cell-focus, .ag-cell {
+    border: none !important;
+}
+
+body a {
+    &:hover {
+        text-decoration: underline;
+    }
+    font-family: Tahoma;
+    color: #731d1d;
+    text-decoration: none;
+    font-weight: bold;
 }

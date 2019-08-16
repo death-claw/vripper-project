@@ -23,9 +23,9 @@ export class PostsComponent implements OnInit, OnDestroy {
           headerName: 'Title',
           field: 'title',
           sortable: true,
-          tooltipField: 'title',
           cellRenderer: 'progressCellRenderer',
-          cellClass: 'no-padding'
+          cellClass: 'no-padding',
+          sort: 'asc'
         },
         {
           headerName: 'Menu',
@@ -37,8 +37,8 @@ export class PostsComponent implements OnInit, OnDestroy {
           suppressAutoSize: true
         }
       ],
-      enableBrowserTooltips: true,
       rowHeight: 48,
+      animateRows: true,
       rowData: [],
       frameworkComponents: {
         progressCellRenderer: PostProgressRendererComponent,

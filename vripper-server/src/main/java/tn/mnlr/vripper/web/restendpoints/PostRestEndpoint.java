@@ -8,20 +8,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tn.mnlr.vripper.entities.Post;
+import tn.mnlr.vripper.VripperApplication;
+import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.q.DownloadQ;
 import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.services.AppStateService;
+import tn.mnlr.vripper.services.PathService;
 import tn.mnlr.vripper.services.PostParser;
-import tn.mnlr.vripper.services.VipergirlsAuthService;
 
+import java.io.File;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @RestController
 @CrossOrigin(value = "*")
 public class PostRestEndpoint {
 
     private static final Logger logger = LoggerFactory.getLogger(PostRestEndpoint.class);
+
+
+    private static final Pattern VG_URL_PATTERN = Pattern.compile("https:\\/\\/vipergirls\\.to\\/threads\\/(\\d+)((.*p=)(\\d+))?");
 
     @Autowired
     private AppStateService appStateService;
@@ -30,7 +37,7 @@ public class PostRestEndpoint {
     private AppSettingsService appSettingsService;
 
     @Autowired
-    private VipergirlsAuthService authService;
+    private PathService pathService;
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity handleException(Exception e) {
@@ -55,57 +62,47 @@ public class PostRestEndpoint {
         } else if (!url.url.startsWith("https://vipergirls.to")) {
             return new ResponseEntity<>("ViperGirls only links are supported", HttpStatus.BAD_REQUEST);
         }
-        List<Post> parsed = postParser.parse(url.url);
-        logger.info(String.format("%d posts found from thread %s", parsed.size(), url.url));
-        parsed.forEach(p -> authService.leaveThanks(p.getUrl(), p.getPostId()));
-        if (appSettingsService.isAutoStart()) {
-            logger.info("Auto start downloads option is enabled");
-            logger.info(String.format("Starting to enqueue %d jobs for %s", parsed.stream().flatMap(e -> e.getImages().stream()).count(), url.url));
-            for (Post post : parsed) {
-                downloadQ.enqueue(post);
-            }
-            logger.info(String.format("Done enqueuing jobs for %s", url.url));
-        } else {
-            logger.info("Auto start downloads option is disabled");
-        }
-        logger.info(String.format("Done processing thread: %s", url.url));
-        return ResponseEntity.ok(new ParseResult(parsed.size()));
-    }
 
-    @PostMapping("/post/{threadId}")
-    @ResponseStatus(value = HttpStatus.OK)
-    public ResponseEntity processPostByThreadId(@PathVariable("threadId") String threadId) throws Exception {
-        logger.info(String.format("Starting to process thread: %s", threadId));
-        if (threadId == null || threadId.isEmpty()) {
-            return new ResponseEntity<>("Failed to process empty request", HttpStatus.BAD_REQUEST);
-        }
-        List<Post> parsed = postParser.parseByThreadId(threadId);
-        logger.info(String.format("%d posts found from thread %s", parsed.size(), threadId));
-        parsed.forEach(p -> authService.leaveThanks(p.getUrl(), p.getPostId()));
-        if(appSettingsService.isAutoStart()) {
-            logger.info("Auto start downloads option is enabled");
-            logger.info(String.format("Starting to enqueue %d jobs for thread %s", parsed.stream().flatMap(e -> e.getImages().stream()).count(), threadId));
-            for (Post post : parsed) {
-                downloadQ.enqueue(post);
+        String threadId, postId;
+        try {
+            Matcher m = VG_URL_PATTERN.matcher(url.url);
+            if (m.find()) {
+                threadId = m.group(1);
+                postId = m.group(4);
+            } else {
+                throw new PostParseException(String.format("Cannot retrieve thread id from URL %s", url));
             }
-            logger.info(String.format("Done enqueuing jobs for %s", threadId));
-        } else {
-            logger.info("Auto start downloads option is disabled");
+        } catch (Exception e) {
+            throw new PostParseException(String.format("Cannot retrieve thread id from URL %s", url), e);
         }
-        logger.info(String.format("Done processing thread: %s", threadId));
-        return ResponseEntity.ok(new ParseResult(parsed.size()));
-    }
-
-    @PostMapping("/clipboard/post")
-    @ResponseStatus(value = HttpStatus.OK)
-    public ResponseEntity processPostFromClipboard(@RequestBody ThreadUrl url) throws Exception {
-        return this.processPost(url);
+        return ResponseEntity.ok(new PairThreadIdPostId(threadId, postId));
     }
 
     @PostMapping("/post/restart")
     @ResponseStatus(value = HttpStatus.OK)
     public void restartPost(@RequestBody PostId postId) throws Exception {
         downloadQ.restart(postId.getPostId());
+    }
+
+    @PostMapping("/post/add")
+    @ResponseStatus(value = HttpStatus.OK)
+    public void addPost(@RequestBody List<PostToAdd> posts) {
+        for (PostToAdd post : posts) {
+            VripperApplication.commonExecutor.submit(() -> {
+                try {
+                    postParser.addPost(post.postId, post.threadId);
+                } catch (PostParseException e) {
+                    logger.error(String.format("Failed to add post %s", post.postId), e);
+                }
+            });
+        }
+    }
+
+    @GetMapping("/post/path/{postId}")
+    @ResponseStatus(value = HttpStatus.OK)
+    public ResponseEntity<DownloadPath> folderPath(@PathVariable("postId") String postId) {
+        File destinationFolder = pathService.getDownloadDestinationFolder(postId);
+        return ResponseEntity.ok(new DownloadPath(destinationFolder.getPath()));
     }
 
     @PostMapping("/post/restart/all")
@@ -158,11 +155,52 @@ public class PostRestEndpoint {
     }
 
     @Getter
-    private static class ParseResult {
-        ParseResult(int parsed) {
-            this.parsed = parsed;
+    private static class PairThreadIdPostId {
+        private String threadId;
+        private String postId;
+
+        public PairThreadIdPostId(String threadId, String postId) {
+            this.threadId = threadId;
+            this.postId = postId;
         }
-        private int parsed;
+    }
+
+    @Getter
+    private static class PostToAdd {
+        private String threadId;
+        private String postId;
+    }
+
+    @Getter
+    private static class ParseResult {
+
+        private List<PostResult> posts;
+        private int count;
+        private String threadId;
+
+        public ParseResult(List<PostResult> posts, int count, String threadId) {
+            this.posts = posts;
+            this.count = count;
+            this.threadId = threadId;
+        }
+
+        @Getter
+        public static class PostResult {
+
+            private String title;
+            private int counter;
+            private String url;
+            private String postId;
+            private List<String> previews;
+
+            public PostResult(String title, int counter, String url, String postId, List<String> previews) {
+                this.title = title;
+                this.counter = counter;
+                this.url = url;
+                this.postId = postId;
+                this.previews = previews;
+            }
+        }
     }
 
     @Getter
@@ -182,6 +220,15 @@ public class PostRestEndpoint {
 
         RemoveResult(String postId) {
             this.postId = postId;
+        }
+    }
+
+    @Getter
+    private static class DownloadPath {
+        private String path;
+
+        DownloadPath(String path) {
+            this.path = path;
         }
     }
 }

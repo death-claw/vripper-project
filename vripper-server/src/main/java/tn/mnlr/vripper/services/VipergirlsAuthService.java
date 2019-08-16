@@ -1,5 +1,6 @@
 package tn.mnlr.vripper.services;
 
+import io.reactivex.processors.PublishProcessor;
 import lombok.Getter;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -14,14 +15,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
+import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.exception.VripperException;
 
 import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -44,15 +44,19 @@ public class VipergirlsAuthService {
     @Getter
     private String cookies;
 
-    private ExecutorService executorService = Executors.newFixedThreadPool(6);
-
     private boolean authenticated = false;
+
+    @Getter
+    private String loggedUser;
+
+    @Getter
+    private PublishProcessor<String> loggedInUser = PublishProcessor.create();
 
     @PreDestroy
     private void destroy() throws InterruptedException {
         logger.info("Shutting down VipergirlsAuthService");
-        executorService.shutdown();
-        executorService.awaitTermination(10, TimeUnit.SECONDS);
+        VripperApplication.commonExecutor.shutdown();
+        VripperApplication.commonExecutor.awaitTermination(10, TimeUnit.SECONDS);
     }
 
     public void authenticate() throws VripperException {
@@ -63,6 +67,8 @@ public class VipergirlsAuthService {
         if(!appSettingsService.isVLogin()) {
             logger.warn("Authentication option is disabled");
             cookies = null;
+            loggedUser = "";
+            loggedInUser.onNext(loggedUser);
             return;
         }
 
@@ -71,6 +77,9 @@ public class VipergirlsAuthService {
 
         if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
             logger.error("Cannot authenticate with ViperGirls credentials, username or password is empty");
+            cookies = null;
+            loggedUser = "";
+            loggedInUser.onNext(loggedUser);
             return;
         }
 
@@ -88,6 +97,9 @@ public class VipergirlsAuthService {
         try {
             postAuth.setEntity(new UrlEncodedFormEntity(params));
         } catch (Exception e) {
+            cookies = null;
+            loggedUser = "";
+            loggedInUser.onNext(loggedUser);
             throw new VripperException(e);
         }
 
@@ -98,6 +110,9 @@ public class VipergirlsAuthService {
 
         try (CloseableHttpResponse response = client.execute(postAuth)) {
 
+            if (response.getStatusLine().getStatusCode() / 100 != 2) {
+                throw new VripperException(String.format("Unexpected response code returned %s", response.getStatusLine().getStatusCode()));
+            }
             StringBuilder sb = new StringBuilder();
             Arrays.asList(response.getHeaders("set-cookie"))
                     .stream()
@@ -114,14 +129,23 @@ public class VipergirlsAuthService {
             }
             this.cookies = cookies;
         } catch (Exception e) {
-            throw new VripperException(e);
+            cookies = null;
+            loggedUser = "";
+            loggedInUser.onNext(loggedUser);
+            if (e instanceof VripperException) {
+                throw (VripperException) e;
+            } else {
+                throw new VripperException(e);
+            }
         }
         authenticated = true;
+        loggedUser = username;
         logger.info(String.format("Authenticated: %s", username));
+        loggedInUser.onNext(loggedUser);
     }
 
     public void leaveThanks(String postUrl, String postId) {
-        executorService.submit(() -> {
+        VripperApplication.commonExecutor.submit(() -> {
             if (!appSettingsService.isVLogin()) {
                 logger.warn("Authentication with ViperGirls option is disabled");
                 return;

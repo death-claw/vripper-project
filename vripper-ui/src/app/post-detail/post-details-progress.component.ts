@@ -5,6 +5,7 @@ import { Subscription } from 'rxjs';
 import { PostDetails } from './post-details.model';
 import { WsHandler } from '../ws-handler';
 import { ICellRendererParams } from 'ag-grid-community';
+import { ElectronService } from 'ngx-electron';
 
 @Component({
   selector: 'app-progress-cell',
@@ -28,7 +29,7 @@ import { ICellRendererParams } from 'ag-grid-community';
           pending: postDetails.status === 'PENDING'
         }"
       >
-        <div>{{ postDetails.url }}</div>
+        <a style="color: rgba(0, 0, 0, 0.87);" href="javascript:void(0)" (click)="goTo()">{{ postDetails.url }}</a>
         <div>{{ trunc(postDetails.progress) + '%' }}</div>
       </div>
     </div>
@@ -68,8 +69,9 @@ import { ICellRendererParams } from 'ag-grid-community';
 export class PostDetailsProgressRendererComponent implements AgRendererComponent, OnInit, OnDestroy {
   constructor(
     private wsConnectionService: WsConnectionService,
-    private zone: NgZone
-    ) {
+    private zone: NgZone,
+    public electronService: ElectronService
+  ) {
     this.websocketHandlerPromise = this.wsConnectionService.getConnection();
   }
 
@@ -96,6 +98,14 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
     });
   }
 
+  goTo() {
+    if (this.electronService.isElectronApp) {
+      this.electronService.shell.openExternal(this.postDetails.url);
+    } else {
+      window.open(this.postDetails.url, '_blank');
+    }
+  }
+
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
   }
@@ -106,6 +116,7 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
   }
 
   refresh(params: ICellRendererParams): boolean {
+    this.params = params;
     this.postDetails = params.data;
     return true;
   }

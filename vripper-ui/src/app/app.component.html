@@ -13,6 +13,9 @@
         <span id="logo" fxFlex="0 0 48px"></span>
         <span id="title">Viper Ripper</span>
         <span fxFlex="grow"></span>
+        <span>
+          <p style="font-size: 16px">Logged in as: {{loggedUser.user == null || loggedUser.user === '' ? 'guest': loggedUser.user }}</p>
+        </span>
         <div>
           <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="settings">
             <mat-icon>more_vert</mat-icon>
