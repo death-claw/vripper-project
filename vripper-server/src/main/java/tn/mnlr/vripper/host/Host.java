@@ -18,10 +18,15 @@ import tn.mnlr.vripper.exception.HtmlProcessorException;
 import tn.mnlr.vripper.q.ImageFileData;
 import tn.mnlr.vripper.services.*;
 
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.util.Iterator;
 import java.util.Random;
 
 @Service
@@ -72,10 +77,7 @@ abstract public class Host {
              * END HOST SPECIFIC
              */
 
-            if (!imageFileData.getImageName().toLowerCase().endsWith(".jpg") && !imageFileData.getImageName().toLowerCase().endsWith(".jpeg")) {
-                imageFileData.setImageName(imageFileData.getImageName() + ".jpg");
-            }
-
+            imageFileData.setImageName(formatImageFileName(imageFileData.getImageName()));
             File destinationFolder = new File(appSettingsService.getDownloadPath(), sanitize(image.getPostName() + "_" + image.getPostId()));
             logger.info(String.format("Saving to %s", destinationFolder.getPath()));
             if (!destinationFolder.exists()) {
@@ -93,11 +95,10 @@ abstract public class Host {
                     throw new DownloadException(String.format("Server returned code %d", response.getStatusLine().getStatusCode()));
                 }
 
-                try (
-                        InputStream downloadStream = response.getEntity().getContent();
-                        FileOutputStream fos = new FileOutputStream(destinationFolder.getPath() + File.separator + sanitize(imageFileData.getImageName()))
-                ) {
-
+                File outputFile = new File(destinationFolder.getPath() + File.separator + imageFileData.getImageName() + ".tmp");
+                InputStream downloadStream = response.getEntity().getContent();
+                FileOutputStream fos = new FileOutputStream(outputFile);
+                try {
                     image.setTotal(response.getEntity().getContentLength());
                     logger.info(String.format("%s length is %d", imageFileData.getImageUrl(), image.getTotal()));
                     logger.info(String.format("Starting data transfer for %s", imageFileData.getImageUrl()));
@@ -110,7 +111,15 @@ abstract public class Host {
                         downloadSpeedService.increase(read);
                     }
                     EntityUtils.consumeQuietly(response.getEntity());
+                } finally {
+                    if (downloadStream != null) {
+                        downloadStream.close();
+                    }
+                    if (fos != null) {
+                        fos.close();
+                    }
                 }
+                checkImageTypeAndRename(outputFile, imageFileData.getImageName(), image.getIndex());
             }
         } catch (Exception e) {
             if(Thread.interrupted()) {
@@ -118,6 +127,46 @@ abstract public class Host {
             }
             throw new DownloadException(e);
         }
+    }
+
+    private void checkImageTypeAndRename(File outputFile, String imageName, int index) throws HostException {
+        String formatName;
+        try (ImageInputStream iis = ImageIO.createImageInputStream(outputFile)) {
+            Iterator<ImageReader> it = ImageIO.getImageReaders(iis);
+            if (!it.hasNext()) {
+                throw new HostException("Image file is not recognized!");
+            }
+            ImageReader reader = it.next();
+            formatName = reader.getFormatName();
+            if (formatName.toUpperCase().equals("JPEG")) {
+                formatName = "jpg";
+            }
+        } catch (Exception e) {
+            throw new HostException("Failed to guess image format", e);
+        }
+        try {
+            String outImageName = (appSettingsService.isForceOrder() ? String.format("%03d_", index) : "") + imageName + "." + formatName.toLowerCase();
+            Files.move(outputFile.toPath(), new File(outputFile.getParent(), outImageName).toPath());
+        } catch (Exception e) {
+            throw new HostException("Failed to rename the image", e);
+        }
+    }
+
+    /**
+     * Will sanitize the image name and remove extension
+     *
+     * @param imageName
+     * @return
+     */
+    protected String formatImageFileName(String imageName) {
+        int extensionIndex = imageName.lastIndexOf('.');
+        String fileName;
+        if (extensionIndex != -1) {
+            fileName = imageName.substring(0, extensionIndex);
+        } else {
+            fileName = imageName;
+        }
+        return sanitize(fileName);
     }
 
     /**

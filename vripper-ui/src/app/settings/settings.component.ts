@@ -25,6 +25,7 @@ export class SettingsComponent implements OnInit {
     downloadPath: new FormControl(''),
     maxThreads: new FormControl(''),
     autoStart: new FormControl(false),
+    forceOrder: new FormControl(false),
     vLogin: new FormControl(false),
     vUsername: new FormControl(''),
     vPassword: new FormControl(''),

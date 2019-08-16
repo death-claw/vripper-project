@@ -191,7 +191,7 @@ public class PostParser {
                     }
                     if (foundHost != null) {
                         logger.info(String.format("Found supported host %s for %s", foundHost.getClass().getSimpleName(), imageHref));
-                        imagesList.add(appStateService.createImage(imageHref.getTextContent(), postId, postTitle, foundHost));
+                        imagesList.add(appStateService.createImage(imageHref.getTextContent(), postId, postTitle, foundHost, imagesList.size() + 1));
                     } else {
                         logger.warn(String.format("unsupported host for %s, skipping", imageHref));
                         continue;
