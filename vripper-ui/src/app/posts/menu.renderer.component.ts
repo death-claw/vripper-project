@@ -104,7 +104,9 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
   }
 
   ngOnDestroy(): void {
-    this.subscription.unsubscribe();
+    if (this.subscription != null) {
+      this.subscription.unsubscribe();
+    }
   }
 
   seeDetails() {
@@ -125,7 +127,9 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
     });
 
     dialogRef.afterClosed().subscribe(() => {
-      smallDialogSubscription.unsubscribe();
+      if (smallDialogSubscription != null) {
+        smallDialogSubscription.unsubscribe();
+      }
     });
   }
 
@@ -222,8 +226,6 @@ export class MenuRendererComponent implements OnInit, OnDestroy, AgRendererCompo
   }
 
   refresh(params: ICellRendererParams): boolean {
-    this.params = params;
-    this.postData = params.data;
-    return true;
+    return false;
   }
 }

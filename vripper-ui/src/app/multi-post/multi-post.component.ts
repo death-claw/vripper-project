@@ -45,6 +45,8 @@ export class MultiPostComponent implements OnInit, OnDestroy {
           cellClass: 'no-padding',
           maxWidth: 100,
           checkboxSelection: true,
+          headerCheckboxSelection: true,
+          headerCheckboxSelectionFilteredOnly: false,
           sort: 'asc'
         },
         {
@@ -109,7 +111,7 @@ export class MultiPostComponent implements OnInit, OnDestroy {
             this.gridOptions.api.updateRowData({ add: data });
           }
 
-          if (states[states.length - 1].state === 'END' && states[0].threadId === this.threadId) {
+          if (states.length > 0 && states[states.length - 1].state === 'END' && states[0].threadId === this.threadId) {
             this.ngZone.run(() => {
               this.loading = false;
               if (this.gridOptions.api.getDisplayedRowCount() === 1) {

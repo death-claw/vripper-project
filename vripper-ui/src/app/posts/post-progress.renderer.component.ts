@@ -199,19 +199,23 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
   }
 
   ngOnDestroy(): void {
-    this.updatesSubscription.unsubscribe();
-    this.expandSubscription.unsubscribe();
+    if (this.updatesSubscription != null) {
+      this.updatesSubscription.unsubscribe();
+
+    }
+    if (this.expandSubscription != null) {
+      this.expandSubscription.unsubscribe();
+    }
   }
 
   agInit(params: ICellRendererParams): void {
     this.params = params;
     this.postState = params.data;
+    this.params.node.setRowHeight(48);
   }
 
   refresh(params: ICellRendererParams): boolean {
-    this.params = params;
-    this.postState = params.data;
-    return true;
+    return false;
   }
 
   toggleExpand() {

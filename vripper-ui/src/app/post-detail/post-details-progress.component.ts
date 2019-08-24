@@ -107,7 +107,9 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
   }
 
   ngOnDestroy(): void {
-    this.subscription.unsubscribe();
+    if (this.subscription != null) {
+      this.subscription.unsubscribe();
+    }
   }
 
   agInit(params: ICellRendererParams): void {
@@ -116,8 +118,6 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
   }
 
   refresh(params: ICellRendererParams): boolean {
-    this.params = params;
-    this.postDetails = params.data;
-    return true;
+    return false;
   }
 }

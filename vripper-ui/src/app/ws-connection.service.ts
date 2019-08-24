@@ -66,11 +66,15 @@ export class WsConnectionService {
         this._state = WSState.ERROR;
         this.state$.next(this._state);
         reject('Failed to connect to server');
-        subscription.unsubscribe();
+        if (subscription !=  null) {
+          subscription.unsubscribe();
+        }
         return;
       } else if (this._state === WSState.OPEN) {
         clearInterval(interval);
-        subscription.unsubscribe();
+        if (subscription !=  null) {
+          subscription.unsubscribe();
+        }
         return;
       }
       this.connect();

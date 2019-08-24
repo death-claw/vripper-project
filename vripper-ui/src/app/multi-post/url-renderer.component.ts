@@ -28,9 +28,7 @@ export class UrlRendererComponent implements OnInit, OnDestroy, AgRendererCompon
   }
 
   refresh(params: ICellRendererParams): boolean {
-    this.params = params;
-    this.postResult = this.params.data;
-    return true;
+    return false;
   }
 
   goTo() {

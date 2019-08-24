@@ -57,7 +57,7 @@ public class PostParser {
 
     @Autowired
     private DownloadQ downloadQ;
-    SAXParser saxParser = factory.newSAXParser();
+
     @Autowired
     private VipergirlsAuthService vipergirlsAuthService;
 
@@ -165,7 +165,7 @@ public class PostParser {
                     throw new DownloadException(String.format("Unexpected response code '%d' for %s", response.getStatusLine().getStatusCode(), httpGet));
                 }
 
-                saxParser.parse(new BufferedInputStream(response.getEntity().getContent()), handler);
+                factory.newSAXParser().parse(new BufferedInputStream(response.getEntity().getContent()), handler);
                 EntityUtils.consumeQuietly(response.getEntity());
             } catch (Exception e) {
                 logger.error("parsing failed", e);
@@ -282,7 +282,7 @@ public class PostParser {
                     throw new DownloadException(String.format("Unexpected response code '%d' for %s", response.getStatusLine().getStatusCode(), httpGet));
                 }
 
-                saxParser.parse(new BufferedInputStream(response.getEntity().getContent()), handler);
+                factory.newSAXParser().parse(new BufferedInputStream(response.getEntity().getContent()), handler);
                 post = handler.getParsedPost();
                 EntityUtils.consumeQuietly(response.getEntity());
             } catch (Exception e) {

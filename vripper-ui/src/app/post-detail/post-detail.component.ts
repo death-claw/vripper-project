@@ -1,7 +1,7 @@
 import { PostDetailsProgressRendererComponent } from './post-details-progress.component';
 import { WsConnectionService } from './../ws-connection.service';
-import { Component, OnInit, ViewChild, Inject, OnDestroy, NgZone } from '@angular/core';
-import { MatSort, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
+import { Component, OnInit, Inject, OnDestroy, NgZone } from '@angular/core';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { PostDetailsDataSource } from './post-details.datasource';
 import { PostState } from '../posts/post-state.model';
 import { GridOptions } from 'ag-grid-community';

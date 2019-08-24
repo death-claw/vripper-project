@@ -6,6 +6,7 @@ import { MatSnackBar } from '@angular/material';
 import { ServerService } from '../server-service';
 import { ElectronService } from 'ngx-electron';
 import { Settings } from '../common/settings.model';
+import { OpenDialogReturnValue } from 'electron';
 
 @Component({
   selector: 'app-settings',
@@ -49,18 +50,19 @@ export class SettingsComponent implements OnInit {
   }
 
   browse() {
-    const result: string[] | undefined = this.electronService.remote.dialog.showOpenDialog(
+    this.electronService.remote.dialog.showOpenDialog(
       this.electronService.remote.getCurrentWindow(),
       {
         properties: ['openDirectory']
       }
-    );
+    ).then((value: OpenDialogReturnValue) => {
+      if (value.filePaths !== undefined) {
+        this.generalSettingsForm.get('downloadPath').setValue(value.filePaths[0]);
+        this.generalSettingsForm.get('downloadPath').markAsDirty();
+        this.generalSettingsForm.get('downloadPath').markAsTouched();
+      }
+    });
 
-    if (result !== undefined) {
-      this.generalSettingsForm.get('downloadPath').setValue(result[0]);
-      this.generalSettingsForm.get('downloadPath').markAsDirty();
-      this.generalSettingsForm.get('downloadPath').markAsTouched();
-    }
   }
 
   onSubmit(): void {
