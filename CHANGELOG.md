@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.5.1] - 2019-08-24
+### Added
+- Bug fixes
+
 ## [1.5.0] - 2019-08-24
 ### Added
 - Display logged in user
