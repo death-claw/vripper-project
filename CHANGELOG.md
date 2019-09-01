@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.5.2] - 2019-09-01
+### Added
+- imx.to host fix
+
 ## [1.5.1] - 2019-08-24
 ### Added
 - Bug fixes
