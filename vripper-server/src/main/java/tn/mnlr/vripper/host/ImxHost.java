@@ -29,7 +29,7 @@ public class ImxHost extends Host {
     private static final Logger logger = LoggerFactory.getLogger(ImxHost.class);
 
     private static final String host = "imx.to";
-    public static final String CONTINUE_BUTTON_XPATH = "//div[@id='continuetoimage']";
+    public static final String CONTINUE_BUTTON_XPATH = "//*[@name='imgContinue']";
     public static final String IMG_XPATH = "//img[@class='centred']";
 
     @Autowired
