@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0] - 2019-09-15
+### Changed
+- Rework the UI
+- Add a dark theme
+- Fix the force ordering bug
+- Other bug fixes
+
 ## [1.5.2] - 2019-09-01
 ### Added
 - imx.to host fix
