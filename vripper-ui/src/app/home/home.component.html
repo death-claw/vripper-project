@@ -2,45 +2,10 @@
   <mat-progress-spinner [mode]="spinnerMode" [value]="spinnerValue" style="position: absolute;"></mat-progress-spinner>
 </div>
 <div fxLayout="column" fxLayoutGap="10px" style="height: 100%">
-  <div fxFlex="nogrow">
-    <form
-      #f="ngForm"
-      (ngSubmit)="submit(f)"
-      autocomplete="off"
-      fxLayout="row"
-      fxLayoutAlign="center center"
-      fxLayoutGap="20px"
-    >
-      <mat-form-field fxFlex="grow">
-        <input [(ngModel)]="input" matInput name="url" placeholder="Put a vipergirls.to link" required/>
-      </mat-form-field>
-      <div>
-        <button [disabled]="f.invalid" color="primary" mat-raised-button type="submit">Scan</button>
-      </div>
-    </form>
-  </div>
-  <div fxLayout="row" fxLayoutAlign="end" fxLayoutGap="10px" id="controls">
-    <button (click)="restartAll()" aria-label="Start" color="primary" mat-mini-fab title="Start">
-      <mat-icon>play_arrow</mat-icon>
-    </button>
-    <button (click)="stopAll()" aria-label="Stop" color="primary" mat-mini-fab title="Stop">
-      <mat-icon>stop</mat-icon>
-    </button>
-    <div fxFlex="grow"></div>
-    <button (click)="clear()" aria-label="Clear completed" color="primary" mat-mini-fab title="Clear completed">
-      <mat-icon>clear_all</mat-icon>
-    </button>
-    <button (click)="remove()" aria-label="Remove All" color="primary" mat-mini-fab title="Remove All">
-      <mat-icon>delete_forever</mat-icon>
-    </button>
-  </div>
-  <mat-divider></mat-divider>
-  <div [fxFlex]="electronService.isElectronApp ? '0 0 calc(100% - 190px)' : '0 0 calc(100% - 163px)'">
-    <app-posts [ngStyle]="{'height': electronService.isElectronApp ? 'calc(100% - 37px)' : '100%'}"
-               style="width: 100%;"></app-posts>
-  </div>
-  <div style="text-align: end">{{ downloadSpeed!.speed + '/s' }} | Downloading: {{ globalState!.running }} | Queued: {{
-    globalState!.queued }} | Remaining:
-    {{ globalState!.remaining }} | Error: {{ globalState!.error }}
+  <div [fxFlex]="electronService.isElectronApp ? '0 0 calc(100% - 117px)' : '0 0 calc(100% - 90px)'">
+    <app-posts
+      [ngStyle]="{ height: electronService.isElectronApp ? 'calc(100% - 37px)' : '100%' }"
+      style="width: 100%;"
+    ></app-posts>
   </div>
 </div>

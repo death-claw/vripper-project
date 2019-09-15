@@ -1,0 +1,102 @@
+<div class="container" style="height: 100%; background-color: snow">
+  <div
+    [ngClass]="{
+      'pending-back': postState.status === 'PENDING'
+    }"
+    class="progress-bar-back"
+    style="position: relative; height: 100%; max-height: 48px;"
+  >
+    <div
+      class="progress-foreground"
+      fxLayout="row"
+      fxLayoutAlign="space-between"
+      style="position: absolute; background-color: transparent; width: 100%; height: 100%;"
+    >
+      <div class="progress-bar" style="position: absolute; width: 100%; top: 37px; padding: 0 50px">
+        <mat-progress-bar [value]="postState.progress" class="example-margin" color="primary" mode="determinate">
+        </mat-progress-bar>
+      </div>
+      <span fxLayout="row">
+        <span (click)="toggleExpand()" class="chevron">
+          <button *ngIf="expanded; else notExpanded" mat-icon-button>
+            <mat-icon>expand_more</mat-icon>
+          </button>
+          <ng-template #notExpanded>
+            <button mat-icon-button>
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </ng-template>
+        </span>
+        <span>{{ postState.title }}</span>
+        <span class="filler" fxFlex="grow"></span>
+      </span>
+      <span>
+        <span class="progress-percentage">{{ postState.done + '/' + postState.total }}</span>
+        <button [matMenuTriggerFor]="menu" mat-icon-button>
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #menu="matMenu">
+          <button
+            (click)="restart()"
+            *ngIf="
+              postState.status === 'PENDING' ||
+              (postState.status === 'COMPLETE' && postState.progress !== 100) ||
+              postState.status === 'ERROR' ||
+              postState.status === 'STOPPED'
+            "
+            mat-menu-item
+          >
+            <mat-icon>play_arrow</mat-icon>
+            <span>Start</span>
+          </button>
+          <button
+            (click)="stop()"
+            *ngIf="postState.status === 'DOWNLOADING' || postState.status === 'PARTIAL'"
+            mat-menu-item
+          >
+            <ng-container>
+              <mat-icon>stop</mat-icon>
+              <span>Stop</span>
+            </ng-container>
+          </button>
+          <button (click)="seeDetails()" mat-menu-item>
+            <mat-icon>list</mat-icon>
+            <span>Details</span>
+          </button>
+          <button (click)="remove()" mat-menu-item>
+            <mat-icon>delete</mat-icon>
+            <span>Remove</span>
+          </button>
+          <button (click)="open()" *ngIf="electronService.isElectronApp" mat-menu-item>
+            <mat-icon>open_in_new</mat-icon>
+            <span>Download Location</span>
+          </button>
+        </mat-menu>
+      </span>
+    </div>
+  </div>
+  <section *ngIf="expanded">
+    <div class="details table">
+      <div class="row" style="display: table-row">
+        <h4 class="cell attribute">Status:</h4>
+        <p class="cell value">
+          {{ postState.status | titlecase }}
+        </p>
+      </div>
+      <div class="row" style="display: table-row">
+        <h4 class="cell attribute">Post URL:</h4>
+        <p class="cell value">
+          <a (click)="goTo()" [appPreview]="postState.previews" href="javascript:void(0)"
+          >https://vipergirls/threads/?p={{ postState.postId }}</a
+          >
+        </p>
+      </div>
+      <div style="display: table-row">
+        <h4 class="cell attribute">Host:</h4>
+        <p class="cell value">
+          {{ postState.hosts }}
+        </p>
+      </div>
+    </div>
+  </section>
+</div>

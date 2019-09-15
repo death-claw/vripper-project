@@ -6,7 +6,10 @@ const contextMenu = require("electron-context-menu");
 contextMenu({});
 const menu = new electron.Menu();
 const titlebar = new customTitlebar.Titlebar({
-  backgroundColor: customTitlebar.Color.fromHex("#3f51b5"),
+  backgroundColor: customTitlebar.Color.fromHex("#000000"),
+  titleHorizontalAlignment: 'left',
+  icon: 'favicon.ico',
+  shadow: true,
   menu: menu
 });
 titlebar.updateTitle("Viper Ripper");

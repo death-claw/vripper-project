@@ -1,11 +1,28 @@
 /* You can add global styles to this file, and also import other style files */
 @import '~@angular/cdk/overlay-prebuilt.css';
-@import "~@angular/material/prebuilt-themes/indigo-pink.css";
-@import "~ag-grid-community/dist/styles/ag-grid.css";
-@import "~ag-grid-community/dist/styles/ag-theme-material.css";
+@import 'mat-theme.scss';
+@import 'app/status-bar/status-bar.component.scss.theme.scss';
+@import 'app/app.component.scss-theme.scss';
+@import 'grid-theme.scss';
+
+@mixin custom-components-theme($theme) {
+    @include status-bar-component-theme($theme);
+    @include app-component-theme($theme);
+}
+
+.dark-theme {
+    @include custom-components-theme($my-dark-theme);
+    @include angular-material-theme($my-dark-theme);
+    @include grid-theme($my-dark-theme);
+}
+
+.light-theme {
+    @include custom-components-theme($my-light-theme);
+    @include angular-material-theme($my-light-theme);
+    @include grid-theme($my-light-theme);
+}
 
 html {
-    border: 3px solid rgb(63, 81, 181);
     box-sizing: border-box;
     height: 100vh;
     width: 100vw;
@@ -39,11 +56,11 @@ app-root {
 }
 
 .loading {
-    background-color: rgba(0,0,0,0.8);
+    background-color: whitesmoke;
 }
 
 .no-connection {
-    background-color: white !important;
+    background-color: whitesmoke !important;
 }
 
 #app-container {
@@ -57,26 +74,10 @@ app-root {
     bottom: 0;
 }
 
-div.ag-cell.no-padding {
-    padding: 0;
-}
-
 .no-wrap {
     overflow: hidden;
     text-overflow:ellipsis;
     white-space: nowrap;
-}
-
-.ag-body-horizontal-scroll {
-    display: none !important;
-}
-
-.ag-center-cols-viewport {
-    overflow: hidden !important;
-}
-
-.ag-cell-focus, .ag-cell {
-    border: none !important;
 }
 
 body a {
@@ -84,7 +85,7 @@ body a {
         text-decoration: underline;
     }
     font-family: Tahoma;
-    color: #731d1d;
+    color: rgba(0, 0, 0, 0.87);
     text-decoration: none;
     font-weight: bold;
 }

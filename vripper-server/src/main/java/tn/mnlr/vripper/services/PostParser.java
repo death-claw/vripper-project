@@ -22,7 +22,6 @@ import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.q.DownloadQ;
 
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.BufferedInputStream;
 import java.net.URISyntaxException;
@@ -65,6 +64,11 @@ public class PostParser {
     }
 
     public void addPost(String postId, String threadId) throws PostParseException {
+
+        if (appStateService.getCurrentPosts().containsKey(postId)) {
+            logger.info(String.format("skipping %s, already loaded", postId));
+            return;
+        }
 
         VRPostParser vrPostParser = new VRPostParser(threadId, postId);
         Post post = vrPostParser.parse();
@@ -300,6 +304,7 @@ public class PostParser {
         private String threadTitle;
 
         private int previewCounter = 0;
+        private int index = 0;
 
         private String postTitle;
         private int imageCount;
@@ -330,6 +335,7 @@ public class PostParser {
                     postTitle = Optional.ofNullable(attributes.getValue("title")).map(e -> e.trim().isEmpty() ? null : e.trim()).orElse(threadTitle);
                     break;
                 case "image":
+                    index++;
                     if (previewCounter++ < 4) {
                         String thumbUrl = Optional.ofNullable(attributes.getValue("thumb_url")).map(String::trim).orElse(null);
                         if (thumbUrl != null) {
@@ -342,7 +348,7 @@ public class PostParser {
                         Host foundHost = supportedHosts.stream().filter(host -> host.isSupported(mainUrl)).findFirst().orElse(null);
                         if (foundHost != null) {
                             logger.info(String.format("Found supported host %s for %s", foundHost.getClass().getSimpleName(), mainUrl));
-                            images.add(new Image(mainUrl, postId, postTitle, foundHost, imageCount));
+                            images.add(new Image(mainUrl, postId, postTitle, foundHost, index));
                         } else {
                             logger.warn(String.format("unsupported host for %s, skipping", mainUrl));
                         }
@@ -367,6 +373,7 @@ public class PostParser {
                                 threadId
                         );
                     }
+                    index = 0;
                     previewCounter = 0;
                     previews = new ArrayList<>();
                     images = new ArrayList<>();

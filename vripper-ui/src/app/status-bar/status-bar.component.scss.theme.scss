@@ -1,0 +1,21 @@
+@import '~@angular/material/theming';
+
+// mixin name will be used in main style.scss
+@mixin status-bar-component-theme($theme) {
+  
+    // retrieve variables from theme 
+    // (all possible variables, use only what you really need)
+    $primary: map-get($theme, primary);
+    $accent: map-get($theme, accent);
+    $warn: map-get($theme, accent);
+    $foreground: map-get($theme, foreground);
+    $background: map-get($theme, background);
+    
+    // all of these variables contain many additional variables
+  
+    .status-bar {
+  
+      background-color: mat-color($background, status-bar);
+      color: mat-color($foreground, base);
+    }
+  }

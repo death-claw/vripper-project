@@ -1,3 +1,4 @@
+import { AppService } from './../app.service';
 import { ClipboardService } from './../clipboard.service';
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
@@ -19,7 +20,8 @@ export class SettingsComponent implements OnInit {
     private _snackBar: MatSnackBar,
     private serverService: ServerService,
     public electronService: ElectronService,
-    private clipboardService: ClipboardService
+    private clipboardService: ClipboardService,
+    private appService: AppService
   ) {}
 
   generalSettingsForm = new FormGroup({
@@ -37,7 +39,14 @@ export class SettingsComponent implements OnInit {
     desktopClipboard: new FormControl(false)
   });
 
+  darkTheme = false;
+
+  updateTheme() {
+    this.appService.updateTheme(this.darkTheme);
+  }
+
   ngOnInit() {
+    this.darkTheme = this.appService.darkTheme;
     this.httpClient.get<Settings>(this.serverService.baseUrl + '/settings').subscribe(
       data => {
         this.generalSettingsForm.reset(data);

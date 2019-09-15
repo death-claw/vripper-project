@@ -2,6 +2,7 @@ package tn.mnlr.vripper.services;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ public class AppSettingsService {
     private final String V_THANKS = "VTHANKS";
     private final String DESKTOP_CLIPBOARD = "DESKTOP_CLIPBOARD";
     private final String FORCE_ORDER = "FORCE_ORDER";
+    private final String DARK_THEME = "DARK_THEME";
 
     private String downloadPath;
     private int maxThreads;
@@ -45,6 +47,7 @@ public class AppSettingsService {
     private boolean vThanks;
     private boolean desktopClipboard;
     private boolean forceOrder;
+    private boolean darkTheme;
 
     public void setVPassword(String vPassword) {
         if(vPassword.isEmpty()) {
@@ -65,6 +68,7 @@ public class AppSettingsService {
         vThanks = prefs.getBoolean(V_THANKS, false);
         desktopClipboard = prefs.getBoolean(DESKTOP_CLIPBOARD, false);
         forceOrder = prefs.getBoolean(FORCE_ORDER, false);
+        darkTheme = prefs.getBoolean(DARK_THEME, false);
     }
 
     @PreDestroy
@@ -79,6 +83,7 @@ public class AppSettingsService {
         prefs.putBoolean(V_THANKS, vThanks);
         prefs.putBoolean(DESKTOP_CLIPBOARD, desktopClipboard);
         prefs.putBoolean(FORCE_ORDER, forceOrder);
+        prefs.putBoolean(DARK_THEME, darkTheme);
 
         try {
             prefs.sync();
@@ -103,6 +108,27 @@ public class AppSettingsService {
 
         if (settings.getMaxThreads() < 1 || settings.getMaxThreads() > 8) {
             throw new ValidationException(String.format("Invalid max concurrent download settings, values must be in [%d,%d]", 1, 8));
+        }
+    }
+
+    public Theme getTheme() {
+        return new Theme(this.darkTheme);
+    }
+
+    public void setTheme(Theme theme) {
+        this.darkTheme = theme.darkTheme;
+        save();
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class Theme {
+
+        @JsonProperty("darkTheme")
+        private boolean darkTheme;
+
+        public Theme(boolean darkTheme) {
+            this.darkTheme = darkTheme;
         }
     }
 

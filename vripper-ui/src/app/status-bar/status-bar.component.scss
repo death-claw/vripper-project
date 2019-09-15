@@ -1,0 +1,14 @@
+.status-bar {
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+    left: 0;
+    text-align: end;
+    padding: 2px 0;
+}
+
+span {
+    margin: 0 8px;
+    user-select: none;
+    font-size: small;
+}

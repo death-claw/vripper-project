@@ -1,0 +1,49 @@
+@import '~@angular/material/theming';
+@import '~ag-grid-community/src/styles/ag-grid.scss';
+@import '~ag-grid-community/src/styles/ag-theme-material/sass/ag-theme-material.scss';
+
+@mixin grid-theme($theme) {
+  $primary: map-get($theme, primary);
+  $accent: map-get($theme, accent);
+  $warn: map-get($theme, warn);
+  $foreground: map-get($theme, foreground);
+  $background: map-get($theme, background);
+
+  .ag-row {
+    //   transition: height,transform 0.5s;
+  }
+
+  .ag-header, .ag-icon {
+
+    color: mat-color($foreground, secondary-text) !important;
+  }
+
+  .ag-theme-material {
+      background-color: mat-color($background, background) !important;
+  }
+
+  .ag-theme-material .ag-header {
+    background-color: mat-color($background, background) !important;
+  }
+
+  .ag-theme-material .ag-header-cell:hover {
+    background-color: mat-color($background, background) !important;
+  }
+
+  div.ag-cell.no-padding {
+    padding: 0;
+  }
+
+  .ag-body-horizontal-scroll {
+    display: none !important;
+  }
+
+  .ag-center-cols-viewport {
+    overflow: hidden !important;
+  }
+
+  .ag-cell-focus,
+  .ag-cell {
+    border: none !important;
+  }
+}

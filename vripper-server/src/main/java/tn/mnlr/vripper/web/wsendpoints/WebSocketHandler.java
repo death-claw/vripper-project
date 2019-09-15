@@ -209,7 +209,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 appStateService.getLivePostsState()
                         .onBackpressureBuffer()
                         .observeOn(Schedulers.io())
-                        .filter(e -> !e.isRemoved())
                         .buffer(2000, TimeUnit.MILLISECONDS, 200)
                         .filter(e -> !e.isEmpty())
                         .map(e -> e.stream().distinct().collect(Collectors.toList()))
@@ -283,7 +282,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
-
+        logger.info(String.format("Connection open for client id: %s", session.getId()));
     }
 
     @Override
@@ -296,6 +295,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
         Optional.ofNullable(userSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
         Optional.ofNullable(vrPostParserSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
         Optional.ofNullable(threadParseRequests.remove(session.getId())).ifPresent(d -> d.cancel(true));
+
+        logger.info(String.format("Connection closed for client id: %s", session.getId()));
     }
 
     @Getter

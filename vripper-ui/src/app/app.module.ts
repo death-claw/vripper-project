@@ -14,7 +14,6 @@ import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AgGridModule } from 'ag-grid-angular';
 import { PostProgressRendererComponent } from './posts/post-progress.renderer.component';
-import { MenuRendererComponent } from './posts/menu.renderer.component';
 import { PostDetailsProgressRendererComponent } from './post-detail/post-details-progress.component';
 import { LoginComponent } from './login/login.component';
 import { XhrInterceptorService } from './xhr-interceptor.service';
@@ -29,6 +28,9 @@ import { MultiPostComponent } from './multi-post/multi-post.component';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { AppPreviewComponent } from './common/preview-tooltip.component';
 import { UrlRendererComponent } from './multi-post/url-renderer.component';
+import { FilterComponent } from './filter/filter.component';
+import { ScanComponent } from './scan/scan.component';
+import { StatusBarComponent } from './status-bar/status-bar.component';
 
 @NgModule({
   declarations: [
@@ -36,7 +38,6 @@ import { UrlRendererComponent } from './multi-post/url-renderer.component';
     PostsComponent,
     PostDetailComponent,
     PostProgressRendererComponent,
-    MenuRendererComponent,
     PostDetailsProgressRendererComponent,
     LoginComponent,
     HomeComponent,
@@ -45,9 +46,19 @@ import { UrlRendererComponent } from './multi-post/url-renderer.component';
     MultiPostComponent,
     AppPreviewComponent,
     AppPreviewDirective,
-    UrlRendererComponent
+    UrlRendererComponent,
+    FilterComponent,
+    ScanComponent,
+    StatusBarComponent
   ],
-  entryComponents: [PostDetailComponent, SettingsComponent, ConfirmDialogComponent, MultiPostComponent, AppPreviewComponent],
+  entryComponents: [
+    PostDetailComponent,
+    SettingsComponent,
+    ConfirmDialogComponent,
+    // MultiPostComponent,
+    AppPreviewComponent,
+    ScanComponent
+  ],
   imports: [
     BrowserAnimationsModule,
     FormsModule,
@@ -59,7 +70,6 @@ import { UrlRendererComponent } from './multi-post/url-renderer.component';
     ReactiveFormsModule,
     AgGridModule.withComponents([
       PostProgressRendererComponent,
-      MenuRendererComponent,
       PostDetailsProgressRendererComponent,
       UrlRendererComponent
     ]),

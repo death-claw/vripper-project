@@ -1,0 +1,35 @@
+<div class="container" style="height: 100%; background-color: snow">
+  <div
+    [ngClass]="{
+      error: postDetails.status === 'ERROR',
+      stopped: postDetails.status === 'STOPPED',
+      pending: postDetails.status === 'PENDING'
+    }"
+    class="progress-bar-back"
+    style="position: relative; height: 100%;"
+  >
+    <div
+      [ngClass]="{
+        complete: postDetails.status === 'COMPLETE',
+        downloading: postDetails.status === 'DOWNLOADING'
+      }"
+      [style.width]="trunc(postDetails.progress) + '%'"
+      class="progress-bar"
+      style="position: absolute; height: 100%; width: 100%"
+    ></div>
+
+    <div
+      class="progress-foreground"
+      fxLayout="row"
+      fxLayoutAlign="space-between"
+      style="position: absolute; background-color: transparent; width: 100%; height: 100%; padding: 0 8px;"
+    >
+      <span
+      ><a (click)="goTo()" href="javascript:void(0)" style="color: rgba(0, 0, 0, 0.87);">{{
+          postDetails.url
+        }}</a></span
+      >
+      <span class="progress-percentage">{{ trunc(postDetails.progress) + '%' }}</span>
+    </div>
+  </div>
+</div>

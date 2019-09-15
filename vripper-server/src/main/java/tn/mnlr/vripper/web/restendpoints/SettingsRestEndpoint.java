@@ -31,6 +31,20 @@ public class SettingsRestEndpoint {
                 .body(e.getMessage());
     }
 
+    @PostMapping("/settings/theme")
+    @ResponseStatus(value = HttpStatus.OK)
+    public AppSettingsService.Theme postTheme(@RequestBody AppSettingsService.Theme theme) {
+
+        this.settings.setTheme(theme);
+        return settings.getTheme();
+    }
+
+    @GetMapping("/settings/theme")
+    @ResponseStatus(value = HttpStatus.OK)
+    public AppSettingsService.Theme getTheme() {
+        return settings.getTheme();
+    }
+
     @PostMapping("/settings")
     @ResponseStatus(value = HttpStatus.OK)
     public ResponseEntity postSettings(@RequestBody AppSettingsService.Settings settings) throws Exception {

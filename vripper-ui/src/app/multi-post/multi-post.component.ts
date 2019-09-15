@@ -1,6 +1,6 @@
 import { VRPostParse, VRThreadParseState } from './../common/vr-post-parse.model';
-import { Component, Inject, OnInit, NgZone, OnDestroy } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA, MatSnackBar } from '@angular/material';
+import { Component, OnInit, NgZone, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
+import { MatSnackBar } from '@angular/material';
 import { GridOptions } from 'ag-grid-community';
 import { UrlRendererComponent } from './url-renderer.component';
 import { WsHandler } from '../ws-handler';
@@ -17,15 +17,21 @@ import { ServerService } from '../server-service';
   styleUrls: ['./multi-post.component.scss']
 })
 export class MultiPostComponent implements OnInit, OnDestroy {
+
+  @Input()
+  threadId: string;
+
+  @Output()
+  done: EventEmitter<boolean> = new EventEmitter();
+
   gridOptions: GridOptions;
   websocketHandlerPromise: Promise<WsHandler>;
   subscription: Subscription;
-  threadId: string;
   loading = true;
 
   constructor(
-    public dialogRef: MatDialogRef<MultiPostComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { threadId: string; threadUrl: string },
+    // public dialogRef: MatDialogRef<MultiPostComponent>,
+    // @Inject(MAT_DIALOG_DATA) public data: { threadId: string; threadUrl: string },
     private ngZone: NgZone,
     private _snackBar: MatSnackBar,
     private wsConnectionService: WsConnectionService,
@@ -33,7 +39,7 @@ export class MultiPostComponent implements OnInit, OnDestroy {
     private serverService: ServerService
   ) {
     this.websocketHandlerPromise = this.wsConnectionService.getConnection();
-    this.threadId = data.threadId;
+    // this.threadId = data.threadId;
   }
 
   ngOnInit(): void {
@@ -121,25 +127,26 @@ export class MultiPostComponent implements OnInit, OnDestroy {
                     postId: e.postId
                   }))
                 );
+                this.done.emit(true);
               }
             });
           }
         }
       );
-      handler.send(new WSMessage(CMD.THREAD_PARSING_SUB.toString(), this.data.threadId));
+      handler.send(new WSMessage(CMD.THREAD_PARSING_SUB.toString(), this.threadId));
     });
   }
 
-  close() {
-    this.ngZone.run(() => {
-      this.dialogRef.close();
-    });
-  }
+  // close() {
+  //   this.ngZone.run(() => {
+  //     this.dialogRef.close();
+  //   });
+  // }
 
   submit() {
     const data = (<VRPostParse[]>this.gridOptions.api.getSelectedRows()).map(e => ({
       postId: e.postId,
-      threadId: this.data.threadId
+      threadId: this.threadId
     }));
     this.addPosts(data);
   }
@@ -150,7 +157,7 @@ export class MultiPostComponent implements OnInit, OnDestroy {
         this._snackBar.open('Adding posts to queue', null, {
           duration: 5000
         });
-        this.close();
+        this.done.emit();
       },
       error => {
         this._snackBar.open(error.error, null, {

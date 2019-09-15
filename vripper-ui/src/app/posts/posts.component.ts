@@ -1,9 +1,8 @@
 import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { PostsDataSource } from './post.datasource';
 import { WsConnectionService } from '../ws-connection.service';
-import { GridOptions } from 'ag-grid-community';
+import { GridOptions, IFilterComp } from 'ag-grid-community';
 import { PostProgressRendererComponent } from './post-progress.renderer.component';
-import { MenuRendererComponent } from './menu.renderer.component';
 import { Subject } from 'rxjs';
 
 @Component({
@@ -12,41 +11,27 @@ import { Subject } from 'rxjs';
   styleUrls: ['./posts.component.scss']
 })
 export class PostsComponent implements OnInit, OnDestroy {
-
-  constructor(
-    private wsConnection: WsConnectionService,
-    private zone: NgZone
-    ) {
-    this.gridOptions = <GridOptions> {
+  constructor(private wsConnection: WsConnectionService, private zone: NgZone) {
+    this.gridOptions = <GridOptions>{
       columnDefs: [
         {
-          headerName: 'Title',
+          headerName: 'Posts',
           field: 'title',
           sortable: true,
           cellRenderer: 'progressCellRenderer',
           cellClass: 'no-padding',
           sort: 'asc'
-        },
-        {
-          headerName: 'Menu',
-          cellRenderer: 'menuCellRenderer',
-          sortable: true,
-          width: 60,
-          minWidth: 60,
-          maxWidth: 60,
-          suppressAutoSize: true
         }
       ],
       rowHeight: 48,
       animateRows: true,
       rowData: [],
       frameworkComponents: {
-        progressCellRenderer: PostProgressRendererComponent,
-        menuCellRenderer: MenuRendererComponent
+        progressCellRenderer: PostProgressRendererComponent
       },
       overlayLoadingTemplate: '<span></span>',
       overlayNoRowsTemplate: '<span></span>',
-      getRowNodeId: (data) => data['postId'],
+      getRowNodeId: data => data['postId'],
       onGridReady: () => {
         this.gridOptions.api.sizeColumnsToFit();
         this.dataSource = new PostsDataSource(this.wsConnection, this.gridOptions, this.zone);
@@ -60,6 +45,10 @@ export class PostsComponent implements OnInit, OnDestroy {
   dialogOpen: Subject<boolean> = new Subject();
   gridOptions: GridOptions;
   dataSource: PostsDataSource;
+
+  search(event) {
+    this.gridOptions.api.setQuickFilter(event);
+  }
 
   removeRows(postIds: string[]): void {
     if (postIds == null) {
@@ -77,8 +66,7 @@ export class PostsComponent implements OnInit, OnDestroy {
     this.gridOptions.api.updateRowData({ remove: toRemove });
   }
 
-  ngOnInit() {
-  }
+  ngOnInit() {}
 
   ngOnDestroy(): void {
     this.dataSource.disconnect();
