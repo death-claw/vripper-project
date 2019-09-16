@@ -1,6 +1,6 @@
-import { Component, OnInit, NgZone, ViewChild } from '@angular/core';
+import { Component, OnInit, NgZone, ViewChild, Inject } from '@angular/core';
 import { NgForm } from '@angular/forms';
-import { MatSnackBar, MatDialog, MatDialogRef } from '@angular/material';
+import { MatSnackBar, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { HttpClient } from '@angular/common/http';
 import { finalize } from 'rxjs/operators';
 import { ServerService } from '../server-service';
@@ -12,75 +12,100 @@ import { MultiPostComponent } from '../multi-post/multi-post.component';
   styleUrls: ['./scan.component.scss']
 })
 export class ScanComponent implements OnInit {
-
   constructor(
     private ngZone: NgZone,
     private httpClient: HttpClient,
     private serverService: ServerService,
     private _snackBar: MatSnackBar,
     public dialogRef: MatDialogRef<ScanComponent>,
-  ) { }
+    @Inject(MAT_DIALOG_DATA) public data: DialogData
+  ) {}
 
   @ViewChild(MultiPostComponent)
   multipost: MultiPostComponent;
 
   input: string;
   threadId: string;
+  clipboard = false;
 
   submit(form: NgForm) {
-    this.threadId = null;
-    this.processUrl(this.input, form);
+    this.ngZone.run(() => {
+      this.threadId = null;
+      this.processUrl(this.input, form);
+    });
   }
 
   done(done: boolean) {
-    if(done) {
-      this.dialogRef.close();
-    }
+    this.ngZone.run(() => {
+      if (done) {
+        this.dialogRef.close();
+      }
+    });
   }
 
   processUrl(url: string, form?: NgForm) {
-    this.ngZone.run(() => {
-      // this.loading = true;
-    });
     this.httpClient
-      .post<{ threadId: string, postId: string}>(this.serverService.baseUrl + '/post', { url: url })
-      .pipe(finalize(() => {
-        this.ngZone.run(() => {
-          // this.loading = false;
-        });
-        if (form != null) {
-          form.resetForm();
-          this.input = null;
-        }
-      }))
-      .subscribe(response => {
-        if (response.postId != null) {
-          this.httpClient.post(this.serverService.baseUrl + '/post/add', [response]).subscribe(
-            () => {
-              this._snackBar.open('Adding posts to queue', null, {
-                duration: 5000
-              });
-            },
-            error => {
-              this._snackBar.open(error.error, null, {
-                duration: 5000
-              });
+      .post<{ threadId: string; postId: string }>(this.serverService.baseUrl + '/post', { url: url })
+      .pipe(
+        finalize(() => {
+          this.ngZone.run(() => {
+            if (form != null) {
+              form.resetForm();
+              this.input = null;
             }
-          );
-          return;
-        }
-        this.threadId = response.threadId;
+          });
+        })
+      )
+      .subscribe(response => {
+        this.ngZone.run(() => {
+          if (response.postId != null) {
+            this.httpClient
+              .post(this.serverService.baseUrl + '/post/add', [response])
+              .pipe(finalize(() => this.dialogRef.close()))
+              .subscribe(
+                () => {
+                  this._snackBar.open('Adding posts to queue', null, {
+                    duration: 5000
+                  });
+                },
+                error => {
+                  this._snackBar.open(error.error, null, {
+                    duration: 5000
+                  });
+                }
+              );
+            return;
+          }
+          this.threadId = response.threadId;
+        });
       });
   }
 
   addPosts() {
-    if (this.multipost != null) {
-      this.multipost.submit();
-    }
-    this.dialogRef.close();
+    this.ngZone.run(() => {
+      if (this.multipost != null) {
+        this.multipost.submit();
+      }
+      this.dialogRef.close();
+    });
   }
 
   ngOnInit() {
+    this.ngZone.run(() => {
+      if (this.data.url != null) {
+        this.clipboard = true;
+        this.processUrl(this.data.url);
+      }
+    });
   }
 
+  close() {
+    this.ngZone.run(() => {
+      this.dialogRef.close();
+    });
+  }
+}
+
+export interface DialogData {
+  url: string;
 }

@@ -3,7 +3,7 @@
     <h2 class="no-wrap" mat-dialog-title>Scan</h2>
   </div>
   <mat-dialog-content fxFlex="grow" fxLayout="column">
-    <div *ngIf="threadId == null">
+    <div *ngIf="threadId == null || !clipboard">
       <form
         #f="ngForm"
         (ngSubmit)="submit(f)"
@@ -31,8 +31,8 @@
     </ng-container>
   </mat-dialog-content>
   <mat-dialog-actions align="end">
-    <button mat-dialog-close mat-raised-button>Close</button>
-    <button (click)="addPosts()" *ngIf="multipost != null" color="primary" mat-raised-button type="submit">
+    <button (click)="close()" mat-raised-button>Close</button>
+    <button (click)="addPosts()" *ngIf="threadId != null" color="primary" mat-raised-button type="submit">
       Download
     </button>
   </mat-dialog-actions>

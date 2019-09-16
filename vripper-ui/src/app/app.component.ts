@@ -16,7 +16,6 @@ import { RemoveAllResponse } from './common/remove-all-response.model';
 import { ServerService } from './server-service';
 import { ConfirmDialogComponent } from './common/confirmation-component/confirmation-dialog';
 import { filter, flatMap } from 'rxjs/operators';
-import { ScanComponent } from './scan/scan.component';
 
 @Component({
   selector: 'app-root',
@@ -52,12 +51,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   scan() {
-    const dialogRef = this.dialog.open(ScanComponent, {
-      width: '70%',
-      height: '70%',
-      maxWidth: '100vw',
-      maxHeight: '100vh'
-    });
+    this.appService.scan();
   }
 
   openSettings(): void {

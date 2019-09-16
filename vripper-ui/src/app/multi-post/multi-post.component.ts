@@ -30,8 +30,6 @@ export class MultiPostComponent implements OnInit, OnDestroy {
   loading = true;
 
   constructor(
-    // public dialogRef: MatDialogRef<MultiPostComponent>,
-    // @Inject(MAT_DIALOG_DATA) public data: { threadId: string; threadUrl: string },
     private ngZone: NgZone,
     private _snackBar: MatSnackBar,
     private wsConnectionService: WsConnectionService,
@@ -39,7 +37,6 @@ export class MultiPostComponent implements OnInit, OnDestroy {
     private serverService: ServerService
   ) {
     this.websocketHandlerPromise = this.wsConnectionService.getConnection();
-    // this.threadId = data.threadId;
   }
 
   ngOnInit(): void {
@@ -136,12 +133,6 @@ export class MultiPostComponent implements OnInit, OnDestroy {
       handler.send(new WSMessage(CMD.THREAD_PARSING_SUB.toString(), this.threadId));
     });
   }
-
-  // close() {
-  //   this.ngZone.run(() => {
-  //     this.dialogRef.close();
-  //   });
-  // }
 
   submit() {
     const data = (<VRPostParse[]>this.gridOptions.api.getSelectedRows()).map(e => ({

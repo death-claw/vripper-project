@@ -9,11 +9,7 @@
   $foreground: map-get($theme, foreground);
   $background: map-get($theme, background);
 
-  .ag-row {
-    //   transition: height,transform 0.5s;
-  }
-
-  .ag-header, .ag-icon {
+  .ag-header, .ag-header .ag-icon {
 
     color: mat-color($foreground, secondary-text) !important;
   }

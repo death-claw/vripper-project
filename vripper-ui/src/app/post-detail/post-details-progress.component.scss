@@ -1,21 +1,6 @@
 .progress-bar-back {
   transition: background-color 0.5s;
 }
-.progress-bar {
-  transition: width 0.5s, background-color 0.5s;
-}
-.complete {
-  background-color: #3865a3;
-}
 .pending {
   background-color: white;
-}
-.error {
-  background-color: #eb6060;
-}
-.downloading {
-  background-color: #87a2c7;
-}
-.stopped {
-  background-color: grey;
 }
