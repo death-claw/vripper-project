@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.6.1] - 2019-09-16
+### Changed
+- Rework UI
+- Fix clipboard monitoring
+
 ## [1.6.0] - 2019-09-15
 ### Changed
 - Rework the UI
