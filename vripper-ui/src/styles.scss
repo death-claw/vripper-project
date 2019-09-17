@@ -3,11 +3,15 @@
 @import 'mat-theme.scss';
 @import 'app/status-bar/status-bar.component.scss.theme.scss';
 @import 'app/app.component.scss-theme.scss';
+@import 'app/posts/post-progress.renderer.component.scss-theme.scss';
+@import 'app/post-detail/post-details-progress.component.scss-theme.scss';
 @import 'grid-theme.scss';
 
 @mixin custom-components-theme($theme) {
     @include status-bar-component-theme($theme);
     @include app-component-theme($theme);
+    @include post-progress-renderer-component-theme($theme);
+    @include post-detail-renderer-component-theme($theme);
 }
 
 .dark-theme {

@@ -8,7 +8,7 @@ import { ICellRendererParams } from 'ag-grid-community';
 import { ElectronService } from 'ngx-electron';
 
 @Component({
-  selector: 'app-progress-cell',
+  selector: 'app-details-cell',
   templateUrl: 'post-details-progress.component.html',
   styleUrls: ['post-details-progress.component.scss']
 })

@@ -1,0 +1,45 @@
+@import '~@angular/material/theming';
+
+@mixin post-progress-renderer-component-theme($theme) {
+  $red: mat-palette($mat-red);
+  $grey: mat-palette($mat-grey);
+  $green: mat-palette($mat-green);
+
+  app-progress-cell .progress-bar .mat-progress-bar-fill::after {
+    background-color: mat-color($grey, 300);
+  }
+
+  app-progress-cell .progress-bar .mat-progress-bar-buffer {
+    background-color: mat-color($grey, 100);
+  }
+
+  app-progress-cell .error-back {
+    background-color: mat-color($red, 50);
+    & .progress-bar .mat-progress-bar-fill::after {
+      background-color: mat-color($red, 300);
+    }
+    & .progress-bar .mat-progress-bar-buffer {
+      background-color: mat-color($red, 100);
+    }
+  }
+
+  app-progress-cell .downloading-back {
+    background-color: mat-color($green, 50);
+    & .progress-bar .mat-progress-bar-fill::after {
+      background-color: mat-color($green, 300);
+    }
+    & .progress-bar .mat-progress-bar-buffer {
+      background-color: mat-color($green, 100);
+    }
+  }
+
+  app-progress-cell .complete-back {
+    background-color: mat-color($green, 100);
+    & .progress-bar .mat-progress-bar-fill::after {
+      background-color: mat-color($green, 300);
+    }
+    & .progress-bar .mat-progress-bar-buffer {
+      background-color: mat-color($green, 100);
+    }
+  }
+}

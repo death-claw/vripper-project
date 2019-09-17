@@ -3,7 +3,7 @@
     <h2 class="no-wrap" mat-dialog-title>Scan</h2>
   </div>
   <mat-dialog-content fxFlex="grow" fxLayout="column">
-    <div *ngIf="threadId == null || !clipboard">
+    <div *ngIf="!hideScan">
       <form
         #f="ngForm"
         (ngSubmit)="submit(f)"

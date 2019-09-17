@@ -26,10 +26,11 @@ export class ScanComponent implements OnInit {
 
   input: string;
   threadId: string;
-  clipboard = false;
+  hideScan = false;
 
   submit(form: NgForm) {
     this.ngZone.run(() => {
+      this.hideScan = true;
       this.threadId = null;
       this.processUrl(this.input, form);
     });
@@ -93,7 +94,7 @@ export class ScanComponent implements OnInit {
   ngOnInit() {
     this.ngZone.run(() => {
       if (this.data.url != null) {
-        this.clipboard = true;
+        this.hideScan = true;
         this.processUrl(this.data.url);
       }
     });
