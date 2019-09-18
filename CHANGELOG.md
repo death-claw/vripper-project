@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.6.4] - 2019-09-18
+### Changed
+- Change menu item name
+
 ## [1.6.3] - 2019-09-18
 ### Changed
 - Better multithread management
