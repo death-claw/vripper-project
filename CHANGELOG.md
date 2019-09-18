@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.6.5] - 2019-09-18
+### Changed
+- electron update
+
 ## [1.6.4] - 2019-09-18
 ### Changed
 - Change menu item name
