@@ -2,7 +2,7 @@
   <div
     [ngClass]="{
       'error-back': postState.status === 'ERROR',
-      'downloading-back': postState.status === 'DOWNLOADING',
+      'downloading-back': postState.status === 'DOWNLOADING' || postState.status === 'PARTIAL',
       'complete-back': postState.status === 'COMPLETE'
     }"
     class="progress-bar-back"

@@ -34,9 +34,10 @@ public class SettingsRestEndpoint {
     @PostMapping("/settings/theme")
     @ResponseStatus(value = HttpStatus.OK)
     public AppSettingsService.Theme postTheme(@RequestBody AppSettingsService.Theme theme) {
-
-        this.settings.setTheme(theme);
-        return settings.getTheme();
+        synchronized (this.settings) {
+            this.settings.setTheme(theme);
+            return settings.getTheme();
+        }
     }
 
     @GetMapping("/settings/theme")
@@ -49,33 +50,35 @@ public class SettingsRestEndpoint {
     @ResponseStatus(value = HttpStatus.OK)
     public ResponseEntity postSettings(@RequestBody AppSettingsService.Settings settings) throws Exception {
 
-        try {
-            this.settings.check(settings);
-        } catch (ValidationException e) {
-            return new ResponseEntity(new Response(e.getMessage()), HttpStatus.BAD_REQUEST);
-        }
-        this.settings.setDownloadPath(settings.getDownloadPath());
-        this.settings.setMaxThreads(settings.getMaxThreads());
-        this.settings.setAutoStart(settings.isAutoStart());
-        this.settings.setVLogin(settings.isVLogin());
-
-        if(settings.isVLogin()) {
-            this.settings.setVUsername(settings.getVUsername());
-            if (!this.settings.getVPassword().equals(settings.getVPassword())) {
-                this.settings.setVPassword(settings.getVPassword());
+        synchronized (this.settings) {
+            try {
+                this.settings.check(settings);
+            } catch (ValidationException e) {
+                return new ResponseEntity(new Response(e.getMessage()), HttpStatus.BAD_REQUEST);
             }
-            this.settings.setVThanks(settings.isVThanks());
-        } else {
-            this.settings.setVUsername("");
-            this.settings.setVPassword("");
-            this.settings.setVThanks(false);
+            this.settings.setDownloadPath(settings.getDownloadPath());
+            this.settings.setMaxThreads(settings.getMaxThreads());
+            this.settings.setAutoStart(settings.isAutoStart());
+            this.settings.setVLogin(settings.isVLogin());
+
+            if (settings.isVLogin()) {
+                this.settings.setVUsername(settings.getVUsername());
+                if (!this.settings.getVPassword().equals(settings.getVPassword())) {
+                    this.settings.setVPassword(settings.getVPassword());
+                }
+                this.settings.setVThanks(settings.isVThanks());
+            } else {
+                this.settings.setVUsername("");
+                this.settings.setVPassword("");
+                this.settings.setVThanks(false);
+            }
+            this.settings.setDesktopClipboard(settings.isDesktopClipboard());
+            this.settings.setForceOrder(settings.isForceOrder());
+
+            this.settings.save();
+
+            vipergirlsAuthService.authenticate();
         }
-        this.settings.setDesktopClipboard(settings.isDesktopClipboard());
-        this.settings.setForceOrder(settings.isForceOrder());
-
-        this.settings.save();
-
-        vipergirlsAuthService.authenticate();
         return ResponseEntity.ok(getSettings());
     }
 
