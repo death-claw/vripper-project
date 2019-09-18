@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.6.3] - 2019-09-18
+### Changed
+- Better multithread management
+- Fix partial state UI
+
 ## [1.6.2] - 2019-09-17
 ### Changed
 - Rework UI colors
