@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.0.0] - 2019-09-22
+### Added
+- Add sub folder option
+- Add clear finished option
+### Changed
+- UI enhancements
+- Bug fixes
+- Change data and log paths
+
 ## [1.6.5] - 2019-09-18
 ### Changed
 - electron update
