@@ -8,12 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.entities.mixin.persistance.ImagePersistanceMixin;
 import tn.mnlr.vripper.entities.mixin.persistance.PostPersistanceMixin;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.File;
 import java.io.FileWriter;
@@ -23,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -44,22 +47,6 @@ public class PersistenceService {
     private PublishProcessor<Map<String, Post>> processor = PublishProcessor.create();
 
     private PersistenceService() {
-        File dataFile = new File(VripperApplication.dataPath);
-        if(!dataFile.exists()) {
-            try {
-                if(dataFile.createNewFile()) {
-                    logger.info("Data file successfully created");
-                    try (FileWriter fw = new FileWriter(dataFile)) {
-                        fw.write("{}");
-                    }
-                } else {
-                    logger.info("Data file already exists");
-                }
-            } catch (IOException e) {
-                logger.error("Unable to create data file", e);
-                System.exit(-1);
-            }
-        }
         om = new ObjectMapper();
         om.addMixIn(Image.class, ImagePersistanceMixin.class);
         om.addMixIn(Post.class, PostPersistanceMixin.class);
@@ -70,6 +57,33 @@ public class PersistenceService {
                 .map(e -> e.get(0))
                 .doOnNext(this::persist)
                 .subscribe();
+    }
+
+    @PostConstruct
+    public void init() {
+        File dataFile = new File(VripperApplication.dataPath);
+        if (!dataFile.exists()) {
+            try {
+
+                dataFile.mkdirs();
+                if (!dataFile.getParentFile().isDirectory() || !dataFile.getParentFile().canWrite()) {
+                    logger.error(String.format("Unable to write in %s", dataFile.getParent()));
+                    SpringContext.close();
+                }
+
+                if (dataFile.createNewFile()) {
+                    logger.info("Data file successfully created");
+                    try (FileWriter fw = new FileWriter(dataFile)) {
+                        fw.write("{}");
+                    }
+                } else {
+                    logger.info("Data file already exists");
+                }
+            } catch (IOException e) {
+                logger.error("Unable to create data file", e);
+                SpringContext.close();
+            }
+        }
     }
 
     @PreDestroy
@@ -95,6 +109,14 @@ public class PersistenceService {
             return om.readValue(content, om.getTypeFactory().constructMapType(HashMap.class, String.class, Post.class));
         } catch (IOException e) {
             logger.error("Failed to read app state", e);
+            long timestamp = new Date().getTime();
+            logger.warn(String.format("trying to rename old data file from %s to %s", VripperApplication.dataPath, VripperApplication.dataPath + "." + timestamp + ".old"));
+            try {
+                Files.move(new File(VripperApplication.dataPath).toPath(), new File(VripperApplication.dataPath + "." + timestamp + ".old").toPath());
+            } catch (IOException ex) {
+                logger.error(String.format("Failed to rename %s to %s", VripperApplication.dataPath, VripperApplication.dataPath + ".old"));
+                SpringContext.close();
+            }
         }
 
         return new HashMap<>();
@@ -102,12 +124,12 @@ public class PersistenceService {
 
     public void restore() {
 
-        String jsonContent;
+        String jsonContent = null;
         try {
             jsonContent = Files.readAllLines(Paths.get(VripperApplication.dataPath), StandardCharsets.UTF_8).stream().collect(Collectors.joining());
         } catch (Exception e) {
-            logger.warn("data file not found, previous state cannot be restored", e);
-            return;
+            logger.error("data file cannot be read, previous state cannot be restored", e);
+            SpringContext.close();
         }
 
         Map<String, Post> read = read(jsonContent);
