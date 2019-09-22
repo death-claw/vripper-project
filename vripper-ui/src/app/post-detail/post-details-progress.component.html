@@ -1,5 +1,8 @@
 <div class="container" style="height: 100%; background-color: white">
   <div
+    [ngClass]="{
+      error: postDetails.status === 'ERROR'
+    }"
     class="progress-bar-back"
     style="position: relative; height: 100%;"
   >

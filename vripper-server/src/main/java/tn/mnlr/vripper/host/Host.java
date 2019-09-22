@@ -46,6 +46,9 @@ abstract public class Host {
     private AppSettingsService appSettingsService;
 
     @Autowired
+    private AppStateService appStateService;
+
+    @Autowired
     private ConnectionManager cm;
 
     @Autowired
@@ -63,6 +66,8 @@ abstract public class Host {
     public void download(Image image, ImageFileData imageFileData) throws DownloadException, InterruptedException {
 
         try {
+
+            appStateService.postDownloadingUpdate(image.getPostId());
 
             imageFileData.setPageUrl(image.getUrl());
 

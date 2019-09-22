@@ -74,6 +74,8 @@ public class SettingsRestEndpoint {
             }
             this.settings.setDesktopClipboard(settings.isDesktopClipboard());
             this.settings.setForceOrder(settings.isForceOrder());
+            this.settings.setSubLocation(settings.isSubLocation());
+            this.settings.setClearCompleted(settings.isClearCompleted());
 
             this.settings.save();
 
@@ -95,7 +97,9 @@ public class SettingsRestEndpoint {
                 settings.getVPassword(),
                 settings.isVThanks(),
                 settings.isDesktopClipboard(),
-                settings.isForceOrder()
+                settings.isForceOrder(),
+                settings.isSubLocation(),
+                settings.isClearCompleted()
         );
     }
 

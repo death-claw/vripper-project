@@ -1,7 +1,8 @@
 <div fxLayout="column" class="dialog-container" style="height: 100%;">
   <div fxFlex="nogrow" fxLayout="row" fxLayoutAlign="space-between center">
     <h2 class="no-wrap" mat-dialog-title>Settings</h2>
-    <mat-slide-toggle (change)="updateTheme()" [(ngModel)]="darkTheme">{{darkTheme ? 'Dark theme' : 'Light theme'}}
+    <mat-slide-toggle (change)="updateTheme()" [(ngModel)]="darkTheme"
+    >{{ darkTheme ? 'Dark theme' : 'Light theme' }}
     </mat-slide-toggle>
   </div>
   <mat-dialog-content fxFlex="grow">
@@ -37,14 +38,21 @@
               />
             </mat-form-field>
 
+            <mat-checkbox color="primary" formControlName="subLocation" name="subLocation"
+            >Save posts in sub folders
+            </mat-checkbox>
+
             <mat-checkbox color="primary" formControlName="forceOrder" name="forceOrder"
             >Force image ordering (prepend incremental numbers)
-            </mat-checkbox
-            >
+            </mat-checkbox>
 
             <mat-checkbox color="primary" formControlName="autoStart" name="autoStart"
               >Auto start downloads</mat-checkbox
             >
+
+            <mat-checkbox color="primary" formControlName="clearCompleted" name="clearCompleted"
+            >Clear Finished
+            </mat-checkbox>
 
             <mat-slide-toggle color="primary" formControlName="vLogin" name="vLogin">
               ViperGirls Authentication
@@ -88,7 +96,11 @@
       (click)="onSubmit()"
       color="primary"
       type="submit"
-      [disabled]="(generalSettingsForm.pristine && desktopSettingsForm.pristine) || generalSettingsForm.invalid || desktopSettingsForm.invalid"
+      [disabled]="
+        (generalSettingsForm.pristine && desktopSettingsForm.pristine) ||
+        generalSettingsForm.invalid ||
+        desktopSettingsForm.invalid
+      "
     >
       Apply
     </button>

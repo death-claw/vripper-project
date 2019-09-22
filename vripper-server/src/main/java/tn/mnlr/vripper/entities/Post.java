@@ -30,8 +30,6 @@ public class Post {
 
     private String title;
 
-    private String postCounter;
-
     private String url;
 
     private List<Image> images;
@@ -46,12 +44,15 @@ public class Post {
 
     private boolean removed = false;
 
-    public Post(String title, String url, List<Image> images, Map<String, Object> metadata, String postId, String threadId) {
+    private String forum;
+
+    public Post(String title, String url, List<Image> images, Map<String, Object> metadata, String postId, String threadId, String forum) {
         this.title = title;
         this.url = url;
         this.images = images;
         this.metadata = metadata;
         this.postId = postId;
+        this.forum = forum;
         this.threadId = threadId;
         if (this.images.contains(null)) {
             System.out.println("Oops");

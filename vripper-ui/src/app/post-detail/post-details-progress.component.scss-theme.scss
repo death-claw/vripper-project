@@ -2,6 +2,7 @@
 
 @mixin post-detail-renderer-component-theme($theme) {
   $blue: mat-palette($mat-blue);
+  $red: mat-palette($mat-red);
 
   .progress-bar .mat-progress-bar-fill::after {
     background-color: mat-color($blue, 300);
@@ -9,5 +10,15 @@
 
   .progress-bar .mat-progress-bar-buffer {
     background-color: mat-color($blue, 100);
+  }
+
+  app-details-cell .error {
+    background-color: mat-color($red, 50);
+    & .progress-bar .mat-progress-bar-fill::after {
+      background-color: mat-color($red, 300);
+    }
+    & .progress-bar .mat-progress-bar-buffer {
+      background-color: mat-color($red, 100);
+    }
   }
 }

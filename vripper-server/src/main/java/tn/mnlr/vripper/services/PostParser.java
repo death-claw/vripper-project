@@ -309,6 +309,8 @@ public class PostParser {
         private String postTitle;
         private int imageCount;
 
+        private String forum;
+
         private List<String> previews = new ArrayList<>();
         private List<Image> images = new ArrayList<>();
         @Getter
@@ -327,6 +329,9 @@ public class PostParser {
         public void startElement(String uri, String localName, String qName, Attributes attributes) {
 
             switch (qName.toLowerCase()) {
+                case "forum":
+                    forum = attributes.getValue("title").trim();
+                    break;
                 case "thread":
                     threadTitle = attributes.getValue("title").trim();
                     break;
@@ -370,7 +375,8 @@ public class PostParser {
                                 images,
                                 metadata,
                                 postId,
-                                threadId
+                                threadId,
+                                forum
                         );
                     }
                     index = 0;

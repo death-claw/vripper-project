@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import tn.mnlr.vripper.entities.Post;
 
 import java.io.File;
 
@@ -19,8 +20,10 @@ public class PathService {
     private AppSettingsService appSettingsService;
 
     public final File getDownloadDestinationFolder(String postId) {
-        String postTitle = appStateService.getCurrentPosts().get(postId).getTitle();
-        return new File(appSettingsService.getDownloadPath(), sanitize(postTitle + "_" + postId));
+        Post post = appStateService.getCurrentPosts().get(postId);
+        String postTitle = post.getTitle();
+        File sourceFolder = appSettingsService.isSubLocation() ? new File(appSettingsService.getDownloadPath(), sanitize(post.getForum())) : new File(appSettingsService.getDownloadPath());
+        return new File(sourceFolder, sanitize(postTitle + "_" + postId));
     }
 
     public final String sanitize(final String folderName) {

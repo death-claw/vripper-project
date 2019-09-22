@@ -29,10 +29,12 @@ export class SettingsComponent implements OnInit {
     maxThreads: new FormControl(''),
     autoStart: new FormControl(false),
     forceOrder: new FormControl(false),
+    subLocation: new FormControl(false),
+    clearCompleted: new FormControl(false),
     vLogin: new FormControl(false),
     vUsername: new FormControl(''),
     vPassword: new FormControl(''),
-    vThanks: new FormControl(false)
+    vThanks: new FormControl(false),
   });
 
   desktopSettingsForm = new FormGroup({

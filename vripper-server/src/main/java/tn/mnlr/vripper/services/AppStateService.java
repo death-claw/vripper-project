@@ -1,5 +1,6 @@
 package tn.mnlr.vripper.services;
 
+import io.reactivex.disposables.Disposable;
 import io.reactivex.processors.PublishProcessor;
 import lombok.Getter;
 import lombok.Setter;
@@ -37,6 +38,11 @@ public class AppStateService {
     @Autowired
     private PersistenceService persistenceService;
 
+    @Autowired
+    private AppSettingsService appSettingsService;
+
+    private Disposable subscription;
+
     public void onImageUpdate(Image imageState) {
 
         persistenceService.getProcessor().onNext(currentPosts);
@@ -56,9 +62,12 @@ public class AppStateService {
     public synchronized void newDownloadJob(DownloadJob downloadJob) {
         String postId = downloadJob.getImage().getPostId();
         checkKeyRunningPosts(postId);
-        int i = runningPosts.get(postId).incrementAndGet();
-        if (i > 0) {
-            Post post = currentPosts.get(postId);
+        runningPosts.get(postId).incrementAndGet();
+    }
+
+    public synchronized void postDownloadingUpdate(String postId) {
+        Post post = currentPosts.get(postId);
+        if (!post.getStatus().equals(Post.Status.DOWNLOADING)) {
             post.setStatus(Post.Status.DOWNLOADING);
             livePostsState.onNext(post);
         }
@@ -77,9 +86,11 @@ public class AppStateService {
             } else {
                 if (!Post.Status.STOPPED.equals(post.getStatus())) {
                     post.setStatus(Post.Status.COMPLETE);
+                    if (appSettingsService.isClearCompleted()) {
+                        remove(image.getPostId());
+                    }
                 }
             }
-            livePostsState.onNext(post);
         }
     }
 
@@ -123,6 +134,7 @@ public class AppStateService {
         toRemove.forEach(this::remove);
         return toRemove;
     }
+
 
     @Getter
     public static class CachedThread {
