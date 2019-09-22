@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.0.1] - 2019-09-22
+### Changed
+- Change app name
+
 ## [2.0.0] - 2019-09-22
 ### Added
 - Add sub folder option
