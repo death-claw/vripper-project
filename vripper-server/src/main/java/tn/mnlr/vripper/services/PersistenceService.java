@@ -64,8 +64,7 @@ public class PersistenceService {
         File dataFile = new File(VripperApplication.dataPath);
         if (!dataFile.exists()) {
             try {
-
-                dataFile.mkdirs();
+                dataFile.getParentFile().mkdirs();
                 if (!dataFile.getParentFile().isDirectory() || !dataFile.getParentFile().canWrite()) {
                     logger.error(String.format("Unable to write in %s", dataFile.getParent()));
                     SpringContext.close();
