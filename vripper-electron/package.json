@@ -33,7 +33,7 @@
       }
     ],
     "win": {
-      "icon": "512x512.png",
+      "icon": "icon.png",
       "target": [
         "nsis"
       ]
@@ -42,7 +42,7 @@
       "synopsis": "A ripper for vipergirls.to",
       "category": "Utility",
       "packageCategory": "Utility",
-      "icon": "512x512.png",
+      "icon": "icons",
       "target": [
         "deb"
       ]

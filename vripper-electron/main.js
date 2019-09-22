@@ -36,7 +36,7 @@ function createWindow() {
   if(process.platform === "win32") {
     icon = __dirname + '/icon.ico';
   } else {
-    icon = __dirname + '/512x512.png';
+    icon = __dirname + '/icon.png';
   }
   win = new BrowserWindow({
     width: 1024,
