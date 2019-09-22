@@ -34,16 +34,15 @@ if (!commandExists("java")) {
 function createWindow() {
   let icon;
   if(process.platform === "win32") {
-    icon = path.join(__dirname, `icon.ico`);
+    icon = __dirname + '/icon.ico';
   } else {
-    icon = path.join(__dirname, `icon.icns`);
+    icon = __dirname + '/512x512.png';
   }
   win = new BrowserWindow({
     width: 1024,
     height: 800,
-    minWidth: 640,
-    minHeight: 480,
-    frame: false,
+    minWidth: 800,
+    minHeight: 600,
     webPreferences: {
       nodeIntegration: true
     },
@@ -51,6 +50,8 @@ function createWindow() {
   });
 
   win.removeMenu();
+  win.setMenu(null);
+  win.setMenuBarVisibility(false);
 
   win.loadURL(
     url.format({

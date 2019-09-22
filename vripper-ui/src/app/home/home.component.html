@@ -2,10 +2,9 @@
   <mat-progress-spinner [mode]="spinnerMode" [value]="spinnerValue" style="position: absolute;"></mat-progress-spinner>
 </div>
 <div fxLayout="column" fxLayoutGap="10px" style="height: 100%">
-  <div [fxFlex]="electronService.isElectronApp ? '0 0 calc(100% - 117px)' : '0 0 calc(100% - 90px)'">
+  <div fxFlex="0 0 calc(100% - 90px)">
     <app-posts
-      [ngStyle]="{ height: electronService.isElectronApp ? 'calc(100% - 37px)' : '100%' }"
-      style="width: 100%;"
+      style="width: 100%; height: 100%;"
     ></app-posts>
   </div>
 </div>

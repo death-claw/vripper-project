@@ -1,9 +1,9 @@
 {
   "name": "vripper-electron",
   "version": "1.6.5",
-  "description": "",
+  "description": "A ripper for vipergirls.to",
   "main": "main.js",
-  "author": "",
+  "author": "death-claw",
   "license": "ISC",
   "build": {
     "appId": "tn.mnlr.vripper",
@@ -32,11 +32,18 @@
       }
     ],
     "win": {
-      "target": "nsis"
+      "icon": "512x512.png",
+      "target": [
+        "nsis"
+      ]
     },
     "linux": {
+      "synopsis": "A ripper for vipergirls.to",
+      "category": "Utility",
+      "packageCategory": "Utility",
+      "icon": "512x512.png",
       "target": [
-        "zip"
+        "deb"
       ]
     }
   },
