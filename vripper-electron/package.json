@@ -3,7 +3,8 @@
   "version": "1.6.5",
   "description": "A ripper for vipergirls.to",
   "main": "main.js",
-  "author": "death-claw",
+  "author": "death-claw <53543762+death-claw@users.noreply.github.com>",
+  "homepage": "https://github.com/death-claw/vripper-project",
   "license": "ISC",
   "build": {
     "appId": "tn.mnlr.vripper",
