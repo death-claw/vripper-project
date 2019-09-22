@@ -1,13 +1,14 @@
 {
   "name": "vripper-electron",
   "version": "2.0.0",
-  "description": "A ripper for vipergirls.to",
+  "description": "A ripper for vipergirls.to built using web technolgies",
   "main": "main.js",
   "author": "death-claw <53543762+death-claw@users.noreply.github.com>",
   "homepage": "https://github.com/death-claw/vripper-project",
   "license": "ISC",
   "build": {
     "appId": "tn.mnlr.vripper",
+    "productName": "V Ripper",
     "files": [
       "**/*",
       "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
@@ -38,8 +39,13 @@
         "nsis"
       ]
     },
+    "nsis": {
+      "createDesktopShortcut": "always",
+      "oneClick": false,
+      "perMachine": false
+    },
     "linux": {
-      "synopsis": "A ripper for vipergirls.to",
+      "synopsis": "vipergirls.to ripper",
       "category": "Utility",
       "packageCategory": "Utility",
       "icon": "icons",
