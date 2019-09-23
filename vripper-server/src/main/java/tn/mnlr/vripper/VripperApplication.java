@@ -1,8 +1,10 @@
 package tn.mnlr.vripper;
 
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -12,6 +14,7 @@ import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.services.PersistenceService;
 import tn.mnlr.vripper.services.VipergirlsAuthService;
 
+import javax.annotation.PostConstruct;
 import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,7 +24,7 @@ public class VripperApplication {
 
     private static final Logger logger = LoggerFactory.getLogger(VripperApplication.class);
 
-    public static final String dataPath = System.getProperty("user.home", ".") + File.separator + ".vripper" + File.separator + "data.json";
+//    public static final String dataPath = System.getProperty("user.home", ".") + File.separator + ".vripper" + File.separator + "data.json";
 
     public static final ExecutorService commonExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
@@ -45,6 +48,17 @@ public class VripperApplication {
 
         @Autowired
         private AppSettingsService appSettingsService;
+
+        @Value("${base.dir}")
+        private String baseDir;
+
+        @Getter
+        private String dataPath;
+
+        @PostConstruct
+        public void init() {
+            dataPath = baseDir + File.separator + ".vripper" + File.separator + "data.json";
+        }
 
         @Override
         public void run(String... args) {

@@ -39,6 +39,9 @@ public class PersistenceService {
     @Autowired
     private AppStateService stateService;
 
+    @Autowired
+    private VripperApplication.AppCommandRunner appCommandRunner;
+
     private ObjectMapper om;
 
     private Disposable subscription;
@@ -61,7 +64,7 @@ public class PersistenceService {
 
     @PostConstruct
     public void init() {
-        File dataFile = new File(VripperApplication.dataPath);
+        File dataFile = new File(appCommandRunner.getDataPath());
         if (!dataFile.exists()) {
             try {
                 dataFile.getParentFile().mkdirs();
@@ -95,7 +98,7 @@ public class PersistenceService {
 
     public void persist(Map<String, Post> currentPosts) {
 
-        try (PrintWriter out = new PrintWriter(VripperApplication.dataPath, "UTF-8")) {
+        try (PrintWriter out = new PrintWriter(appCommandRunner.getDataPath(), "UTF-8")) {
             out.print(om.writeValueAsString(currentPosts));
         } catch (IOException e) {
             logger.error("Failed to persist app state", e);
@@ -109,11 +112,11 @@ public class PersistenceService {
         } catch (IOException e) {
             logger.error("Failed to read app state", e);
             long timestamp = new Date().getTime();
-            logger.warn(String.format("trying to rename old data file from %s to %s", VripperApplication.dataPath, VripperApplication.dataPath + "." + timestamp + ".old"));
+            logger.warn(String.format("trying to rename old data file from %s to %s", appCommandRunner.getDataPath(), appCommandRunner.getDataPath() + "." + timestamp + ".old"));
             try {
-                Files.move(new File(VripperApplication.dataPath).toPath(), new File(VripperApplication.dataPath + "." + timestamp + ".old").toPath());
+                Files.move(new File(appCommandRunner.getDataPath()).toPath(), new File(appCommandRunner.getDataPath() + "." + timestamp + ".old").toPath());
             } catch (IOException ex) {
-                logger.error(String.format("Failed to rename %s to %s", VripperApplication.dataPath, VripperApplication.dataPath + ".old"));
+                logger.error(String.format("Failed to rename %s to %s", appCommandRunner.getDataPath(), appCommandRunner.getDataPath() + ".old"));
                 SpringContext.close();
             }
         }
@@ -125,7 +128,7 @@ public class PersistenceService {
 
         String jsonContent = null;
         try {
-            jsonContent = Files.readAllLines(Paths.get(VripperApplication.dataPath), StandardCharsets.UTF_8).stream().collect(Collectors.joining());
+            jsonContent = Files.readAllLines(Paths.get(appCommandRunner.getDataPath()), StandardCharsets.UTF_8).stream().collect(Collectors.joining());
         } catch (Exception e) {
             logger.error("data file cannot be read, previous state cannot be restored", e);
             SpringContext.close();
