@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.0.3] - 2019-09-23
+### Changed
+- Update deb dependencies
+
 ## [2.0.2] - 2019-09-23
 ### Changed
 - Add portable mode
