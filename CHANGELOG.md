@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.0.4] - 2019-09-27
+### Changed
+- Fix some issues with ImxHost
+
 ## [2.0.3] - 2019-09-23
 ### Changed
 - Update deb dependencies
