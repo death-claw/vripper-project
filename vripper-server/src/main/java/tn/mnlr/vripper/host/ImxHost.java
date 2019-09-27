@@ -41,25 +41,34 @@ public class ImxHost extends Host {
     }
 
     @Override
-    protected void setNameAndUrl(final String url, final ImageFileData imageFileData) throws HostException {
+    protected void setNameAndUrl(final String _url, final ImageFileData imageFileData) throws HostException {
 
-        Document doc = getResponse(url).getDocument();
+        String url = _url.replace("http://", "https://");
+        Response resp = getResponse(url);
+        Document doc = resp.getDocument();
 
         Node contDiv;
+        String value = null;
         try {
             logger.info(String.format("Looking for xpath expression %s in %s", CONTINUE_BUTTON_XPATH, url));
             contDiv = xpathService.getAsNode(doc, CONTINUE_BUTTON_XPATH);
+            Node node = contDiv.getAttributes().getNamedItem("value");
+            if (node != null) {
+                value = node.getTextContent();
+            }
         } catch (XpathException e) {
             throw new HostException(e);
         }
 
         if (contDiv != null) {
+            if (value == null) {
+                throw new HostException("Failed to obtain value attribute from continue input");
+            }
             logger.info(String.format("Click button found for %s", url));
             HttpClient client = cm.getClient().build();
             HttpPost httpPost = cm.buildHttpPost(url);
-            httpPost.addHeader("Referer", url);
             List<NameValuePair> params = new ArrayList<>();
-            params.add(new BasicNameValuePair("imgContinue", "Continue to image ... "));
+            params.add(new BasicNameValuePair("imgContinue", value));
             try {
                 httpPost.setEntity(new UrlEncodedFormEntity(params));
             } catch (Exception e) {
