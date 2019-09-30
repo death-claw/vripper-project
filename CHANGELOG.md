@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.1.0] - 2019-09-30
+### Added
+- Add a create a subfolder per thread option
+
 ## [2.0.4] - 2019-09-27
 ### Changed
 - Fix some issues with ImxHost
