@@ -42,6 +42,11 @@
             >Save posts in sub folders
             </mat-checkbox>
 
+            <mat-checkbox *ngIf="generalSettingsForm.get('subLocation').value" color="primary"
+                          formControlName="threadSubLocation" name="threadSubLocation" style="margin-left: 15px"
+            >Create a subfolder per thread
+            </mat-checkbox>
+
             <mat-checkbox color="primary" formControlName="forceOrder" name="forceOrder"
             >Force image ordering (prepend incremental numbers)
             </mat-checkbox>

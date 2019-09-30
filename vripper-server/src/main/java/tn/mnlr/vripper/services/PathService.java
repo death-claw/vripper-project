@@ -22,7 +22,9 @@ public class PathService {
     public final File getDownloadDestinationFolder(String postId) {
         Post post = appStateService.getCurrentPosts().get(postId);
         String postTitle = post.getTitle();
+        String threadTitle = post.getThreadTitle();
         File sourceFolder = appSettingsService.isSubLocation() ? new File(appSettingsService.getDownloadPath(), sanitize(post.getForum())) : new File(appSettingsService.getDownloadPath());
+        sourceFolder = appSettingsService.isThreadSubLocation() ? new File(sourceFolder, threadTitle) : sourceFolder;
         return new File(sourceFolder, sanitize(postTitle + "_" + postId));
     }
 

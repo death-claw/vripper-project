@@ -75,6 +75,7 @@ public class SettingsRestEndpoint {
             this.settings.setDesktopClipboard(settings.isDesktopClipboard());
             this.settings.setForceOrder(settings.isForceOrder());
             this.settings.setSubLocation(settings.isSubLocation());
+            this.settings.setThreadSubLocation(settings.isThreadSubLocation());
             this.settings.setClearCompleted(settings.isClearCompleted());
 
             this.settings.save();
@@ -99,6 +100,7 @@ public class SettingsRestEndpoint {
                 settings.isDesktopClipboard(),
                 settings.isForceOrder(),
                 settings.isSubLocation(),
+                settings.isThreadSubLocation(),
                 settings.isClearCompleted()
         );
     }

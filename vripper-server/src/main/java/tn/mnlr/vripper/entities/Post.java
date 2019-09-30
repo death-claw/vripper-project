@@ -26,6 +26,8 @@ public class Post {
 
     private String postId;
 
+    private String threadTitle;
+
     private String threadId;
 
     private String title;
@@ -46,7 +48,7 @@ public class Post {
 
     private String forum;
 
-    public Post(String title, String url, List<Image> images, Map<String, Object> metadata, String postId, String threadId, String forum) {
+    public Post(String title, String url, List<Image> images, Map<String, Object> metadata, String postId, String threadId, String threadTitle, String forum) {
         this.title = title;
         this.url = url;
         this.images = images;
@@ -54,6 +56,7 @@ public class Post {
         this.postId = postId;
         this.forum = forum;
         this.threadId = threadId;
+        this.threadTitle = threadTitle;
         if (this.images.contains(null)) {
             System.out.println("Oops");
         }

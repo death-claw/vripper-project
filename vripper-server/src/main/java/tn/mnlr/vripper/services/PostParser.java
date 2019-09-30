@@ -376,6 +376,7 @@ public class PostParser {
                                 metadata,
                                 postId,
                                 threadId,
+                                threadTitle,
                                 forum
                         );
                     }

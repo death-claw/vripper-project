@@ -37,6 +37,7 @@ public class AppSettingsService {
     private final String DESKTOP_CLIPBOARD = "DESKTOP_CLIPBOARD";
     private final String FORCE_ORDER = "FORCE_ORDER";
     private final String SUBFOLDER = "SUBFOLDER";
+    private final String THREADSUBFOLDER = "THREADSUBFOLDER";
     private final String CLEAR = "CLEAR";
     private final String DARK_THEME = "DARK_THEME";
 
@@ -49,6 +50,7 @@ public class AppSettingsService {
     private boolean vThanks;
     private boolean desktopClipboard;
     private boolean subLocation;
+    private boolean threadSubLocation;
     private boolean forceOrder;
     private boolean clearCompleted;
     private boolean darkTheme;
@@ -73,6 +75,7 @@ public class AppSettingsService {
         desktopClipboard = prefs.getBoolean(DESKTOP_CLIPBOARD, false);
         forceOrder = prefs.getBoolean(FORCE_ORDER, false);
         subLocation = prefs.getBoolean(SUBFOLDER, false);
+        threadSubLocation = prefs.getBoolean(THREADSUBFOLDER, false);
         clearCompleted = prefs.getBoolean(CLEAR, false);
         darkTheme = prefs.getBoolean(DARK_THEME, false);
     }
@@ -90,6 +93,7 @@ public class AppSettingsService {
         prefs.putBoolean(DESKTOP_CLIPBOARD, desktopClipboard);
         prefs.putBoolean(FORCE_ORDER, forceOrder);
         prefs.putBoolean(SUBFOLDER, subLocation);
+        prefs.putBoolean(THREADSUBFOLDER, threadSubLocation);
         prefs.putBoolean(CLEAR, clearCompleted);
         prefs.putBoolean(DARK_THEME, darkTheme);
 
@@ -163,10 +167,12 @@ public class AppSettingsService {
         private boolean forceOrder;
         @JsonProperty("subLocation")
         private boolean subLocation;
+        @JsonProperty("threadSubLocation")
+        private boolean threadSubLocation;
         @JsonProperty("clearCompleted")
         private boolean clearCompleted;
 
-        public Settings(String downloadPath, int maxThreads, boolean autoStart, boolean vLogin, String vUsername, String vPassword, boolean vThanks, boolean desktopClipboard, boolean forceOrder, boolean subLocation, boolean clearCompleted) {
+        public Settings(String downloadPath, int maxThreads, boolean autoStart, boolean vLogin, String vUsername, String vPassword, boolean vThanks, boolean desktopClipboard, boolean forceOrder, boolean subLocation, boolean threadSubLocation, boolean clearCompleted) {
             this.downloadPath = downloadPath;
             this.maxThreads = maxThreads;
             this.autoStart = autoStart;
@@ -177,6 +183,7 @@ public class AppSettingsService {
             this.desktopClipboard = desktopClipboard;
             this.forceOrder = forceOrder;
             this.subLocation = subLocation;
+            this.threadSubLocation = threadSubLocation;
             this.clearCompleted = clearCompleted;
         }
     }

@@ -30,6 +30,7 @@ export class SettingsComponent implements OnInit {
     autoStart: new FormControl(false),
     forceOrder: new FormControl(false),
     subLocation: new FormControl(false),
+    threadSubLocation: new FormControl(false),
     clearCompleted: new FormControl(false),
     vLogin: new FormControl(false),
     vUsername: new FormControl(''),
