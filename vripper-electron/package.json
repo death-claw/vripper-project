@@ -64,8 +64,7 @@
         "libnotify4",
         "libappindicator1",
         "libxtst6",
-        "libnss3",
-        "openjdk-8-jre"
+        "libnss3"
       ]
     }
   },
