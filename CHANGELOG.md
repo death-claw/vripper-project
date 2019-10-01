@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.2.1] - 2019-10-01
+### Changed
+- Update dependency list for deb package
+
 ## [2.2.0] - 2019-10-01
 ### Added
 - Embedd JRE within the app
