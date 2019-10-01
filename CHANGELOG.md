@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.2.3] - 2019-10-01
+### Changed
+- Strip libjvm.so for debian
+
 ## [2.2.2] - 2019-10-01
 ### Changed
 - Update product name
