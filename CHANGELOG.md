@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0] - 2019-10-01
+### Added
+- Embedd JRE within the app
+### Changed
+- Fix 'Start' on pending items
+- Upgrade to Java 11
+
 ## [2.1.0] - 2019-09-30
 ### Added
 - Add a create a subfolder per thread option
