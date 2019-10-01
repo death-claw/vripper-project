@@ -31,6 +31,10 @@
       {
         "from": "../vripper-server/target/vripper-server-${version}-electron.jar",
         "to": "bin/vripper-server.jar"
+      },
+      {
+        "from": "java-runtime",
+        "to": "java-runtime"
       }
     ],
     "win": {

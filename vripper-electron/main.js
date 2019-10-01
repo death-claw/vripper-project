@@ -73,7 +73,8 @@ getPort().then(port => {
   ipcMain.on("get-port", event => {
     event.reply("port", port);
   });
-  vripperServer = spawn("java", [
+  vripperServer = spawn(appDir !== undefined ? path.join(appDir, "java-runtime/bin/java") :
+  path.join(app.getPath('exe'), "../java-runtime/bin/java"), [
     "-Xms256m",
     "-Xmx1024m",
     "-Dvripper.server.port=" + port,

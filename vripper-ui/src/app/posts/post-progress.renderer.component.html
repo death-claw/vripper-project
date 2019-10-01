@@ -42,7 +42,6 @@
           <button
             (click)="restart()"
             *ngIf="
-              postState.status === 'PENDING' ||
               (postState.status === 'COMPLETE' && postState.progress !== 100) ||
               postState.status === 'ERROR' ||
               postState.status === 'STOPPED'
@@ -54,7 +53,7 @@
           </button>
           <button
             (click)="stop()"
-            *ngIf="postState.status === 'DOWNLOADING' || postState.status === 'PARTIAL'"
+            *ngIf="postState.status === 'DOWNLOADING' || postState.status === 'PARTIAL' || postState.status === 'PENDING'"
             mat-menu-item
           >
             <ng-container>
