@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.2.2] - 2019-10-01
+### Changed
+- Update product name
+
 ## [2.2.1] - 2019-10-01
 ### Changed
 - Update dependency list for deb package
