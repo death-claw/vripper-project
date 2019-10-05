@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.2.4] - 2019-10-05
+### Added
+- AppImage target for linux
+
 ## [2.2.3] - 2019-10-01
 ### Changed
 - Strip libjvm.so for debian
