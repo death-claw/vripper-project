@@ -54,7 +54,8 @@
       "packageCategory": "Utility",
       "icon": "icons",
       "target": [
-        "deb"
+        "deb",
+        "AppImage"
       ]
     },
     "deb": {
