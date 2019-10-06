@@ -67,6 +67,13 @@
         "libxtst6",
         "libnss3"
       ]
+    },
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        "dmg"
+      ],
+      "icon": "icon.png"
     }
   },
   "scripts": {
