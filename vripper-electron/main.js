@@ -73,14 +73,32 @@ getPort().then(port => {
   ipcMain.on("get-port", event => {
     event.reply("port", port);
   });
-  vripperServer = spawn(appDir !== undefined ? path.join(appDir, "java-runtime/bin/java") :
-  path.join(app.getPath('exe'), "../java-runtime/bin/java"), [
+  let javaBinPath;
+  if(appDir !== undefined) {
+    javaBinPath = path.join(appDir, "java-runtime/bin/java");
+  } else {
+    if(process.platform === 'darwin') {
+      javaBinPath = path.join(app.getPath('exe'), "../../java-runtime/bin/java");
+    } else {
+      javaBinPath = path.join(app.getPath('exe'), "../java-runtime/bin/java");
+    }
+  }
+  let jarPath;
+  if(appDir !== undefined) {
+    jarPath = path.join(appDir, "bin/vripper-server.jar");
+  } else {
+    if(process.platform === 'darwin') {
+      jarPath = path.join(app.getPath('exe'), "../../bin/vripper-server.jar");
+    } else {
+      jarPath = path.join(app.getPath('exe'), "../bin/vripper-server.jar");
+    }
+  }
+  vripperServer = spawn(javaBinPath, [
     "-Xms256m",
     "-Xmx1024m",
     "-Dvripper.server.port=" + port,
     "-jar",
-    appDir !== undefined ? path.join(appDir, "bin/vripper-server.jar") :
-    path.join(app.getPath('exe'), "../bin/vripper-server.jar")
+    jarPath
   ], {
     stdio: 'ignore'
   });
