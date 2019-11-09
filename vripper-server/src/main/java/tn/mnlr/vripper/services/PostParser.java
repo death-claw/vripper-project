@@ -2,6 +2,8 @@ package tn.mnlr.vripper.services;
 
 import io.reactivex.processors.PublishProcessor;
 import lombok.Getter;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -21,14 +23,18 @@ import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.q.DownloadQ;
 
+import javax.annotation.PostConstruct;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.net.URISyntaxException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class PostParser {
@@ -60,7 +66,20 @@ public class PostParser {
     @Autowired
     private VipergirlsAuthService vipergirlsAuthService;
 
+    private RetryPolicy<Object> retryPolicy;
+
     public PostParser() throws ParserConfigurationException, SAXException {
+    }
+
+    @PostConstruct
+    private void init() {
+
+        retryPolicy = new RetryPolicy<>()
+                .handleIf(e -> e instanceof IOException)
+                .withBackoff(2, 20, ChronoUnit.SECONDS)
+                .withMaxRetries(4)
+                .abortOn(InterruptedException.class)
+                .onFailedAttempt(e -> logger.warn(String.format("#%d tries failed", e.getAttemptCount()), e.getLastFailure()));
     }
 
     public void addPost(String postId, String threadId) throws PostParseException {
@@ -161,19 +180,32 @@ public class PostParser {
             } catch (URISyntaxException e) {
                 throw new PostParseException(e);
             }
+
             VRThreadHandler handler = new VRThreadHandler(threadId, postPublishProcessor);
             HttpClient connection = cm.getClient().build();
+            AtomicReference<Throwable> thr = new AtomicReference<>();
             logger.info(String.format("Requesting %s", httpGet));
-            try (CloseableHttpResponse response = (CloseableHttpResponse) connection.execute(httpGet)) {
-                if (response.getStatusLine().getStatusCode() / 100 != 2) {
-                    throw new DownloadException(String.format("Unexpected response code '%d' for %s", response.getStatusLine().getStatusCode(), httpGet));
-                }
+            Failsafe.with(retryPolicy)
+                    .onFailure(e -> thr.set(e.getFailure()))
+                    .get(() -> {
+                        try (CloseableHttpResponse response = (CloseableHttpResponse) connection.execute(httpGet)) {
+                            if (response.getStatusLine().getStatusCode() / 100 != 2) {
+                                throw new DownloadException(String.format("Unexpected response code '%d' for %s", response.getStatusLine().getStatusCode(), httpGet));
+                            }
 
-                factory.newSAXParser().parse(new BufferedInputStream(response.getEntity().getContent()), handler);
-                EntityUtils.consumeQuietly(response.getEntity());
-            } catch (Exception e) {
-                logger.error("parsing failed", e);
-                throw new PostParseException(e);
+                            try {
+                                factory.newSAXParser().parse(new BufferedInputStream(response.getEntity().getContent()), handler);
+                            } catch (Exception e) {
+                                throw new PostParseException(String.format("Failed to parse thread %s", threadId), e);
+                            } finally {
+                                EntityUtils.consumeQuietly(response.getEntity());
+                            }
+                        }
+                        return null;
+                    });
+            if (thr.get() != null) {
+                logger.error(String.format("parsing failed for thread %s", threadId), thr.get());
+                throw new PostParseException(thr.get());
             }
             return null;
         }
@@ -265,7 +297,6 @@ public class PostParser {
 
         public Post parse() throws PostParseException {
 
-            Post post;
             logger.info(String.format("Parsing post %s", postId));
             HttpGet httpGet;
             try {
@@ -280,18 +311,29 @@ public class PostParser {
             }
             VRPostHandler handler = new VRPostHandler(threadId, postId);
             HttpClient connection = cm.getClient().build();
+            AtomicReference<Throwable> thr = new AtomicReference<>();
             logger.info(String.format("Requesting %s", httpGet));
-            try (CloseableHttpResponse response = (CloseableHttpResponse) connection.execute(httpGet)) {
-                if (response.getStatusLine().getStatusCode() / 100 != 2) {
-                    throw new DownloadException(String.format("Unexpected response code '%d' for %s", response.getStatusLine().getStatusCode(), httpGet));
-                }
+            Post post = Failsafe.with(retryPolicy)
+                    .onFailure(e -> thr.set(e.getFailure()))
+                    .get(() -> {
+                        try (CloseableHttpResponse response = (CloseableHttpResponse) connection.execute(httpGet)) {
+                            if (response.getStatusLine().getStatusCode() / 100 != 2) {
+                                throw new DownloadException(String.format("Unexpected response code '%d' for %s", response.getStatusLine().getStatusCode(), httpGet));
+                            }
 
-                factory.newSAXParser().parse(new BufferedInputStream(response.getEntity().getContent()), handler);
-                post = handler.getParsedPost();
-                EntityUtils.consumeQuietly(response.getEntity());
-            } catch (Exception e) {
-                logger.error("parsing failed", e);
-                throw new PostParseException(e);
+                            try {
+                                factory.newSAXParser().parse(new BufferedInputStream(response.getEntity().getContent()), handler);
+                                return handler.getParsedPost();
+                            } catch (Exception e) {
+                                throw new PostParseException(String.format("Failed to parse thread %s, post %s", threadId, postId), e);
+                            } finally {
+                                EntityUtils.consumeQuietly(response.getEntity());
+                            }
+                        }
+                    });
+            if (thr.get() != null || post == null) {
+                logger.error(String.format("parsing failed for thread %s, post %s", threadId, postId), thr.get());
+                throw new PostParseException(thr.get());
             }
             return post;
         }

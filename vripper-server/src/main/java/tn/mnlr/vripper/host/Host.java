@@ -59,8 +59,10 @@ abstract public class Host {
 
     abstract public String getHost();
 
+    abstract public String getLookup();
+
     public boolean isSupported(String url) {
-        return url.contains(getHost());
+        return url.contains(getLookup());
     }
 
     public void download(Image image, ImageFileData imageFileData) throws DownloadException, InterruptedException {

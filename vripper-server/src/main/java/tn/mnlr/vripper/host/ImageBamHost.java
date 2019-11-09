@@ -39,6 +39,11 @@ public class ImageBamHost extends Host {
     }
 
     @Override
+    public String getLookup() {
+        return host;
+    }
+
+    @Override
     protected void setNameAndUrl(final String url, final ImageFileData imageFileData) throws HostException {
 
         Response response = getResponse(url);

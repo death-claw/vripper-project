@@ -28,6 +28,11 @@ public class ImgboxHost extends Host {
     }
 
     @Override
+    public String getLookup() {
+        return host;
+    }
+
+    @Override
     protected void setNameAndUrl(final String url, final ImageFileData imageFileData) throws HostException {
 
         Document doc = getResponse(url).getDocument();

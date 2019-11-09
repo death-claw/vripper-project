@@ -1,7 +1,7 @@
 package tn.mnlr.vripper.exception;
 
 public class HostException extends Exception {
-    public HostException(Exception e) {
+    public HostException(Throwable e) {
         super(e);
     }
 
@@ -9,7 +9,7 @@ public class HostException extends Exception {
         super(message);
     }
 
-    public HostException(String message, Exception e) {
+    public HostException(String message, Throwable e) {
         super(message,e);
     }
 }

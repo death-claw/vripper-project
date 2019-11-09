@@ -5,7 +5,7 @@ public class VripperException extends Exception {
         super(message);
     }
 
-    public VripperException(Exception e) {
+    public VripperException(Throwable e) {
         super(e);
     }
 }

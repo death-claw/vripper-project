@@ -6,11 +6,11 @@ public class PostParseException extends Exception {
         super(message);
     }
 
-    public PostParseException(String message, Exception e) {
+    public PostParseException(String message, Throwable e) {
         super(message, e);
     }
 
-    public PostParseException(Exception e) {
+    public PostParseException(Throwable e) {
         super(e);
     }
 }

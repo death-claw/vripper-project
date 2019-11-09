@@ -41,6 +41,11 @@ public class ImxHost extends Host {
     }
 
     @Override
+    public String getLookup() {
+        return host;
+    }
+
+    @Override
     protected void setNameAndUrl(final String _url, final ImageFileData imageFileData) throws HostException {
 
         String url = _url.replace("http://", "https://");

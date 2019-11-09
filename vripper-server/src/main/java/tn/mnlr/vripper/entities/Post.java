@@ -57,20 +57,10 @@ public class Post {
         this.forum = forum;
         this.threadId = threadId;
         this.threadTitle = threadTitle;
-        if (this.images.contains(null)) {
-            System.out.println("Oops");
-        }
-        this.images.stream().map(e -> {
-            if (e == null) {
-                System.out.println("Am the cause");
-            }
-            return e.getHost();
-        }).collect(Collectors.toSet());
         this.images.stream().map(e -> e.getHost()).map(Host::getHost).collect(Collectors.toSet());
         this.hosts = this.images.stream().map(e -> e.getHost()).map(Host::getHost).collect(Collectors.toSet());
         total = images.size();
         status = Status.PENDING;
-
     }
 
     public void setAppStateService(AppStateService appStateService) {

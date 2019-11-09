@@ -17,6 +17,7 @@ public class ImageZillaHost extends Host {
     private static final Logger logger = LoggerFactory.getLogger(ImageZillaHost.class);
 
     private static final String host = "imagezilla.net";
+    private static final String lookup = "imagezilla.net/show";
     public static final String IMG_XPATH = "//img[@id='photo']";
 
     @Autowired
@@ -25,6 +26,11 @@ public class ImageZillaHost extends Host {
     @Override
     public String getHost() {
         return host;
+    }
+
+    @Override
+    public String getLookup() {
+        return lookup;
     }
 
     @Override

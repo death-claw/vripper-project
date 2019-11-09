@@ -6,7 +6,7 @@ public class DownloadException extends Exception {
         super(message);
     }
 
-    public DownloadException(Exception e) {
+    public DownloadException(Throwable e) {
         super(e);
     }
 }

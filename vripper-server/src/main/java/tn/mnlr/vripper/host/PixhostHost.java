@@ -17,6 +17,7 @@ public class PixhostHost extends Host {
     private static final Logger logger = LoggerFactory.getLogger(PixhostHost.class);
 
     private static final String host = "pixhost.to";
+    private static final String lookup = "pixhost.to/show";
     public static final String IMG_XPATH = "//img[@id='image']";
 
     @Autowired
@@ -25,6 +26,11 @@ public class PixhostHost extends Host {
     @Override
     public String getHost() {
         return host;
+    }
+
+    @Override
+    public String getLookup() {
+        return lookup;
     }
 
     @Override
