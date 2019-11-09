@@ -13,7 +13,7 @@ import tn.mnlr.vripper.services.AppStateService;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -53,8 +53,8 @@ public class ExecutionService {
 
         retryPolicy = new RetryPolicy<>()
                 .handleIf(e -> !(e instanceof InterruptedException))
-                .withDelay(Duration.ofSeconds(5))
-                .withMaxRetries(2)
+                .withBackoff(10, 60, ChronoUnit.SECONDS)
+                .withMaxRetries(4)
                 .abortOn(InterruptedException.class)
                 .onFailedAttempt(e -> logger.warn(String.format("#%d tries failed", e.getAttemptCount()), e.getLastFailure()));
 
