@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.2.5] - 2019-11-09
+### Changed
+- Exclude thumbs download for imagezilla and pixhost
+- Change retry on fail logic (may help avoid having download errors)
+
 ## [2.2.4] - 2019-10-05
 ### Added
 - AppImage target for linux
