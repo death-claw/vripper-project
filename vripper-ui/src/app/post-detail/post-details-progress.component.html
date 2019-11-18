@@ -1,30 +1,32 @@
 <div class="container" style="height: 100%; background-color: white">
-  <div
-    [ngClass]="{
-      error: postDetails.status === 'ERROR'
-    }"
-    class="progress-bar-back"
-    style="position: relative; height: 100%;"
-  >
+  <ng-container *ngIf="postDetails$ | async as details">
     <div
-      class="progress-foreground"
-      fxLayout="row"
-      fxLayoutAlign="space-between"
-      style="background-color: transparent; width: 100%; height: 100%;"
+      [ngClass]="{
+        error: details.status === 'ERROR'
+      }"
+      class="progress-bar-back"
+      style="position: relative; height: 100%;"
     >
-      <div class="progress-bar" style="position: absolute; width: 100%; top: 37px; padding: 0 20px">
-        <mat-progress-bar [value]="postDetails.progress" class="example-margin" color="primary" mode="determinate">
-        </mat-progress-bar>
+      <div
+        class="progress-foreground"
+        fxLayout="row"
+        fxLayoutAlign="space-between"
+        style="background-color: transparent; width: 100%; height: 100%;"
+      >
+        <div class="progress-bar" style="position: absolute; width: 100%; top: 37px; padding: 0 20px">
+          <mat-progress-bar [value]="details.progress" class="example-margin" color="primary" mode="determinate">
+          </mat-progress-bar>
+        </div>
+        <span fxLayout="row">
+          <span style="padding-left: 20px"
+          ><a (click)="goTo()" href="javascript:void(0)" style="color: rgba(0, 0, 0, 0.87);">{{
+              details.url
+            }}</a></span
+          >
+          <span class="filler" fxFlex="grow"></span>
+        </span>
+        <span class="progress-percentage" style="padding-right: 20px">{{ trunc(details.progress) + '%' }}</span>
       </div>
-      <span fxLayout="row">
-        <span style="padding-left: 20px"
-        ><a (click)="goTo()" href="javascript:void(0)" style="color: rgba(0, 0, 0, 0.87);">{{
-            postDetails.url
-          }}</a></span
-        >
-        <span class="filler" fxFlex="grow"></span>
-      </span>
-      <span class="progress-percentage" style="padding-right: 20px">{{ trunc(postDetails.progress) + '%' }}</span>
     </div>
-  </div>
+  </ng-container>
 </div>

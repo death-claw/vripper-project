@@ -1,12 +1,2 @@
-<div fxLayout="row" fxLayoutAlign="center center">
-  <!-- <app-filter fxFlex="noshrink"></app-filter> -->
-  <span fxFlex="grow"></span>
-  <form autocomplete="off">
-    <mat-form-field>
-      <input (ngModelChange)="search($event)" matInput name="search" ngModel placeholder="Search"/>
-      <mat-icon matSuffix>search</mat-icon>
-    </mat-form-field>
-  </form>
-</div>
 <ag-grid-angular style="width: 100%; height: 100%;" class="ag-theme-material" [gridOptions]="gridOptions">
 </ag-grid-angular>

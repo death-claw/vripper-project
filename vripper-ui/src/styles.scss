@@ -1,4 +1,9 @@
 /* You can add global styles to this file, and also import other style files */
+@font-face {
+    font-family: Fira;
+    src: url(assets/FiraSans-Book.otf) format("opentype");
+}
+
 @import '~@angular/cdk/overlay-prebuilt.css';
 @import 'mat-theme.scss';
 @import 'app/status-bar/status-bar.component.scss.theme.scss';
@@ -92,4 +97,8 @@ body a {
     color: rgba(0, 0, 0, 0.87);
     text-decoration: none;
     font-weight: bold;
+}
+
+.ag-row-selected app-progress-cell .checkbox {
+    background-color: orange !important;
 }

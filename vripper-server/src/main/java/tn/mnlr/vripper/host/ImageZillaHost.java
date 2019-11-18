@@ -1,5 +1,6 @@
 package tn.mnlr.vripper.host;
 
+import org.apache.http.client.protocol.HttpClientContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +19,7 @@ public class ImageZillaHost extends Host {
 
     private static final String host = "imagezilla.net";
     private static final String lookup = "imagezilla.net/show";
-    public static final String IMG_XPATH = "//img[@id='photo']";
+    private static final String IMG_XPATH = "//img[@id='photo']";
 
     @Autowired
     private ConnectionManager cm;
@@ -34,15 +35,15 @@ public class ImageZillaHost extends Host {
     }
 
     @Override
-    protected void setNameAndUrl(final String url, final ImageFileData imageFileData) throws HostException {
+    protected void setNameAndUrl(final String url, final ImageFileData imageFileData, final HttpClientContext context) throws HostException {
 
-        Document doc = getResponse(url).getDocument();
+        Document doc = getResponse(url, context).getDocument();
 
         String title;
         try {
-            logger.info(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url));
+            logger.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url));
             Node titleNode = xpathService.getAsNode(doc, IMG_XPATH).getAttributes().getNamedItem("title");
-            logger.info(String.format("Resolving name for %s", url));
+            logger.debug(String.format("Resolving name for %s", url));
             if(titleNode != null) {
                 title = titleNode.getTextContent().trim();
             } else {

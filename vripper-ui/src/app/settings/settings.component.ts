@@ -1,6 +1,6 @@
 import { AppService } from './../app.service';
 import { ClipboardService } from './../clipboard.service';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormGroup, FormControl } from '@angular/forms';
 import { MatSnackBar } from '@angular/material';
@@ -12,7 +12,8 @@ import { OpenDialogReturnValue } from 'electron';
 @Component({
   selector: 'app-settings',
   templateUrl: './settings.component.html',
-  styleUrls: ['./settings.component.scss']
+  styleUrls: ['./settings.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SettingsComponent implements OnInit {
   constructor(

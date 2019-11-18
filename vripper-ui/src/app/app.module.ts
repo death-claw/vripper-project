@@ -1,3 +1,4 @@
+import { PostsDataService } from './posts-data.service';
 import { AppPreviewDirective } from './common/preview-tooltip.directive';
 import { WsConnectionService } from './ws-connection.service';
 import { AppService } from './app.service';
@@ -31,6 +32,8 @@ import { UrlRendererComponent } from './multi-post/url-renderer.component';
 import { FilterComponent } from './filter/filter.component';
 import { ScanComponent } from './scan/scan.component';
 import { StatusBarComponent } from './status-bar/status-bar.component';
+import { SelectionService } from './selection-service';
+import { ToolbarComponent } from './toolbar/toolbar.component';
 
 @NgModule({
   declarations: [
@@ -49,13 +52,13 @@ import { StatusBarComponent } from './status-bar/status-bar.component';
     UrlRendererComponent,
     FilterComponent,
     ScanComponent,
-    StatusBarComponent
+    StatusBarComponent,
+    ToolbarComponent
   ],
   entryComponents: [
     PostDetailComponent,
     SettingsComponent,
     ConfirmDialogComponent,
-    // MultiPostComponent,
     AppPreviewComponent,
     ScanComponent
   ],
@@ -80,7 +83,9 @@ import { StatusBarComponent } from './status-bar/status-bar.component';
     WsConnectionService,
     { provide: HTTP_INTERCEPTORS, useClass: XhrInterceptorService, multi: true },
     ServerService,
-    SharedService
+    SharedService,
+    SelectionService,
+    PostsDataService
   ],
   bootstrap: [AppComponent]
 })

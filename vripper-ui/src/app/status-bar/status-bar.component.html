@@ -1,7 +1,11 @@
-<div class="status-bar">
-  <span>{{ downloadSpeed!.speed + '/s' }}</span>
-  <span>Downloading: {{ globalState!.running }}</span>
-  <span>Queued: {{ globalState!.queued }}</span>
-  <span>Remaining: {{ globalState!.remaining }}</span>
-  <span>Error: {{ globalState!.error }}</span>
+<div class="status-bar" fxLayout="row">
+  <span *ngIf="selected | async as length">Selected: {{length}}</span>
+  <span fxFlex="grow"></span>
+  <span *ngIf="downloadSpeed | async as speed">{{ speed!.speed + '/s' }}</span>
+  <ng-container *ngIf="globalState | async as state">
+    <span>Downloading: {{ state!.running }}</span>
+    <span>Queued: {{ state!.queued }}</span>
+    <span>Remaining: {{ state!.remaining }}</span>
+    <span>Error: {{ state!.error }}</span>
+  </ng-container>
 </div>

@@ -118,8 +118,8 @@ public class AppSettingsService {
             throw new ValidationException(String.format("%s is not a directory", settings.getDownloadPath()));
         }
 
-        if (settings.getMaxThreads() < 1 || settings.getMaxThreads() > 8) {
-            throw new ValidationException(String.format("Invalid max concurrent download settings, values must be in [%d,%d]", 1, 8));
+        if (settings.getMaxThreads() < 1 || settings.getMaxThreads() > 4) {
+            throw new ValidationException(String.format("Invalid max concurrent download settings, values must be in [%d,%d]", 1, 4));
         }
     }
 
@@ -139,7 +139,7 @@ public class AppSettingsService {
         @JsonProperty("darkTheme")
         private boolean darkTheme;
 
-        public Theme(boolean darkTheme) {
+        Theme(boolean darkTheme) {
             this.darkTheme = darkTheme;
         }
     }

@@ -7,6 +7,9 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.cookie.Cookie;
+import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
@@ -18,6 +21,7 @@ import org.w3c.dom.Document;
 import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.exception.VripperException;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,7 +46,7 @@ public class VipergirlsAuthService {
     private AppSettingsService appSettingsService;
 
     @Getter
-    private String cookies;
+    private HttpClientContext context = HttpClientContext.create();
 
     private boolean authenticated = false;
 
@@ -51,6 +55,11 @@ public class VipergirlsAuthService {
 
     @Getter
     private PublishProcessor<String> loggedInUser = PublishProcessor.create();
+
+    @PostConstruct
+    private void init() {
+        context.setCookieStore(new BasicCookieStore());
+    }
 
     @PreDestroy
     private void destroy() throws InterruptedException {
@@ -65,8 +74,8 @@ public class VipergirlsAuthService {
         authenticated = false;
 
         if(!appSettingsService.isVLogin()) {
-            logger.warn("Authentication option is disabled");
-            cookies = null;
+            logger.debug("Authentication option is disabled");
+            context.getCookieStore().clear();
             loggedUser = "";
             loggedInUser.onNext(loggedUser);
             return;
@@ -77,7 +86,7 @@ public class VipergirlsAuthService {
 
         if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
             logger.error("Cannot authenticate with ViperGirls credentials, username or password is empty");
-            cookies = null;
+            context.getCookieStore().clear();
             loggedUser = "";
             loggedInUser.onNext(loggedUser);
             return;
@@ -97,7 +106,7 @@ public class VipergirlsAuthService {
         try {
             postAuth.setEntity(new UrlEncodedFormEntity(params));
         } catch (Exception e) {
-            cookies = null;
+            context.getCookieStore().clear();
             loggedUser = "";
             loggedInUser.onNext(loggedUser);
             throw new VripperException(e);
@@ -108,28 +117,19 @@ public class VipergirlsAuthService {
 
         CloseableHttpClient client = cm.getClient().build();
 
-        try (CloseableHttpResponse response = client.execute(postAuth)) {
+        try (CloseableHttpResponse response = client.execute(postAuth, context)) {
 
             if (response.getStatusLine().getStatusCode() / 100 != 2) {
                 throw new VripperException(String.format("Unexpected response code returned %s", response.getStatusLine().getStatusCode()));
             }
-            StringBuilder sb = new StringBuilder();
-            Arrays.asList(response.getHeaders("set-cookie"))
-                    .stream()
-                    .map(e -> e.getValue())
-                    .map(e -> e.split(";")[0])
-                    .filter(e -> e.startsWith("vg_lastactivity") || e.startsWith("vg_userid") || e.startsWith("vg_password"))
-                    .forEach(e -> sb.append(e).append(";"));
-            String cookies = sb.toString();
             String responseBody = EntityUtils.toString(response.getEntity());
             logger.debug(String.format("Authentication with ViperGirls response body:%n%s", responseBody));
             EntityUtils.consumeQuietly(response.getEntity());
-            if(!cookies.contains("vg_userid")) {
+            if (context.getCookieStore().getCookies().stream().map(Cookie::getName).noneMatch(e -> e.equals("vg_userid"))) {
                 throw new VripperException("Failed to authenticate user with ViperRipper");
             }
-            this.cookies = cookies;
         } catch (Exception e) {
-            cookies = null;
+            context.getCookieStore().clear();
             loggedUser = "";
             loggedInUser.onNext(loggedUser);
             if (e instanceof VripperException) {
@@ -144,14 +144,14 @@ public class VipergirlsAuthService {
         loggedInUser.onNext(loggedUser);
     }
 
-    public void leaveThanks(String postUrl, String postId) {
+    void leaveThanks(String postUrl, String postId) {
         VripperApplication.commonExecutor.submit(() -> {
             if (!appSettingsService.isVLogin()) {
-                logger.warn("Authentication with ViperGirls option is disabled");
+                logger.debug("Authentication with ViperGirls option is disabled");
                 return;
             }
             if (!appSettingsService.isVThanks()) {
-                logger.warn("Leave thanks option is disabled");
+                logger.debug("Leave thanks option is disabled");
                 return;
             }
             if (!authenticated) {
@@ -168,16 +168,15 @@ public class VipergirlsAuthService {
 
     private String getSecurityToken(String url) throws VripperException {
 
-        String securityToken = "";
+        String securityToken;
 
         HttpGet httpGet = cm.buildHttpGet(url);
         httpGet.addHeader("Referer", "https://vipergirls.to/");
         httpGet.addHeader("Host", "vipergirls.to");
-        httpGet.addHeader("Cookie", cookies);
 
         CloseableHttpClient client = cm.getClient().build();
 
-        try (CloseableHttpResponse response = client.execute(httpGet)) {
+        try (CloseableHttpResponse response = client.execute(httpGet, context)) {
 
             String postPage = EntityUtils.toString(response.getEntity());
             Document document = htmlProcessorService.clean(postPage);
@@ -189,7 +188,7 @@ public class VipergirlsAuthService {
                     .getTextContent()
                     .trim();
 
-            securityToken = Arrays.asList(thanksUrl.split("&amp;")).stream()
+            securityToken = Arrays.stream(thanksUrl.split("&amp;"))
                     .filter(v -> v.startsWith("securitytoken"))
                     .findAny()
                     .orElse("")
@@ -218,11 +217,10 @@ public class VipergirlsAuthService {
 
         postThanks.addHeader("Referer", "https://vipergirls.to/");
         postThanks.addHeader("Host", "vipergirls.to");
-        postThanks.addHeader("Cookie", cookies);
 
         CloseableHttpClient client = cm.getClient().build();
 
-        try (CloseableHttpResponse response = client.execute(postThanks)) {
+        try (CloseableHttpResponse response = client.execute(postThanks, context)) {
             EntityUtils.consumeQuietly(response.getEntity());
         } catch (Exception e) {
             throw new VripperException(e);

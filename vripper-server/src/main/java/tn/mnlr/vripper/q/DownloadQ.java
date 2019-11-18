@@ -36,7 +36,7 @@ public class DownloadQ {
 
     public void put(Image image) throws InterruptedException {
         synchronized (appStateService) {
-            logger.info(String.format("Enqueuing a job for %s", image.getUrl()));
+            logger.debug(String.format("Enqueuing a job for %s", image.getUrl()));
             image.init();
             DownloadJob downloadJob = new DownloadJob(image);
             downloadQ.put(downloadJob);
@@ -44,9 +44,9 @@ public class DownloadQ {
         }
     }
 
-    public DownloadJob take() throws InterruptedException {
+    DownloadJob take() throws InterruptedException {
         DownloadJob downloadJob = downloadQ.take();
-        logger.info(String.format("Retrieving a job for %s", downloadJob.getImage().getUrl()));
+        logger.debug(String.format("Retrieving a job for %s", downloadJob.getImage().getUrl()));
         return downloadJob;
     }
 
@@ -71,17 +71,17 @@ public class DownloadQ {
                 return;
             }
             appStateService.getPost(postId).setStatus(Post.Status.PENDING);
-            logger.info(String.format("Restarting %d jobs for post id %s", images.size(), postId));
+            logger.debug(String.format("Restarting %d jobs for post id %s", images.size(), postId));
             for (Image image : images) {
                 put(image);
             }
         }
     }
 
-    public void removeScheduled(Image image) {
+    private void removeScheduled(Image image) {
         synchronized (appStateService) {
             image.setStatus(Image.Status.STOPPED);
-            logger.info(String.format("Removing scheduled job for %s", image.getUrl()));
+            logger.debug(String.format("Removing scheduled job for %s", image.getUrl()));
 
             Iterator<DownloadJob> iterator = downloadQ.iterator();
             boolean removed = false;
@@ -90,22 +90,22 @@ public class DownloadQ {
                 if (next.getImage().getPostId().equals(image.getPostId())) {
                     iterator.remove();
                     appStateService.doneDownloadJob(image);
-                    logger.info(String.format("Scheduled job for %s is removed", image.getUrl()));
+                    logger.debug(String.format("Scheduled job for %s is removed", image.getUrl()));
                     removed = true;
                     break;
                 }
             }
 
             if (!removed) {
-                logger.warn(String.format("Job for %s does not exist", image.getUrl()));
+                logger.debug(String.format("Job for %s does not exist", image.getUrl()));
             }
 
             image.cleanup();
         }
     }
 
-    public void removeRunning(String postId) {
-        logger.info(String.format("Interrupting running jobs for post id %s", postId));
+    private void removeRunning(String postId) {
+        logger.debug(String.format("Interrupting running jobs for post id %s", postId));
         executionService.stop(postId);
     }
 
@@ -126,8 +126,8 @@ public class DownloadQ {
                 if (images.isEmpty()) {
                     return;
                 }
-                logger.info(String.format("Stopping %d jobs for post id %s", images.size(), postId));
-                images.forEach(image -> removeScheduled(image));
+                logger.debug(String.format("Stopping %d jobs for post id %s", images.size(), postId));
+                images.forEach(this::removeScheduled);
                 removeRunning(postId);
             }
         } finally {

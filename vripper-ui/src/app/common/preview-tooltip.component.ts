@@ -6,7 +6,7 @@ import { trigger, state, style, transition, animate } from '@angular/animations'
   template: `
   <div class="previews" style="display: inline-block; white-space: nowrap;">
     <ng-container *ngFor="let link of links">
-      <img
+      <img style="display: inline-block; max-width:150px; min-width:150px; width: auto; height: auto;"
         [@simpleFadeAnimation]="'in'"
         class="mat-elevation-z8"
         [src]="link"
@@ -20,7 +20,6 @@ import { trigger, state, style, transition, animate } from '@angular/animations'
         max-height: 200px;
         max-width: 200px;
         margin-left: 5px;
-        border: 1px solid #900000;
       }
     `
   ],

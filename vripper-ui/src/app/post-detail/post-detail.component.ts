@@ -1,6 +1,6 @@
 import { PostDetailsProgressRendererComponent } from './post-details-progress.component';
 import { WsConnectionService } from './../ws-connection.service';
-import { Component, OnInit, Inject, OnDestroy, NgZone } from '@angular/core';
+import { Component, OnInit, Inject, OnDestroy, NgZone, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { PostDetailsDataSource } from './post-details.datasource';
 import { PostState } from '../posts/post-state.model';
@@ -9,7 +9,8 @@ import { GridOptions } from 'ag-grid-community';
 @Component({
   selector: 'app-post-detail',
   templateUrl: './post-detail.component.html',
-  styleUrls: ['./post-detail.component.scss']
+  styleUrls: ['./post-detail.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PostDetailComponent implements OnInit, OnDestroy {
 

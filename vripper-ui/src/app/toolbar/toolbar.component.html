@@ -1,0 +1,39 @@
+<mat-toolbar class="mat-elevation-z8" color="accent">
+  <mat-toolbar-row fxLayout="row" fxLayoutAlign="center center" fxLayoutGap="50px">
+    <div fxLayout="row" fxLayoutAlign="center center" fxLayoutGap="5px" id="left-controls">
+      <button (click)="scan()" class="add-button" color="primary" mat-icon-button>
+        <mat-icon>add</mat-icon>
+      </button>
+      <button (click)="remove()" [disabled]="disableSelection | async" aria-label="Remove selected" mat-icon-button
+              title="Remove selected">
+        <mat-icon>delete</mat-icon>
+      </button>
+      <button (click)="restart()" [disabled]="disableSelection | async" aria-label="Start selected" mat-icon-button
+              title="Start selected">
+        <mat-icon>play_arrow</mat-icon>
+      </button>
+      <button (click)="stop()" [disabled]="disableSelection | async" aria-label="Stop" mat-icon-button title="Stop">
+        <mat-icon>stop</mat-icon>
+      </button>
+      <button (click)="clear()" aria-label="Clear completed" mat-icon-button title="Clear completed">
+        <mat-icon>clear_all</mat-icon>
+      </button>
+    </div>
+    <div fxFlex="grow" id="global-search">
+      <form autocomplete="off">
+        <mat-form-field style="width: 100%">
+          <input (ngModelChange)="search($event)" matInput name="search" ngModel/>
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+      </form>
+    </div>
+    <div fxLayout="row" fxLayoutAlign="center center" fxLayoutGap="5px" id="right-controls">
+      <p *ngIf="loggedUser | async as user" style="font-size: 16px; display: inline;">
+        Logged in as: {{ user!.user == null || user!.user === '' ? 'guest' : user.user }}
+      </p>
+      <button (click)="openSettings()" aria-label="settings" mat-icon-button>
+        <mat-icon>settings</mat-icon>
+      </button>
+    </div>
+  </mat-toolbar-row>
+</mat-toolbar>

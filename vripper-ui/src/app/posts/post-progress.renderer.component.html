@@ -1,10 +1,10 @@
-<div class="container" style="height: 100%; background-color: white">
+<!-- <div class="container" style="height: 100%; background-color: white">
   <div
     [ngClass]="{
-      'error': postState.status === 'ERROR',
-      'downloading': postState.status === 'DOWNLOADING' || postState.status === 'PARTIAL',
-      'complete': postState.status === 'COMPLETE',
-      'stopped': postState.status === 'STOPPED'
+      error: postState.status === 'ERROR',
+      downloading: postState.status === 'DOWNLOADING' || postState.status === 'PARTIAL',
+      complete: postState.status === 'COMPLETE',
+      stopped: postState.status === 'STOPPED'
     }"
     class="progress-bar-back"
     style="position: relative; height: 100%; max-height: 48px;"
@@ -53,7 +53,9 @@
           </button>
           <button
             (click)="stop()"
-            *ngIf="postState.status === 'DOWNLOADING' || postState.status === 'PARTIAL' || postState.status === 'PENDING'"
+            *ngIf="
+              postState.status === 'DOWNLOADING' || postState.status === 'PARTIAL' || postState.status === 'PENDING'
+            "
             mat-menu-item
           >
             <ng-container>
@@ -89,7 +91,7 @@
         <h4 class="cell attribute">Post URL:</h4>
         <p class="cell value">
           <a (click)="goTo()" [appPreview]="postState.previews" href="javascript:void(0)"
-          >https://vipergirls/threads/?p={{ postState.postId }}</a
+            >https://vipergirls/threads/?p={{ postState.postId }}</a
           >
         </p>
       </div>
@@ -101,4 +103,53 @@
       </div>
     </div>
   </section>
+</div> -->
+
+<div class="container" style="height: 100%; background-color: white">
+  <ng-container *ngIf="postState$ | async as postState">
+    <div
+      [ngClass]="{
+        error: postState.status === 'ERROR',
+        downloading: postState.status === 'DOWNLOADING' || postState.status === 'PARTIAL',
+        complete: postState.status === 'COMPLETE',
+        stopped: postState.status === 'STOPPED'
+      }"
+      class="progress-bar-back"
+      style="position: relative; height: 100%; transition: background-color 0.5s;"
+    >
+      <div
+        class="progress-foreground"
+        fxLayout="row"
+        fxLayoutAlign="start"
+        fxLayoutGap="5px"
+        style="background-color: transparent; width: 100%; height: 100%;"
+      >
+        <div class="checkbox" style="display: inline-block; width: 5px; height: 100%;"></div>
+        <span fxFlex="grow" fxLayout="row" fxLayoutAlign="space-between center">
+          <span
+          ><a (click)="goTo()" [appPreview]="postState.previews" href="javascript:void(0)">{{
+              postState.title
+            }}</a></span
+          >
+          <span>{{postState.done + '/' + postState.total}} done from {{postState.hosts}}</span>
+        </span>
+        <button [matMenuTriggerFor]="menu" mat-icon-button>
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #menu="matMenu">
+          <button (click)="seeDetails()" mat-menu-item>
+            <mat-icon>list</mat-icon>
+            <span>Files</span>
+          </button>
+          <button (click)="open()" *ngIf="electronService.isElectronApp" mat-menu-item>
+            <mat-icon>open_in_new</mat-icon>
+            <span>Download Location</span>
+          </button>
+        </mat-menu>
+      </div>
+      <div class="progress-bar" color="accent" style="position: absolute; width: 100%; top: 37px; padding: 0 10px">
+        <mat-progress-bar [value]="postState.progress" color="primary" mode="determinate"></mat-progress-bar>
+      </div>
+    </div>
+  </ng-container>
 </div>

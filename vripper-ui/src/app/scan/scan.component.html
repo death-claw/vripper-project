@@ -3,7 +3,7 @@
     <h2 class="no-wrap" mat-dialog-title>Scan</h2>
   </div>
   <mat-dialog-content fxFlex="grow" fxLayout="column">
-    <div *ngIf="!hideScan">
+    <div *ngIf="!(hideScan | async)">
       <form
         #f="ngForm"
         (ngSubmit)="submit(f)"
@@ -13,21 +13,16 @@
         fxLayoutGap="20px"
       >
         <mat-form-field fxFlex="grow">
-          <input
-            [(ngModel)]="input"
-            matInput
-            name="url"
-            placeholder="Put a vipergirls.to link"
-            required
-          />
+          <input [(ngModel)]="input" matInput name="url" placeholder="Put a vipergirls.to link" required/>
         </mat-form-field>
         <div>
           <button [disabled]="f.invalid" color="primary" mat-raised-button type="submit">Scan</button>
         </div>
       </form>
     </div>
-    <ng-container *ngIf="threadId != null">
-      <app-multi-post (done)="done($event)" [threadId]="threadId" style="height: 100%"></app-multi-post>
+    <ng-container *ngIf="threadId | async as thId">
+      <app-multi-post (done)="done($event)" *ngIf="thId != null" [threadId]="thId"
+                      style="height: 100%"></app-multi-post>
     </ng-container>
   </mat-dialog-content>
   <mat-dialog-actions align="end">

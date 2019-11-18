@@ -5,10 +5,14 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.processors.BehaviorProcessor;
+import lombok.Getter;
+import lombok.Setter;
 import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.services.AppStateService;
 
+@Getter
+@Setter
 public abstract class ImagePersistanceMixin {
 
     @JsonSerialize(converter = HostToString.class)

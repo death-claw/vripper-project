@@ -1,7 +1,14 @@
-import { SharedService } from './shared.service';
 import { WsConnectionService } from '../ws-connection.service';
 import { PostState } from './post-state.model';
-import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  NgZone,
+  ChangeDetectionStrategy,
+  AfterViewInit,
+  EventEmitter
+} from '@angular/core';
 import { AgRendererComponent } from 'ag-grid-angular';
 import { Subscription, Observable } from 'rxjs';
 import { WsHandler } from '../ws-handler';
@@ -12,27 +19,24 @@ import { MatDialog, MatSnackBar } from '@angular/material';
 import { PostDetailComponent } from '../post-detail/post-detail.component';
 import { HttpClient } from '@angular/common/http';
 import { ServerService } from '../server-service';
-import { ConfirmDialogComponent } from '../common/confirmation-component/confirmation-dialog';
-import { filter, flatMap } from 'rxjs/operators';
-import { RemoveResponse } from '../common/remove-response.model';
 import { DownloadPath } from '../common/download-path.model';
 
 @Component({
   selector: 'app-progress-cell',
   templateUrl: 'post-progress.renderer.component.html',
-  styleUrls: ['post-progress.renderer.component.scss']
+  styleUrls: ['post-progress.renderer.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PostProgressRendererComponent implements AgRendererComponent, OnInit, OnDestroy {
+export class PostProgressRendererComponent implements AgRendererComponent, OnInit, OnDestroy, AfterViewInit {
   constructor(
     private wsConnectionService: WsConnectionService,
     private zone: NgZone,
-    private sharedService: SharedService,
     public electronService: ElectronService,
     private breakpointObserver: BreakpointObserver,
     public dialog: MatDialog,
     private httpClient: HttpClient,
     private serverService: ServerService,
-    private _snackBar: MatSnackBar,
+    private _snackBar: MatSnackBar
   ) {
     this.websocketHandlerPromise = this.wsConnectionService.getConnection();
     if (this.electronService.isElectronApp) {
@@ -41,10 +45,9 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
   }
 
   websocketHandlerPromise: Promise<WsHandler>;
-  params: ICellRendererParams;
-  postState: PostState;
+  postState$: EventEmitter<PostState> = new EventEmitter();
+  private postState: PostState;
   updatesSubscription: Subscription;
-  expandSubscription: Subscription;
   expanded = false;
   isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
   fs;
@@ -60,47 +63,32 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
           e.forEach(v => {
             if (this.postState.postId === v.postId) {
               this.postState = v;
+              this.postState$.emit(this.postState);
             }
           });
         });
       });
     });
-    this.expandSubscription = this.sharedService.expandedPost.subscribe(postId => {
-      if (this.expanded && this.postState.postId !== postId) {
-        this.toggleExpand();
-      }
-    });
+  }
+
+  ngAfterViewInit(): void {
+    this.postState$.emit(this.postState);
   }
 
   ngOnDestroy(): void {
     if (this.updatesSubscription != null) {
       this.updatesSubscription.unsubscribe();
-
-    }
-    if (this.expandSubscription != null) {
-      this.expandSubscription.unsubscribe();
     }
   }
 
   agInit(params: ICellRendererParams): void {
-    this.params = params;
     this.postState = params.data;
-    this.params.node.setRowHeight(48);
   }
 
   refresh(params: ICellRendererParams): boolean {
-    return false;
-  }
-
-  toggleExpand() {
-    if (this.expanded) {
-      this.params.node.setRowHeight(48);
-    } else {
-      this.params.node.setRowHeight(130);
-      this.sharedService.publishExpanded(this.postState.postId);
-    }
-    this.params.api.onRowHeightChanged();
-    this.expanded = !this.expanded;
+    this.postState = params.data;
+    this.postState$.emit(this.postState);
+    return true;
   }
 
   goTo() {
@@ -135,52 +123,6 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
     });
   }
 
-  restart() {
-    this.httpClient.post(this.serverService.baseUrl + '/post/restart', { postId: this.postState.postId }).subscribe(
-      () => {
-        this._snackBar.open('Download started', null, {
-          duration: 5000
-        });
-      },
-      error => {
-        console.error(error);
-      }
-    );
-  }
-
-  remove() {
-    this.dialog
-      .open(ConfirmDialogComponent, {
-        maxHeight: '100vh',
-        maxWidth: '100vw',
-        height: '200px',
-        width: '60%',
-        data: { header: 'Confirmation', content: 'Are you sure you want to remove this item ?' }
-      })
-      .afterClosed()
-      .pipe(
-        filter(e => e === 'yes'),
-        flatMap(e =>
-          this.httpClient.post<RemoveResponse>(this.serverService.baseUrl + '/post/remove', {
-            postId: this.postState.postId
-          })
-        )
-      )
-      .subscribe(
-        data => {
-          const toRemove = [];
-          const nodeToDelete = this.params.api.getRowNode(data.postId);
-          if (nodeToDelete != null) {
-            toRemove.push(nodeToDelete.data);
-          }
-          this.params.api.updateRowData({ remove: toRemove });
-        },
-        error => {
-          console.error(error);
-        }
-      );
-  }
-
   open() {
     if (!this.electronService.isElectronApp) {
       console.error('Cannot open downloader folder, not electron app');
@@ -192,7 +134,7 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
         if (this.fs.existsSync(path.path)) {
           this.electronService.shell.openItem(path.path);
         } else {
-          if(this.postState.done <= 0) {
+          if (this.postState.done <= 0) {
             this._snackBar.open('Download has not been started yet for this post', null, {
               duration: 5000
             });
@@ -202,19 +144,6 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
             });
           }
         }
-      },
-      error => {
-        console.error(error);
-      }
-    );
-  }
-
-  stop() {
-    this.httpClient.post(this.serverService.baseUrl + '/post/stop', { postId: this.postState.postId }).subscribe(
-      () => {
-        this._snackBar.open('Download stopped', null, {
-          duration: 5000
-        });
       },
       error => {
         console.error(error);

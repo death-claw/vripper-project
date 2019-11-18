@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { AgRendererComponent } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-community';
 import { VRPostParse } from '../common/vr-post-parse.model';
@@ -10,7 +10,8 @@ import { ElectronService } from 'ngx-electron';
     <a href="javascript:void(0)" [appPreview]="postResult.previews" (click)="goTo()"
       >https://vipergirls/threads/?p={{ postResult.postId }}</a
     >
-  `
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UrlRendererComponent implements OnInit, OnDestroy, AgRendererComponent {
   constructor(public electronService: ElectronService) {}

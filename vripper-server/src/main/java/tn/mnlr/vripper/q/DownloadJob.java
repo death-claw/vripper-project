@@ -18,14 +18,14 @@ public class DownloadJob implements Callable<Image> {
     @Getter
     private final ImageFileData imageFileData = new ImageFileData();
 
-    public DownloadJob(Image image) {
+    DownloadJob(Image image) {
         this.image = image;
     }
 
     @Override
     public Image call() throws Exception {
 
-        logger.info(String.format("Starting downloading %s", image.getUrl()));
+        logger.debug(String.format("Starting downloading %s", image.getUrl()));
         image.setStatus(Image.Status.DOWNLOADING);
         image.setCurrent(0);
         image.getHost().download(image, imageFileData);

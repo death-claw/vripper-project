@@ -29,6 +29,9 @@ public class GlobalStateService {
     @Getter
     private PublishProcessor<GlobalState> liveGlobalState = PublishProcessor.create();
 
+    public GlobalStateService() {
+    }
+
     @Scheduled(fixedDelay = 3000)
     private void interval() {
         GlobalState newGlobalState = new GlobalState(

@@ -18,11 +18,13 @@ export class AppPreviewDirective implements OnInit {
   ngOnInit() {
     const positionStrategy = this.overlayPositionBuilder
     .flexibleConnectedTo(this.elementRef)
+    .withPush(true)
+    .withGrowAfterOpen(true)
     .withPositions([{
-      originX: 'center',
-      originY: 'top',
-      overlayX: 'center',
-      overlayY: 'bottom',
+      originX: 'start',
+      originY: 'bottom',
+      overlayX: 'start',
+      overlayY: 'top',
     }]);
     this.overlayRef = this.overlay.create({ positionStrategy });
   }

@@ -54,7 +54,9 @@ public class SettingsRestEndpoint {
             try {
                 this.settings.check(settings);
             } catch (ValidationException e) {
-                return new ResponseEntity(new Response(e.getMessage()), HttpStatus.BAD_REQUEST);
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(new Response(e.getMessage()));
             }
             this.settings.setDownloadPath(settings.getDownloadPath());
             this.settings.setMaxThreads(settings.getMaxThreads());
@@ -106,10 +108,10 @@ public class SettingsRestEndpoint {
     }
 
     @Getter
-    class Response {
+    static class Response {
         String message;
 
-        public Response(String message) {
+        Response(String message) {
             this.message = message;
         }
     }

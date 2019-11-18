@@ -1,17 +1,24 @@
-import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
+import { PostsDataService } from './../posts-data.service';
+import { SelectionService } from './../selection-service';
+import { Component, OnInit, OnDestroy, NgZone, ChangeDetectionStrategy, AfterViewInit } from '@angular/core';
 import { PostsDataSource } from './post.datasource';
 import { WsConnectionService } from '../ws-connection.service';
-import { GridOptions, IFilterComp } from 'ag-grid-community';
+import { GridOptions } from 'ag-grid-community';
 import { PostProgressRendererComponent } from './post-progress.renderer.component';
 import { Subject } from 'rxjs';
 
 @Component({
   selector: 'app-posts',
   templateUrl: './posts.component.html',
-  styleUrls: ['./posts.component.scss']
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PostsComponent implements OnInit, OnDestroy {
-  constructor(private wsConnection: WsConnectionService, private zone: NgZone) {
+export class PostsComponent implements OnInit, OnDestroy, AfterViewInit {
+  constructor(
+    private wsConnection: WsConnectionService,
+    private zone: NgZone,
+    private selectionService: SelectionService,
+    private postsDataService: PostsDataService
+  ) {
     this.gridOptions = <GridOptions>{
       columnDefs: [
         {
@@ -20,11 +27,15 @@ export class PostsComponent implements OnInit, OnDestroy {
           sortable: true,
           cellRenderer: 'progressCellRenderer',
           cellClass: 'no-padding',
-          sort: 'asc'
+          sort: 'asc',
+          headerCheckboxSelection: true,
+          headerCheckboxSelectionFilteredOnly: true
         }
       ],
       rowHeight: 48,
       animateRows: true,
+      rowSelection: 'multiple',
+      rowDeselection: true,
       rowData: [],
       frameworkComponents: {
         progressCellRenderer: PostProgressRendererComponent
@@ -38,7 +49,8 @@ export class PostsComponent implements OnInit, OnDestroy {
         this.dataSource.connect();
       },
       onGridSizeChanged: () => this.gridOptions.api.sizeColumnsToFit(),
-      onRowDataUpdated: () => this.gridOptions.api.sizeColumnsToFit()
+      onRowDataUpdated: () => this.gridOptions.api.sizeColumnsToFit(),
+      onSelectionChanged: () => this.selectionService.onSelectionChanged(this.gridOptions.api.getSelectedNodes())
     };
   }
 
@@ -46,27 +58,11 @@ export class PostsComponent implements OnInit, OnDestroy {
   gridOptions: GridOptions;
   dataSource: PostsDataSource;
 
-  search(event) {
-    this.gridOptions.api.setQuickFilter(event);
-  }
-
-  removeRows(postIds: string[]): void {
-    if (postIds == null) {
-      return;
-    }
-
-    const toRemove = [];
-
-    postIds.forEach(p => {
-      const nodeToDelete = this.gridOptions.api.getRowNode(p);
-      if (nodeToDelete != null) {
-        toRemove.push(nodeToDelete.data);
-      }
-    });
-    this.gridOptions.api.updateRowData({ remove: toRemove });
-  }
-
   ngOnInit() {}
+
+  ngAfterViewInit(): void {
+    this.postsDataService.setGridApi(this.gridOptions.api);
+  }
 
   ngOnDestroy(): void {
     this.dataSource.disconnect();

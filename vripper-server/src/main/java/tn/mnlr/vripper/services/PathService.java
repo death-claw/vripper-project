@@ -37,8 +37,8 @@ public class PathService {
     /**
      * Will sanitize the image name and remove extension
      *
-     * @param imageName
-     * @return
+     * @param imageName path string
+     * @return Sanitized local path string
      */
     public final String formatImageFileName(String imageName) {
         int extensionIndex = imageName.lastIndexOf('.');

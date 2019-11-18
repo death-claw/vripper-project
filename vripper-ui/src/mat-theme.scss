@@ -1,4 +1,11 @@
 @import '~@angular/material/theming';
-@include mat-core();
+
+$custom-typography: mat-typography-config(
+  $font-family: 'Fira, sans-serif'
+);
+
+@include angular-material-typography($custom-typography);
+
+@include mat-core($custom-typography);
 @import 'light-theme.scss';
 @import 'dark-theme.scss';

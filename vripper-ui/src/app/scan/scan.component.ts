@@ -1,4 +1,13 @@
-import { Component, OnInit, NgZone, ViewChild, Inject } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  NgZone,
+  ViewChild,
+  Inject,
+  ChangeDetectionStrategy,
+  EventEmitter,
+  AfterViewInit
+} from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { MatSnackBar, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { HttpClient } from '@angular/common/http';
@@ -9,9 +18,10 @@ import { MultiPostComponent } from '../multi-post/multi-post.component';
 @Component({
   selector: 'app-scan',
   templateUrl: './scan.component.html',
-  styleUrls: ['./scan.component.scss']
+  styleUrls: ['./scan.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ScanComponent implements OnInit {
+export class ScanComponent implements OnInit, AfterViewInit {
   constructor(
     private ngZone: NgZone,
     private httpClient: HttpClient,
@@ -25,13 +35,13 @@ export class ScanComponent implements OnInit {
   multipost: MultiPostComponent;
 
   input: string;
-  threadId: string;
-  hideScan = false;
+  threadId: EventEmitter<string> = new EventEmitter();
+  hideScan: EventEmitter<boolean> = new EventEmitter();
 
   submit(form: NgForm) {
     this.ngZone.run(() => {
-      this.hideScan = true;
-      this.threadId = null;
+      this.hideScan.emit(true);
+      this.threadId.emit(null);
       this.processUrl(this.input, form);
     });
   }
@@ -77,7 +87,7 @@ export class ScanComponent implements OnInit {
               );
             return;
           }
-          this.threadId = response.threadId;
+          this.threadId.emit(response.threadId);
         });
       });
   }
@@ -91,11 +101,15 @@ export class ScanComponent implements OnInit {
     });
   }
 
-  ngOnInit() {
+  ngOnInit() {}
+
+  ngAfterViewInit(): void {
     this.ngZone.run(() => {
       if (this.data.url != null) {
-        this.hideScan = true;
+        this.hideScan.emit(true);
         this.processUrl(this.data.url);
+      } else {
+        this.hideScan.emit(false);
       }
     });
   }

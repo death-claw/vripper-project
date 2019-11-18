@@ -36,7 +36,7 @@ public class ExecutionService {
     @Autowired
     private AppStateService appStateService;
 
-    private AtomicInteger threadCount = new AtomicInteger();
+    private final AtomicInteger threadCount = new AtomicInteger();
 
     private ExecutorService executor = Executors.newFixedThreadPool(10);
 
@@ -68,7 +68,7 @@ public class ExecutionService {
         executionThread.interrupt();
         executor.shutdown();
         appStateService.getCurrentPosts().keySet().forEach(p -> {
-            logger.info(String.format("Stopping download jobs for %s", p));
+            logger.debug(String.format("Stopping download jobs for %s", p));
             this.stop(p);
         });
         executor.awaitTermination(10, TimeUnit.SECONDS);
@@ -80,7 +80,7 @@ public class ExecutionService {
                 .filter(e -> e.getImage().getPostId().equals(postId))
                 .peek(e -> e.getImage().setStatus(Image.Status.STOPPED))
                 .collect(Collectors.toList());
-        logger.warn(String.format("Interrupting %d jobs for post id %s", data.size(), postId));
+        logger.debug(String.format("Interrupting %d jobs for post id %s", data.size(), postId));
 
         data.forEach(e -> {
             futures.get(e.getImage().getUrl()).cancel(true);
@@ -91,7 +91,7 @@ public class ExecutionService {
         });
     }
 
-    boolean canRun() {
+    private boolean canRun() {
         boolean canRun = threadCount.get() < settings.getMaxThreads();
         if (canRun && downloadQ.isNotPauseQ()) {
             threadCount.incrementAndGet();
@@ -103,7 +103,7 @@ public class ExecutionService {
     public void start() {
         while (!Thread.interrupted()) {
             if (canRun()) {
-                DownloadJob take = null;
+                DownloadJob take;
                 try {
                     take = downloadQ.take();
                     if (take == null) {
@@ -121,7 +121,7 @@ public class ExecutionService {
                     Failsafe.with(retryPolicy)
                             .onFailure(e -> {
                                 if (e.getFailure() instanceof InterruptedException || (e.getFailure() instanceof FailsafeException && e.getFailure().getCause() instanceof InterruptedException)) {
-                                    logger.info("Job successfully interrupted");
+                                    logger.debug("Job successfully interrupted");
                                     return;
                                 }
                                 logger.error(String.format("Failed to download %s after %d tries", finalTake.getImage().getUrl(), e.getAttemptCount()), e.getFailure());
@@ -129,7 +129,7 @@ public class ExecutionService {
                             })
                             .onComplete(e -> {
                                 appStateService.doneDownloadJob(finalTake.getImage());
-                                logger.info(String.format("Finished downloading %s", finalTake.getImage().getUrl()));
+                                logger.debug(String.format("Finished downloading %s", finalTake.getImage().getUrl()));
                                 synchronized (threadCount) {
                                     threadCount.decrementAndGet();
                                     running.remove(finalTake);
@@ -139,7 +139,7 @@ public class ExecutionService {
                             })
                             .get(finalTake::call);
                 };
-                logger.info(String.format("Scheduling a job for %s", finalTake.getImage().getUrl()));
+                logger.debug(String.format("Scheduling a job for %s", finalTake.getImage().getUrl()));
                 futures.put(finalTake.getImage().getUrl(), executor.submit(task));
             } else {
                 synchronized (threadCount) {

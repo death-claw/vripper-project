@@ -4,7 +4,6 @@ const url = require("url");
 const getPort = require("get-port");
 const { spawn } = require("child_process");
 const { ipcMain } = require("electron");
-const commandExists = require("command-exists").sync;
 const { dialog } = require("electron");
 const axios = require('axios');
 const appDir = process.env.APPDIR;
@@ -22,14 +21,6 @@ process.on("uncaughtException", err => {
   dialog.showErrorBox(err.message, err.stack);
   process.exit(1);
 });
-
-if (!commandExists("java")) {
-  dialog.showErrorBox(
-    "Java command is missing",
-    "Java cannot be found on your PATH, make sure to install java before running Viper Ripper"
-  );
-  process.exit(1);
-}
 
 function createWindow() {
   let icon;

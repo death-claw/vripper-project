@@ -5,6 +5,8 @@ import org.apache.http.Header;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +29,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.Iterator;
-import java.util.Random;
 
 @Service
 abstract public class Host {
@@ -67,53 +68,55 @@ abstract public class Host {
 
     public void download(Image image, ImageFileData imageFileData) throws DownloadException, InterruptedException {
 
+        HttpClientContext context = HttpClientContext.create();
+        context.setCookieStore(new BasicCookieStore());
         try {
 
             appStateService.postDownloadingUpdate(image.getPostId());
 
             imageFileData.setPageUrl(image.getUrl());
 
-            /**
+            /*
              * HOST SPECIFIC
              */
-            logger.info(String.format("Getting image url and name from %s using %s", image.getUrl(), this.getHost()));
-            setNameAndUrl(image.getUrl(), imageFileData);
-            logger.info(String.format("Resolved name for %s: %s", image.getUrl(), imageFileData.getImageName()));
-            logger.info(String.format("Resolved image url for %s: %s", image.getUrl(), imageFileData.getImageUrl()));
+            logger.debug(String.format("Getting image url and name from %s using %s", image.getUrl(), this.getHost()));
+            setNameAndUrl(image.getUrl(), imageFileData, context);
+            logger.debug(String.format("Resolved name for %s: %s", image.getUrl(), imageFileData.getImageName()));
+            logger.debug(String.format("Resolved image url for %s: %s", image.getUrl(), imageFileData.getImageUrl()));
 
-            logger.info(String.format("Building image request for %s", image.getUrl()));
+            logger.debug(String.format("Building image request for %s", image.getUrl()));
             setImageRequest(imageFileData);
-            /**
+            /*
              * END HOST SPECIFIC
              */
 
             String formatImageFileName = pathService.formatImageFileName(imageFileData.getImageName());
-            logger.info(String.format("Sanitizing image name from %s to %s", imageFileData.getImageName(), formatImageFileName));
+            logger.debug(String.format("Sanitizing image name from %s to %s", imageFileData.getImageName(), formatImageFileName));
             imageFileData.setImageName(formatImageFileName);
             File destinationFolder = pathService.getDownloadDestinationFolder(image.getPostId());
-            logger.info(String.format("Saving to %s", destinationFolder.getPath()));
+            logger.debug(String.format("Saving to %s", destinationFolder.getPath()));
             if (!destinationFolder.exists()) {
-                logger.info(String.format("Creating %s", destinationFolder.getPath()));
-                destinationFolder.mkdirs();
+                logger.debug(String.format("Creating %s", destinationFolder.getPath()));
+                if (destinationFolder.mkdirs()) {
+                    logger.debug(String.format("Folder %s is created", destinationFolder.toString()));
+                }
             }
 
             HttpClient client = cm.getClient().build();
 
-            logger.info(String.format("Downloading %s", imageFileData.getImageUrl()));
-            try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(imageFileData.getImageRequest())) {
+            logger.debug(String.format("Downloading %s", imageFileData.getImageUrl()));
+            try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(imageFileData.getImageRequest(), context)) {
 
-                if(response.getStatusLine().getStatusCode() / 100 != 2) {
+                if (response.getStatusLine().getStatusCode() / 100 != 2) {
                     EntityUtils.consumeQuietly(response.getEntity());
                     throw new DownloadException(String.format("Server returned code %d", response.getStatusLine().getStatusCode()));
                 }
 
                 File outputFile = new File(destinationFolder.getPath() + File.separator + imageFileData.getImageName() + ".tmp");
-                InputStream downloadStream = response.getEntity().getContent();
-                FileOutputStream fos = new FileOutputStream(outputFile);
-                try {
+                try (InputStream downloadStream = response.getEntity().getContent(); FileOutputStream fos = new FileOutputStream(outputFile)) {
                     image.setTotal(response.getEntity().getContentLength());
-                    logger.info(String.format("%s length is %d", imageFileData.getImageUrl(), image.getTotal()));
-                    logger.info(String.format("Starting data transfer for %s", imageFileData.getImageUrl()));
+                    logger.debug(String.format("%s length is %d", imageFileData.getImageUrl(), image.getTotal()));
+                    logger.debug(String.format("Starting data transfer for %s", imageFileData.getImageUrl()));
 
                     byte[] buffer = new byte[READ_BUFFER_SIZE];
                     int read;
@@ -123,18 +126,11 @@ abstract public class Host {
                         downloadSpeedService.increase(read);
                     }
                     EntityUtils.consumeQuietly(response.getEntity());
-                } finally {
-                    if (downloadStream != null) {
-                        downloadStream.close();
-                    }
-                    if (fos != null) {
-                        fos.close();
-                    }
                 }
                 checkImageTypeAndRename(outputFile, imageFileData.getImageName(), image.getIndex());
             }
         } catch (Exception e) {
-            if(Thread.interrupted()) {
+            if (Thread.interrupted()) {
                 throw new InterruptedException("Download was interrupted");
             }
             throw new DownloadException(e);
@@ -158,8 +154,8 @@ abstract public class Host {
         }
         try {
             File outImage = new File(outputFile.getParent(), (appSettingsService.isForceOrder() ? String.format("%03d_", index) : "") + imageName + "." + formatName.toLowerCase());
-            if (outImage.exists()) {
-                outImage.delete();
+            if (outImage.exists() && outImage.delete()) {
+                logger.debug(String.format("%s is deleted", outImage.toString()));
             }
             Files.move(outputFile.toPath(), outImage.toPath());
         } catch (Exception e) {
@@ -167,32 +163,20 @@ abstract public class Host {
         }
     }
 
-    /**
-     * Just for testing, you may ignore
-     * @throws Exception
-     */
-    private void randomFail() throws Exception {
-        Random random = new Random();
-        int i = random.nextInt(100);
-        if (i < 50) {
-            throw new Exception("Purpose error");
-        }
-    }
-
-    protected final String getDefaultImageName(final String imgUrl) {
-        String imageTitle  = imgUrl.substring(imgUrl.lastIndexOf('/') + 1);
+    final String getDefaultImageName(final String imgUrl) {
+        String imageTitle = imgUrl.substring(imgUrl.lastIndexOf('/') + 1);
         logger.debug(String.format("Extracting name from url %s: %s", imgUrl, imageTitle));
         return imgUrl;
     }
 
-    protected final Response getResponse(final String url) throws HostException {
+    final Response getResponse(final String url, final HttpClientContext context) throws HostException {
         String basePage;
 
         HttpClient client = cm.getClient().build();
         HttpGet httpGet = cm.buildHttpGet(url);
         Header[] headers;
-        logger.info(String.format("Requesting %s", url));
-        try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(httpGet)) {
+        logger.debug(String.format("Requesting %s", url));
+        try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(httpGet, context)) {
             if (response.getStatusLine().getStatusCode() / 100 != 2) {
                 throw new HostException(String.format("Unexpected response code: %d", response.getStatusLine().getStatusCode()));
             }
@@ -205,20 +189,20 @@ abstract public class Host {
         }
 
         try {
-            logger.info(String.format("Cleaning %s response", url));
+            logger.debug(String.format("Cleaning %s response", url));
             return new Response(htmlProcessorService.clean(basePage), headers);
         } catch (HtmlProcessorException e) {
             throw new HostException(e);
         }
     }
 
-    protected void setImageRequest(final ImageFileData imageFileData) {
+    private void setImageRequest(final ImageFileData imageFileData) {
         HttpGet httpGet = cm.buildHttpGet(imageFileData.getImageUrl());
         httpGet.addHeader("Referer", imageFileData.getPageUrl());
         imageFileData.setImageRequest(httpGet);
     }
 
-    protected abstract void setNameAndUrl(final String url, final ImageFileData imageFileData) throws HostException;
+    protected abstract void setNameAndUrl(final String url, final ImageFileData imageFileData, final HttpClientContext context) throws HostException;
 
     @Getter
     public static class Response {
@@ -226,6 +210,7 @@ abstract public class Host {
             this.document = document;
             this.headers = headers;
         }
+
         private Document document;
         private Header[] headers;
     }

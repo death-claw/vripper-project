@@ -1,5 +1,5 @@
 import { VRPostParse, VRThreadParseState } from './../common/vr-post-parse.model';
-import { Component, OnInit, NgZone, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, NgZone, OnDestroy, Input, Output, EventEmitter, ChangeDetectionStrategy, AfterViewInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material';
 import { GridOptions } from 'ag-grid-community';
 import { UrlRendererComponent } from './url-renderer.component';
@@ -14,9 +14,10 @@ import { ServerService } from '../server-service';
 @Component({
   selector: 'app-multi-post',
   templateUrl: './multi-post.component.html',
-  styleUrls: ['./multi-post.component.scss']
+  styleUrls: ['./multi-post.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class MultiPostComponent implements OnInit, OnDestroy {
+export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
 
   @Input()
   threadId: string;
@@ -27,7 +28,7 @@ export class MultiPostComponent implements OnInit, OnDestroy {
   gridOptions: GridOptions;
   websocketHandlerPromise: Promise<WsHandler>;
   subscription: Subscription;
-  loading = true;
+  loading: EventEmitter<boolean> = new EventEmitter();
 
   constructor(
     private ngZone: NgZone,
@@ -37,6 +38,10 @@ export class MultiPostComponent implements OnInit, OnDestroy {
     private serverService: ServerService
   ) {
     this.websocketHandlerPromise = this.wsConnectionService.getConnection();
+  }
+
+  ngAfterViewInit(): void {
+    this.loading.emit(true);
   }
 
   ngOnInit(): void {
@@ -116,7 +121,7 @@ export class MultiPostComponent implements OnInit, OnDestroy {
 
           if (states.length > 0 && states[states.length - 1].state === 'END' && states[0].threadId === this.threadId) {
             this.ngZone.run(() => {
-              this.loading = false;
+              this.loading.emit(false);
               if (this.gridOptions.api.getDisplayedRowCount() === 1) {
                 this.addPosts(
                   [this.gridOptions.api.getDisplayedRowAtIndex(0).data].map(e => ({

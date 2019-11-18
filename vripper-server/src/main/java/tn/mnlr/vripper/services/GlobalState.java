@@ -13,7 +13,7 @@ public class GlobalState {
     private long remaining;
     private long error;
 
-    public GlobalState(long running, long queued, long remaining, long error) {
+    GlobalState(long running, long queued, long remaining, long error) {
         this.running = running;
         this.queued = queued;
         this.remaining = remaining;
@@ -25,11 +25,7 @@ public class GlobalState {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GlobalState that = (GlobalState) o;
-        return running == that.running &&
-                queued == that.queued &&
-                remaining == that.remaining &&
-                error == that.error &&
-                Objects.equals(type, that.type);
+        return running == that.running && queued == that.queued && remaining == that.remaining && error == that.error;
     }
 
     @Override

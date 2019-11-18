@@ -1,6 +1,5 @@
 package tn.mnlr.vripper.services;
 
-import io.reactivex.disposables.Disposable;
 import io.reactivex.processors.PublishProcessor;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,7 +11,6 @@ import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.q.DownloadJob;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,8 +38,6 @@ public class AppStateService {
 
     @Autowired
     private AppSettingsService appSettingsService;
-
-    private Disposable subscription;
 
     public void onImageUpdate(Image imageState) {
 
@@ -81,7 +77,7 @@ public class AppStateService {
             post.setStatus(Post.Status.PARTIAL);
         }
         if (i == 0) {
-            if (post.getImages().stream().map(Image::getStatus).filter(e -> e.equals(Image.Status.ERROR)).count() > 0) {
+            if (post.getImages().stream().map(Image::getStatus).anyMatch(e -> e.equals(Image.Status.ERROR))) {
                 post.setStatus(Post.Status.ERROR);
             } else {
                 if (!Post.Status.STOPPED.equals(post.getStatus())) {
@@ -104,13 +100,7 @@ public class AppStateService {
         currentPosts.get(postId).setRemoved(true);
         runningPosts.remove(postId);
         currentPosts.remove(postId);
-        Iterator<Map.Entry<String, Image>> iterator = currentImages.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<String, Image> entry = iterator.next();
-            if(entry.getValue().getPostId().equals(postId)) {
-                iterator.remove();
-            }
-        }
+        currentImages.entrySet().removeIf(entry -> entry.getValue().getPostId().equals(postId));
         persistenceService.getProcessor().onNext(currentPosts);
     }
 

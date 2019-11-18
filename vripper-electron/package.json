@@ -54,18 +54,7 @@
       "packageCategory": "Utility",
       "icon": "icons",
       "target": [
-        "deb",
         "AppImage"
-      ]
-    },
-    "deb": {
-      "depends": [
-        "gconf2",
-        "gconf-service",
-        "libnotify4",
-        "libappindicator1",
-        "libxtst6",
-        "libnss3"
       ]
     },
     "mac": {
@@ -87,7 +76,6 @@
   "dependencies": {
     "axios": "^0.19.0",
     "cheerio": "^1.0.0-rc.3",
-    "command-exists": "^1.2.8",
     "copy-dir": "^1.1.0",
     "custom-electron-titlebar": "^3.0.10",
     "electron-context-menu": "^0.13.0",

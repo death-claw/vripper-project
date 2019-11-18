@@ -4,7 +4,6 @@ import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.client.LaxRedirectStrategy;
@@ -12,6 +11,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class ConnectionManager {
@@ -32,15 +32,16 @@ public class ConnectionManager {
     private void buildConnectionPool() {
 
         pcm = new PoolingHttpClientConnectionManager();
-        pcm.setMaxTotal(200);
-        pcm.setDefaultMaxPerRoute(10);
+        pcm.setMaxTotal(50);
+        pcm.setDefaultMaxPerRoute(4);
+        pcm.closeIdleConnections(30, TimeUnit.SECONDS);
     }
 
     public HttpClientBuilder getClient() {
         return HttpClients.custom()
                 .setConnectionManager(pcm)
                 .setRedirectStrategy(new LaxRedirectStrategy())
-                .setRetryHandler(new DefaultHttpRequestRetryHandler(5, true))
+                .disableAutomaticRetries()
                 .setDefaultRequestConfig(rc);
     }
 

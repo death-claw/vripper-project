@@ -48,7 +48,7 @@ public class Image {
         this.postName = postName;
         this.host = host;
         this.index = index;
-        status = Status.PENDING;
+        status = Status.STOPPED;
         imageStateProcessor = BehaviorProcessor.create();
     }
 
@@ -80,7 +80,7 @@ public class Image {
                 .subscribe();
 
         current.set(0);
-        status = Status.PENDING;
+        status = Status.STOPPED;
         imageStateProcessor.onNext(this);
     }
 

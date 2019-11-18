@@ -29,7 +29,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Service
 public class PersistenceService {
@@ -67,19 +66,21 @@ public class PersistenceService {
         File dataFile = new File(appCommandRunner.getDataPath());
         if (!dataFile.exists()) {
             try {
-                dataFile.getParentFile().mkdirs();
+                if (dataFile.getParentFile().mkdirs()) {
+                    logger.debug(String.format("%s is created", dataFile.getParentFile().toString()));
+                }
                 if (!dataFile.getParentFile().isDirectory() || !dataFile.getParentFile().canWrite()) {
                     logger.error(String.format("Unable to write in %s", dataFile.getParent()));
                     SpringContext.close();
                 }
 
                 if (dataFile.createNewFile()) {
-                    logger.info("Data file successfully created");
+                    logger.debug("Data file successfully created");
                     try (FileWriter fw = new FileWriter(dataFile)) {
                         fw.write("{}");
                     }
                 } else {
-                    logger.info("Data file already exists");
+                    logger.warn("Data file already exists");
                 }
             } catch (IOException e) {
                 logger.error("Unable to create data file", e);
@@ -96,9 +97,9 @@ public class PersistenceService {
         this.persist(stateService.getCurrentPosts());
     }
 
-    public void persist(Map<String, Post> currentPosts) {
+    private void persist(Map<String, Post> currentPosts) {
 
-        try (PrintWriter out = new PrintWriter(appCommandRunner.getDataPath(), "UTF-8")) {
+        try (PrintWriter out = new PrintWriter(appCommandRunner.getDataPath(), StandardCharsets.UTF_8)) {
             out.print(om.writeValueAsString(currentPosts));
         } catch (IOException e) {
             logger.error("Failed to persist app state", e);
@@ -128,7 +129,7 @@ public class PersistenceService {
 
         String jsonContent = null;
         try {
-            jsonContent = Files.readAllLines(Paths.get(appCommandRunner.getDataPath()), StandardCharsets.UTF_8).stream().collect(Collectors.joining());
+            jsonContent = String.join("", Files.readAllLines(Paths.get(appCommandRunner.getDataPath()), StandardCharsets.UTF_8));
         } catch (Exception e) {
             logger.error("data file cannot be read, previous state cannot be restored", e);
             SpringContext.close();
@@ -150,8 +151,6 @@ public class PersistenceService {
             stateService.getCurrentImages().put(e.getUrl(), e);
         });
 
-        read.values().forEach(e -> {
-            e.setAppStateService(stateService);
-        });
+        read.values().forEach(e -> e.setAppStateService(stateService));
     }
 }

@@ -11,10 +11,6 @@ import tn.mnlr.vripper.exception.HtmlProcessorException;
 @Service
 public class HtmlProcessorService {
 
-    private HtmlProcessorService() {
-
-    }
-
     public Document clean(String htmlContent) throws HtmlProcessorException {
         try {
             TagNode clean = new HtmlCleaner().clean(htmlContent);

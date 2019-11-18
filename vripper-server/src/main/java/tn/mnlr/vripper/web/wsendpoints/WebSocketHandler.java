@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +22,7 @@ import tn.mnlr.vripper.entities.mixin.ui.PostUIMixin;
 import tn.mnlr.vripper.services.*;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -88,42 +90,42 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 subscribeForPostDetails(session, wsMessage.getPayload());
                 break;
             case POST_DETAILS_UNSUB:
-                logger.info(String.format("Client %s unsubscribed from post details", session.getId()));
-                Optional.ofNullable(postDetailsSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+                logger.debug(String.format("Client %s unsubscribed from post details", session.getId()));
+                Optional.ofNullable(postDetailsSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
                 break;
             case THREAD_PARSING_UNSUB:
-                logger.info(String.format("Client %s unsubscribed from thread parsing", session.getId()));
-                Optional.ofNullable(vrPostParserSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+                logger.debug(String.format("Client %s unsubscribed from thread parsing", session.getId()));
+                Optional.ofNullable(vrPostParserSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
                 Optional.ofNullable(threadParseRequests.remove(session.getId())).ifPresent(d -> d.cancel(true));
                 break;
             case POSTS_UNSUB:
-                logger.info(String.format("Client %s unsubscribed from posts", session.getId()));
-                Optional.ofNullable(postsSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+                logger.debug(String.format("Client %s unsubscribed from posts", session.getId()));
+                Optional.ofNullable(postsSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
                 break;
             case GLOBAL_STATE_UNSUB:
-                logger.info(String.format("Client %s unsubscribed from global state", session.getId()));
-                Optional.ofNullable(stateSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+                logger.debug(String.format("Client %s unsubscribed from global state", session.getId()));
+                Optional.ofNullable(stateSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
                 break;
             case SPEED_UNSUB:
-                logger.info(String.format("Client %s unsubscribed from download speed info", session.getId()));
-                Optional.ofNullable(downloadSpeedSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+                logger.debug(String.format("Client %s unsubscribed from download speed info", session.getId()));
+                Optional.ofNullable(downloadSpeedSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
                 break;
             case USER_UNSUB:
-                logger.info(String.format("Client %s unsubscribed from user info", session.getId()));
-                Optional.ofNullable(userSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+                logger.debug(String.format("Client %s unsubscribed from user info", session.getId()));
+                Optional.ofNullable(userSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
                 break;
         }
     }
 
     private void subscribeForGlobalState(WebSocketSession session) {
 
-        logger.info(String.format("Client %s subscribed for global state", session.getId()));
+        logger.debug(String.format("Client %s subscribed for global state", session.getId()));
         if (stateSubscriptions.containsKey(session.getId())) {
             stateSubscriptions.get(session.getId()).dispose();
         }
 
         try {
-            send(session, new TextMessage(om.writeValueAsString(Arrays.asList(globalStateService.getCurrentState()))));
+            send(session, new TextMessage(om.writeValueAsString(Collections.singletonList(globalStateService.getCurrentState()))));
         } catch (Exception e) {
             logger.error("Unexpected error occurred", e);
         }
@@ -143,13 +145,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private void subscribeForSpeed(WebSocketSession session) {
 
-        logger.info(String.format("Client %s subscribed for download speed info", session.getId()));
+        logger.debug(String.format("Client %s subscribed for download speed info", session.getId()));
         if (downloadSpeedSubscriptions.containsKey(session.getId())) {
             downloadSpeedSubscriptions.get(session.getId()).dispose();
         }
 
         try {
-            send(session, new TextMessage(om.writeValueAsString(Arrays.asList(new DownloadSpeed(0)))));
+            send(session, new TextMessage(om.writeValueAsString(Collections.singletonList(new DownloadSpeed(0)))));
         } catch (Exception e) {
             logger.error("Unexpected error occurred", e);
         }
@@ -170,13 +172,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private void subscribeForUser(WebSocketSession session) {
 
-        logger.info(String.format("Client %s subscribed for user info", session.getId()));
+        logger.debug(String.format("Client %s subscribed for user info", session.getId()));
         if (userSubscriptions.containsKey(session.getId())) {
             userSubscriptions.get(session.getId()).dispose();
         }
 
         try {
-            send(session, new TextMessage(om.writeValueAsString(Arrays.asList(new LoggedUser(vipergirlsAuthService.getLoggedUser())))));
+            send(session, new TextMessage(om.writeValueAsString(Collections.singletonList(new LoggedUser(vipergirlsAuthService.getLoggedUser())))));
         } catch (Exception e) {
             logger.error("Unexpected error occurred", e);
         }
@@ -185,7 +187,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 vipergirlsAuthService.getLoggedInUser()
                         .onBackpressureBuffer()
                         .observeOn(Schedulers.io())
-                        .map(e -> Arrays.asList(new LoggedUser(e)))
+                        .map(e -> Collections.singletonList(new LoggedUser(e)))
                         .map(om::writeValueAsString)
                         .map(TextMessage::new)
                         .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))
@@ -194,7 +196,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private void subscribeForPosts(WebSocketSession session) {
 
-        logger.info(String.format("Client %s subscribed for posts", session.getId()));
+        logger.debug(String.format("Client %s subscribed for posts", session.getId()));
         if (postsSubscriptions.containsKey(session.getId())) {
             postsSubscriptions.get(session.getId()).dispose();
         }
@@ -220,7 +222,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private void subscribeForThreadParsing(WebSocketSession session, String threadId) {
 
-        logger.info(String.format("Client %s subscribed for thread parsing with threadId = %s", session.getId(), threadId));
+        logger.debug(String.format("Client %s subscribed for thread parsing with threadId = %s", session.getId(), threadId));
         if (vrPostParserSubscriptions.containsKey(session.getId())) {
             vrPostParserSubscriptions.get(session.getId()).dispose();
         }
@@ -229,7 +231,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             threadParseRequests.get(session.getId()).cancel(true);
         }
 
-        PostParser.VRThreadParser vrThreadParser = postParser.new VRThreadParser(threadId);
+        VRThreadParser vrThreadParser = postParser.createVRThreadParser(threadId);
 
         vrPostParserSubscriptions.put(session.getId(), vrThreadParser.getPostPublishProcessor()
                 .onBackpressureBuffer()
@@ -246,7 +248,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private void subscribeForPostDetails(WebSocketSession session, String postId) {
 
-        logger.info(String.format("Client %s subscribed for post details with id = %s", session.getId(), postId));
+        logger.debug(String.format("Client %s subscribed for post details with id = %s", session.getId(), postId));
         if (postDetailsSubscriptions.containsKey(session.getId())) {
             postDetailsSubscriptions.get(session.getId()).dispose();
         }
@@ -282,24 +284,26 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
-        logger.info(String.format("Connection open for client id: %s", session.getId()));
+        logger.debug(String.format("Connection open for client id: %s", session.getId()));
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
 
-        Optional.ofNullable(postsSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
-        Optional.ofNullable(postDetailsSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
-        Optional.ofNullable(stateSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
-        Optional.ofNullable(downloadSpeedSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
-        Optional.ofNullable(userSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
-        Optional.ofNullable(vrPostParserSubscriptions.remove(session.getId())).ifPresent(d -> d.dispose());
+        Optional.ofNullable(postsSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
+        Optional.ofNullable(postDetailsSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
+        Optional.ofNullable(stateSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
+        Optional.ofNullable(downloadSpeedSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
+        Optional.ofNullable(userSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
+        Optional.ofNullable(vrPostParserSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
         Optional.ofNullable(threadParseRequests.remove(session.getId())).ifPresent(d -> d.cancel(true));
 
-        logger.info(String.format("Connection closed for client id: %s", session.getId()));
+        logger.debug(String.format("Connection closed for client id: %s", session.getId()));
     }
 
     @Getter
+    @Setter
+    @NoArgsConstructor
     private static class WSMessage {
 
         private String cmd;
@@ -327,7 +331,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         private final String type = "user";
         private String user;
 
-        public LoggedUser(String user) {
+        LoggedUser(String user) {
             this.user = user;
         }
     }

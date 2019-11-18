@@ -5,6 +5,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
@@ -28,7 +29,7 @@ public class AcidimgHost extends Host {
 
     private static final String host = "acidimg.cc";
     private static final String CONTINUE_BUTTON_XPATH = "//input[@id='continuebutton']";
-    public static final String IMG_XPATH = "//img[@class='centred']";
+    private static final String IMG_XPATH = "//img[@class='centred']";
 
     @Autowired
     private ConnectionManager cm;
@@ -44,20 +45,20 @@ public class AcidimgHost extends Host {
     }
 
     @Override
-    protected void setNameAndUrl(final String url, final ImageFileData imageFileData) throws HostException {
+    protected void setNameAndUrl(final String url, final ImageFileData imageFileData, final HttpClientContext context) throws HostException {
 
-        Document doc = getResponse(url).getDocument();
+        Document doc = getResponse(url, context).getDocument();
 
         Node contDiv;
         try {
-            logger.info(String.format("Looking for xpath expression %s in %s", CONTINUE_BUTTON_XPATH, url));
+            logger.debug(String.format("Looking for xpath expression %s in %s", CONTINUE_BUTTON_XPATH, url));
             contDiv = xpathService.getAsNode(doc, CONTINUE_BUTTON_XPATH);
         } catch (XpathException e) {
             throw new HostException(e);
         }
 
         if (contDiv != null) {
-            logger.info(String.format("Click button found for %s", url));
+            logger.debug(String.format("Click button found for %s", url));
             HttpClient client = cm.getClient().build();
             HttpPost httpPost = cm.buildHttpPost(url);
             httpPost.addHeader("Referer", url);
@@ -69,9 +70,9 @@ public class AcidimgHost extends Host {
                 throw new HostException(e);
             }
 
-            logger.info(String.format("Requesting %s", httpPost));
-            try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(httpPost)) {
-                logger.info(String.format("Cleaning response for %s", httpPost));
+            logger.debug(String.format("Requesting %s", httpPost));
+            try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(httpPost, context)) {
+                logger.debug(String.format("Cleaning response for %s", httpPost));
                 doc = htmlProcessorService.clean(EntityUtils.toString(response.getEntity()));
                 EntityUtils.consumeQuietly(response.getEntity());
             } catch (Exception e) {
@@ -81,7 +82,7 @@ public class AcidimgHost extends Host {
 
         Node imgNode;
         try {
-            logger.info(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url));
+            logger.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url));
             imgNode = xpathService.getAsNode(doc, IMG_XPATH);
         } catch (XpathException e) {
             throw new HostException(e);
@@ -92,7 +93,7 @@ public class AcidimgHost extends Host {
         }
 
         try {
-            logger.info(String.format("Resolving name and image url for %s", url));
+            logger.debug(String.format("Resolving name and image url for %s", url));
             String imgTitle = imgNode.getAttributes().getNamedItem("alt").getTextContent().trim();
             String imgUrl = imgNode.getAttributes().getNamedItem("src").getTextContent().trim();
 

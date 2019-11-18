@@ -57,10 +57,9 @@ public class Post {
         this.forum = forum;
         this.threadId = threadId;
         this.threadTitle = threadTitle;
-        this.images.stream().map(e -> e.getHost()).map(Host::getHost).collect(Collectors.toSet());
-        this.hosts = this.images.stream().map(e -> e.getHost()).map(Host::getHost).collect(Collectors.toSet());
+        this.hosts = this.images.stream().map(Image::getHost).map(Host::getHost).collect(Collectors.toSet());
         total = images.size();
-        status = Status.PENDING;
+        status = Status.STOPPED;
     }
 
     public void setAppStateService(AppStateService appStateService) {

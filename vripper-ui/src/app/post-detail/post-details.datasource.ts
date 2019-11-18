@@ -13,7 +13,7 @@ export class PostDetailsDataSource {
     private postId: string,
     private zone: NgZone
     ) {
-    this.websocketHandlerPromise = wsConnectionService.getConnection();
+    this.websocketHandlerPromise = this.wsConnectionService.getConnection();
   }
 
   websocketHandlerPromise: Promise<WsHandler>;

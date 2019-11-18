@@ -23,13 +23,9 @@ import java.util.concurrent.Executors;
 public class VripperApplication {
 
     private static final Logger logger = LoggerFactory.getLogger(VripperApplication.class);
-
-//    public static final String dataPath = System.getProperty("user.home", ".") + File.separator + ".vripper" + File.separator + "data.json";
-
     public static final ExecutorService commonExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
     public static void main(String[] args) {
-
         try {
             SpringApplication.run(VripperApplication.class, args);
         } catch (Exception e) {

@@ -1,5 +1,13 @@
 import { WsConnectionService } from '../ws-connection.service';
-import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  NgZone,
+  ChangeDetectionStrategy,
+  EventEmitter,
+  AfterViewInit
+} from '@angular/core';
 import { AgRendererComponent } from 'ag-grid-angular';
 import { Subscription } from 'rxjs';
 import { PostDetails } from './post-details.model';
@@ -10,9 +18,10 @@ import { ElectronService } from 'ngx-electron';
 @Component({
   selector: 'app-details-cell',
   templateUrl: 'post-details-progress.component.html',
-  styleUrls: ['post-details-progress.component.scss']
+  styleUrls: ['post-details-progress.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PostDetailsProgressRendererComponent implements AgRendererComponent, OnInit, OnDestroy {
+export class PostDetailsProgressRendererComponent implements AgRendererComponent, OnInit, OnDestroy, AfterViewInit {
   constructor(
     private wsConnectionService: WsConnectionService,
     private zone: NgZone,
@@ -23,8 +32,8 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
 
   websocketHandlerPromise: Promise<WsHandler>;
   subscription: Subscription;
-  params: ICellRendererParams;
-  postDetails: PostDetails;
+  postDetails$: EventEmitter<PostDetails> = new EventEmitter();
+  private postDetails: PostDetails;
 
   trunc(value: number): number {
     return Math.trunc(value);
@@ -37,6 +46,7 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
           e.forEach(v => {
             if (this.postDetails.url === v.url) {
               this.postDetails = v;
+              this.postDetails$.emit(this.postDetails);
             }
           });
         });
@@ -52,6 +62,10 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
     }
   }
 
+  ngAfterViewInit(): void {
+    this.postDetails$.emit(this.postDetails);
+  }
+
   ngOnDestroy(): void {
     if (this.subscription != null) {
       this.subscription.unsubscribe();
@@ -59,11 +73,12 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
   }
 
   agInit(params: ICellRendererParams): void {
-    this.params = params;
     this.postDetails = params.data;
   }
 
   refresh(params: ICellRendererParams): boolean {
-    return false;
+    this.postDetails = params.data;
+    this.postDetails$.emit(this.postDetails);
+    return true;
   }
 }
