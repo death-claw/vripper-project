@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0] - 2019-11-21
+### Changed
+- UI enhancements and overhaul
+- Stability fixes with HTTP connections
+- MacOS official support
+- Use local sockjs and material icons font
+
 ## [2.2.5] - 2019-11-09
 ### Changed
 - Exclude thumbs download for imagezilla and pixhost
