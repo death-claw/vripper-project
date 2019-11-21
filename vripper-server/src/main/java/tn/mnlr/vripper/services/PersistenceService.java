@@ -140,7 +140,7 @@ public class PersistenceService {
         stateService.getCurrentPosts().clear();
         stateService.getCurrentPosts().putAll(read);
         stateService.getCurrentPosts().values().forEach(p -> {
-            if(Arrays.asList(Post.Status.DOWNLOADING, Post.Status.PARTIAL).contains(p.getStatus())) {
+            if (Arrays.asList(Post.Status.DOWNLOADING, Post.Status.PARTIAL, Post.Status.PENDING).contains(p.getStatus())) {
                 p.setStatus(Post.Status.STOPPED);
             }
         });
