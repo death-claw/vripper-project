@@ -13,10 +13,16 @@
         <mat-icon>play_arrow</mat-icon>
       </button>
       <button (click)="stop()" [disabled]="disableSelection | async" aria-label="Stop" mat-icon-button title="Stop">
-        <mat-icon>stop</mat-icon>
+        <mat-icon>pause</mat-icon>
       </button>
+      <div class="or-spacer-vertical left">
+        <div class="mask"></div>
+      </div>
       <button (click)="clear()" aria-label="Clear completed" mat-icon-button title="Clear completed">
         <mat-icon>clear_all</mat-icon>
+      </button>
+      <button (click)="stopAll()" aria-label="Stop All" mat-icon-button title="Stop All">
+        <mat-icon>stop</mat-icon>
       </button>
     </div>
     <div fxFlex="grow" id="global-search">

@@ -8,12 +8,15 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@EnableScheduling
 public class ConnectionManager {
 
     private ConnectionManager() {
@@ -34,6 +37,11 @@ public class ConnectionManager {
         pcm = new PoolingHttpClientConnectionManager();
         pcm.setMaxTotal(50);
         pcm.setDefaultMaxPerRoute(4);
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    private void idleConnectionMonitoring() {
+        pcm.closeExpiredConnections();
         pcm.closeIdleConnections(30, TimeUnit.SECONDS);
     }
 

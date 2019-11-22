@@ -61,6 +61,7 @@ public class PostParser {
         if (appSettingsService.isAutoStart()) {
             logger.debug("Auto start downloads option is enabled");
             logger.debug(String.format("Starting to enqueue %d jobs for %s", post.getImages().size(), post.getUrl()));
+            post.setStatus(Post.Status.PENDING);
             try {
                 downloadQ.enqueue(post);
             } catch (InterruptedException e) {
@@ -70,6 +71,7 @@ public class PostParser {
             }
             logger.debug(String.format("Done enqueuing jobs for %s", post.getUrl()));
         } else {
+            post.setStatus(Post.Status.STOPPED);
             logger.debug("Auto start downloads option is disabled");
         }
     }

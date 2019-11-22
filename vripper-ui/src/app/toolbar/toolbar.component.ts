@@ -22,6 +22,7 @@ import { PostsDataService } from '../posts-data.service';
 @Component({
   selector: 'app-toolbar',
   templateUrl: './toolbar.component.html',
+  styleUrls: ['./tooltip.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
