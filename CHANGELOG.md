@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.1] - 2019-11-22
+### Changed
+- Fix connexion reset issue
+- Fix Post Status when autostart option is selected
+- Add stop all button
+
 ## [2.3.0] - 2019-11-21
 ### Changed
 - UI enhancements and overhaul
