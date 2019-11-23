@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.4.0] - 2019-11-23
+### Changed
+- Pimpandhost Host support
+
 ## [2.3.2] - 2019-11-23
 ### Changed
 - Fix a bug with the scan component
