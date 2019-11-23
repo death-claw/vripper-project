@@ -40,8 +40,6 @@ export class ScanComponent implements OnInit, AfterViewInit {
 
   submit(form: NgForm) {
     this.ngZone.run(() => {
-      this.hideScan.emit(true);
-      this.threadId.emit(null);
       this.processUrl(this.input, form);
     });
   }
@@ -55,6 +53,8 @@ export class ScanComponent implements OnInit, AfterViewInit {
   }
 
   processUrl(url: string, form?: NgForm) {
+    this.hideScan.emit(true);
+    this.threadId.emit(null);
     this.httpClient
       .post<{ threadId: string; postId: string }>(this.serverService.baseUrl + '/post', { url: url })
       .pipe(
@@ -88,6 +88,12 @@ export class ScanComponent implements OnInit, AfterViewInit {
             return;
           }
           this.threadId.emit(response.threadId);
+        });
+      },
+      error => {
+        this.hideScan.emit(false);
+        this._snackBar.open(error.error, null, {
+          duration: 5000
         });
       });
   }

@@ -62,7 +62,7 @@ public class PostRestEndpoint {
         if (url.getUrl() == null || url.getUrl().isEmpty()) {
             return new ResponseEntity<>("Failed to process empty request", HttpStatus.BAD_REQUEST);
         } else if (!url.getUrl().startsWith("https://vipergirls.to")) {
-            return new ResponseEntity<>("ViperGirls only links are supported", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("ViperGirls links only are supported", HttpStatus.BAD_REQUEST);
         }
 
         String threadId, postId;

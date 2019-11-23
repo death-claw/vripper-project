@@ -113,18 +113,27 @@ export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
   connect() {
     this.websocketHandlerPromise.then((handler: WsHandler) => {
       console.log('Connecting to thread parsing');
+      let count = 0;
+      let data_0;
       this.subscription = handler.subscribeForThreadParsing(
         (states: Array<VRThreadParseState>, data: Array<VRPostParse>) => {
-          if (data[0].threadId === this.threadId) {
+          if (data.length > 0 && data[0].threadId === this.threadId) {
             this.gridOptions.api.updateRowData({ add: data });
+            count += data.length;
+            data_0 = data[0];
           }
 
           if (states.length > 0 && states[states.length - 1].state === 'END' && states[0].threadId === this.threadId) {
             this.ngZone.run(() => {
               this.loading.emit(false);
-              if (this.gridOptions.api.getDisplayedRowCount() === 1) {
+              if (count === 0) {
+                this._snackBar.open('No posts were found', null, {
+                  duration: 5000
+                });
+                this.done.emit(true);
+              } else if (count === 1) {
                 this.addPosts(
-                  [this.gridOptions.api.getDisplayedRowAtIndex(0).data].map(e => ({
+                  [data_0].map(e => ({
                     threadId: e.threadId,
                     postId: e.postId
                   }))
