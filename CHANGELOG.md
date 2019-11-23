@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.3.2] - 2019-11-23
+### Changed
+- Fix a bug with the scan component
+
 ## [2.3.1] - 2019-11-22
 ### Changed
 - Fix connexion reset issue
