@@ -15,7 +15,7 @@ export enum WSState {
   OPEN
 }
 
-const maxAttemps = 5;
+const maxAttemps = 15;
 
 @Injectable()
 export class WsConnectionService {

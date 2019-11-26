@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import tn.mnlr.vripper.exception.ValidationException;
 
@@ -22,6 +23,9 @@ import java.util.prefs.Preferences;
 @Getter
 @Setter
 public class AppSettingsService {
+
+    @Value("${base.dir}")
+    private String defaultDownloadPath;
 
     private static final Logger logger = LoggerFactory.getLogger(AppSettingsService.class);
 
@@ -65,7 +69,7 @@ public class AppSettingsService {
 
     public void restore() {
 
-        downloadPath = prefs.get(DOWNLOAD_PATH, System.getProperty("user.dir"));
+        downloadPath = prefs.get(DOWNLOAD_PATH, defaultDownloadPath);
         maxThreads = prefs.getInt(MAX_THREADS, 4);
         autoStart = prefs.getBoolean(AUTO_START, true);
         vLogin = prefs.getBoolean(V_LOGIN, false);
