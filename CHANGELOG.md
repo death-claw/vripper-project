@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.1] - 2019-11-26
+### Changed
+- Increase attempts for establishing ws connection between front and back end
+- Change default download folder to Home folder (installer), App folder (portable)
+
 ## [2.4.0] - 2019-11-23
 ### Changed
 - Pimpandhost Host support
