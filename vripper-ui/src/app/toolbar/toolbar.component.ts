@@ -210,8 +210,10 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.disableSelection.next(true);
-    this.loggedUser.emit(new LoggedUser(null));
+    this.ngZone.run(() => {
+      this.disableSelection.next(true);
+      this.loggedUser.emit(new LoggedUser(null));
+    });
   }
 
   ngOnInit() {
@@ -229,7 +231,7 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.selectionService.selected$.subscribe(selected => {
       this.selected = selected;
-      this.disableSelection.next(this.selected.length === 0);
+      this.ngZone.run(() => this.disableSelection.next(this.selected.length === 0));
     });
   }
 

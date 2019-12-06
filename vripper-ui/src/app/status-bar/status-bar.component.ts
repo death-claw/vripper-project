@@ -38,9 +38,11 @@ export class StatusBarComponent implements OnInit, OnDestroy, AfterViewInit {
   selected: EventEmitter<number> = new EventEmitter();
 
   ngAfterViewInit(): void {
-    this.selected.emit(0);
-    this.globalState.emit(new GlobalState(0, 0, 0, 0));
-    this.downloadSpeed.emit(new DownloadSpeed('0 B'));
+    this.ngZone.run(() => {
+      this.selected.emit(0);
+      this.globalState.emit(new GlobalState(0, 0, 0, 0));
+      this.downloadSpeed.emit(new DownloadSpeed('0 B'));
+    });
   }
 
   ngOnInit() {
@@ -63,7 +65,9 @@ export class StatusBarComponent implements OnInit, OnDestroy, AfterViewInit {
       handler.send(new WSMessage(CMD.GLOBAL_STATE_SUB.toString()));
       handler.send(new WSMessage(CMD.SPEED_SUB.toString()));
     });
-    this.subscriptions.push(this.selectionService.selected$.subscribe(selected => this.selected.emit(selected.length)));
+    this.subscriptions.push(
+      this.selectionService.selected$.subscribe(selected => this.ngZone.run(() => this.selected.emit(selected.length)))
+    );
   }
 
   ngOnDestroy(): void {

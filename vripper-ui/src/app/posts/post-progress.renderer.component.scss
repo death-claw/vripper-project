@@ -1,3 +1,14 @@
 .checkbox {
     background-color: transparent;
 }
+
+.row-text {
+    white-space: nowrap; 
+    overflow: hidden;
+}
+
+.row-text > span {
+    white-space: nowrap; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

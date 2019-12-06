@@ -1,56 +1,47 @@
 import { AppService } from './app.service';
 import { ClipboardService } from './clipboard.service';
 import { ElectronService } from 'ngx-electron';
-import { Component, OnInit, OnDestroy, NgZone, AfterViewInit, Renderer2 } from '@angular/core';
+import { Component, OnDestroy, AfterViewInit, Renderer2, ChangeDetectionStrategy, NgZone } from '@angular/core';
 import { MatDialog } from '@angular/material';
-import { Subscription } from 'rxjs';
+import { Subscription, BehaviorSubject, Subject } from 'rxjs';
 import { WsConnectionService, WSState } from './ws-connection.service';
-import { WsHandler } from './ws-handler';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss']
+  styleUrls: ['./app.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
+export class AppComponent implements OnDestroy, AfterViewInit {
   constructor(
-    public dialog: MatDialog,
+    private dialog: MatDialog,
     private ws: WsConnectionService,
     public electronService: ElectronService,
     private clipboardService: ClipboardService,
-    private ngZone: NgZone,
     private appService: AppService,
-    private renderer: Renderer2
-  ) {}
-
-  subscriptions: Subscription[] = [];
-  websocketHandlerPromise: Promise<WsHandler>;
-  currentState: WSState;
-  themeLoaded = false;
-
-  noConnectionState(): boolean {
-    return this.currentState === WSState.CLOSE || this.currentState === WSState.ERROR;
+    private renderer: Renderer2,
+    private ngZone: NgZone
+  ) {
+    this.electron = new BehaviorSubject(electronService.isElectronApp);
   }
 
-  connecting(): boolean {
-    return (this.currentState === WSState.INIT || this.currentState === WSState.CONNECTING) && !this.themeLoaded ;
-  }
+  private subscriptions: Subscription[] = [];
+  appState: Subject<string> = new BehaviorSubject('CONNECTING');
+  electron: Subject<boolean>;
 
   ngAfterViewInit() {
     this.appService.renderer = this.renderer;
-  }
-
-  ngOnInit() {
-    this.currentState = WSState.INIT;
-    this.subscriptions.push(this.ws.state.subscribe(e => {
-      this.currentState = e;
-      if (this.currentState === WSState.CLOSE || this.currentState === WSState.ERROR) {
-        this.dialog.closeAll();
-      } else if (this.currentState === WSState.OPEN) {
+    this.subscriptions.push(this.ws.state.subscribe(wsState => {
+      if (wsState === WSState.CLOSE || wsState === WSState.ERROR) {
+        setTimeout(() => this.ngZone.run(() => {
+          this.dialog.closeAll();
+          this.appState.next('DISCONNECTED');
+        }), 500);
+      } else if (wsState === WSState.OPEN) {
         this.clipboardService.init();
         this.appService
           .loadTheme()
-          .subscribe(() => this.ngZone.run(() => this.themeLoaded = true));
+          .subscribe(() => this.ngZone.run(() => this.appState.next('CONNECTED')));
       }
     }));
   }
