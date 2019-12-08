@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.5.0] - 2019-12-08
+### Changed
+- Change loading screen
+- UI Fixes
+- Fix bug with previews
+### Added
+- Add link collector feature
+- Add support for multiple links at a time
+
 ## [2.4.1] - 2019-11-26
 ### Changed
 - Increase attempts for establishing ws connection between front and back end
