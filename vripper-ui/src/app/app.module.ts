@@ -34,6 +34,8 @@ import { ScanComponent } from './scan/scan.component';
 import { StatusBarComponent } from './status-bar/status-bar.component';
 import { SelectionService } from './selection-service';
 import { ToolbarComponent } from './toolbar/toolbar.component';
+import { GrabQueueComponent } from './grab-queue/grab-queue.component';
+import { UrlGrabRendererComponent } from './grab-queue/url-renderer.component';
 
 @NgModule({
   declarations: [
@@ -50,17 +52,20 @@ import { ToolbarComponent } from './toolbar/toolbar.component';
     AppPreviewComponent,
     AppPreviewDirective,
     UrlRendererComponent,
+    UrlGrabRendererComponent,
     FilterComponent,
     ScanComponent,
     StatusBarComponent,
-    ToolbarComponent
+    ToolbarComponent,
+    GrabQueueComponent
   ],
   entryComponents: [
     PostDetailComponent,
     SettingsComponent,
     ConfirmDialogComponent,
     AppPreviewComponent,
-    ScanComponent
+    ScanComponent,
+    MultiPostComponent
   ],
   imports: [
     BrowserAnimationsModule,
@@ -74,7 +79,8 @@ import { ToolbarComponent } from './toolbar/toolbar.component';
     AgGridModule.withComponents([
       PostProgressRendererComponent,
       PostDetailsProgressRendererComponent,
-      UrlRendererComponent
+      UrlRendererComponent,
+      UrlGrabRendererComponent
     ]),
     OverlayModule
   ],
