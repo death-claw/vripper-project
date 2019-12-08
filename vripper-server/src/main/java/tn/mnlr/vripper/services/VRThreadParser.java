@@ -1,6 +1,6 @@
 package tn.mnlr.vripper.services;
 
-import io.reactivex.processors.PublishProcessor;
+import io.reactivex.processors.ReplayProcessor;
 import lombok.Getter;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
@@ -40,7 +40,7 @@ public class VRThreadParser {
             .onFailedAttempt(e -> logger.warn(String.format("#%d tries failed", e.getAttemptCount()), e.getLastFailure()));
     private static SAXParserFactory factory = SAXParserFactory.newInstance();
     @Getter
-    private final PublishProcessor<VRPostState> postPublishProcessor = PublishProcessor.create();
+    private final ReplayProcessor<VRPostState> postPublishProcessor = ReplayProcessor.create();
     private final String threadId;
     private final ConnectionManager cm;
     private final VipergirlsAuthService vipergirlsAuthService;
@@ -97,7 +97,7 @@ public class VRThreadParser {
 class VRThreadHandler extends DefaultHandler {
 
     private final String threadId;
-    private final PublishProcessor<VRPostState> vrPostPublishProcessor;
+    private final ReplayProcessor<VRPostState> vrPostPublishProcessor;
     private String threadTitle;
     private String postId;
     private String postTitle;
@@ -106,14 +106,13 @@ class VRThreadHandler extends DefaultHandler {
     private int previewCounter = 0;
     private List<String> previews = new ArrayList<>();
 
-    VRThreadHandler(String threadId, PublishProcessor<VRPostState> vrPostPublishProcessor) {
+    VRThreadHandler(String threadId, ReplayProcessor<VRPostState> vrPostPublishProcessor) {
         this.vrPostPublishProcessor = vrPostPublishProcessor;
         this.threadId = threadId;
     }
 
     @Override
     public void startDocument() {
-        vrPostPublishProcessor.onNext(new VRThreadParseState(threadId, "START"));
     }
 
     @Override
@@ -141,7 +140,7 @@ class VRThreadHandler extends DefaultHandler {
     public void endElement(String uri, String localName, String qName) {
         if ("post".equals(qName.toLowerCase())) {
             if (imageCount != 0) {
-                vrPostPublishProcessor.onNext(new VRPostParseState(
+                vrPostPublishProcessor.onNext(new VRPostState(
                         threadId,
                         postId,
                         postCounter,
@@ -158,19 +157,6 @@ class VRThreadHandler extends DefaultHandler {
 
     @Override
     public void endDocument() {
-        vrPostPublishProcessor.onNext(new VRThreadParseState(threadId, "END"));
         vrPostPublishProcessor.onComplete();
-    }
-}
-
-@Getter
-class VRThreadParseState extends VRPostState {
-
-    private final String type = "threadParseState";
-    private final String state;
-
-    VRThreadParseState(String threadId, String state) {
-        super(threadId);
-        this.state = state;
     }
 }

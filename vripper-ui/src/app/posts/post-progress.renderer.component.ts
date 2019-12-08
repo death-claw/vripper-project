@@ -10,7 +10,7 @@ import {
   EventEmitter
 } from '@angular/core';
 import { AgRendererComponent } from 'ag-grid-angular';
-import { Subscription, Observable } from 'rxjs';
+import { Subscription, Observable, BehaviorSubject, Subject } from 'rxjs';
 import { WsHandler } from '../ws-handler';
 import { ICellRendererParams } from 'ag-grid-community';
 import { ElectronService } from 'ngx-electron';
@@ -51,6 +51,8 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
   expanded = false;
   isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
   fs;
+  loaded: Subject<boolean> = new BehaviorSubject(false);
+  loading;
 
   trunc(value: number): number {
     return Math.trunc(value);
@@ -73,12 +75,14 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
 
   ngAfterViewInit(): void {
     this.postState$.emit(this.postState);
+    this.loading = setTimeout(() => this.loaded.next(true), 100);
   }
 
   ngOnDestroy(): void {
     if (this.updatesSubscription != null) {
       this.updatesSubscription.unsubscribe();
     }
+    clearTimeout(this.loading);
   }
 
   agInit(params: ICellRendererParams): void {

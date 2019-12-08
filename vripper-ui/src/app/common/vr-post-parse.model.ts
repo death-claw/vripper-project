@@ -9,7 +9,3 @@ export class VRPostParse {
     public previews: string[]
   ) {}
 }
-
-export class VRThreadParseState {
-  constructor(public threadId: string, public state: string) {}
-}

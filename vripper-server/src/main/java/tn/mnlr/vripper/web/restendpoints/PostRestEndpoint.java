@@ -1,9 +1,6 @@
 package tn.mnlr.vripper.web.restendpoints;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,16 +10,13 @@ import org.springframework.web.bind.annotation.*;
 import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.q.DownloadQ;
-import tn.mnlr.vripper.services.AppSettingsService;
-import tn.mnlr.vripper.services.AppStateService;
-import tn.mnlr.vripper.services.PathService;
-import tn.mnlr.vripper.services.PostParser;
+import tn.mnlr.vripper.services.*;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @RestController
 @CrossOrigin(value = "*")
@@ -41,8 +35,11 @@ public class PostRestEndpoint {
     @Autowired
     private PathService pathService;
 
+    @Autowired
+    private VGHandler vgHandler;
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity handleException(Exception e) {
+    public ResponseEntity<String> handleException(Exception e) {
         logger.error("Error when process request", e);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -57,27 +54,33 @@ public class PostRestEndpoint {
 
     @PostMapping("/post")
     @ResponseStatus(value = HttpStatus.OK)
-    public ResponseEntity processPost(@RequestBody ThreadUrl url) throws Exception {
-        logger.debug(String.format("Starting to process thread: %s", url.getUrl()));
-        if (url.getUrl() == null || url.getUrl().isEmpty()) {
-            return new ResponseEntity<>("Failed to process empty request", HttpStatus.BAD_REQUEST);
-        } else if (!url.getUrl().startsWith("https://vipergirls.to")) {
-            return new ResponseEntity<>("ViperGirls links only are supported", HttpStatus.BAD_REQUEST);
+    public ResponseEntity processPost(@RequestBody ThreadUrl _url) throws Exception {
+        if (_url.getUrl() == null || _url.getUrl().isEmpty()) {
+            return new ResponseEntity("Failed to process empty request", HttpStatus.BAD_REQUEST);
         }
-
-        String threadId, postId;
-        try {
-            Matcher m = VG_URL_PATTERN.matcher(url.getUrl());
-            if (m.find()) {
-                threadId = m.group(1);
-                postId = m.group(4);
-            } else {
-                throw new PostParseException(String.format("Cannot retrieve thread id from URL %s", url));
+        List<String> urls = Arrays.stream(_url.getUrl().split("\\r?\\n")).map(String::trim).filter(e -> !e.isEmpty()).collect(Collectors.toList());
+        for (String url : urls) {
+            logger.debug(String.format("Starting to process thread: %s", url));
+            if (!url.startsWith("https://vipergirls.to")) {
+                logger.error(String.format("Unsupported link %s", url));
+                continue;
             }
-        } catch (Exception e) {
-            throw new PostParseException(String.format("Cannot retrieve thread id from URL %s", url), e);
+
+            String threadId, postId;
+            try {
+                Matcher m = VG_URL_PATTERN.matcher(url);
+                if (m.find()) {
+                    threadId = m.group(1);
+                    postId = m.group(4);
+                } else {
+                    throw new PostParseException(String.format("Cannot retrieve thread id from URL %s", url));
+                }
+            } catch (Exception e) {
+                throw new PostParseException(String.format("Cannot retrieve thread id from URL %s", url), e);
+            }
+            vgHandler.handle(Collections.singletonList(new QueuedVGLink(url, threadId, postId)));
         }
-        return ResponseEntity.ok(new PairThreadIdPostId(threadId, postId));
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/post/restart")
@@ -131,7 +134,7 @@ public class PostRestEndpoint {
 
     @PostMapping("/post/remove")
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized ResponseEntity remove(@RequestBody @NonNull List<PostId> postIds) {
+    public synchronized ResponseEntity<List<RemoveResult>> remove(@RequestBody @NonNull List<PostId> postIds) {
         List<RemoveResult> result = new ArrayList<>();
         for (PostId postId : postIds) {
             downloadQ.stop(postId.getPostId());
@@ -143,14 +146,26 @@ public class PostRestEndpoint {
 
     @PostMapping("/post/clear/all")
     @ResponseStatus(value = HttpStatus.OK)
-    public ResponseEntity clearAll() {
+    public ResponseEntity<RemoveAllResult> clearAll() {
         return ResponseEntity.ok(new RemoveAllResult(appStateService.clearAll()));
     }
 
     @PostMapping("/post/remove/all")
     @ResponseStatus(value = HttpStatus.OK)
-    public ResponseEntity removeAll() {
+    public ResponseEntity<RemoveAllResult> removeAll() {
         return ResponseEntity.ok(new RemoveAllResult(appStateService.removeAll()));
+    }
+
+    @GetMapping("/grab/{threadId}")
+    @ResponseStatus(value = HttpStatus.OK)
+    public synchronized ResponseEntity<List<VRPostState>> grab(@PathVariable("threadId") @NonNull ThreadId threadId) throws Exception {
+        return ResponseEntity.ok(vgHandler.getCache().get(threadId.getThreadId()));
+    }
+
+    @PostMapping("/grab/remove")
+    @ResponseStatus(value = HttpStatus.OK)
+    public synchronized void grabRemove(@RequestBody @NonNull ThreadUrl threadUrl) {
+        vgHandler.remove(threadUrl.getUrl());
     }
 }
 
@@ -168,23 +183,21 @@ class ThreadUrl {
 @Getter
 @Setter
 @NoArgsConstructor
-class PostId {
-    private String postId;
+class ThreadId {
+    private String threadId;
 
-    public PostId(String postId) {
-        this.postId = postId;
+    public ThreadId(String threadId) {
+        this.threadId = threadId;
     }
 }
 
 @Getter
 @Setter
 @NoArgsConstructor
-class PairThreadIdPostId {
-    private String threadId;
+class PostId {
     private String postId;
 
-    PairThreadIdPostId(String threadId, String postId) {
-        this.threadId = threadId;
+    public PostId(String postId) {
         this.postId = postId;
     }
 }
@@ -234,5 +247,33 @@ class DownloadPath {
 
     DownloadPath(String path) {
         this.path = path;
+    }
+}
+
+@Getter
+@Setter
+@NoArgsConstructor
+@ToString
+class PairThreadIdPostId {
+    private String threadId;
+    private String postId;
+
+    public PairThreadIdPostId(String threadId, String postId) {
+        this.threadId = threadId;
+        this.postId = postId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PairThreadIdPostId that = (PairThreadIdPostId) o;
+        return Objects.equals(threadId, that.threadId) &&
+                Objects.equals(postId, that.postId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(threadId, postId);
     }
 }

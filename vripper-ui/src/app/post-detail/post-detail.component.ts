@@ -23,6 +23,14 @@ export class PostDetailComponent implements OnInit, OnDestroy {
     this.gridOptions = <GridOptions> {
       columnDefs: [
         {
+          headerName: '#',
+          field: 'index',
+          sortable: true,
+          sort: 'asc',
+          cellClass: 'col-white',
+          width: 10
+        },
+        {
           headerName: 'URL',
           field: 'url',
           sortable: true,

@@ -94,7 +94,7 @@ export class SettingsComponent implements OnInit {
           this.clipboardService.init(data);
         },
         error => {
-          this._snackBar.open(error.error, null, {
+          this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
             duration: 5000
           });
         }

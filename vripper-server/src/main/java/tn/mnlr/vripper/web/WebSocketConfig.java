@@ -16,6 +16,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(handler, "/endpoint").setAllowedOrigins("*").withSockJS();
+        registry.addHandler(handler, "/endpoint").setAllowedOrigins("*").withSockJS().setClientLibraryUrl("../../assets/sockjs.min.js");
     }
 }

@@ -99,29 +99,6 @@ class VRPostParser {
     }
 }
 
-@Getter
-class VRPostParseState extends VRPostState {
-
-    private final String type = "postParse";
-    private String postId;
-    private int number;
-    private String title;
-    private int imageCount;
-    private String url;
-    private List<String> previews;
-
-
-    VRPostParseState(String threadId, String postId, int number, String title, int imageCount, String url, List<String> previews) {
-        super(threadId);
-        this.postId = postId;
-        this.number = number;
-        this.title = title;
-        this.imageCount = imageCount;
-        this.previews = previews;
-        this.url = url;
-    }
-}
-
 class VRPostHandler extends DefaultHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(VRPostHandler.class);

@@ -1,8 +1,9 @@
-import { AppService } from './../app.service';
+import { ServerService } from './../server-service';
 import { ElectronService } from 'ngx-electron';
 import { ClipboardService } from './../clipboard.service';
 import { Component, OnInit, OnDestroy, NgZone, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog, MatSnackBar } from '@angular/material';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-home',
@@ -11,12 +12,12 @@ import { MatDialog, MatSnackBar } from '@angular/material';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomeComponent implements OnInit, OnDestroy {
-
   constructor(
     private clipboardService: ClipboardService,
     public dialog: MatDialog,
     public electronService: ElectronService,
-    private appService: AppService,
+    private httpClient: HttpClient,
+    private serverService: ServerService,
     private _snackBar: MatSnackBar,
     private ngZone: NgZone
   ) {}
@@ -24,17 +25,23 @@ export class HomeComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.clipboardService.links.subscribe(e => {
       this.ngZone.run(() => {
-        if (this.appService.isScanOpen) {
-          this._snackBar.open(e + ' was not processed, the app is busy parsing another thread', null, {
-            duration: 5000
-          });
-          return;
-        }
-        this.appService.scan(e);
+        this.httpClient
+          .post<{ threadId: string; postId: string }>(this.serverService.baseUrl + '/post', { url: e })
+          .subscribe(
+            response => {
+              this._snackBar.open('Clipboard successfully scanned', null, {
+                duration: 5000
+              });
+            },
+            error => {
+              this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+                duration: 5000
+              });
+            }
+          );
       });
     });
   }
 
-  ngOnDestroy() {
-  }
+  ngOnDestroy() {}
 }

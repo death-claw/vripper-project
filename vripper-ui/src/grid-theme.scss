@@ -1,11 +1,11 @@
 @import '~@angular/material/theming';
 
-$font-family: Fira, sans-serif;
-$font-size: 14px;
-$font-weight: 700;
-$secondary-font-family: Fira, sans-serif;
-$secondary-font-size: 14px;
-$secondary-font-weight:700;
+$ag-font-family: Fira, sans-serif;
+$ag-font-size: 14px;
+$ag-font-weight: 700;
+$ag-secondary-font-family: Fira, sans-serif;
+$ag-secondary-font-size: 14px;
+$ag-secondary-font-weight:700;
 
 @import '~ag-grid-community/src/styles/ag-grid.scss';
 @import '~ag-grid-community/src/styles/ag-theme-material/sass/ag-theme-material.scss';
@@ -26,7 +26,7 @@ $secondary-font-weight:700;
       background-color: mat-color($background, background) !important;
   }
 
-  .ag-theme-material .ag-header {
+  .ag-theme-material .ag-header-cell {
     background-color: mat-color($background, background) !important;
   }
 

@@ -1,6 +1,6 @@
 import { MatDialog } from '@angular/material';
 import { HttpClient } from '@angular/common/http';
-import { Injectable, Renderer2, NgZone } from '@angular/core';
+import { Injectable, Renderer2 } from '@angular/core';
 import { ServerService } from './server-service';
 import { tap } from 'rxjs/operators';
 import { ScanComponent } from './scan/scan.component';
@@ -23,7 +23,6 @@ export class AppService {
   }
 
   isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
-  isScanOpen = false;
 
   updateTheme(darkTheme: boolean) {
     this.darkTheme = darkTheme;
@@ -65,11 +64,8 @@ export class AppService {
       }
     });
 
-    scanDialog.afterOpened().subscribe(() => this.isScanOpen = true);
-
     scanDialog.afterClosed().subscribe(() => {
       smallDialogSubscription.unsubscribe();
-      this.isScanOpen = false;
     });
   }
 }

@@ -9,7 +9,7 @@ import {
   AfterViewInit
 } from '@angular/core';
 import { AgRendererComponent } from 'ag-grid-angular';
-import { Subscription } from 'rxjs';
+import { Subscription, Subject, BehaviorSubject } from 'rxjs';
 import { PostDetails } from './post-details.model';
 import { WsHandler } from '../ws-handler';
 import { ICellRendererParams } from 'ag-grid-community';
@@ -34,6 +34,8 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
   subscription: Subscription;
   postDetails$: EventEmitter<PostDetails> = new EventEmitter();
   private postDetails: PostDetails;
+  loaded: Subject<boolean> = new BehaviorSubject(false);
+  loading;
 
   trunc(value: number): number {
     return Math.trunc(value);
@@ -64,12 +66,14 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
 
   ngAfterViewInit(): void {
     this.postDetails$.emit(this.postDetails);
+    this.loading = setTimeout(() => this.loaded.next(true), 100);
   }
 
   ngOnDestroy(): void {
     if (this.subscription != null) {
       this.subscription.unsubscribe();
     }
+    clearTimeout(this.loading);
   }
 
   agInit(params: ICellRendererParams): void {

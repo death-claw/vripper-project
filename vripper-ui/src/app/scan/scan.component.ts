@@ -2,10 +2,8 @@ import {
   Component,
   OnInit,
   NgZone,
-  ViewChild,
   Inject,
   ChangeDetectionStrategy,
-  EventEmitter,
   AfterViewInit
 } from '@angular/core';
 import { NgForm } from '@angular/forms';
@@ -13,7 +11,7 @@ import { MatSnackBar, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { HttpClient } from '@angular/common/http';
 import { finalize } from 'rxjs/operators';
 import { ServerService } from '../server-service';
-import { MultiPostComponent } from '../multi-post/multi-post.component';
+import { Subject, BehaviorSubject } from 'rxjs';
 
 @Component({
   selector: 'app-scan',
@@ -31,16 +29,12 @@ export class ScanComponent implements OnInit, AfterViewInit {
     @Inject(MAT_DIALOG_DATA) public data: DialogData
   ) {}
 
-  @ViewChild(MultiPostComponent)
-  multipost: MultiPostComponent;
-
   input: string;
-  threadId: EventEmitter<string> = new EventEmitter();
-  hideScan: EventEmitter<boolean> = new EventEmitter();
+  loading: Subject<boolean> = new BehaviorSubject(false);
 
-  submit(form: NgForm) {
+  submit() {
     this.ngZone.run(() => {
-      this.processUrl(this.input, form);
+      this.processUrl(this.input);
     });
   }
 
@@ -52,59 +46,22 @@ export class ScanComponent implements OnInit, AfterViewInit {
     });
   }
 
-  processUrl(url: string, form?: NgForm) {
-    this.hideScan.emit(true);
-    this.threadId.emit(null);
+  processUrl(url: string) {
+    this.loading.next(true);
     this.httpClient
       .post<{ threadId: string; postId: string }>(this.serverService.baseUrl + '/post', { url: url })
       .pipe(
         finalize(() => {
-          this.ngZone.run(() => {
-            if (form != null) {
-              form.resetForm();
-              this.input = null;
-            }
-          });
+          this.close();
+          this.loading.next(false);
         })
       )
-      .subscribe(response => {
-        this.ngZone.run(() => {
-          if (response.postId != null) {
-            this.httpClient
-              .post(this.serverService.baseUrl + '/post/add', [response])
-              .pipe(finalize(() => this.dialogRef.close()))
-              .subscribe(
-                () => {
-                  this._snackBar.open('Adding posts to queue', null, {
-                    duration: 5000
-                  });
-                },
-                error => {
-                  this._snackBar.open(error.error, null, {
-                    duration: 5000
-                  });
-                }
-              );
-            return;
-          }
-          this.threadId.emit(response.threadId);
-        });
-      },
+      .subscribe(response => {},
       error => {
-        this.hideScan.emit(false);
-        this._snackBar.open(error.error, null, {
+        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
           duration: 5000
         });
       });
-  }
-
-  addPosts() {
-    this.ngZone.run(() => {
-      if (this.multipost != null) {
-        this.multipost.submit();
-      }
-      this.dialogRef.close();
-    });
   }
 
   ngOnInit() {}
@@ -112,10 +69,7 @@ export class ScanComponent implements OnInit, AfterViewInit {
   ngAfterViewInit(): void {
     this.ngZone.run(() => {
       if (this.data.url != null) {
-        this.hideScan.emit(true);
         this.processUrl(this.data.url);
-      } else {
-        this.hideScan.emit(false);
       }
     });
   }

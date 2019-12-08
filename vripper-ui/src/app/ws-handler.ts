@@ -1,3 +1,5 @@
+import { element } from 'protractor';
+import { GrabQueueState } from './grab-queue/grab-queue.model';
 import { LoggedUser } from './common/logged-user.model';
 import { Subject, Subscription } from 'rxjs';
 import { WSMessage } from './common/ws-message.model';
@@ -6,7 +8,6 @@ import { map, filter } from 'rxjs/operators';
 import { PostDetails } from './post-detail/post-details.model';
 import { GlobalState } from './common/global-state.model';
 import { DownloadSpeed } from './common/download-speed.model';
-import { VRPostParse, VRThreadParseState } from './common/vr-post-parse.model';
 
 export class WsHandler {
   constructor(private websocket: Subject<any>) {}
@@ -111,7 +112,8 @@ export class WsHandler {
                 element.postName,
                 element.url,
                 element.current === 0 && element.total === 0 ? 0 : (element.current / element.total) * 100,
-                element.status
+                element.status,
+                element.index
               )
             );
           });
@@ -121,37 +123,24 @@ export class WsHandler {
       .subscribe(e => callback(e));
   }
 
-  subscribeForThreadParsing(
-    callback: (stateArray: Array<VRThreadParseState>, dataArray: Array<VRPostParse>) => void
-  ): Subscription {
+  subscribeForGrabQueue(callback: (grabQueueStream: Array<GrabQueueState>) => void): Subscription {
     return this.websocket
       .pipe(
         map(e => JSON.parse(e)),
-        filter(e => e.length > 0 && (e[0].type === 'postParse' || e[0].type === 'threadParseState')),
+        filter(e => e.length > 0 && e.filter(v => v.type === 'grabQueue').length > 0),
         map(e => {
-          const stateValues: VRThreadParseState[] = [];
-          const dataValues: VRPostParse[] = [];
-          e.forEach(element => {
-            if (element.type === 'postParse') {
-              dataValues.push(
-                new VRPostParse(
-                  element.threadId,
-                  element.postId,
-                  element.number,
-                  element.title,
-                  element.imageCount,
-                  element.url,
-                  element.previews
-                )
-              );
-            } else if (element.type === 'threadParseState') {
-              stateValues.push(new VRThreadParseState(element.threadId, element.state));
-            }
+          const grabQueue: Array<GrabQueueState> = [];
+          (<Array<any>>e).forEach(element => {
+            grabQueue.push(
+              new GrabQueueState(element.type, element.link, element.threadId, element.postId, element.removed)
+            );
           });
-          return { states: stateValues, data: dataValues };
+          return grabQueue;
         })
       )
-      .subscribe(e => callback(e.states, e.data));
+      .subscribe(e => {
+        callback(e);
+      });
   }
 
   send(wsMessage: WSMessage) {

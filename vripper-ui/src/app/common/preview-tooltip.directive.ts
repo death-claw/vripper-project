@@ -1,10 +1,10 @@
 import { AppPreviewComponent } from './preview-tooltip.component';
-import { Directive, Input, HostListener, ComponentRef, OnInit, ElementRef, NgZone } from '@angular/core';
+import { Directive, Input, HostListener, ComponentRef, OnInit, ElementRef, NgZone, OnDestroy } from '@angular/core';
 import { OverlayRef, Overlay, OverlayPositionBuilder } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 
 @Directive({ selector: '[appPreview]' })
-export class AppPreviewDirective implements OnInit {
+export class AppPreviewDirective implements OnInit, OnDestroy {
   private overlayRef: OverlayRef;
   tooltipPortal = new ComponentPortal(AppPreviewComponent);
 
@@ -21,12 +21,23 @@ export class AppPreviewDirective implements OnInit {
     .withPush(true)
     .withGrowAfterOpen(true)
     .withPositions([{
-      originX: 'start',
+      originX: 'center',
       originY: 'bottom',
-      overlayX: 'start',
+      overlayX: 'center',
       overlayY: 'top',
+    }, {
+      originX: 'center',
+      originY: 'top',
+      overlayX: 'center',
+      overlayY: 'bottom',
     }]);
     this.overlayRef = this.overlay.create({ positionStrategy });
+  }
+
+  ngOnDestroy() {
+    this.ngZone.run(() => {
+      this.overlayRef.dispose();
+    });
   }
 
   @HostListener('mouseenter')

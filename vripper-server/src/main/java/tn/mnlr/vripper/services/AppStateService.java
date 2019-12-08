@@ -29,6 +29,10 @@ public class AppStateService {
 
     private Map<String, AtomicInteger> runningPosts = new ConcurrentHashMap<>();
 
+    private Map<String, QueuedVGLink> grabQueue = new ConcurrentHashMap<>();
+
+    private PublishProcessor<QueuedVGLink> liveGrabQueue = PublishProcessor.create();
+
     private PublishProcessor<Image> liveImageUpdates = PublishProcessor.create();
 
     private PublishProcessor<Post> livePostsState = PublishProcessor.create();

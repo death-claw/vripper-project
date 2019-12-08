@@ -3,32 +3,24 @@
     <h2 class="no-wrap" mat-dialog-title>Scan</h2>
   </div>
   <mat-dialog-content fxFlex="grow" fxLayout="column">
-    <div *ngIf="!(hideScan | async)">
-      <form
-        #f="ngForm"
-        (ngSubmit)="submit(f)"
-        autocomplete="off"
-        fxLayout="row"
-        fxLayoutAlign="center center"
-        fxLayoutGap="20px"
-      >
-        <mat-form-field fxFlex="grow">
-          <input [(ngModel)]="input" matInput name="url" placeholder="Put a vipergirls.to link" required/>
-        </mat-form-field>
-        <div>
-          <button [disabled]="f.invalid" color="primary" mat-raised-button type="submit">Scan</button>
-        </div>
-      </form>
-    </div>
-    <ng-container *ngIf="threadId | async as thId">
-      <app-multi-post (done)="done($event)" *ngIf="thId != null" [threadId]="thId"
-                      style="height: 100%"></app-multi-post>
-    </ng-container>
+    <form #f="ngForm" autocomplete="off" style="height: 100%;">
+      <mat-form-field fxFlex="grow">
+        <textarea
+          [(ngModel)]="input"
+          mat-autosize="true"
+          matAutosizeMinRows="5"
+          matInput
+          name="url"
+          placeholder="Put each link in a new line"
+          required
+        ></textarea>
+      </mat-form-field>
+    </form>
+    <mat-progress-bar *ngIf="loading | async" mode="indeterminate"></mat-progress-bar>
   </mat-dialog-content>
-  <mat-dialog-actions align="end">
-    <button (click)="close()" mat-raised-button>Close</button>
-    <button (click)="addPosts()" *ngIf="threadId != null" color="primary" mat-raised-button type="submit">
-      Download
+  <mat-dialog-actions align="end" fxFlex="nogrow">
+    <button mat-dialog-close mat-raised-button>Close</button>
+    <button (click)="submit()" [disabled]="f.invalid || (loading | async)" color="primary" mat-raised-button>Scan
     </button>
   </mat-dialog-actions>
 </div>

@@ -1,15 +1,23 @@
-import { VRPostParse, VRThreadParseState } from './../common/vr-post-parse.model';
-import { Component, OnInit, NgZone, OnDestroy, Input, Output, EventEmitter, ChangeDetectionStrategy, AfterViewInit } from '@angular/core';
-import { MatSnackBar } from '@angular/material';
+import { finalize } from 'rxjs/operators';
+import { VRPostParse } from './../common/vr-post-parse.model';
+import {
+  Component,
+  OnInit,
+  NgZone,
+  OnDestroy,
+  EventEmitter,
+  ChangeDetectionStrategy,
+  AfterViewInit,
+  Inject
+} from '@angular/core';
+import { MatSnackBar, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { GridOptions } from 'ag-grid-community';
 import { UrlRendererComponent } from './url-renderer.component';
 import { WsHandler } from '../ws-handler';
-import { Subscription } from 'rxjs';
-import { WSMessage } from '../common/ws-message.model';
-import { CMD } from '../common/cmd.enum';
-import { WsConnectionService } from '../ws-connection.service';
+import { Subscription, concat, merge } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { ServerService } from '../server-service';
+import { GrabQueueState } from '../grab-queue/grab-queue.model';
 
 @Component({
   selector: 'app-multi-post',
@@ -18,13 +26,6 @@ import { ServerService } from '../server-service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
-
-  @Input()
-  threadId: string;
-
-  @Output()
-  done: EventEmitter<boolean> = new EventEmitter();
-
   gridOptions: GridOptions;
   websocketHandlerPromise: Promise<WsHandler>;
   subscription: Subscription;
@@ -33,12 +34,11 @@ export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
   constructor(
     private ngZone: NgZone,
     private _snackBar: MatSnackBar,
-    private wsConnectionService: WsConnectionService,
     private httpClient: HttpClient,
-    private serverService: ServerService
-  ) {
-    this.websocketHandlerPromise = this.wsConnectionService.getConnection();
-  }
+    private serverService: ServerService,
+    public dialogRef: MatDialogRef<MultiPostComponent>,
+    @Inject(MAT_DIALOG_DATA) public dialogData: GrabQueueState
+  ) {}
 
   ngAfterViewInit(): void {
     this.loading.emit(true);
@@ -86,89 +86,81 @@ export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
       getRowNodeId: data => data['url'],
       onGridReady: () => {
         this.gridOptions.api.sizeColumnsToFit();
-        this.connect();
+        this.grab();
       },
       onGridSizeChanged: () => this.gridOptions.api.sizeColumnsToFit(),
       onRowDataUpdated: () => this.gridOptions.api.sizeColumnsToFit()
     };
   }
 
-  ngOnDestroy() {
-    this.unsubscribe();
-  }
+  ngOnDestroy() {}
 
   search(event) {
     this.gridOptions.api.setQuickFilter(event);
   }
 
-  private unsubscribe() {
-    if (this.subscription != null) {
-      this.subscription.unsubscribe();
-    }
-    this.websocketHandlerPromise.then((handler: WsHandler) => {
-      handler.send(new WSMessage(CMD.THREAD_PARSING_UNSUB.toString()));
-    });
-  }
-
-  connect() {
-    this.websocketHandlerPromise.then((handler: WsHandler) => {
-      console.log('Connecting to thread parsing');
-      let count = 0;
-      let data_0;
-      this.subscription = handler.subscribeForThreadParsing(
-        (states: Array<VRThreadParseState>, data: Array<VRPostParse>) => {
-          if (data.length > 0 && data[0].threadId === this.threadId) {
-            this.gridOptions.api.updateRowData({ add: data });
-            count += data.length;
-            data_0 = data[0];
-          }
-
-          if (states.length > 0 && states[states.length - 1].state === 'END' && states[0].threadId === this.threadId) {
-            this.ngZone.run(() => {
-              this.loading.emit(false);
-              if (count === 0) {
-                this._snackBar.open('No posts were found', null, {
-                  duration: 5000
-                });
-                this.done.emit(true);
-              } else if (count === 1) {
-                this.addPosts(
-                  [data_0].map(e => ({
-                    threadId: e.threadId,
-                    postId: e.postId
-                  }))
-                );
-                this.done.emit(true);
-              }
-            });
-          }
-        }
-      );
-      handler.send(new WSMessage(CMD.THREAD_PARSING_SUB.toString(), this.threadId));
-    });
-  }
-
   submit() {
+    this.loading.emit(true);
     const data = (<VRPostParse[]>this.gridOptions.api.getSelectedRows()).map(e => ({
       postId: e.postId,
-      threadId: this.threadId
+      threadId: this.dialogData.threadId
     }));
-    this.addPosts(data);
+
+    merge(
+      this.httpClient.post(this.serverService.baseUrl + '/post/add', data),
+      this.httpClient.post(this.serverService.baseUrl + '/grab/remove', { url: this.dialogData.link })
+    )
+      .pipe(finalize(() => {
+        this.dialogRef.close();
+        this.loading.emit(false);
+      }))
+      .subscribe(
+        () => {},
+        error => {
+          this._snackBar.open(error.error, null, {
+            duration: 5000
+          });
+        }
+      );
   }
 
-  addPosts(data: { postId: string; threadId: string }[]) {
-    this.httpClient.post(this.serverService.baseUrl + '/post/add', data).subscribe(
-      () => {
-        this._snackBar.open('Adding posts to queue', null, {
-          duration: 5000
-        });
-        this.done.emit();
-      },
-      error => {
-        this._snackBar.open(error.error, null, {
-          duration: 5000
-        });
-      }
-    );
+  grab() {
+    this.httpClient
+      .get<VRPostParse[]>(this.serverService.baseUrl + '/grab/' + this.dialogData.threadId)
+      .pipe(finalize(() => this.loading.emit(false)))
+      .subscribe(
+        data => {
+          this.gridOptions.api.updateRowData({ add: data });
+        },
+        error => {
+          this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+            duration: 5000
+          });
+        }
+      );
+  }
+
+  // removeFromQueue() {
+  //   this.httpClient.post(this.serverService.baseUrl + '/grab/remove', { url: this.dialogData.link }).subscribe(
+  //     () => {},
+  //     error => {
+  //       this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+  //         duration: 5000
+  //       });
+  //     }
+  //   );
+  // }
+
+  // addPosts(data: { postId: string; threadId: string }[]) {
+  //   this.httpClient.post(this.serverService.baseUrl + '/post/add', data).subscribe(() => {
+  //     this._snackBar.open('Adding to download queue', null, {
+  //       duration: 5000
+  //     });
+  //     this.dialogRef.close();
+  //   });
+  // }
+
+  onNoClick() {
+    this.dialogRef.close();
   }
 }

@@ -14,7 +14,6 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.entities.mixin.ui.ImageUIMixin;
@@ -56,10 +55,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private Map<String, Disposable> postsSubscriptions = new ConcurrentHashMap<>();
     private Map<String, Disposable> postDetailsSubscriptions = new ConcurrentHashMap<>();
-    private Map<String, Disposable> vrPostParserSubscriptions = new ConcurrentHashMap<>();
     private Map<String, Disposable> stateSubscriptions = new ConcurrentHashMap<>();
     private Map<String, Disposable> downloadSpeedSubscriptions = new ConcurrentHashMap<>();
     private Map<String, Disposable> userSubscriptions = new ConcurrentHashMap<>();
+    private Map<String, Disposable> grabQueueSubscriptions = new ConcurrentHashMap<>();
 
     private Map<String, Future<Void>> threadParseRequests = new ConcurrentHashMap<>();
 
@@ -71,6 +70,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
         WSMessage wsMessage = om.readValue(message.getPayload(), WSMessage.class);
         WSMessage.CMD cmd = WSMessage.CMD.valueOf(wsMessage.getCmd());
         switch (cmd) {
+            case GRAB_QUEUE_SUB:
+                subscribeForGrabQueue(session);
+                break;
             case GLOBAL_STATE_SUB:
                 subscribeForGlobalState(session);
                 break;
@@ -83,20 +85,12 @@ public class WebSocketHandler extends TextWebSocketHandler {
             case POSTS_SUB:
                 subscribeForPosts(session);
                 break;
-            case THREAD_PARSING_SUB:
-                subscribeForThreadParsing(session, wsMessage.getPayload());
-                break;
             case POST_DETAILS_SUB:
                 subscribeForPostDetails(session, wsMessage.getPayload());
                 break;
             case POST_DETAILS_UNSUB:
                 logger.debug(String.format("Client %s unsubscribed from post details", session.getId()));
                 Optional.ofNullable(postDetailsSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
-                break;
-            case THREAD_PARSING_UNSUB:
-                logger.debug(String.format("Client %s unsubscribed from thread parsing", session.getId()));
-                Optional.ofNullable(vrPostParserSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
-                Optional.ofNullable(threadParseRequests.remove(session.getId())).ifPresent(d -> d.cancel(true));
                 break;
             case POSTS_UNSUB:
                 logger.debug(String.format("Client %s unsubscribed from posts", session.getId()));
@@ -113,6 +107,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
             case USER_UNSUB:
                 logger.debug(String.format("Client %s unsubscribed from user info", session.getId()));
                 Optional.ofNullable(userSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
+                break;
+            case GRAB_QUEUE_UNSUB:
+                logger.debug(String.format("Client %s unsubscribed from grab queue", session.getId()));
+                Optional.ofNullable(grabQueueSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
                 break;
         }
     }
@@ -220,30 +218,30 @@ public class WebSocketHandler extends TextWebSocketHandler {
         );
     }
 
-    private void subscribeForThreadParsing(WebSocketSession session, String threadId) {
+    private void subscribeForGrabQueue(WebSocketSession session) {
 
-        logger.debug(String.format("Client %s subscribed for thread parsing with threadId = %s", session.getId(), threadId));
-        if (vrPostParserSubscriptions.containsKey(session.getId())) {
-            vrPostParserSubscriptions.get(session.getId()).dispose();
+        logger.debug(String.format("Client %s subscribed for grab queue", session.getId()));
+        if (grabQueueSubscriptions.containsKey(session.getId())) {
+            grabQueueSubscriptions.get(session.getId()).dispose();
         }
 
-        if (threadParseRequests.containsKey(session.getId())) {
-            threadParseRequests.get(session.getId()).cancel(true);
+        try {
+            send(session, new TextMessage(om.writeValueAsString(appStateService.getGrabQueue().values())));
+        } catch (Exception e) {
+            logger.error("Unexpected error occurred", e);
         }
 
-        VRThreadParser vrThreadParser = postParser.createVRThreadParser(threadId);
-
-        vrPostParserSubscriptions.put(session.getId(), vrThreadParser.getPostPublishProcessor()
-                .onBackpressureBuffer()
-                .observeOn(Schedulers.io())
-                .buffer(200)
-                .filter(e -> !e.isEmpty())
-                .map(om::writeValueAsString)
-                .map(TextMessage::new)
-                .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))
+        grabQueueSubscriptions.put(session.getId(),
+                appStateService.getLiveGrabQueue()
+                        .onBackpressureBuffer()
+                        .observeOn(Schedulers.io())
+                        .buffer(2000, TimeUnit.MILLISECONDS, 200)
+                        .filter(e -> !e.isEmpty())
+                        .map(e -> e.stream().distinct().collect(Collectors.toList()))
+                        .map(om::writeValueAsString)
+                        .map(TextMessage::new)
+                        .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))
         );
-
-        threadParseRequests.put(session.getId(), VripperApplication.commonExecutor.submit(vrThreadParser::parse));
     }
 
     private void subscribeForPostDetails(WebSocketSession session, String postId) {
@@ -295,7 +293,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         Optional.ofNullable(stateSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
         Optional.ofNullable(downloadSpeedSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
         Optional.ofNullable(userSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
-        Optional.ofNullable(vrPostParserSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
+        Optional.ofNullable(grabQueueSubscriptions.remove(session.getId())).ifPresent(Disposable::dispose);
         Optional.ofNullable(threadParseRequests.remove(session.getId())).ifPresent(d -> d.cancel(true));
 
         logger.debug(String.format("Connection closed for client id: %s", session.getId()));
@@ -318,10 +316,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
             GLOBAL_STATE_UNSUB,
             SPEED_SUB,
             SPEED_UNSUB,
-            THREAD_PARSING_SUB,
-            THREAD_PARSING_UNSUB,
             USER_SUB,
-            USER_UNSUB
+            USER_UNSUB,
+            GRAB_QUEUE_SUB,
+            GRAB_QUEUE_UNSUB
         }
     }
 

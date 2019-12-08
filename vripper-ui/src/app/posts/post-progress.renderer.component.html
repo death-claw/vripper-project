@@ -19,7 +19,11 @@
       >
         <div class="checkbox" fxFlex="nogrow" style="width: 5px; height: 100%;"></div>
         <span class="row-text" fxFlex="grow" fxLayout="row" fxLayoutAlign="space-between center" fxLayoutGap="20px">
-          <span [title]="postState.title">{{ postState.title }}</span>
+          <span [title]="postState.title">
+            <a (click)="goTo()" [appPreview]="postState.previews" href="javascript:void(0)">{{
+              postState.title
+            }}</a></span
+          >
           <span [title]="postState.done + '/' + postState.total + ' from ' + postState.hosts"
           >{{ postState.done + '/' + postState.total }} from {{ postState.hosts }}</span
           >
@@ -39,7 +43,8 @@
         </mat-menu>
       </div>
       <div class="progress-bar" color="accent" style="position: absolute; width: 100%; top: 37px; padding: 0 10px">
-        <mat-progress-bar [value]="postState.progress" color="primary" mode="determinate"></mat-progress-bar>
+        <mat-progress-bar *ngIf="(loaded | async)" [value]="postState.progress" color="primary"
+                          mode="determinate"></mat-progress-bar>
       </div>
     </div>
   </ng-container>
