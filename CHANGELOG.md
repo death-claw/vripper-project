@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.5.1] - 2019-12-09
+### Changed
+- Disable download button when nothing selected in Link collector grab menu
+### Added
+- Add hosts column in Link collector grab menu
+
 ## [2.5.0] - 2019-12-08
 ### Changed
 - Change loading screen
