@@ -20,6 +20,8 @@
   </mat-dialog-content>
   <mat-dialog-actions align="end" fxFlex="nogrow">
     <button (click)="onNoClick()" mat-raised-button>Close</button>
-    <button (click)="submit()" color="primary" mat-raised-button>Download</button>
+    <button (click)="submit()" [disabled]="(selectedRowsCount | async) === 0" color="primary" mat-raised-button>
+      Download
+    </button>
   </mat-dialog-actions>
 </div>

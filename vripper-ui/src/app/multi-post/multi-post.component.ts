@@ -11,10 +11,10 @@ import {
   Inject
 } from '@angular/core';
 import { MatSnackBar, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
-import { GridOptions } from 'ag-grid-community';
+import { GridOptions, RowNode } from 'ag-grid-community';
 import { UrlRendererComponent } from './url-renderer.component';
 import { WsHandler } from '../ws-handler';
-import { Subscription, concat, merge } from 'rxjs';
+import { Subscription, concat, merge, BehaviorSubject, Subject } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { ServerService } from '../server-service';
 import { GrabQueueState } from '../grab-queue/grab-queue.model';
@@ -39,6 +39,8 @@ export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
     public dialogRef: MatDialogRef<MultiPostComponent>,
     @Inject(MAT_DIALOG_DATA) public dialogData: GrabQueueState
   ) {}
+
+  selectedRowsCount: Subject<number> = new BehaviorSubject(0);
 
   ngAfterViewInit(): void {
     this.loading.emit(true);
@@ -67,6 +69,11 @@ export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
           field: 'url',
           cellClass: 'no-padding',
           cellRenderer: 'urlCellRenderer'
+        },
+        {
+          headerName: 'Hosts',
+          field: 'hosts',
+          cellClass: 'no-padding'
         }
       ],
       defaultColDef: {
@@ -89,8 +96,13 @@ export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
         this.grab();
       },
       onGridSizeChanged: () => this.gridOptions.api.sizeColumnsToFit(),
-      onRowDataUpdated: () => this.gridOptions.api.sizeColumnsToFit()
+      onRowDataUpdated: () => this.gridOptions.api.sizeColumnsToFit(),
+      onSelectionChanged: () => this.onSelectionChange(this.gridOptions.api.getSelectedNodes())
     };
+  }
+
+  onSelectionChange(data: RowNode[]) {
+    this.selectedRowsCount.next(data.length);
   }
 
   ngOnDestroy() {}
@@ -139,26 +151,6 @@ export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
         }
       );
   }
-
-  // removeFromQueue() {
-  //   this.httpClient.post(this.serverService.baseUrl + '/grab/remove', { url: this.dialogData.link }).subscribe(
-  //     () => {},
-  //     error => {
-  //       this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
-  //         duration: 5000
-  //       });
-  //     }
-  //   );
-  // }
-
-  // addPosts(data: { postId: string; threadId: string }[]) {
-  //   this.httpClient.post(this.serverService.baseUrl + '/post/add', data).subscribe(() => {
-  //     this._snackBar.open('Adding to download queue', null, {
-  //       duration: 5000
-  //     });
-  //     this.dialogRef.close();
-  //   });
-  // }
 
   onNoClick() {
     this.dialogRef.close();

@@ -14,8 +14,9 @@ public class VRPostState {
     private int imageCount;
     private String url;
     private List<String> previews;
+    private String hosts;
 
-    VRPostState(String threadId, String postId, int number, String title, int imageCount, String url, List<String> previews) {
+    VRPostState(String threadId, String postId, int number, String title, int imageCount, String url, List<String> previews, String hosts) {
         this.threadId = threadId;
         this.postId = postId;
         this.number = number;
@@ -23,5 +24,6 @@ public class VRPostState {
         this.imageCount = imageCount;
         this.previews = previews;
         this.url = url;
+        this.hosts = hosts;
     }
 }

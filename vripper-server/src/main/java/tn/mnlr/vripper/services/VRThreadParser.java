@@ -15,16 +15,17 @@ import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.PostParseException;
+import tn.mnlr.vripper.host.Host;
 
 import javax.xml.parsers.SAXParserFactory;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import static tn.mnlr.vripper.services.PostParser.VR_API;
 
@@ -44,12 +45,14 @@ public class VRThreadParser {
     private final String threadId;
     private final ConnectionManager cm;
     private final VipergirlsAuthService vipergirlsAuthService;
+    private final List<Host> hosts;
 
 
-    VRThreadParser(String threadId, ConnectionManager cm, VipergirlsAuthService vipergirlsAuthService) {
+    VRThreadParser(String threadId, ConnectionManager cm, VipergirlsAuthService vipergirlsAuthService, List<Host> hosts) {
         this.threadId = threadId;
         this.cm = cm;
         this.vipergirlsAuthService = vipergirlsAuthService;
+        this.hosts = hosts;
     }
 
     public Void parse() throws PostParseException {
@@ -64,7 +67,7 @@ public class VRThreadParser {
             throw new PostParseException(e);
         }
 
-        VRThreadHandler handler = new VRThreadHandler(threadId, postPublishProcessor);
+        VRThreadHandler handler = new VRThreadHandler(threadId, postPublishProcessor, hosts);
         AtomicReference<Throwable> thr = new AtomicReference<>();
         logger.debug(String.format("Requesting %s", httpGet));
         Failsafe.with(retryPolicy)
@@ -98,17 +101,20 @@ class VRThreadHandler extends DefaultHandler {
 
     private final String threadId;
     private final ReplayProcessor<VRPostState> vrPostPublishProcessor;
+    private final List<Host> supportedHosts;
+    private final Map<Host, AtomicInteger> hostMap = new HashMap<>();
+    private List<String> previews = new ArrayList<>();
     private String threadTitle;
     private String postId;
     private String postTitle;
     private int imageCount;
     private int postCounter;
     private int previewCounter = 0;
-    private List<String> previews = new ArrayList<>();
 
-    VRThreadHandler(String threadId, ReplayProcessor<VRPostState> vrPostPublishProcessor) {
+    VRThreadHandler(String threadId, ReplayProcessor<VRPostState> vrPostPublishProcessor, List<Host> supportedHosts) {
         this.vrPostPublishProcessor = vrPostPublishProcessor;
         this.threadId = threadId;
+        this.supportedHosts = supportedHosts;
     }
 
     @Override
@@ -129,8 +135,12 @@ class VRThreadHandler extends DefaultHandler {
                 postTitle = Optional.ofNullable(attributes.getValue("title")).map(e -> e.trim().isEmpty() ? null : e.trim()).orElse(threadTitle);
                 break;
             case "image":
+                Optional.ofNullable(attributes.getValue("main_url"))
+                        .map(String::trim)
+                        .flatMap(mainUrl -> supportedHosts.stream().filter(host -> host.isSupported(mainUrl)).findFirst())
+                        .ifPresent(host -> Optional.ofNullable(hostMap.get(host)).ifPresentOrElse(AtomicInteger::incrementAndGet, () -> hostMap.put(host, new AtomicInteger(0))));
                 if (previewCounter++ < 4) {
-                    Optional.ofNullable(attributes.getValue("thumb_url")).map(String::trim).ifPresent(thumbUrl -> previews.add(thumbUrl));
+                    Optional.ofNullable(attributes.getValue("thumb_url")).map(String::trim).ifPresent(previews::add);
                 }
                 break;
         }
@@ -147,11 +157,13 @@ class VRThreadHandler extends DefaultHandler {
                         postTitle,
                         imageCount,
                         String.format("https://vipergirls.to/threads/%s/?p=%s&viewfull=1#post%s", threadId, postId, postId),
-                        previews
+                        previews,
+                        hostMap.entrySet().stream().map(e -> e.getKey().getHost() + " (" + e.getValue().get() + ")").collect(Collectors.joining(", "))
                 ));
             }
             previewCounter = 0;
             previews = new ArrayList<>();
+            hostMap.clear();
         }
     }
 

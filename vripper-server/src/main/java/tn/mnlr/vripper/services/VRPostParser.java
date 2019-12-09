@@ -104,21 +104,17 @@ class VRPostHandler extends DefaultHandler {
     private static final Logger logger = LoggerFactory.getLogger(VRPostHandler.class);
 
     private final List<Host> supportedHosts;
-
     private final String threadId;
     private final String postId;
+    private List<Image> images = new ArrayList<>();
+    private List<String> previews = new ArrayList<>();
     private String threadTitle;
-
+    private String postTitle;
+    private String forum;
     private int previewCounter = 0;
     private int index = 0;
-
-    private String postTitle;
     private int imageCount;
 
-    private String forum;
-
-    private List<String> previews = new ArrayList<>();
-    private List<Image> images = new ArrayList<>();
     @Getter
     private Post parsedPost;
 
@@ -149,7 +145,7 @@ class VRPostHandler extends DefaultHandler {
             case "image":
                 index++;
                 if (previewCounter++ < 4) {
-                    Optional.ofNullable(attributes.getValue("thumb_url")).map(String::trim).ifPresent(thumbUrl -> previews.add(thumbUrl));
+                    Optional.ofNullable(attributes.getValue("thumb_url")).map(String::trim).ifPresent(previews::add);
                 }
 
                 String mainUrl = Optional.ofNullable(attributes.getValue("main_url")).map(String::trim).orElse(null);

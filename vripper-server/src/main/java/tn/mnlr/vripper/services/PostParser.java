@@ -77,6 +77,6 @@ public class PostParser {
     }
 
     public VRThreadParser createVRThreadParser(String threadId) {
-        return new VRThreadParser(threadId, cm, vipergirlsAuthService);
+        return new VRThreadParser(threadId, cm, vipergirlsAuthService, supportedHosts);
     }
 }
