@@ -1,3 +1,4 @@
+import { environment } from 'src/environments/environment';
 import { MatDialog } from '@angular/material';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, Renderer2 } from '@angular/core';
@@ -6,6 +7,7 @@ import { tap } from 'rxjs/operators';
 import { ScanComponent } from './scan/scan.component';
 import { Observable } from 'rxjs';
 import { BreakpointState, Breakpoints, BreakpointObserver } from '@angular/cdk/layout';
+import { Title } from '@angular/platform-browser';
 
 @Injectable()
 export class AppService {
@@ -14,7 +16,10 @@ export class AppService {
     private serverService: ServerService,
     public dialog: MatDialog,
     private breakpointObserver: BreakpointObserver,
-  ) {}
+    private titleService: Title
+  ) {
+    this.titleService.setTitle('VRipper ' + environment.version);
+  }
 
   darkTheme = false;
   _renderer: Renderer2;

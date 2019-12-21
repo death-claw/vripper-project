@@ -8,7 +8,7 @@
   "license": "ISC",
   "build": {
     "appId": "tn.mnlr.vripper",
-    "productName": "V Ripper",
+    "productName": "VRipper",
     "files": [
       "**/*",
       "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
