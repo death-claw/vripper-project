@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.7.1] - 2019-12-21
+### Added
+- Add version to title bar
+
 ## [2.7.0] - 2019-12-21
 ### Changed
 - Add missing icon
