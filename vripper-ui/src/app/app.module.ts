@@ -38,6 +38,8 @@ import { SelectionService } from './selection-service';
 import { ToolbarComponent } from './toolbar/toolbar.component';
 import { GrabQueueComponent } from './grab-queue/grab-queue.component';
 import { UrlGrabRendererComponent } from './grab-queue/url-renderer.component';
+import { GalleryModule } from '@ks89/angular-modal-gallery';
+import { GalleryComponent } from './gallery/gallery.component';
 
 @NgModule({
   declarations: [
@@ -60,7 +62,8 @@ import { UrlGrabRendererComponent } from './grab-queue/url-renderer.component';
     StatusBarComponent,
     ToolbarComponent,
     GrabQueueComponent,
-    PostContextMenuComponent
+    PostContextMenuComponent,
+    GalleryComponent
   ],
   entryComponents: [
     PostDetailComponent,
@@ -69,7 +72,8 @@ import { UrlGrabRendererComponent } from './grab-queue/url-renderer.component';
     AppPreviewComponent,
     ScanComponent,
     MultiPostComponent,
-    PostContextMenuComponent
+    PostContextMenuComponent,
+    GalleryComponent
   ],
   imports: [
     BrowserAnimationsModule,
@@ -86,7 +90,8 @@ import { UrlGrabRendererComponent } from './grab-queue/url-renderer.component';
       UrlRendererComponent,
       UrlGrabRendererComponent
     ]),
-    OverlayModule
+    OverlayModule,
+    GalleryModule.forRoot()
   ],
   providers: [
     AppService,

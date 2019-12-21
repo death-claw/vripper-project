@@ -1,3 +1,4 @@
+import { GalleryComponent } from './../gallery/gallery.component';
 import { ServerService } from './../server-service';
 import { HttpClient } from '@angular/common/http';
 import { ElectronService } from 'ngx-electron';
@@ -17,7 +18,7 @@ import { RemoveResponse } from '../common/remove-response.model';
 @Component({
   selector: 'app-post-ctx-menu',
   template: `
-    <mat-card>
+    <mat-card class="mat-elevation-z4">
       <mat-action-list>
         <button
           (click)="restart()"
@@ -46,6 +47,10 @@ import { RemoveResponse } from '../common/remove-response.model';
         <button (click)="seeDetails()" mat-list-item>
           <mat-icon>list</mat-icon>
           <span>Files</span>
+        </button>
+        <button (click)="openGallery()" mat-list-item>
+          <mat-icon>photo_library</mat-icon>
+          <span>View Photos</span>
         </button>
         <button (click)="open()" *ngIf="electronService.isElectronApp" mat-list-item>
           <mat-icon>open_in_new</mat-icon>
@@ -157,6 +162,33 @@ export class PostContextMenuComponent {
     this.contextMenuService.closePostCtxtMenu();
     this.ngZone.run(() => {
       const dialogRef = this.dialog.open(PostDetailComponent, {
+        width: '90%',
+        height: '90%',
+        maxWidth: '100vw',
+        maxHeight: '100vh',
+        data: this.postState
+      });
+
+      const smallDialogSubscription = this.isExtraSmall.subscribe(result => {
+        if (result.matches) {
+          dialogRef.updateSize('100%', '100%');
+        } else {
+          dialogRef.updateSize('90%', '90%');
+        }
+      });
+ 
+      dialogRef.afterClosed().subscribe(() => {
+        if (smallDialogSubscription != null) {
+          smallDialogSubscription.unsubscribe();
+        }
+      });
+    });
+  }
+
+  openGallery() {
+    this.contextMenuService.closePostCtxtMenu();
+    this.ngZone.run(() => {
+      const dialogRef = this.dialog.open(GalleryComponent, {
         width: '90%',
         height: '90%',
         maxWidth: '100vw',

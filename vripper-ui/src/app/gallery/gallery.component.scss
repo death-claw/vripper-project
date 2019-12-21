@@ -1,0 +1,32 @@
+.container {
+  height: 100%;
+}
+
+.masonry {
+  display: flex;
+  flex-flow: row wrap;
+  margin-left: -8px;
+  width: 100%;
+}
+
+.masonry-brick {
+  flex: auto;
+  height: 250px;
+  min-width: 150px;
+  margin: 0 8px 8px 0;
+}
+
+img {
+  object-fit: cover;
+  height: 250px;
+  width: 250px;
+}
+
+figure {
+  // background-image: url('http://localhost:8080/image/56661996/001_0001.jpg');
+  // background-repeat: no-repeat;
+  // background-position: 50% 50%;
+  // background-size: 250px auto;
+  width: 250px;
+  height: 250px;
+}

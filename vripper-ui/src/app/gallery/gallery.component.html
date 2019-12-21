@@ -1,0 +1,26 @@
+<div class="dialog-container" fxLayout="column" style="height: 100%;">
+  <div fxFlex="nogrow">
+    <h2 class="no-wrap" mat-dialog-title>{{ dialogData.title }}</h2>
+  </div>
+  <mat-dialog-content fxFlex="grow">
+    <div class="container">
+      <div class="masonry ">
+        <ng-container *ngFor="let img of images | async">
+          <figure class="masonry-brick ">
+            <img (click)="openImageModalRowDescription(img)" [src]="img.modal.img"/>
+          </figure>
+        </ng-container>
+      </div>
+      <ks-modal-gallery
+        [dotsConfig]="{ visible: false }"
+        [id]="0"
+        [modalImages]="images | async"
+        [plainGalleryConfig]="customPlainGalleryRowDescConfig"
+        [previewConfig]="{ visible: false }"
+      ></ks-modal-gallery>
+    </div>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end" fxFlex="nogrow">
+    <button mat-dialog-close mat-raised-button>Close</button>
+  </mat-dialog-actions>
+</div>
