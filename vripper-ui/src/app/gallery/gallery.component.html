@@ -7,7 +7,7 @@
       <div class="masonry ">
         <ng-container *ngFor="let img of images | async">
           <figure class="masonry-brick ">
-            <img (click)="openImageModalRowDescription(img)" [src]="img.modal.img"/>
+            <img (click)="openImageModalRowDescription(img)" [src]="img.plain.img"/>
           </figure>
         </ng-container>
       </div>

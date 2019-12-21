@@ -5,7 +5,6 @@ import { ServerService } from '../server-service';
 import { PostState } from '../posts/post-state.model';
 import { Image, PlainGalleryConfig, PlainGalleryStrategy, AdvancedLayout } from '@ks89/angular-modal-gallery';
 import { ImageData } from '@ks89/angular-modal-gallery/lib/model/image.class';
-import { tap } from 'rxjs/operators';
 import { BehaviorSubject, Subject } from 'rxjs';
 
 @Component({
@@ -58,15 +57,19 @@ export class GalleryComponent implements OnInit, OnDestroy {
   refresh() {
     this.httpClient
       .get<ImageData[]>(this.serverService.baseUrl + '/gallery/' + this.dialogData.postId)
-      .pipe(
-        tap(v =>
-          v.forEach(i => (i.img = this.serverService.baseUrl + '/image/' + this.dialogData.postId + '/' + i.img))
-        )
-      )
       .subscribe(
         response => {
           this.ngZone.run(() => {
-            this._images = response.map((v, i) => new Image(i, v));
+            const images = response.map((v, i) => new Image(i, v, v));
+            images.forEach(i => {
+              const cloneModal = {...i.modal};
+              const clonePlain = {...i.plain};
+              cloneModal.img = this.serverService.baseUrl + '/image/' + this.dialogData.postId + '/' + cloneModal.img;
+              clonePlain.img = this.serverService.baseUrl + '/image/thumb/' + this.dialogData.postId + '/' + clonePlain.img;
+              i.modal = cloneModal;
+              i.plain = clonePlain;
+            });
+            this._images = images;
             this.images.next(this._images);
           });
         },
