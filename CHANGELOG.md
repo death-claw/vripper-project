@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.6.0] - 2019-12-21
+### Changed
+- Disable download button when nothing selected in Link collector grab menu
+- Better quality app icon
+- Implement context menu on download tab
+- Add stop remove and start button to context menu
+- Link will not be removed automatically from link collector tab
+- Some UI fixes
+
 ## [2.5.1] - 2019-12-09
 ### Changed
 - Disable download button when nothing selected in Link collector grab menu
