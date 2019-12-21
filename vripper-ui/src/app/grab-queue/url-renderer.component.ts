@@ -14,9 +14,13 @@ import { HttpClient } from '@angular/common/http';
   selector: 'app-url-cell-grab',
   template: `
     <div fxLayout="row" fxLayoutAlign="space-between center">
-      <span><a (click)="goTo()" href="javascript:void(0)">{{ grabQueue.link }}</a></span>
+      <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+        ><a (click)="goTo()" href="javascript:void(0)">{{ grabQueue.link }}</a></span
+      >
       <span>
-        <button style="margin-right: 5px" (click)="grab()" color="primary" mat-mini-fab><mat-icon>get_app</mat-icon></button>
+        <button style="margin-right: 5px" (click)="grab()" color="primary" mat-mini-fab>
+          <mat-icon>get_app</mat-icon>
+        </button>
         <button (click)="remove()" color="primary" mat-mini-fab><mat-icon>delete</mat-icon></button>
       </span>
     </div>

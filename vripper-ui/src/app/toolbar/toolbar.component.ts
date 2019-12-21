@@ -101,7 +101,9 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
           this.postsDataService.remove(data);
         },
         error => {
-          console.error(error);
+          this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+            duration: 5000
+          });
         }
       );
   }
@@ -116,7 +118,9 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
         });
       },
       error => {
-        console.error(error);
+        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+          duration: 5000
+        });
       }
     );
   }
@@ -131,7 +135,9 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
         });
       },
       error => {
-        console.error(error);
+        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+          duration: 5000
+        });
       }
     );
   }

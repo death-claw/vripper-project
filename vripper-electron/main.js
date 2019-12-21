@@ -86,7 +86,6 @@ getPort().then(port => {
   }
   vripperServer = spawn(javaBinPath, [
     "-Xms256m",
-    "-Xmx1024m",
     "-Dvripper.server.port=" + port,
     "-jar",
     jarPath
@@ -136,6 +135,7 @@ if (!gotTheLock) {
       })
       .catch((error) => {
         // Terminate immediately
+        console.log(error);
         vripperServer.kill('SIGKILL');
         terminated = true;
         app.quit();

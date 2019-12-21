@@ -56,7 +56,7 @@ public class SettingsRestEndpoint {
             } catch (ValidationException e) {
                 return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
-                        .body(new Response(e.getMessage()));
+                        .body(e.getMessage());
             }
             this.settings.setDownloadPath(settings.getDownloadPath());
             this.settings.setMaxThreads(settings.getMaxThreads());

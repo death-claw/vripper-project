@@ -54,9 +54,7 @@ public class PersistenceService {
         om.addMixIn(Post.class, PostPersistanceMixin.class);
         subscription = processor
                 .onBackpressureLatest()
-                .buffer(10, TimeUnit.SECONDS)
-                .filter(e -> !e.isEmpty())
-                .map(e -> e.get(0))
+                .throttleLatest(1, TimeUnit.SECONDS)
                 .doOnNext(this::persist)
                 .subscribe();
     }

@@ -18,6 +18,7 @@ export class GrabQueueComponent implements OnInit {
           field: 'link',
           sortable: true,
           sort: 'asc',
+          suppressMovable: true,
           cellRenderer: 'urlCellRenderer'
         }
       ],

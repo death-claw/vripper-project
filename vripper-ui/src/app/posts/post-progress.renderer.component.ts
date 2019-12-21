@@ -7,19 +7,15 @@ import {
   NgZone,
   ChangeDetectionStrategy,
   AfterViewInit,
-  EventEmitter
+  EventEmitter,
 } from '@angular/core';
 import { AgRendererComponent } from 'ag-grid-angular';
-import { Subscription, Observable, BehaviorSubject, Subject } from 'rxjs';
+import { Subscription, BehaviorSubject, Subject } from 'rxjs';
 import { WsHandler } from '../ws-handler';
-import { ICellRendererParams } from 'ag-grid-community';
+import { ICellRendererParams, RowNode, GridApi } from 'ag-grid-community';
 import { ElectronService } from 'ngx-electron';
-import { BreakpointState, Breakpoints, BreakpointObserver } from '@angular/cdk/layout';
-import { MatDialog, MatSnackBar } from '@angular/material';
-import { PostDetailComponent } from '../post-detail/post-detail.component';
-import { HttpClient } from '@angular/common/http';
-import { ServerService } from '../server-service';
-import { DownloadPath } from '../common/download-path.model';
+import { MatDialog } from '@angular/material';
+import { ContextMenuService } from '../ctxt-menu.service';
 
 @Component({
   selector: 'app-progress-cell',
@@ -32,16 +28,9 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
     private wsConnectionService: WsConnectionService,
     private zone: NgZone,
     public electronService: ElectronService,
-    private breakpointObserver: BreakpointObserver,
     public dialog: MatDialog,
-    private httpClient: HttpClient,
-    private serverService: ServerService,
-    private _snackBar: MatSnackBar
-  ) {
+    private contextMenuService: ContextMenuService) {
     this.websocketHandlerPromise = this.wsConnectionService.getConnection();
-    if (this.electronService.isElectronApp) {
-      this.fs = this.electronService.remote.require('fs');
-    }
   }
 
   websocketHandlerPromise: Promise<WsHandler>;
@@ -49,10 +38,10 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
   private postState: PostState;
   updatesSubscription: Subscription;
   expanded = false;
-  isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
-  fs;
   loaded: Subject<boolean> = new BehaviorSubject(false);
   loading;
+  node: RowNode;
+  gridApi: GridApi;
 
   trunc(value: number): number {
     return Math.trunc(value);
@@ -86,6 +75,8 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
   }
 
   agInit(params: ICellRendererParams): void {
+    this.node = params.node;
+    this.gridApi = params.api;
     this.postState = params.data;
   }
 
@@ -103,55 +94,9 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
     }
   }
 
-  seeDetails() {
-    const dialogRef = this.dialog.open(PostDetailComponent, {
-      width: '90%',
-      height: '90%',
-      maxWidth: '100vw',
-      maxHeight: '100vh',
-      data: this.postState
-    });
-
-    const smallDialogSubscription = this.isExtraSmall.subscribe(result => {
-      if (result.matches) {
-        dialogRef.updateSize('100%', '100%');
-      } else {
-        dialogRef.updateSize('90%', '90%');
-      }
-    });
-
-    dialogRef.afterClosed().subscribe(() => {
-      if (smallDialogSubscription != null) {
-        smallDialogSubscription.unsubscribe();
-      }
-    });
-  }
-
-  open() {
-    if (!this.electronService.isElectronApp) {
-      console.error('Cannot open downloader folder, not electron app');
-      return;
-    }
-    // Request the server to give the correct file location
-    this.httpClient.get<DownloadPath>(this.serverService.baseUrl + '/post/path/' + this.postState.postId).subscribe(
-      path => {
-        if (this.fs.existsSync(path.path)) {
-          this.electronService.shell.openItem(path.path);
-        } else {
-          if (this.postState.done <= 0) {
-            this._snackBar.open('Download has not been started yet for this post', null, {
-              duration: 5000
-            });
-          } else {
-            this._snackBar.open(path.path + ' does not exist, you probably removed it', null, {
-              duration: 5000
-            });
-          }
-        }
-      },
-      error => {
-        console.error(error);
-      }
-    );
+  context(event: MouseEvent) {
+    this.gridApi.getSelectedNodes().forEach(e => e.setSelected(false));
+    this.node.setSelected(true);
+    this.contextMenuService.openPostCtxtMenu(event, this.postState);
   }
 }

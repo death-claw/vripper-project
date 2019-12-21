@@ -6,6 +6,7 @@ import { WsConnectionService } from '../ws-connection.service';
 import { GridOptions } from 'ag-grid-community';
 import { PostProgressRendererComponent } from './post-progress.renderer.component';
 import { Subject } from 'rxjs';
+import { ContextMenuService } from '../ctxt-menu.service';
 
 @Component({
   selector: 'app-posts',
@@ -17,7 +18,8 @@ export class PostsComponent implements OnInit, OnDestroy, AfterViewInit {
     private wsConnection: WsConnectionService,
     private zone: NgZone,
     private selectionService: SelectionService,
-    private postsDataService: PostsDataService
+    private postsDataService: PostsDataService,
+    private contextMenuService: ContextMenuService
   ) {
     this.gridOptions = <GridOptions>{
       columnDefs: [
@@ -28,10 +30,12 @@ export class PostsComponent implements OnInit, OnDestroy, AfterViewInit {
           cellRenderer: 'progressCellRenderer',
           cellClass: 'no-padding',
           sort: 'asc',
+          suppressMovable: true,
           headerCheckboxSelection: true,
           headerCheckboxSelectionFilteredOnly: true
         }
       ],
+      rowBuffer: 200,
       rowHeight: 48,
       animateRows: true,
       rowSelection: 'multiple',
@@ -50,7 +54,8 @@ export class PostsComponent implements OnInit, OnDestroy, AfterViewInit {
       },
       onGridSizeChanged: () => this.gridOptions.api.sizeColumnsToFit(),
       onRowDataUpdated: () => this.gridOptions.api.sizeColumnsToFit(),
-      onSelectionChanged: () => this.selectionService.onSelectionChanged(this.gridOptions.api.getSelectedNodes())
+      onSelectionChanged: () => this.selectionService.onSelectionChanged(this.gridOptions.api.getSelectedNodes()),
+      onBodyScroll: () => this.contextMenuService.closePostCtxtMenu()
     };
   }
 

@@ -10,28 +10,33 @@ export class AppPreviewDirective implements OnInit, OnDestroy {
 
   @Input() appPreview: string[];
 
-  constructor(private overlayPositionBuilder: OverlayPositionBuilder,
+  constructor(
+    private overlayPositionBuilder: OverlayPositionBuilder,
     private elementRef: ElementRef,
     private overlay: Overlay,
-    private ngZone: NgZone) {}
+    private ngZone: NgZone
+  ) {}
 
   ngOnInit() {
     const positionStrategy = this.overlayPositionBuilder
-    .flexibleConnectedTo(this.elementRef)
-    .withPush(true)
-    .withGrowAfterOpen(true)
-    .withPositions([{
-      originX: 'center',
-      originY: 'bottom',
-      overlayX: 'center',
-      overlayY: 'top',
-    }, {
-      originX: 'center',
-      originY: 'top',
-      overlayX: 'center',
-      overlayY: 'bottom',
-    }]);
-    this.overlayRef = this.overlay.create({ positionStrategy });
+      .flexibleConnectedTo(this.elementRef)
+      .withPush(true)
+      .withGrowAfterOpen(true)
+      .withPositions([
+        {
+          originX: 'center',
+          originY: 'bottom',
+          overlayX: 'center',
+          overlayY: 'top'
+        },
+        {
+          originX: 'center',
+          originY: 'top',
+          overlayX: 'center',
+          overlayY: 'bottom'
+        }
+      ]);
+    this.overlayRef = this.overlay.create({ positionStrategy, scrollStrategy: this.overlay.scrollStrategies.close() });
   }
 
   ngOnDestroy() {

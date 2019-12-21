@@ -15,7 +15,8 @@ import {
     MatSnackBar,
     MatTabsModule,
     MatDividerModule,
-    MatChipsModule
+    MatChipsModule,
+    MatListModule
 } from '@angular/material';
 
 @NgModule({
@@ -34,7 +35,8 @@ import {
         MatSnackBarModule,
         MatTabsModule,
         MatDividerModule,
-        MatChipsModule
+        MatChipsModule,
+        MatListModule
     ],
     providers: [MatSnackBar]
 })

@@ -158,7 +158,7 @@ class VRThreadHandler extends DefaultHandler {
                         imageCount,
                         String.format("https://vipergirls.to/threads/%s/?p=%s&viewfull=1#post%s", threadId, postId, postId),
                         previews,
-                        hostMap.entrySet().stream().map(e -> e.getKey().getHost() + " (" + e.getValue().get() + ")").collect(Collectors.joining(", "))
+                        hostMap.entrySet().stream().filter(v -> v.getValue().get() > 0).map(e -> e.getKey().getHost() + " (" + e.getValue().get() + ")").collect(Collectors.joining(", "))
                 ));
             }
             previewCounter = 0;

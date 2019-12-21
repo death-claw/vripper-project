@@ -1,3 +1,5 @@
+import { ContextMenuService } from './ctxt-menu.service';
+import { PostContextMenuComponent } from './posts/post-context-menu.component';
 import { PostsDataService } from './posts-data.service';
 import { AppPreviewDirective } from './common/preview-tooltip.directive';
 import { WsConnectionService } from './ws-connection.service';
@@ -57,7 +59,8 @@ import { UrlGrabRendererComponent } from './grab-queue/url-renderer.component';
     ScanComponent,
     StatusBarComponent,
     ToolbarComponent,
-    GrabQueueComponent
+    GrabQueueComponent,
+    PostContextMenuComponent
   ],
   entryComponents: [
     PostDetailComponent,
@@ -65,7 +68,8 @@ import { UrlGrabRendererComponent } from './grab-queue/url-renderer.component';
     ConfirmDialogComponent,
     AppPreviewComponent,
     ScanComponent,
-    MultiPostComponent
+    MultiPostComponent,
+    PostContextMenuComponent
   ],
   imports: [
     BrowserAnimationsModule,
@@ -91,7 +95,8 @@ import { UrlGrabRendererComponent } from './grab-queue/url-renderer.component';
     ServerService,
     SharedService,
     SelectionService,
-    PostsDataService
+    PostsDataService,
+    ContextMenuService
   ],
   bootstrap: [AppComponent]
 })

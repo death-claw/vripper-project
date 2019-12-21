@@ -32,10 +32,13 @@ export class WsConnectionService {
         return this.wsHandler;
       }
       if (this.electronService.isElectronApp) {
-        this.electronService.ipcRenderer.send('get-port');
+        const portRequest = setInterval(() => {
+          this.electronService.ipcRenderer.send('get-port');
+        }, 1000);
 
         // wait for MainIPC
         this.electronService.ipcRenderer.once('port', (event, port) => {
+          clearInterval(portRequest);
           console.log('server running on port', port);
           this.serverService.baseUrl = 'http://localhost:' + port;
           this.tryConnect(resolve, reject);

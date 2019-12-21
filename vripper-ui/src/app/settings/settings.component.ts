@@ -57,7 +57,9 @@ export class SettingsComponent implements OnInit {
         this.desktopSettingsForm.reset(data);
       },
       error => {
-        console.error(error);
+        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+          duration: 5000
+        });
       }
     );
   }

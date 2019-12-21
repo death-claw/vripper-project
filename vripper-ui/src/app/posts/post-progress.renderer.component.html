@@ -1,4 +1,4 @@
-<div class="container" style="height: 100%; background-color: white">
+<div (contextmenu)="context($event)" class="container" style="height: 100%; background-color: white">
   <ng-container *ngIf="postState$ | async as postState">
     <div
       [ngClass]="{
@@ -28,19 +28,6 @@
           >{{ postState.done + '/' + postState.total }} from {{ postState.hosts }}</span
           >
         </span>
-        <button [matMenuTriggerFor]="menu" fxFlex="nogrow" mat-icon-button>
-          <mat-icon>more_vert</mat-icon>
-        </button>
-        <mat-menu #menu="matMenu">
-          <button (click)="seeDetails()" mat-menu-item>
-            <mat-icon>list</mat-icon>
-            <span>Files</span>
-          </button>
-          <button (click)="open()" *ngIf="electronService.isElectronApp" mat-menu-item>
-            <mat-icon>open_in_new</mat-icon>
-            <span>Download Location</span>
-          </button>
-        </mat-menu>
       </div>
       <div class="progress-bar" color="accent" style="position: absolute; width: 100%; top: 37px; padding: 0 10px">
         <mat-progress-bar *ngIf="(loaded | async)" [value]="postState.progress" color="primary"

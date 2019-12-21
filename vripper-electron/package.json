@@ -8,7 +8,7 @@
   "license": "ISC",
   "build": {
     "appId": "tn.mnlr.vripper",
-    "productName": "vripper",
+    "productName": "V Ripper",
     "files": [
       "**/*",
       "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
@@ -38,7 +38,7 @@
       }
     ],
     "win": {
-      "icon": "icon.png",
+      "icon": "icon.ico",
       "target": [
         "nsis"
       ]
@@ -62,7 +62,7 @@
       "target": [
         "dmg"
       ],
-      "icon": "icon.png"
+      "icon": "icon.icns"
     }
   },
   "scripts": {
@@ -77,7 +77,6 @@
     "axios": "^0.19.0",
     "cheerio": "^1.0.0-rc.3",
     "copy-dir": "^1.1.0",
-    "custom-electron-titlebar": "^3.0.10",
     "electron-context-menu": "^0.13.0",
     "get-port": "^5.0.0",
     "rimraf": "^2.6.3"

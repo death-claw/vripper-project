@@ -27,6 +27,7 @@ export class PostDetailComponent implements OnInit, OnDestroy {
           field: 'index',
           sortable: true,
           sort: 'asc',
+          suppressMovable: true,
           cellClass: 'col-white',
           width: 10
         },
@@ -34,6 +35,7 @@ export class PostDetailComponent implements OnInit, OnDestroy {
           headerName: 'URL',
           field: 'url',
           sortable: true,
+          suppressMovable: true,
           cellRenderer: 'progressCellRenderer',
           cellClass: 'no-padding'
         }

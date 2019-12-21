@@ -14,7 +14,7 @@ import { MatSnackBar, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { GridOptions, RowNode } from 'ag-grid-community';
 import { UrlRendererComponent } from './url-renderer.component';
 import { WsHandler } from '../ws-handler';
-import { Subscription, concat, merge, BehaviorSubject, Subject } from 'rxjs';
+import { Subscription, BehaviorSubject, Subject } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { ServerService } from '../server-service';
 import { GrabQueueState } from '../grab-queue/grab-queue.model';
@@ -54,6 +54,7 @@ export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
           field: 'number',
           cellClass: 'no-padding',
           maxWidth: 100,
+          suppressMovable: true,
           checkboxSelection: true,
           headerCheckboxSelection: true,
           headerCheckboxSelectionFilteredOnly: false,
@@ -62,17 +63,20 @@ export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
         {
           headerName: 'Title',
           field: 'title',
+          suppressMovable: true,
           cellClass: 'no-padding'
         },
         {
           headerName: 'URL',
           field: 'url',
           cellClass: 'no-padding',
+          suppressMovable: true,
           cellRenderer: 'urlCellRenderer'
         },
         {
           headerName: 'Hosts',
           field: 'hosts',
+          suppressMovable: true,
           cellClass: 'no-padding'
         }
       ],
@@ -118,18 +122,18 @@ export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
       threadId: this.dialogData.threadId
     }));
 
-    merge(
-      this.httpClient.post(this.serverService.baseUrl + '/post/add', data),
-      this.httpClient.post(this.serverService.baseUrl + '/grab/remove', { url: this.dialogData.link })
-    )
-      .pipe(finalize(() => {
-        this.dialogRef.close();
-        this.loading.emit(false);
-      }))
+    this.httpClient
+      .post(this.serverService.baseUrl + '/post/add', data)
+      .pipe(
+        finalize(() => {
+          this.dialogRef.close();
+          this.loading.emit(false);
+        })
+      )
       .subscribe(
         () => {},
         error => {
-          this._snackBar.open(error.error, null, {
+          this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
             duration: 5000
           });
         }
