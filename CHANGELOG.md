@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.7.0] - 2019-12-21
+### Changed
+- Add missing icon
+### Added
+- Add support for pixxxels
+
 ## [2.6.0] - 2019-12-21
 ### Changed
 - Disable download button when nothing selected in Link collector grab menu
