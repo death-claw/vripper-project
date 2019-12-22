@@ -38,8 +38,8 @@ import { SelectionService } from './selection-service';
 import { ToolbarComponent } from './toolbar/toolbar.component';
 import { GrabQueueComponent } from './grab-queue/grab-queue.component';
 import { UrlGrabRendererComponent } from './grab-queue/url-renderer.component';
-import { GalleryModule } from '@ks89/angular-modal-gallery';
 import { GalleryComponent } from './gallery/gallery.component';
+import { PhotoSwipeComponent } from './photo-swipe/photo-swipe.component';
 
 @NgModule({
   declarations: [
@@ -63,7 +63,8 @@ import { GalleryComponent } from './gallery/gallery.component';
     ToolbarComponent,
     GrabQueueComponent,
     PostContextMenuComponent,
-    GalleryComponent
+    GalleryComponent,
+    PhotoSwipeComponent
   ],
   entryComponents: [
     PostDetailComponent,
@@ -90,8 +91,7 @@ import { GalleryComponent } from './gallery/gallery.component';
       UrlRendererComponent,
       UrlGrabRendererComponent
     ]),
-    OverlayModule,
-    GalleryModule.forRoot()
+    OverlayModule
   ],
   providers: [
     AppService,

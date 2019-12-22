@@ -5,22 +5,17 @@
   <mat-dialog-content fxFlex="grow">
     <div class="container">
       <div class="masonry ">
-        <ng-container *ngFor="let img of images | async">
+        <ng-container *ngFor="let img of images | async; let i=index">
           <figure class="masonry-brick ">
-            <img (click)="openImageModalRowDescription(img)" [src]="img.plain.img"/>
+            <img (click)="openSlideshow(i)" [src]="img.thumb"/>
           </figure>
         </ng-container>
+        <app-photo-swipe #photoSwipe></app-photo-swipe>
       </div>
-      <ks-modal-gallery
-        [dotsConfig]="{ visible: false }"
-        [id]="0"
-        [modalImages]="images | async"
-        [plainGalleryConfig]="customPlainGalleryRowDescConfig"
-        [previewConfig]="{ visible: false }"
-      ></ks-modal-gallery>
     </div>
   </mat-dialog-content>
   <mat-dialog-actions align="end" fxFlex="nogrow">
+    <button (click)="refresh()" color="primary" mat-raised-button>Refresh</button>
     <button mat-dialog-close mat-raised-button>Close</button>
   </mat-dialog-actions>
 </div>

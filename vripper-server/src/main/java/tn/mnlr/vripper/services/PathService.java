@@ -41,13 +41,6 @@ public class PathService {
      * @return Sanitized local path string
      */
     public final String formatImageFileName(String imageName) {
-        int extensionIndex = imageName.lastIndexOf('.');
-        String fileName;
-        if (extensionIndex != -1) {
-            fileName = imageName.substring(0, extensionIndex);
-        } else {
-            fileName = imageName;
-        }
-        return sanitize(fileName);
+        return sanitize(imageName);
     }
 }

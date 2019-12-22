@@ -7,9 +7,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.services.AppStateService;
+import tn.mnlr.vripper.services.ThumbnailGenerator;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -35,6 +37,9 @@ public class ExecutionService {
 
     @Autowired
     private AppStateService appStateService;
+
+    @Autowired
+    private ThumbnailGenerator thumbnailGenerator;
 
     private final AtomicInteger threadCount = new AtomicInteger();
 
@@ -130,6 +135,7 @@ public class ExecutionService {
                             .onComplete(e -> {
                                 appStateService.doneDownloadJob(finalTake.getImage());
                                 logger.debug(String.format("Finished downloading %s", finalTake.getImage().getUrl()));
+                                VripperApplication.commonExecutor.submit(() -> thumbnailGenerator.getThumbnails().get(new ThumbnailGenerator.CacheKey(finalTake.getImage().getPostId(), finalTake.getImageFileData().getFileName())));
                                 synchronized (threadCount) {
                                     threadCount.decrementAndGet();
                                     running.remove(finalTake);

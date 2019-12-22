@@ -10,6 +10,7 @@ public class ImageFileData {
 
     private String pageUrl;
     private String imageName;
+    private String fileName;
     private String imageUrl;
     private HttpUriRequest imageRequest;
 }

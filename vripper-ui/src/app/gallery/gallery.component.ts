@@ -1,11 +1,16 @@
-import { Component, OnInit, ChangeDetectionStrategy, Inject, NgZone, OnDestroy } from '@angular/core';
+import { IImage, PhotoSwipeComponent } from './../photo-swipe/photo-swipe.component';
+import { Component, OnInit, ChangeDetectionStrategy, Inject, NgZone, OnDestroy, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatDialogRef, MAT_DIALOG_DATA, MatSnackBar } from '@angular/material';
 import { ServerService } from '../server-service';
 import { PostState } from '../posts/post-state.model';
-import { Image, PlainGalleryConfig, PlainGalleryStrategy, AdvancedLayout } from '@ks89/angular-modal-gallery';
-import { ImageData } from '@ks89/angular-modal-gallery/lib/model/image.class';
 import { BehaviorSubject, Subject } from 'rxjs';
+
+class Image extends IImage {
+  constructor(public src: string, public w: number, public h: number, public thumb: string) {
+    super(src, w, h);
+  }
+}
 
 @Component({
   selector: 'app-gallery',
@@ -25,62 +30,48 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   images: Subject<Image[]> = new BehaviorSubject([]);
   _images: Image[] = [];
-  interval;
 
-  customPlainGalleryRowDescConfig: PlainGalleryConfig = {
-    strategy: PlainGalleryStrategy.CUSTOM,
-    layout: new AdvancedLayout(-1, true)
-  };
-
-  openImageModalRowDescription(image: Image) {
-    const index: number = this.getCurrentIndexCustomLayout(image, this._images);
-    this.customPlainGalleryRowDescConfig = Object.assign({}, this.customPlainGalleryRowDescConfig, {
-      layout: new AdvancedLayout(index, true)
-    });
-  }
-
-  private getCurrentIndexCustomLayout(image: Image, images: Image[]): number {
-    return image ? images.indexOf(image) : -1;
-  }
+  @ViewChild('photoSwipe', { static: true }) photoSwipe: PhotoSwipeComponent;
 
   ngOnInit() {
     this.refresh();
-    this.interval = setInterval(() => this.refresh(), 5000);
   }
 
-  ngOnDestroy() {
-    if (this.interval != null) {
-      clearInterval(this.interval);
-    }
+  ngOnDestroy() {}
+
+  openSlideshow(index: number) {
+    this.photoSwipe.openGallery(this._images, { index: index, getThumbBoundsFn: this.getThumbBoundsFn, showHideOpacity: true });
+  }
+
+  getThumbBoundsFn(index: number) {
+    // See Options -> getThumbBoundsFn section of documentation for more info
+    const thumbnail = document.querySelectorAll('.masonry-brick img')[index],
+      pageYScroll = window.pageYOffset || document.documentElement.scrollTop,
+      rect = thumbnail.getBoundingClientRect();
+
+    return { x: rect.left, y: rect.top + pageYScroll, w: rect.width };
   }
 
   refresh() {
-    this.httpClient
-      .get<ImageData[]>(this.serverService.baseUrl + '/gallery/' + this.dialogData.postId)
-      .subscribe(
-        response => {
-          this.ngZone.run(() => {
-            const images = response.map((v, i) => new Image(i, v, v));
-            images.forEach(i => {
-              const cloneModal = {...i.modal};
-              const clonePlain = {...i.plain};
-              cloneModal.img = this.serverService.baseUrl + '/image/' + this.dialogData.postId + '/' + cloneModal.img;
-              clonePlain.img = this.serverService.baseUrl + '/image/thumb/' + this.dialogData.postId + '/' + clonePlain.img;
-              i.modal = cloneModal;
-              i.plain = clonePlain;
-            });
-            this._images = images;
-            this.images.next(this._images);
+    this.httpClient.get<Image[]>(this.serverService.baseUrl + '/gallery/' + this.dialogData.postId).subscribe(
+      response => {
+        this.ngZone.run(() => {
+          response.forEach(i => {
+            i.src = this.serverService.baseUrl + '/image/' + this.dialogData.postId + '/' + i.src;
+            i.thumb = this.serverService.baseUrl + '/image/thumb/' + this.dialogData.postId + '/' + i.thumb;
           });
-        },
-        error => {
-          this.ngZone.run(() => {
-            this.dialogRef.close();
-            this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
-              duration: 5000
-            });
+          this._images = response;
+          this.images.next(this._images);
+        });
+      },
+      error => {
+        this.ngZone.run(() => {
+          this.dialogRef.close();
+          this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+            duration: 5000
           });
-        }
-      );
+        });
+      }
+    );
   }
 }

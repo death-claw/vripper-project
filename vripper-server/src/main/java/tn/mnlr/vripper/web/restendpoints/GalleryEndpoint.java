@@ -1,13 +1,9 @@
 package tn.mnlr.vripper.web.restendpoints;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
-import org.imgscalr.Scalr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,17 +12,17 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.mnlr.vripper.services.PathService;
+import tn.mnlr.vripper.services.ThumbnailGenerator;
 
-import javax.annotation.PostConstruct;
 import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+import java.awt.*;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -35,37 +31,11 @@ public class GalleryEndpoint {
 
     private static final Logger logger = LoggerFactory.getLogger(GalleryEndpoint.class);
 
-    @Getter
-    private LoadingCache<CacheKey, byte[]> cache;
-
-    @PostConstruct
-    private void init() {
-
-        CacheLoader<CacheKey, byte[]> loader = new CacheLoader<>() {
-            @Override
-            public byte[] load(CacheKey key) throws Exception {
-                File destinationFolder = pathService.getDownloadDestinationFolder(key.getPostId());
-                if (!destinationFolder.exists() || !destinationFolder.isDirectory()) {
-                    return null;
-                }
-                BufferedImage image = ImageIO.read(Paths.get(destinationFolder.toPath().toString(), key.getImgName()).toFile());
-                BufferedImage resize = Scalr.resize(image, 350);
-                image.flush();
-                try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-                    ImageIO.write(resize, "jpg", baos);
-                    baos.flush();
-                    return baos.toByteArray();
-                }
-            }
-        };
-
-        cache = CacheBuilder.newBuilder()
-                .maximumSize(20000)
-                .build(loader);
-    }
-
     @Autowired
     private PathService pathService;
+
+    @Autowired
+    private ThumbnailGenerator thumbnailGenerator;
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity handleException(Exception e) {
@@ -85,7 +55,11 @@ public class GalleryEndpoint {
     @GetMapping(value = "/image/thumb/{postId}/{imgName}", produces = {MediaType.IMAGE_JPEG_VALUE})
     @ResponseStatus(value = HttpStatus.OK)
     public synchronized ResponseEntity<byte[]> getImageThumb(@PathVariable("postId") @NonNull String postId, @PathVariable("imgName") @NonNull String imgName) throws Exception {
-        return ResponseEntity.ok(cache.get(new CacheKey(postId, imgName)));
+        File destinationFolder = pathService.getDownloadDestinationFolder(postId);
+        if (destinationFolder.exists() && destinationFolder.isDirectory()) {
+            return ResponseEntity.ok(thumbnailGenerator.getThumbnails().get(new ThumbnailGenerator.CacheKey(postId, imgName)));
+        }
+        return new ResponseEntity("Gallery does not exist in download location, you probably removed it", HttpStatus.BAD_REQUEST);
     }
 
     @GetMapping("/gallery/{postId}")
@@ -93,7 +67,14 @@ public class GalleryEndpoint {
     public synchronized ResponseEntity<List<GalleryImage>> getGallery(@PathVariable("postId") @NonNull String postId) throws Exception {
         File destinationFolder = pathService.getDownloadDestinationFolder(postId);
         if (destinationFolder.exists() && destinationFolder.isDirectory()) {
-            return ResponseEntity.ok(Arrays.stream(Objects.requireNonNull(destinationFolder.listFiles())).filter(f -> !f.getName().endsWith("tmp")).map(f -> new GalleryImage(f.getName(), null, f.getName(), f.getName())).collect(Collectors.toList()));
+            return ResponseEntity.ok(
+                    Arrays.stream(Objects.requireNonNull(destinationFolder.listFiles()))
+                            .filter(f -> !f.getName().endsWith("tmp"))
+                            .sorted(Comparator.comparing(File::getName))
+                            .map(GalleryImage::fromFile)
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toList())
+            );
         }
         return new ResponseEntity("Gallery does not exist in download location, you probably removed it", HttpStatus.BAD_REQUEST);
     }
@@ -102,43 +83,42 @@ public class GalleryEndpoint {
 @Getter
 @Setter
 @NoArgsConstructor
-class CacheKey {
-    private String postId;
-    private String imgName;
-
-    public CacheKey(String postId, String imgName) {
-        this.postId = postId;
-        this.imgName = imgName;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CacheKey cacheKey = (CacheKey) o;
-        return Objects.equals(postId, cacheKey.postId) &&
-                Objects.equals(imgName, cacheKey.imgName);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(postId, imgName);
-    }
-}
-
-@Getter
-@Setter
-@NoArgsConstructor
 class GalleryImage {
-    private String img;
-    private String description;
-    private String title;
-    private String alt;
 
-    public GalleryImage(String img, String description, String title, String alt) {
-        this.img = img;
-        this.description = description;
-        this.title = title;
-        this.alt = alt;
+    private static final Logger logger = LoggerFactory.getLogger(GalleryImage.class);
+    private String src;
+    private String thumb;
+    private double w;
+    private double h;
+
+    public GalleryImage(String src, String thumb, double w, double h) {
+        this.src = src;
+        this.thumb = thumb;
+        this.w = w;
+        this.h = h;
+    }
+
+    public static GalleryImage fromFile(File file) {
+        Dimension dimension;
+        try (ImageInputStream in = ImageIO.createImageInputStream(file)) {
+            final Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
+            if (readers.hasNext()) {
+                ImageReader reader = readers.next();
+                try {
+                    reader.setInput(in);
+                    dimension = new Dimension(reader.getWidth(0), reader.getHeight(0));
+                } finally {
+                    reader.dispose();
+                }
+            } else {
+                logger.error(String.format("No reader found for image %s", file.toString()));
+                return null;
+            }
+        } catch (Exception e) {
+            logger.error(String.format("Failed to create image object for %s", file.toString()), e);
+            return null;
+        }
+
+        return new GalleryImage(file.getName(), file.getName(), dimension.getWidth(), dimension.getHeight());
     }
 }

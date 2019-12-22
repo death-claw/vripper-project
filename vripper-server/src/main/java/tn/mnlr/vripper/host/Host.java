@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
 
 @Service
@@ -127,9 +128,11 @@ abstract public class Host {
                         image.increase(read);
                         downloadSpeedService.increase(read);
                     }
+                    fos.flush();
                     EntityUtils.consumeQuietly(response.getEntity());
                 }
-                checkImageTypeAndRename(outputFile, imageFileData.getImageName(), image.getIndex());
+                File finalName = checkImageTypeAndRename(outputFile, imageFileData.getImageName(), image.getIndex());
+                imageFileData.setFileName(finalName.getName());
             }
         } catch (Exception e) {
             if (Thread.interrupted()) {
@@ -139,27 +142,38 @@ abstract public class Host {
         }
     }
 
-    private void checkImageTypeAndRename(File outputFile, String imageName, int index) throws HostException {
-        String formatName;
+    private File checkImageTypeAndRename(File outputFile, String imageName, int index) throws HostException {
         try (ImageInputStream iis = ImageIO.createImageInputStream(outputFile)) {
             Iterator<ImageReader> it = ImageIO.getImageReaders(iis);
             if (!it.hasNext()) {
                 throw new HostException("Image file is not recognized!");
             }
             ImageReader reader = it.next();
-            formatName = reader.getFormatName();
-            if (formatName.toUpperCase().equals("JPEG")) {
-                formatName = "jpg";
+            if (reader.getFormatName().toUpperCase().equals("JPEG")) {
+                String imageNameLC = imageName.toLowerCase();
+                if (!imageNameLC.endsWith("_jpg") && !imageNameLC.endsWith("_jpeg")) {
+                    imageName += ".jpg";
+                } else {
+                    String toReplace = null;
+                    if (imageNameLC.endsWith("_jpg")) {
+                        toReplace = "_jpg";
+                    } else if (imageNameLC.endsWith("_jpeg")) {
+                        toReplace = "_jpeg";
+                    }
+                    if (toReplace != null) {
+                        imageName = imageName.substring(0, imageName.length() - toReplace.length()) + ".jpg";
+                    }
+                }
             }
         } catch (Exception e) {
             throw new HostException("Failed to guess image format", e);
         }
         try {
-            File outImage = new File(outputFile.getParent(), (appSettingsService.isForceOrder() ? String.format("%03d_", index) : "") + imageName + "." + formatName.toLowerCase());
+            File outImage = new File(outputFile.getParent(), (appSettingsService.isForceOrder() ? String.format("%03d_", index) : "") + imageName);
             if (outImage.exists() && outImage.delete()) {
                 logger.debug(String.format("%s is deleted", outImage.toString()));
             }
-            Files.move(outputFile.toPath(), outImage.toPath());
+            return Files.move(outputFile.toPath(), outImage.toPath(), StandardCopyOption.ATOMIC_MOVE).toFile();
         } catch (Exception e) {
             throw new HostException("Failed to rename the image", e);
         }

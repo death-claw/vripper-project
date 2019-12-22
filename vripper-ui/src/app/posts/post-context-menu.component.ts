@@ -203,7 +203,7 @@ export class PostContextMenuComponent {
           dialogRef.updateSize('90%', '90%');
         }
       });
- 
+
       dialogRef.afterClosed().subscribe(() => {
         if (smallDialogSubscription != null) {
           smallDialogSubscription.unsubscribe();
