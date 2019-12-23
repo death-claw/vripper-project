@@ -44,6 +44,7 @@ public class AppSettingsService {
     private final String THREADSUBFOLDER = "THREADSUBFOLDER";
     private final String CLEAR = "CLEAR";
     private final String DARK_THEME = "DARK_THEME";
+    private final String VIEW_PHOTOS = "VIEW_PHOTOS";
 
     private String downloadPath;
     private int maxThreads;
@@ -58,6 +59,7 @@ public class AppSettingsService {
     private boolean forceOrder;
     private boolean clearCompleted;
     private boolean darkTheme;
+    private boolean viewPhotos;
 
     public void setVPassword(String vPassword) {
         if(vPassword.isEmpty()) {
@@ -82,6 +84,7 @@ public class AppSettingsService {
         threadSubLocation = prefs.getBoolean(THREADSUBFOLDER, false);
         clearCompleted = prefs.getBoolean(CLEAR, false);
         darkTheme = prefs.getBoolean(DARK_THEME, false);
+        viewPhotos = prefs.getBoolean(VIEW_PHOTOS, false);
     }
 
     @PreDestroy
@@ -100,6 +103,7 @@ public class AppSettingsService {
         prefs.putBoolean(THREADSUBFOLDER, threadSubLocation);
         prefs.putBoolean(CLEAR, clearCompleted);
         prefs.putBoolean(DARK_THEME, darkTheme);
+        prefs.putBoolean(VIEW_PHOTOS, viewPhotos);
 
         try {
             prefs.sync();
@@ -175,8 +179,10 @@ public class AppSettingsService {
         private boolean threadSubLocation;
         @JsonProperty("clearCompleted")
         private boolean clearCompleted;
+        @JsonProperty("viewPhotos")
+        private boolean viewPhotos;
 
-        public Settings(String downloadPath, int maxThreads, boolean autoStart, boolean vLogin, String vUsername, String vPassword, boolean vThanks, boolean desktopClipboard, boolean forceOrder, boolean subLocation, boolean threadSubLocation, boolean clearCompleted) {
+        public Settings(String downloadPath, int maxThreads, boolean autoStart, boolean vLogin, String vUsername, String vPassword, boolean vThanks, boolean desktopClipboard, boolean forceOrder, boolean subLocation, boolean threadSubLocation, boolean clearCompleted, boolean viewPhotos) {
             this.downloadPath = downloadPath;
             this.maxThreads = maxThreads;
             this.autoStart = autoStart;
@@ -189,6 +195,7 @@ public class AppSettingsService {
             this.subLocation = subLocation;
             this.threadSubLocation = threadSubLocation;
             this.clearCompleted = clearCompleted;
+            this.viewPhotos = viewPhotos;
         }
     }
 }

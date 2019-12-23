@@ -41,6 +41,9 @@ public class ExecutionService {
     @Autowired
     private ThumbnailGenerator thumbnailGenerator;
 
+    @Autowired
+    private AppSettingsService appSettingsService;
+
     private final AtomicInteger threadCount = new AtomicInteger();
 
     private ExecutorService executor = Executors.newFixedThreadPool(10);
@@ -135,7 +138,11 @@ public class ExecutionService {
                             .onComplete(e -> {
                                 appStateService.doneDownloadJob(finalTake.getImage());
                                 logger.debug(String.format("Finished downloading %s", finalTake.getImage().getUrl()));
-                                VripperApplication.commonExecutor.submit(() -> thumbnailGenerator.getThumbnails().get(new ThumbnailGenerator.CacheKey(finalTake.getImage().getPostId(), finalTake.getImageFileData().getFileName())));
+                                if (appSettingsService.isViewPhotos()) {
+                                    VripperApplication.commonExecutor.submit(
+                                            () -> thumbnailGenerator.getThumbnails()
+                                                    .get(new ThumbnailGenerator.CacheKey(finalTake.getImage().getPostId(), finalTake.getImageFileData().getFileName())));
+                                }
                                 synchronized (threadCount) {
                                     threadCount.decrementAndGet();
                                     running.remove(finalTake);

@@ -3,7 +3,7 @@ import { ClipboardService } from './clipboard.service';
 import { ElectronService } from 'ngx-electron';
 import { Component, OnDestroy, AfterViewInit, Renderer2, ChangeDetectionStrategy, NgZone } from '@angular/core';
 import { MatDialog } from '@angular/material';
-import { Subscription, BehaviorSubject, Subject } from 'rxjs';
+import { Subscription, BehaviorSubject, Subject, merge } from 'rxjs';
 import { WsConnectionService, WSState } from './ws-connection.service';
 
 @Component({
@@ -39,9 +39,8 @@ export class AppComponent implements OnDestroy, AfterViewInit {
         }), 500);
       } else if (wsState === WSState.OPEN) {
         this.clipboardService.init();
-        this.appService
-          .loadTheme()
-          .subscribe(() => this.ngZone.run(() => this.appState.next('CONNECTED')));
+        merge(this.appService.loadTheme(), this.appService.loadSettings())
+        .subscribe(() => this.ngZone.run(() => this.appState.next('CONNECTED')));
       }
     }));
   }

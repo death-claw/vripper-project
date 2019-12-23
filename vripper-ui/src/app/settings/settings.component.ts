@@ -1,3 +1,4 @@
+import { finalize } from 'rxjs/operators';
 import { AppService } from './../app.service';
 import { ClipboardService } from './../clipboard.service';
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
@@ -25,6 +26,8 @@ export class SettingsComponent implements OnInit {
     private appService: AppService
   ) {}
 
+  loading = false;
+
   generalSettingsForm = new FormGroup({
     downloadPath: new FormControl(''),
     maxThreads: new FormControl(''),
@@ -37,6 +40,7 @@ export class SettingsComponent implements OnInit {
     vUsername: new FormControl(''),
     vPassword: new FormControl(''),
     vThanks: new FormControl(false),
+    viewPhotos: new FormControl(false)
   });
 
   desktopSettingsForm = new FormGroup({
@@ -47,6 +51,10 @@ export class SettingsComponent implements OnInit {
 
   updateTheme() {
     this.appService.updateTheme(this.darkTheme);
+  }
+
+  updateSettings(settings: Settings) {
+    this.appService.updateSettings(settings);
   }
 
   ngOnInit() {
@@ -65,27 +73,27 @@ export class SettingsComponent implements OnInit {
   }
 
   browse() {
-    this.electronService.remote.dialog.showOpenDialog(
-      this.electronService.remote.getCurrentWindow(),
-      {
+    this.electronService.remote.dialog
+      .showOpenDialog(this.electronService.remote.getCurrentWindow(), {
         properties: ['openDirectory']
-      }
-    ).then((value: OpenDialogReturnValue) => {
-      if (value.filePaths !== undefined) {
-        this.generalSettingsForm.get('downloadPath').setValue(value.filePaths[0]);
-        this.generalSettingsForm.get('downloadPath').markAsDirty();
-        this.generalSettingsForm.get('downloadPath').markAsTouched();
-      }
-    });
-
+      })
+      .then((value: OpenDialogReturnValue) => {
+        if (value.filePaths !== undefined) {
+          this.generalSettingsForm.get('downloadPath').setValue(value.filePaths[0]);
+          this.generalSettingsForm.get('downloadPath').markAsDirty();
+          this.generalSettingsForm.get('downloadPath').markAsTouched();
+        }
+      });
   }
 
   onSubmit(): void {
+    this.loading = true;
     this.httpClient
       .post<Settings>(this.serverService.baseUrl + '/settings', {
         ...this.generalSettingsForm.value,
         ...this.desktopSettingsForm.value
       })
+      .pipe(finalize(() => (this.loading = false)))
       .subscribe(
         data => {
           this._snackBar.open('Settings updated', null, {
@@ -94,6 +102,7 @@ export class SettingsComponent implements OnInit {
           this.generalSettingsForm.reset(data);
           this.desktopSettingsForm.reset(data);
           this.clipboardService.init(data);
+          this.updateSettings(data);
         },
         error => {
           this._snackBar.open(error.error || 'Unexpected error, check log file', null, {

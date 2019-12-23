@@ -7,22 +7,26 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.services.PathService;
 import tn.mnlr.vripper.services.ThumbnailGenerator;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
+import javax.servlet.http.HttpServletResponse;
 import java.awt.*;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @RestController
@@ -37,6 +41,10 @@ public class GalleryEndpoint {
     @Autowired
     private ThumbnailGenerator thumbnailGenerator;
 
+    private static final String cacheControl = CacheControl.maxAge(365, TimeUnit.DAYS).getHeaderValue();
+    @Autowired
+    private AppSettingsService appSettingsService;
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity handleException(Exception e) {
         logger.error("Error when process request", e);
@@ -47,14 +55,22 @@ public class GalleryEndpoint {
 
     @GetMapping(value = "/image/{postId}/{imgName}", produces = {MediaType.IMAGE_JPEG_VALUE})
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized ResponseEntity<byte[]> getImage(@PathVariable("postId") @NonNull String postId, @PathVariable("imgName") @NonNull String imgName) throws Exception {
+    public ResponseEntity<byte[]> getImage(@PathVariable("postId") @NonNull String postId, @PathVariable("imgName") @NonNull String imgName, HttpServletResponse response) throws Exception {
+        if (!appSettingsService.isViewPhotos()) {
+            return new ResponseEntity("Gallery option is disabled", HttpStatus.BAD_REQUEST);
+        }
+        response.addHeader("Cache-Control", cacheControl);
         File destinationFolder = pathService.getDownloadDestinationFolder(postId);
         return ResponseEntity.ok(Files.readAllBytes(Paths.get(destinationFolder.toPath().toString(), imgName)));
     }
 
     @GetMapping(value = "/image/thumb/{postId}/{imgName}", produces = {MediaType.IMAGE_JPEG_VALUE})
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized ResponseEntity<byte[]> getImageThumb(@PathVariable("postId") @NonNull String postId, @PathVariable("imgName") @NonNull String imgName) throws Exception {
+    public ResponseEntity<byte[]> getImageThumb(@PathVariable("postId") @NonNull String postId, @PathVariable("imgName") @NonNull String imgName, HttpServletResponse response) throws Exception {
+        if (!appSettingsService.isViewPhotos()) {
+            return new ResponseEntity("Gallery option is disabled", HttpStatus.BAD_REQUEST);
+        }
+        response.addHeader("Cache-Control", cacheControl);
         File destinationFolder = pathService.getDownloadDestinationFolder(postId);
         if (destinationFolder.exists() && destinationFolder.isDirectory()) {
             return ResponseEntity.ok(thumbnailGenerator.getThumbnails().get(new ThumbnailGenerator.CacheKey(postId, imgName)));
@@ -64,7 +80,10 @@ public class GalleryEndpoint {
 
     @GetMapping("/gallery/{postId}")
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized ResponseEntity<List<GalleryImage>> getGallery(@PathVariable("postId") @NonNull String postId) throws Exception {
+    public ResponseEntity<List<GalleryImage>> getGallery(@PathVariable("postId") @NonNull String postId) {
+        if (!appSettingsService.isViewPhotos()) {
+            return new ResponseEntity("Gallery option is disabled", HttpStatus.BAD_REQUEST);
+        }
         File destinationFolder = pathService.getDownloadDestinationFolder(postId);
         if (destinationFolder.exists() && destinationFolder.isDirectory()) {
             return ResponseEntity.ok(
@@ -87,13 +106,13 @@ class GalleryImage {
 
     private static final Logger logger = LoggerFactory.getLogger(GalleryImage.class);
     private String src;
-    private String thumb;
+    private String msrc;
     private double w;
     private double h;
 
-    public GalleryImage(String src, String thumb, double w, double h) {
+    public GalleryImage(String src, String msrc, double w, double h) {
         this.src = src;
-        this.thumb = thumb;
+        this.msrc = msrc;
         this.w = w;
         this.h = h;
     }

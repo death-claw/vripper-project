@@ -1,12 +1,13 @@
+import { AppService } from './../app.service';
 import { GalleryComponent } from './../gallery/gallery.component';
 import { ServerService } from './../server-service';
 import { HttpClient } from '@angular/common/http';
 import { ElectronService } from 'ngx-electron';
-import { Component, ChangeDetectionStrategy, NgZone } from '@angular/core';
+import { Component, ChangeDetectionStrategy, NgZone, OnDestroy } from '@angular/core';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { MatDialog, MatSnackBar } from '@angular/material';
 import { PostDetailComponent } from '../post-detail/post-detail.component';
-import { Observable } from 'rxjs';
+import { Observable, Subject, BehaviorSubject, Subscription } from 'rxjs';
 import { BreakpointState, BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { PostState } from './post-state.model';
 import { DownloadPath } from '../common/download-path.model';
@@ -48,7 +49,7 @@ import { RemoveResponse } from '../common/remove-response.model';
           <mat-icon>list</mat-icon>
           <span>Files</span>
         </button>
-        <button (click)="openGallery()" mat-list-item>
+        <button *ngIf="isViewEnabled | async" (click)="openGallery()" mat-list-item>
           <mat-icon>photo_library</mat-icon>
           <span>View Photos</span>
         </button>
@@ -90,16 +91,19 @@ export class PostContextMenuComponent {
     private httpClient: HttpClient,
     private serverService: ServerService,
     private _snackBar: MatSnackBar,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private appService: AppService
   ) {
     if (this.electronService.isElectronApp) {
       this.fs = this.electronService.remote.require('fs');
     }
+    this.isViewEnabled.next(this.appService.settings.viewPhotos);
   }
 
+  isViewEnabled: Subject<boolean> = new BehaviorSubject(false);
   restart() {
     this.contextMenuService.closePostCtxtMenu();
-    this.httpClient.post(this.serverService.baseUrl + '/post/restart', [ this.postState.postId ]).subscribe(
+    this.httpClient.post(this.serverService.baseUrl + '/post/restart', [this.postState.postId]).subscribe(
       () => {
         this._snackBar.open('Download started', null, {
           duration: 5000
@@ -117,34 +121,34 @@ export class PostContextMenuComponent {
     this.contextMenuService.closePostCtxtMenu();
     this.ngZone.run(() => {
       this.dialog
-      .open(ConfirmDialogComponent, {
-        maxHeight: '100vh',
-        maxWidth: '100vw',
-        height: '200px',
-        width: '60%',
-        data: { header: 'Confirmation', content: 'Are you sure you want to remove this item ?' }
-      })
-      .afterClosed()
-      .pipe(
-        filter(e => e === 'yes'),
-        flatMap(e =>
-          this.httpClient.post<RemoveResponse>(this.serverService.baseUrl + '/post/remove', [ this.postState.postId ])
+        .open(ConfirmDialogComponent, {
+          maxHeight: '100vh',
+          maxWidth: '100vw',
+          height: '200px',
+          width: '60%',
+          data: { header: 'Confirmation', content: 'Are you sure you want to remove this item ?' }
+        })
+        .afterClosed()
+        .pipe(
+          filter(e => e === 'yes'),
+          flatMap(e =>
+            this.httpClient.post<RemoveResponse>(this.serverService.baseUrl + '/post/remove', [this.postState.postId])
+          )
         )
-      )
-      .subscribe(
-        () => {},
-        error => {
-          this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
-            duration: 5000
-          });
-        }
-      );
+        .subscribe(
+          () => {},
+          error => {
+            this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+              duration: 5000
+            });
+          }
+        );
     });
   }
 
   stop() {
     this.contextMenuService.closePostCtxtMenu();
-    this.httpClient.post(this.serverService.baseUrl + '/post/stop', [ this.postState.postId ]).subscribe(
+    this.httpClient.post(this.serverService.baseUrl + '/post/stop', [this.postState.postId]).subscribe(
       () => {
         this._snackBar.open('Download stopped', null, {
           duration: 5000
@@ -176,7 +180,7 @@ export class PostContextMenuComponent {
           dialogRef.updateSize('90%', '90%');
         }
       });
- 
+
       dialogRef.afterClosed().subscribe(() => {
         if (smallDialogSubscription != null) {
           smallDialogSubscription.unsubscribe();

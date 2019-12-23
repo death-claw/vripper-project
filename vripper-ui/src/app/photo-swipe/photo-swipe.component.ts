@@ -4,7 +4,7 @@ import PhotoSwipe from 'photoswipe';
 import PhotoSwipeUI_Default from 'photoswipe/dist/photoswipe-ui-default';
 
 export class IImage {
-  constructor(public src: string, public w: number, public h: number) {}
+  constructor(public src: string, public msrc: string, public w: number, public h: number) {}
 }
 
 @Component({

@@ -6,8 +6,10 @@
     <div class="container">
       <div class="masonry ">
         <ng-container *ngFor="let img of images | async; let i=index">
-          <figure class="masonry-brick ">
-            <img (click)="openSlideshow(i)" [src]="img.thumb"/>
+          <figure class="masonry-brick " fxLayout="row" fxLayoutAlign="center center" style="position: relative;">
+            <mat-progress-spinner *ngIf="!img._initialized" mode="indeterminate"
+                                  style="position: absolute;"></mat-progress-spinner>
+            <img (click)="openSlideshow(i)" (load)="loaded(img)" [src]="img.msrc"/>
           </figure>
         </ng-container>
         <app-photo-swipe #photoSwipe></app-photo-swipe>
@@ -15,7 +17,9 @@
     </div>
   </mat-dialog-content>
   <mat-dialog-actions align="end" fxFlex="nogrow">
-    <button (click)="refresh()" color="primary" mat-raised-button>Refresh</button>
+    <button (click)="refresh()" color="primary" mat-raised-button>
+      <mat-icon>refresh</mat-icon>
+      <span>Refresh</span></button>
     <button mat-dialog-close mat-raised-button>Close</button>
   </mat-dialog-actions>
 </div>

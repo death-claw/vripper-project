@@ -1,3 +1,4 @@
+import { Settings } from './common/settings.model';
 import { environment } from 'src/environments/environment';
 import { MatDialog } from '@angular/material';
 import { HttpClient } from '@angular/common/http';
@@ -5,7 +6,7 @@ import { Injectable, Renderer2 } from '@angular/core';
 import { ServerService } from './server-service';
 import { tap } from 'rxjs/operators';
 import { ScanComponent } from './scan/scan.component';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { BreakpointState, Breakpoints, BreakpointObserver } from '@angular/cdk/layout';
 import { Title } from '@angular/platform-browser';
 
@@ -21,8 +22,20 @@ export class AppService {
     this.titleService.setTitle('VRipper ' + environment.version);
   }
 
-  darkTheme = false;
-  _renderer: Renderer2;
+  private _darkTheme = false;
+  private _settings: Settings;
+  private _renderer: Renderer2;
+
+  // private settings$: Subject<Settings> = new Subject();
+
+  get settings(): Settings {
+    return { ...this._settings };
+  }
+
+  get darkTheme(): boolean {
+    return this._darkTheme;
+  }
+
   set renderer(renderer: Renderer2) {
     this._renderer = renderer;
   }
@@ -30,8 +43,8 @@ export class AppService {
   isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
 
   updateTheme(darkTheme: boolean) {
-    this.darkTheme = darkTheme;
-    if (this.darkTheme) {
+    this._darkTheme = darkTheme;
+    if (this._darkTheme) {
       this._renderer.addClass(document.body, 'dark-theme');
       this._renderer.removeClass(document.body, 'light-theme');
     } else {
@@ -40,15 +53,25 @@ export class AppService {
     }
     this.httpClient
       .post<Theme>(this.serverService.baseUrl + '/settings/theme', {
-        darkTheme: this.darkTheme
+        darkTheme: this._darkTheme
       })
       .subscribe();
+  }
+
+  updateSettings(settings: Settings) {
+    this._settings = settings;
   }
 
   loadTheme() {
     return this.httpClient
       .get<Theme>(this.serverService.baseUrl + '/settings/theme')
       .pipe(tap(theme => this.updateTheme(theme.darkTheme)));
+  }
+
+  loadSettings() {
+    return this.httpClient
+      .get<Settings>(this.serverService.baseUrl + '/settings')
+      .pipe(tap(settings => this.updateSettings(settings)));
   }
 
   scan(url?: string) {

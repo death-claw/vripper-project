@@ -7,8 +7,8 @@ import { PostState } from '../posts/post-state.model';
 import { BehaviorSubject, Subject } from 'rxjs';
 
 class Image extends IImage {
-  constructor(public src: string, public w: number, public h: number, public thumb: string) {
-    super(src, w, h);
+  constructor(public src: string, public msrc: string, public w: number, public h: number, public _initialized: boolean) {
+    super(src, msrc, w, h);
   }
 }
 
@@ -33,6 +33,10 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   @ViewChild('photoSwipe', { static: true }) photoSwipe: PhotoSwipeComponent;
 
+  loaded(img: Image) {
+    img._initialized = true;
+  }
+
   ngOnInit() {
     this.refresh();
   }
@@ -40,7 +44,12 @@ export class GalleryComponent implements OnInit, OnDestroy {
   ngOnDestroy() {}
 
   openSlideshow(index: number) {
-    this.photoSwipe.openGallery(this._images, { index: index, getThumbBoundsFn: this.getThumbBoundsFn, showHideOpacity: true });
+    this.photoSwipe.openGallery(this._images, {
+      index: index,
+      getThumbBoundsFn: this.getThumbBoundsFn,
+      showHideOpacity: true,
+      preload: [1, 8]
+    });
   }
 
   getThumbBoundsFn(index: number) {
@@ -58,7 +67,8 @@ export class GalleryComponent implements OnInit, OnDestroy {
         this.ngZone.run(() => {
           response.forEach(i => {
             i.src = this.serverService.baseUrl + '/image/' + this.dialogData.postId + '/' + i.src;
-            i.thumb = this.serverService.baseUrl + '/image/thumb/' + this.dialogData.postId + '/' + i.thumb;
+            i.msrc = this.serverService.baseUrl + '/image/thumb/' + this.dialogData.postId + '/' + i.msrc;
+            i._initialized = false;
           });
           this._images = response;
           this.images.next(this._images);

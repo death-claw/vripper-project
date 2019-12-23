@@ -7,4 +7,5 @@ export interface Settings {
     vPassword: string;
     vThanks: boolean;
     desktopClipboard: boolean;
+    viewPhotos: boolean;
   }

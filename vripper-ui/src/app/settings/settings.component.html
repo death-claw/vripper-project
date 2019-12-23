@@ -52,12 +52,15 @@
             </mat-checkbox>
 
             <mat-checkbox color="primary" formControlName="autoStart" name="autoStart"
-              >Auto start downloads</mat-checkbox
+            >Auto start downloads
+            </mat-checkbox
             >
 
             <mat-checkbox color="primary" formControlName="clearCompleted" name="clearCompleted"
             >Clear Finished
             </mat-checkbox>
+
+            <mat-checkbox color="primary" formControlName="viewPhotos" name="viewPhotos">View Photos</mat-checkbox>
 
             <mat-slide-toggle color="primary" formControlName="vLogin" name="vLogin">
               ViperGirls Authentication
@@ -66,7 +69,7 @@
             <section *ngIf="generalSettingsForm.get('vLogin').value">
               <div>
                 <mat-form-field>
-                  <input formControlName="vUsername" matInput placeholder="ViperGirls Username" name="vUsername" />
+                  <input formControlName="vUsername" matInput placeholder="ViperGirls Username" name="vUsername"/>
                 </mat-form-field>
 
                 <mat-form-field>
@@ -104,7 +107,7 @@
       [disabled]="
         (generalSettingsForm.pristine && desktopSettingsForm.pristine) ||
         generalSettingsForm.invalid ||
-        desktopSettingsForm.invalid
+        desktopSettingsForm.invalid || loading
       "
     >
       Apply
