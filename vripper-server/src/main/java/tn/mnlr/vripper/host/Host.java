@@ -98,11 +98,10 @@ abstract public class Host {
             imageFileData.setImageName(formatImageFileName);
             File destinationFolder = pathService.getDownloadDestinationFolder(image.getPostId());
             logger.debug(String.format("Saving to %s", destinationFolder.getPath()));
+            logger.debug(String.format("Creating %s", destinationFolder.getPath()));
+            destinationFolder.mkdirs();
             if (!destinationFolder.exists()) {
-                logger.debug(String.format("Creating %s", destinationFolder.getPath()));
-                if (destinationFolder.mkdirs()) {
-                    logger.debug(String.format("Folder %s is created", destinationFolder.toString()));
-                }
+                logger.debug(String.format("Folder %s is created", destinationFolder.toString()));
             }
 
             HttpClient client = cm.getClient().build();

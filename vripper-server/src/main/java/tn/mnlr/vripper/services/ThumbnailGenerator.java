@@ -42,10 +42,9 @@ public class ThumbnailGenerator {
     @PostConstruct
     private void init() throws Exception {
         cacheFolder = new File(baseDir + File.separator + ".vripper" + File.separator + "cache");
+        cacheFolder.mkdirs();
         if (!cacheFolder.exists()) {
-            if (!cacheFolder.mkdirs()) {
-                throw new Exception(String.format("%s could not be created", cacheFolder.toString()));
-            }
+            throw new Exception(String.format("%s could not be created", cacheFolder.toString()));
         }
         thumbnails = CacheBuilder.newBuilder()
                 .maximumSize(20000)
@@ -57,10 +56,9 @@ public class ThumbnailGenerator {
             throw new Exception(String.format("Input file %s does not exist", inputFile.toString()));
         }
         File postsCacheFolder = new File(cacheFolder, postId);
+        postsCacheFolder.mkdirs();
         if (!postsCacheFolder.exists()) {
-            if (!postsCacheFolder.mkdirs()) {
-                throw new Exception(String.format("%s could not be created", postsCacheFolder.toString()));
-            }
+            throw new Exception(String.format("%s could not be created", postsCacheFolder.toString()));
         }
 
         File thumbFile = new File(postsCacheFolder, inputFile.getName());
