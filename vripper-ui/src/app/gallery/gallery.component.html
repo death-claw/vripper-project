@@ -6,7 +6,8 @@
     <div class="container">
       <div class="masonry ">
         <ng-container *ngFor="let img of images | async; let i=index">
-          <figure class="masonry-brick " fxLayout="row" fxLayoutAlign="center center" style="position: relative;">
+          <figure class="masonry-brick " fxLayout="row" fxLayoutAlign="center center"
+                  style="position: relative; cursor: pointer;">
             <mat-progress-spinner *ngIf="!img._initialized" mode="indeterminate"
                                   style="position: absolute;"></mat-progress-spinner>
             <img (click)="openSlideshow(i)" (load)="loaded(img)" [src]="img.msrc"/>

@@ -42,8 +42,12 @@
             >Save posts in sub folders
             </mat-checkbox>
 
-            <mat-checkbox *ngIf="generalSettingsForm.get('subLocation').value" color="primary"
-                          formControlName="threadSubLocation" name="threadSubLocation" style="margin-left: 15px"
+            <mat-checkbox
+              *ngIf="generalSettingsForm.get('subLocation').value"
+              color="primary"
+              formControlName="threadSubLocation"
+              name="threadSubLocation"
+              style="margin-left: 15px"
             >Create a subfolder per thread
             </mat-checkbox>
 
@@ -53,14 +57,15 @@
 
             <mat-checkbox color="primary" formControlName="autoStart" name="autoStart"
             >Auto start downloads
-            </mat-checkbox
-            >
+            </mat-checkbox>
 
             <mat-checkbox color="primary" formControlName="clearCompleted" name="clearCompleted"
             >Clear Finished
             </mat-checkbox>
 
-            <mat-checkbox color="primary" formControlName="viewPhotos" name="viewPhotos">View Photos</mat-checkbox>
+            <mat-checkbox color="primary" formControlName="viewPhotos" name="viewPhotos">
+              Enable View photo in gallery option
+            </mat-checkbox>
 
             <mat-slide-toggle color="primary" formControlName="vLogin" name="vLogin">
               ViperGirls Authentication
@@ -69,7 +74,7 @@
             <section *ngIf="generalSettingsForm.get('vLogin').value">
               <div>
                 <mat-form-field>
-                  <input formControlName="vUsername" matInput placeholder="ViperGirls Username" name="vUsername"/>
+                  <input formControlName="vUsername" matInput name="vUsername" placeholder="ViperGirls Username"/>
                 </mat-form-field>
 
                 <mat-form-field>
@@ -107,7 +112,8 @@
       [disabled]="
         (generalSettingsForm.pristine && desktopSettingsForm.pristine) ||
         generalSettingsForm.invalid ||
-        desktopSettingsForm.invalid || loading
+        desktopSettingsForm.invalid ||
+        loading
       "
     >
       Apply
