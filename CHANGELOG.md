@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.8.0] - 2019-12-24
+### Added
+- Photo gallery feature
+
 ## [2.7.1] - 2019-12-21
 ### Added
 - Add version to title bar
