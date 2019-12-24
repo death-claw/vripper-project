@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.8.1] - 2019-12-24
+### Changed
+- Fix issue with path creation
+
 ## [2.8.0] - 2019-12-24
 ### Added
 - Photo gallery feature
