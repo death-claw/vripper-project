@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.9.0] - 2019-12-27
+### Changed
+- Decrease timeout for fast fail
+### Added
+- Allow many hosts to run at the same time
+- Add title to gallery
+- Add global concurrent downloads
+- Add counter badge in link collector
+
 ## [2.8.1] - 2019-12-24
 ### Changed
 - Fix issue with path creation

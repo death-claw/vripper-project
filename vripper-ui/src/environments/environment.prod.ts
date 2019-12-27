@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
   localhost: '',
-  version: '2.8.1'
+  version: '2.9.0'
 };
