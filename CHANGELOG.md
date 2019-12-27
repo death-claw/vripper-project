@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.10.0] - 2019-12-27
+### Changed
+- Fix spring dependency bug
+### Added
+- Add support for imgspice
+
 ## [2.9.0] - 2019-12-27
 ### Changed
 - Fix build issue
