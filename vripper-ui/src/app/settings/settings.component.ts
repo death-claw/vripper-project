@@ -31,6 +31,7 @@ export class SettingsComponent implements OnInit {
   generalSettingsForm = new FormGroup({
     downloadPath: new FormControl(''),
     maxThreads: new FormControl(''),
+    maxTotalThreads: new FormControl(''),
     autoStart: new FormControl(false),
     forceOrder: new FormControl(false),
     subLocation: new FormControl(false),

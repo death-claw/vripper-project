@@ -32,6 +32,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
+import java.util.Objects;
 
 @Service
 abstract public class Host {
@@ -64,6 +65,11 @@ abstract public class Host {
     abstract public String getHost();
 
     abstract public String getLookup();
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pathService);
+    }
 
     public boolean isSupported(String url) {
         return url.contains(getLookup());
@@ -233,8 +239,17 @@ abstract public class Host {
 
     protected abstract void setNameAndUrl(final String url, final ImageFileData imageFileData, final HttpClientContext context) throws HostException;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Host host = (Host) o;
+        return Objects.equals(getHost(), host.getHost());
+    }
+
     @Getter
     public static class Response {
+
         protected Response(Document document, Header[] headers) {
             this.document = document;
             this.headers = headers;

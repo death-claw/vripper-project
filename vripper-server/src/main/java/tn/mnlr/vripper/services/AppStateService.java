@@ -59,7 +59,7 @@ public class AppStateService {
         return currentPosts.get(postId);
     }
 
-    public synchronized void newDownloadJob(DownloadJob downloadJob) {
+    public void newDownloadJob(DownloadJob downloadJob) {
         String postId = downloadJob.getImage().getPostId();
         checkKeyRunningPosts(postId);
         runningPosts.get(postId).incrementAndGet();

@@ -7,9 +7,9 @@ import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import tn.mnlr.vripper.SpringContext;
-import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.entities.mixin.persistance.ImagePersistanceMixin;
@@ -38,8 +38,11 @@ public class PersistenceService {
     @Autowired
     private AppStateService stateService;
 
-    @Autowired
-    private VripperApplication.AppCommandRunner appCommandRunner;
+    @Value("${base.dir}")
+    private String baseDir;
+
+    @Getter
+    private String dataPath;
 
     private ObjectMapper om;
 
@@ -61,7 +64,8 @@ public class PersistenceService {
 
     @PostConstruct
     public void init() {
-        File dataFile = new File(appCommandRunner.getDataPath());
+        dataPath = baseDir + File.separator + ".vripper" + File.separator + "data.json";
+        File dataFile = new File(dataPath);
         if (!dataFile.exists()) {
             try {
                 if (dataFile.getParentFile().mkdirs()) {
@@ -84,6 +88,8 @@ public class PersistenceService {
                 logger.error("Unable to create data file", e);
                 SpringContext.close();
             }
+        } else {
+            restore();
         }
     }
 
@@ -97,7 +103,7 @@ public class PersistenceService {
 
     private void persist(Map<String, Post> currentPosts) {
 
-        try (PrintWriter out = new PrintWriter(appCommandRunner.getDataPath(), StandardCharsets.UTF_8)) {
+        try (PrintWriter out = new PrintWriter(dataPath, StandardCharsets.UTF_8)) {
             out.print(om.writeValueAsString(currentPosts));
         } catch (IOException e) {
             logger.error("Failed to persist app state", e);
@@ -111,11 +117,11 @@ public class PersistenceService {
         } catch (IOException e) {
             logger.error("Failed to read app state", e);
             long timestamp = new Date().getTime();
-            logger.warn(String.format("trying to rename old data file from %s to %s", appCommandRunner.getDataPath(), appCommandRunner.getDataPath() + "." + timestamp + ".old"));
+            logger.warn(String.format("trying to rename old data file from %s to %s", dataPath, dataPath + "." + timestamp + ".old"));
             try {
-                Files.move(new File(appCommandRunner.getDataPath()).toPath(), new File(appCommandRunner.getDataPath() + "." + timestamp + ".old").toPath());
+                Files.move(new File(dataPath).toPath(), new File(dataPath + "." + timestamp + ".old").toPath());
             } catch (IOException ex) {
-                logger.error(String.format("Failed to rename %s to %s", appCommandRunner.getDataPath(), appCommandRunner.getDataPath() + ".old"));
+                logger.error(String.format("Failed to rename %s to %s", dataPath, dataPath + ".old"));
                 SpringContext.close();
             }
         }
@@ -127,7 +133,7 @@ public class PersistenceService {
 
         String jsonContent = null;
         try {
-            jsonContent = String.join("", Files.readAllLines(Paths.get(appCommandRunner.getDataPath()), StandardCharsets.UTF_8));
+            jsonContent = String.join("", Files.readAllLines(Paths.get(dataPath), StandardCharsets.UTF_8));
         } catch (Exception e) {
             logger.error("data file cannot be read, previous state cannot be restored", e);
             SpringContext.close();

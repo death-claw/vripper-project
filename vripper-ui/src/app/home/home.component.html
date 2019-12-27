@@ -2,7 +2,13 @@
   <mat-tab label="Downloads">
     <app-posts style="width: 100%; height: 100%;"></app-posts>
   </mat-tab>
-  <mat-tab label="Link Collector">
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <span style="margin-right: 5px;">Link Collector</span>
+      <ng-container *ngIf="linkCollectorService.count | async as count">
+        <mat-icon [matBadgeHidden]="count < 1" [matBadge]="count">link</mat-icon>
+      </ng-container>
+    </ng-template>
     <app-grab-queue style="width: 100%; height: 100%;"></app-grab-queue>
   </mat-tab>
 </mat-tab-group>

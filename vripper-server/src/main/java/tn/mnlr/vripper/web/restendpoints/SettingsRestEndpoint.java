@@ -60,6 +60,7 @@ public class SettingsRestEndpoint {
             }
             this.settings.setDownloadPath(settings.getDownloadPath());
             this.settings.setMaxThreads(settings.getMaxThreads());
+            this.settings.setMaxTotalThreads(settings.getMaxTotalThreads());
             this.settings.setAutoStart(settings.isAutoStart());
             this.settings.setVLogin(settings.isVLogin());
 
@@ -95,6 +96,7 @@ public class SettingsRestEndpoint {
         return new AppSettingsService.Settings(
                 settings.getDownloadPath(),
                 settings.getMaxThreads(),
+                settings.getMaxTotalThreads(),
                 settings.isAutoStart(),
                 settings.isVLogin(),
                 settings.getVUsername(),

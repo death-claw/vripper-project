@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import tn.mnlr.vripper.exception.ValidationException;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -24,6 +25,8 @@ import java.util.prefs.Preferences;
 @Setter
 public class AppSettingsService {
 
+    private final String MAX_TOTAL_THREADS = "MAX_TOTAL_THREADS";
+
     @Value("${base.dir}")
     private String defaultDownloadPath;
 
@@ -33,6 +36,7 @@ public class AppSettingsService {
 
     private final String DOWNLOAD_PATH = "DOWNLOAD_PATH";
     private final String MAX_THREADS = "MAX_THREADS";
+    private int maxTotalThreads;
     private final String AUTO_START = "AUTO_START";
     private final String V_LOGIN = "VLOGIN";
     private final String V_USERNAME = "VUSERNAME";
@@ -48,6 +52,12 @@ public class AppSettingsService {
 
     private String downloadPath;
     private int maxThreads;
+
+    @PostConstruct
+    private void init() {
+        restore();
+    }
+
     private boolean autoStart;
     private boolean vLogin;
     private String vUsername;
@@ -73,6 +83,7 @@ public class AppSettingsService {
 
         downloadPath = prefs.get(DOWNLOAD_PATH, defaultDownloadPath);
         maxThreads = prefs.getInt(MAX_THREADS, 4);
+        maxTotalThreads = prefs.getInt(MAX_TOTAL_THREADS, 8);
         autoStart = prefs.getBoolean(AUTO_START, true);
         vLogin = prefs.getBoolean(V_LOGIN, false);
         vUsername = prefs.get(V_USERNAME, "");
@@ -92,6 +103,7 @@ public class AppSettingsService {
 
         prefs.put(DOWNLOAD_PATH, downloadPath);
         prefs.putInt(MAX_THREADS, maxThreads);
+        prefs.putInt(MAX_TOTAL_THREADS, maxTotalThreads);
         prefs.putBoolean(AUTO_START, autoStart);
         prefs.putBoolean(V_LOGIN, vLogin);
         prefs.put(V_USERNAME, vUsername);
@@ -124,6 +136,10 @@ public class AppSettingsService {
             throw new ValidationException(String.format("%s does not exist", settings.getDownloadPath()));
         } else if (!Files.isDirectory(path)) {
             throw new ValidationException(String.format("%s is not a directory", settings.getDownloadPath()));
+        }
+
+        if (settings.getMaxTotalThreads() < 1) {
+            throw new ValidationException(String.format("Invalid max global concurrent download settings, values must be in greater than %d", 1));
         }
 
         if (settings.getMaxThreads() < 1 || settings.getMaxThreads() > 4) {
@@ -159,6 +175,8 @@ public class AppSettingsService {
         private String downloadPath;
         @JsonProperty("maxThreads")
         private int maxThreads;
+        @JsonProperty("maxTotalThreads")
+        private int maxTotalThreads;
         @JsonProperty("autoStart")
         private boolean autoStart;
         @JsonProperty("vLogin")
@@ -182,9 +200,10 @@ public class AppSettingsService {
         @JsonProperty("viewPhotos")
         private boolean viewPhotos;
 
-        public Settings(String downloadPath, int maxThreads, boolean autoStart, boolean vLogin, String vUsername, String vPassword, boolean vThanks, boolean desktopClipboard, boolean forceOrder, boolean subLocation, boolean threadSubLocation, boolean clearCompleted, boolean viewPhotos) {
+        public Settings(String downloadPath, int maxThreads, int maxTotalThreads, boolean autoStart, boolean vLogin, String vUsername, String vPassword, boolean vThanks, boolean desktopClipboard, boolean forceOrder, boolean subLocation, boolean threadSubLocation, boolean clearCompleted, boolean viewPhotos) {
             this.downloadPath = downloadPath;
             this.maxThreads = maxThreads;
+            this.maxTotalThreads = maxTotalThreads;
             this.autoStart = autoStart;
             this.vLogin = vLogin;
             this.vUsername = vUsername;

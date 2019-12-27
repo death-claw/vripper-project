@@ -7,7 +7,14 @@ import { PostState } from '../posts/post-state.model';
 import { BehaviorSubject, Subject } from 'rxjs';
 
 class Image extends IImage {
-  constructor(public src: string, public msrc: string, public w: number, public h: number, public _initialized: boolean) {
+  constructor(
+    public title: string,
+    public src: string,
+    public msrc: string,
+    public w: number,
+    public h: number,
+    public _initialized: boolean
+  ) {
     super(src, msrc, w, h);
   }
 }

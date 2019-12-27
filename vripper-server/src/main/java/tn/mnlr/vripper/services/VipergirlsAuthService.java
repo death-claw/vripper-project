@@ -59,6 +59,11 @@ public class VipergirlsAuthService {
     @PostConstruct
     private void init() {
         context.setCookieStore(new BasicCookieStore());
+        try {
+            authenticate();
+        } catch (VripperException e) {
+            logger.error("Cannot authenticate user with ViperGirls", e);
+        }
     }
 
     @PreDestroy

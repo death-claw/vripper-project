@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.exception.PostParseException;
-import tn.mnlr.vripper.q.DownloadQ;
+import tn.mnlr.vripper.q.ExecutionService;
 import tn.mnlr.vripper.services.*;
 
 import java.io.File;
@@ -47,14 +47,16 @@ public class PostRestEndpoint {
     }
 
     @Autowired
-    private DownloadQ downloadQ;
+    private ExecutionService executionService;
+//    private DownloadQ downloadQ;
+
 
     @Autowired
     private PostParser postParser;
 
     @PostMapping("/post")
     @ResponseStatus(value = HttpStatus.OK)
-    public ResponseEntity processPost(@RequestBody ThreadUrl _url) throws Exception {
+    public synchronized ResponseEntity processPost(@RequestBody ThreadUrl _url) throws Exception {
         if (_url.getUrl() == null || _url.getUrl().isEmpty()) {
             return new ResponseEntity("Failed to process empty request", HttpStatus.BAD_REQUEST);
         }
@@ -87,13 +89,13 @@ public class PostRestEndpoint {
     @ResponseStatus(value = HttpStatus.OK)
     public synchronized void restartPost(@RequestBody @NonNull List<PostId> postIds) throws Exception {
         for (PostId postId : postIds) {
-            downloadQ.restart(postId.getPostId());
+            executionService.restart(postId.getPostId());
         }
     }
 
     @PostMapping("/post/add")
     @ResponseStatus(value = HttpStatus.OK)
-    public void addPost(@RequestBody List<PostToAdd> posts) {
+    public synchronized void addPost(@RequestBody List<PostToAdd> posts) {
         for (PostToAdd post : posts) {
             VripperApplication.commonExecutor.submit(() -> {
                 try {
@@ -114,22 +116,22 @@ public class PostRestEndpoint {
 
     @PostMapping("/post/restart/all")
     @ResponseStatus(value = HttpStatus.OK)
-    public void restartPost() throws Exception {
-        downloadQ.restartAll();
+    public synchronized void restartPost() throws Exception {
+        executionService.restartAll();
     }
 
     @PostMapping("/post/stop")
     @ResponseStatus(value = HttpStatus.OK)
     public synchronized void stop(@RequestBody @NonNull List<PostId> postIds) {
         for (PostId postId : postIds) {
-            downloadQ.stop(postId.getPostId());
+            executionService.stop(postId.getPostId());
         }
     }
 
     @PostMapping("/post/stop/all")
     @ResponseStatus(value = HttpStatus.OK)
-    public void stopAll() {
-        downloadQ.stopAll();
+    public synchronized void stopAll() {
+        executionService.stopAll();
     }
 
     @PostMapping("/post/remove")
@@ -137,7 +139,7 @@ public class PostRestEndpoint {
     public synchronized ResponseEntity<List<RemoveResult>> remove(@RequestBody @NonNull List<PostId> postIds) {
         List<RemoveResult> result = new ArrayList<>();
         for (PostId postId : postIds) {
-            downloadQ.stop(postId.getPostId());
+            executionService.stop(postId.getPostId());
             appStateService.remove(postId.getPostId());
             result.add(new RemoveResult(postId.getPostId()));
         }
@@ -146,13 +148,13 @@ public class PostRestEndpoint {
 
     @PostMapping("/post/clear/all")
     @ResponseStatus(value = HttpStatus.OK)
-    public ResponseEntity<RemoveAllResult> clearAll() {
+    public synchronized ResponseEntity<RemoveAllResult> clearAll() {
         return ResponseEntity.ok(new RemoveAllResult(appStateService.clearAll()));
     }
 
     @PostMapping("/post/remove/all")
     @ResponseStatus(value = HttpStatus.OK)
-    public ResponseEntity<RemoveAllResult> removeAll() {
+    public synchronized ResponseEntity<RemoveAllResult> removeAll() {
         return ResponseEntity.ok(new RemoveAllResult(appStateService.removeAll()));
     }
 

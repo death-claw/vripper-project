@@ -45,7 +45,7 @@ public class PostParser {
 
     }
 
-    public void addPost(String postId, String threadId) throws PostParseException {
+    public synchronized void addPost(String postId, String threadId) throws PostParseException {
 
         if (appStateService.getCurrentPosts().containsKey(postId)) {
             logger.warn(String.format("skipping %s, already loaded", postId));

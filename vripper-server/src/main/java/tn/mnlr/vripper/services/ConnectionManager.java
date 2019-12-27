@@ -26,9 +26,9 @@ public class ConnectionManager {
     private PoolingHttpClientConnectionManager pcm;
 
     private RequestConfig rc = RequestConfig.custom()
-            .setConnectionRequestTimeout(10_000)
-            .setConnectTimeout(10_000)
-            .setSocketTimeout(10_000)
+            .setConnectionRequestTimeout(5_000)
+            .setConnectTimeout(5_000)
+            .setSocketTimeout(5_000)
             .setCookieSpec(CookieSpecs.STANDARD)
             .build();
 

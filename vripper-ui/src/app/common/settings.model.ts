@@ -1,6 +1,7 @@
 export interface Settings {
     downloadPath: string;
     maxThreads: number;
+    maxTotalThreads: number;
     autoStart: boolean;
     vLogin: boolean;
     vUsername: string;

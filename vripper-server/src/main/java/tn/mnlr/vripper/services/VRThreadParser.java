@@ -21,6 +21,7 @@ import javax.xml.parsers.SAXParserFactory;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,8 +36,9 @@ public class VRThreadParser {
 
     private static RetryPolicy<Object> retryPolicy = new RetryPolicy<>()
             .handleIf(e -> e instanceof IOException)
-            .withBackoff(5, 30, ChronoUnit.SECONDS)
-            .withMaxRetries(4)
+            .withDelay(1, 3, ChronoUnit.SECONDS)
+            .withMaxRetries(2)
+            .withMaxDuration(Duration.of(10, ChronoUnit.SECONDS))
             .abortOn(InterruptedException.class)
             .onFailedAttempt(e -> logger.warn(String.format("#%d tries failed", e.getAttemptCount()), e.getLastFailure()));
     private static SAXParserFactory factory = SAXParserFactory.newInstance();

@@ -1,3 +1,4 @@
+import { LinkCollectorService } from './link-collector.service';
 import { ContextMenuService } from './ctxt-menu.service';
 import { PostContextMenuComponent } from './posts/post-context-menu.component';
 import { PostsDataService } from './posts-data.service';
@@ -101,7 +102,8 @@ import { PhotoSwipeComponent } from './photo-swipe/photo-swipe.component';
     SharedService,
     SelectionService,
     PostsDataService,
-    ContextMenuService
+    ContextMenuService,
+    LinkCollectorService
   ],
   bootstrap: [AppComponent]
 })

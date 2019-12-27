@@ -27,7 +27,9 @@ public class SpringContext implements ApplicationContextAware {
 
     public static void close() {
         logger.info("Application terminating...");
-        context.close();
+        if (context != null) {
+            context.close();
+        }
 
     }
 

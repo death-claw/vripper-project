@@ -25,18 +25,32 @@
               </button>
             </div>
 
-            <mat-form-field>
-              <input
-                formControlName="maxThreads"
-                type="number"
-                matInput
-                placeholder="Max concurrent downloads"
-                name="maxThreads"
-                min="1"
-                max="4"
-                required
-              />
-            </mat-form-field>
+            <div fxLayout="row" fxLayoutAlign="center center" fxLayoutGap="10px">
+              <mat-form-field fxFlex="grow">
+                <input
+                  formControlName="maxThreads"
+                  matInput
+                  max="4"
+                  min="1"
+                  name="maxThreads"
+                  placeholder="Max concurrent downloads per host"
+                  required
+                  type="number"
+                />
+              </mat-form-field>
+
+              <mat-form-field fxFlex="grow">
+                <input
+                  formControlName="maxTotalThreads"
+                  matInput
+                  min="1"
+                  name="maxTotalThreads"
+                  placeholder="Max global concurrent downloads"
+                  required
+                  type="number"
+                />
+              </mat-form-field>
+            </div>
 
             <mat-checkbox color="primary" formControlName="subLocation" name="subLocation"
             >Save posts in sub folders
@@ -64,7 +78,7 @@
             </mat-checkbox>
 
             <mat-checkbox color="primary" formControlName="viewPhotos" name="viewPhotos">
-              Enable View photo in gallery option
+              Enable photo gallery
             </mat-checkbox>
 
             <mat-slide-toggle color="primary" formControlName="vLogin" name="vLogin">

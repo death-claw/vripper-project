@@ -1,5 +1,8 @@
 package tn.mnlr.vripper.web.restendpoints;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -26,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -104,13 +108,42 @@ public class GalleryEndpoint {
 @NoArgsConstructor
 class GalleryImage {
 
+    private static final LoadingCache<File, Dimension> cache = CacheBuilder.newBuilder()
+            .maximumSize(20000)
+            .build(loader);
     private static final Logger logger = LoggerFactory.getLogger(GalleryImage.class);
+    private static final CacheLoader<File, Dimension> loader = new CacheLoader<>() {
+
+        @Override
+        public Dimension load(File file) {
+            try (ImageInputStream in = ImageIO.createImageInputStream(file)) {
+                final Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
+                if (readers.hasNext()) {
+                    ImageReader reader = readers.next();
+                    try {
+                        reader.setInput(in);
+                        return new Dimension(reader.getWidth(0), reader.getHeight(0));
+                    } finally {
+                        reader.dispose();
+                    }
+                } else {
+                    logger.error(String.format("No reader found for image %s", file.toString()));
+                    return null;
+                }
+            } catch (Exception e) {
+                logger.error(String.format("Failed to create image object for %s", file.toString()), e);
+                return null;
+            }
+        }
+    };
+    private String title;
     private String src;
     private String msrc;
     private double w;
     private double h;
 
-    public GalleryImage(String src, String msrc, double w, double h) {
+    public GalleryImage(String title, String src, String msrc, double w, double h) {
+        this.title = title;
         this.src = src;
         this.msrc = msrc;
         this.w = w;
@@ -118,26 +151,16 @@ class GalleryImage {
     }
 
     public static GalleryImage fromFile(File file) {
-        Dimension dimension;
-        try (ImageInputStream in = ImageIO.createImageInputStream(file)) {
-            final Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
-            if (readers.hasNext()) {
-                ImageReader reader = readers.next();
-                try {
-                    reader.setInput(in);
-                    dimension = new Dimension(reader.getWidth(0), reader.getHeight(0));
-                } finally {
-                    reader.dispose();
-                }
-            } else {
-                logger.error(String.format("No reader found for image %s", file.toString()));
-                return null;
-            }
-        } catch (Exception e) {
-            logger.error(String.format("Failed to create image object for %s", file.toString()), e);
+
+        Dimension dimension = null;
+        try {
+            dimension = cache.get(file);
+        } catch (ExecutionException e) {
+            logger.error(String.format("Failed to get image dimensions for %s", file.toString()), e);
+        }
+        if (dimension == null) {
             return null;
         }
-
-        return new GalleryImage(file.getName(), file.getName(), dimension.getWidth(), dimension.getHeight());
+        return new GalleryImage(file.getName(), file.getName(), file.getName(), dimension.getWidth(), dimension.getHeight());
     }
 }

@@ -1,3 +1,4 @@
+import { LinkCollectorService } from './../link-collector.service';
 import { ServerService } from './../server-service';
 import { ElectronService } from 'ngx-electron';
 import { ClipboardService } from './../clipboard.service';
@@ -19,7 +20,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     private httpClient: HttpClient,
     private serverService: ServerService,
     private _snackBar: MatSnackBar,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    public linkCollectorService: LinkCollectorService
   ) {}
 
   ngOnInit() {
