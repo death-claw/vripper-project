@@ -2,6 +2,10 @@
 
 ## [2.9.0] - 2019-12-27
 ### Changed
+- Fix build issue
+
+## [2.9.0] - 2019-12-27
+### Changed
 - Decrease timeout for fast fail
 ### Added
 - Allow many hosts to run at the same time
