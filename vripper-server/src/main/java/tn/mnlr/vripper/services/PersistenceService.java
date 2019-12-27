@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import tn.mnlr.vripper.EventListenerBean;
 import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.entities.Post;
@@ -88,8 +89,6 @@ public class PersistenceService {
                 logger.error("Unable to create data file", e);
                 SpringContext.close();
             }
-        } else {
-            restore();
         }
     }
 
@@ -98,7 +97,9 @@ public class PersistenceService {
         this.subscription.dispose();
         logger.info(String.format("Destroying %s", PersistenceService.class.getSimpleName()));
         logger.info("Persisting data before destroying");
-        this.persist(stateService.getCurrentPosts());
+        if (EventListenerBean.isInit()) {
+            this.persist(stateService.getCurrentPosts());
+        }
     }
 
     private void persist(Map<String, Post> currentPosts) {
