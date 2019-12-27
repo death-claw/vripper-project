@@ -108,10 +108,6 @@ public class GalleryEndpoint {
 @NoArgsConstructor
 class GalleryImage {
 
-    private static final LoadingCache<File, Dimension> cache = CacheBuilder.newBuilder()
-            .maximumSize(20000)
-            .build(loader);
-    private static final Logger logger = LoggerFactory.getLogger(GalleryImage.class);
     private static final CacheLoader<File, Dimension> loader = new CacheLoader<>() {
 
         @Override
@@ -136,6 +132,12 @@ class GalleryImage {
             }
         }
     };
+
+    private static final LoadingCache<File, Dimension> cache = CacheBuilder.newBuilder()
+            .maximumSize(20000)
+            .build(loader);
+
+    private static final Logger logger = LoggerFactory.getLogger(GalleryImage.class);
     private String title;
     private String src;
     private String msrc;
