@@ -93,6 +93,7 @@ public class GalleryEndpoint {
             return ResponseEntity.ok(
                     Arrays.stream(Objects.requireNonNull(destinationFolder.listFiles()))
                             .filter(f -> !f.getName().endsWith("tmp"))
+                            .filter(f -> f.getName().toLowerCase().endsWith(".jpg") || f.getName().toLowerCase().endsWith(".jpeg"))
                             .sorted(Comparator.comparing(File::getName))
                             .map(GalleryImage::fromFile)
                             .filter(Objects::nonNull)
