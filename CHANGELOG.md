@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.10.2] - 2019-12-29
+### Changed
+- Upgrade electron to v7
+- Bug fix
+
 ## [2.10.1] - 2019-12-27
 ### Changed
 - Bug fix
