@@ -70,7 +70,7 @@
     "dist": "node pre-build.js && electron-builder"
   },
   "devDependencies": {
-    "electron": "^6.0.9",
+    "electron": "^7.1.7",
     "electron-builder": "^21.2.0"
   },
   "dependencies": {
