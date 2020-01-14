@@ -10,6 +10,8 @@ import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.XpathException;
 import tn.mnlr.vripper.q.ImageFileData;
 
+import java.util.Optional;
+
 @Service
 public class PostImgHost extends Host {
 
@@ -35,28 +37,23 @@ public class PostImgHost extends Host {
         String url = _url.replace("http://", "https://");
         Document doc = getResponse(url, context).getDocument();
 
-        String title;
+        Node urlNode, titleNode;
         try {
             logger.debug(String.format("Looking for xpath expression %s in %s", TITLE_XPATH, url));
-            Node titleNode = xpathService.getAsNode(doc, TITLE_XPATH);
-            logger.debug(String.format("Resolving name for %s", url));
-            if(titleNode != null) {
-                title = titleNode.getTextContent().trim();
-            } else {
-                title = null;
-            }
+            titleNode = xpathService.getAsNode(doc, TITLE_XPATH);
+
+            logger.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url));
+            urlNode = xpathService.getAsNode(doc, IMG_XPATH);
         } catch (XpathException e) {
             throw new HostException(e);
         }
 
-        if(title == null || title.isEmpty()) {
-            title = getDefaultImageName(url);
-        }
-
         try {
-            Node urlNode = xpathService.getAsNode(doc, IMG_XPATH);
+            logger.debug(String.format("Resolving name and image url for %s", url));
+            String imgTitle = Optional.ofNullable(titleNode).map(node -> node.getTextContent().trim()).orElseGet(() -> getDefaultImageName(url));
+
             imageFileData.setImageUrl(urlNode.getAttributes().getNamedItem("href").getTextContent().trim());
-            imageFileData.setImageName(title);
+            imageFileData.setImageName(imgTitle);
         } catch (Exception e) {
             throw new HostException("Unexpected error occurred", e);
         }
