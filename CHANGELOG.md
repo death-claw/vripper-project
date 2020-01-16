@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.3] - 2020-01-16
+### Changed
+- Some bug fixes
+- Enhance download queue logic
+- Clear cache button
+- Fix the partial status
+
 ## [2.10.2] - 2019-12-29
 ### Changed
 - Upgrade electron to v7
