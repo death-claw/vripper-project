@@ -120,7 +120,7 @@ abstract public class Host {
                     throw new DownloadException(String.format("Server returned code %d", response.getStatusLine().getStatusCode()));
                 }
 
-                File outputFile = new File(destinationFolder.getPath() + File.separator + imageFileData.getImageName() + ".tmp");
+                File outputFile = new File(destinationFolder.getPath() + File.separator + String.format("%03d_", image.getIndex()) + imageFileData.getImageName() + ".tmp");
                 try (InputStream downloadStream = response.getEntity().getContent(); FileOutputStream fos = new FileOutputStream(outputFile)) {
                     image.setTotal(response.getEntity().getContentLength());
                     logger.debug(String.format("%s length is %d", imageFileData.getImageUrl(), image.getTotal()));

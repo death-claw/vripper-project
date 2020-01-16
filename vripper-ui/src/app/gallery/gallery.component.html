@@ -4,21 +4,20 @@
   </div>
   <mat-dialog-content fxFlex="grow">
     <div class="container">
-      <div class="masonry ">
+      <div class="masonry">
         <ng-container *ngFor="let img of images | async; let i=index">
-          <figure class="masonry-brick " fxLayout="row" fxLayoutAlign="center center"
-                  style="position: relative; cursor: pointer;">
-            <mat-progress-spinner *ngIf="!img._initialized" mode="indeterminate"
-                                  style="position: absolute;"></mat-progress-spinner>
+          <figure [style.opacity]="img._initialized ? 1 : 0"
+                  [style.visibility]="img._initialized ? 'visible' : 'hidden'" class="masonry-brick">
             <img (click)="openSlideshow(i)" (load)="loaded(img)" [src]="img.msrc"/>
           </figure>
         </ng-container>
+
         <app-photo-swipe #photoSwipe></app-photo-swipe>
       </div>
     </div>
   </mat-dialog-content>
   <mat-dialog-actions align="end" fxFlex="nogrow">
-    <button (click)="refresh()" color="primary" mat-raised-button>
+    <button (click)="refresh()" [disabled]="(disableRefresh | async)" color="primary" mat-raised-button>
       <mat-icon>refresh</mat-icon>
       <span>Refresh</span></button>
     <button mat-dialog-close mat-raised-button>Close</button>

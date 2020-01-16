@@ -3,7 +3,8 @@
     <div
       [ngClass]="{
         error: postState.status === 'ERROR',
-        downloading: postState.status === 'DOWNLOADING' || postState.status === 'PARTIAL',
+        downloading: postState.status === 'DOWNLOADING',
+        partial: postState.status === 'PARTIAL',
         complete: postState.status === 'COMPLETE',
         stopped: postState.status === 'STOPPED'
       }"

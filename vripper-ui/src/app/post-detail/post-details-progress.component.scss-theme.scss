@@ -13,7 +13,7 @@
   }
 
   app-details-cell .error {
-    background-color: mat-color($red, 50);
+    background-color: mat-color($red, 100);
     & .progress-bar .mat-progress-bar-fill::after {
       background-color: mat-color($red, 300);
     }

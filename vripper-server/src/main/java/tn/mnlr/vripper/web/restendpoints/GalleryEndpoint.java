@@ -102,6 +102,39 @@ public class GalleryEndpoint {
         }
         return new ResponseEntity("Gallery does not exist in download location, you probably removed it", HttpStatus.BAD_REQUEST);
     }
+
+    @GetMapping("/gallery/cache")
+    @ResponseStatus(value = HttpStatus.OK)
+    public ResponseEntity<CacheSize> getCacheSize() {
+        return ResponseEntity.ok(new CacheSize(humanReadableByteCount(thumbnailGenerator.cacheSize(), false)));
+    }
+
+    @GetMapping("/gallery/cache/clear")
+    @ResponseStatus(value = HttpStatus.OK)
+    public ResponseEntity<CacheSize> clearCache() {
+        thumbnailGenerator.clearCache();
+        return ResponseEntity.ok(new CacheSize(humanReadableByteCount(thumbnailGenerator.cacheSize(), false)));
+    }
+
+    private String humanReadableByteCount(long bytes, boolean si) {
+        int unit = si ? 1000 : 1024;
+        if (bytes < unit) return bytes + " B";
+        int exp = (int) (Math.log(bytes) / Math.log(unit));
+        String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
+        return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
+    }
+}
+
+@Getter
+@Setter
+@NoArgsConstructor
+class CacheSize {
+
+    private String size;
+
+    public CacheSize(String size) {
+        this.size = size;
+    }
 }
 
 @Getter

@@ -51,11 +51,14 @@ public class ExecutionService {
 
     private Thread executionThread;
 
+    BlockingQueue<DownloadJob> queue = new LinkedBlockingQueue<>();
+
     private RetryPolicy<Object> retryPolicy;
 
     private List<DownloadJob> running = Collections.synchronizedList(new ArrayList<>());
 
     private Map<String, Future<?>> futures = new ConcurrentHashMap<>();
+    private Thread pollThread;
 
     @PostConstruct
     private void init() {
@@ -69,6 +72,8 @@ public class ExecutionService {
                 .onFailedAttempt(e -> logger.warn(String.format("#%d tries failed", e.getAttemptCount()), e.getLastFailure()));
 
         executionThread = new Thread(this::start, "Executor thread");
+        pollThread = new Thread(this::poll, "Polling thread");
+        pollThread.start();
         executionThread.start();
     }
 
@@ -189,7 +194,7 @@ public class ExecutionService {
         }
     }
 
-    private synchronized boolean canRun(Host host) {
+    private boolean canRun(Host host) {
         boolean canRun;
         AtomicInteger count = threadCount.get(host);
         if (count == null) {
@@ -203,19 +208,30 @@ public class ExecutionService {
         return false;
     }
 
-    public void start() {
+    public void poll() {
         while (!Thread.interrupted()) {
-            List<DownloadJob> take;
             try {
-                take = downloadQ.take();
-                for (DownloadJob downloadJob : take) {
-                    if (!push(downloadJob)) {
-                        downloadQ.rePut(downloadJob);
+                List<DownloadJob> peek = downloadQ.peek();
+                for (DownloadJob downloadJob : peek) {
+                    if (canRun(downloadJob.getImage().getHost())) {
+                        queue.offer(downloadJob);
+                        downloadQ.remove(downloadJob);
                     }
                 }
                 synchronized (threadCount) {
                     threadCount.wait(2_000);
                 }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+    }
+
+    public void start() {
+        while (!Thread.interrupted()) {
+            try {
+                push(queue.take());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -226,43 +242,38 @@ public class ExecutionService {
         }
     }
 
-    private boolean push(DownloadJob take) {
-        if (canRun(take.getImage().getHost())) {
-            Runnable task = () -> {
-                running.add(take);
+    private void push(DownloadJob take) {
+        Runnable task = () -> {
+            running.add(take);
 
-                Failsafe.with(retryPolicy)
-                        .onFailure(e -> {
-                            if (e.getFailure() instanceof InterruptedException || (e.getFailure() instanceof FailsafeException && e.getFailure().getCause() instanceof InterruptedException)) {
-                                logger.debug("Job successfully interrupted");
-                                return;
-                            }
-                            logger.error(String.format("Failed to download %s after %d tries", take.getImage().getUrl(), e.getAttemptCount()), e.getFailure());
-                            take.getImage().setStatus(Image.Status.ERROR);
-                        })
-                        .onComplete(e -> {
-                            appStateService.doneDownloadJob(take.getImage());
-                            logger.debug(String.format("Finished downloading %s", take.getImage().getUrl()));
-                            if (appSettingsService.isViewPhotos()) {
-                                VripperApplication.commonExecutor.submit(
-                                        () -> thumbnailGenerator.getThumbnails()
-                                                .get(new ThumbnailGenerator.CacheKey(take.getImage().getPostId(), take.getImageFileData().getFileName())));
-                            }
-                            threadCount.get(take.getImage().getHost()).decrementAndGet();
-                            running.remove(take);
-                            futures.remove(take.getImage().getUrl());
-                            synchronized (threadCount) {
-                                threadCount.notify();
-                            }
-                        })
-                        .get(take::call);
-            };
-            logger.debug(String.format("Scheduling a job for %s", take.getImage().getUrl()));
-            futures.put(take.getImage().getUrl(), executor.submit(task));
-            return true;
-        } else {
-            return false;
-        }
+            Failsafe.with(retryPolicy)
+                    .onFailure(e -> {
+                        if (e.getFailure() instanceof InterruptedException || (e.getFailure() instanceof FailsafeException && e.getFailure().getCause() instanceof InterruptedException)) {
+                            logger.debug("Job successfully interrupted");
+                            return;
+                        }
+                        logger.error(String.format("Failed to download %s after %d tries", take.getImage().getUrl(), e.getAttemptCount()), e.getFailure());
+                        take.getImage().setStatus(Image.Status.ERROR);
+                    })
+                    .onComplete(e -> {
+                        appStateService.doneDownloadJob(take.getImage());
+                        logger.debug(String.format("Finished downloading %s", take.getImage().getUrl()));
+                        if (appSettingsService.isViewPhotos()) {
+                            VripperApplication.commonExecutor.submit(
+                                    () -> thumbnailGenerator.getThumbnails()
+                                            .get(new ThumbnailGenerator.CacheKey(take.getImage().getPostId(), take.getImageFileData().getFileName())));
+                        }
+                        threadCount.get(take.getImage().getHost()).decrementAndGet();
+                        running.remove(take);
+                        futures.remove(take.getImage().getUrl());
+                        synchronized (threadCount) {
+                            threadCount.notify();
+                        }
+                    })
+                    .get(take::call);
+        };
+        logger.debug(String.format("Scheduling a job for %s", take.getImage().getUrl()));
+        futures.put(take.getImage().getUrl(), executor.submit(task));
     }
 
     public int runningCount() {

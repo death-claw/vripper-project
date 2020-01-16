@@ -5,6 +5,7 @@ import { MatDialogRef, MAT_DIALOG_DATA, MatSnackBar } from '@angular/material';
 import { ServerService } from '../server-service';
 import { PostState } from '../posts/post-state.model';
 import { BehaviorSubject, Subject } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
 class Image extends IImage {
   constructor(
@@ -37,6 +38,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   images: Subject<Image[]> = new BehaviorSubject([]);
   _images: Image[] = [];
+  disableRefresh: Subject<boolean> = new BehaviorSubject(true);
 
   @ViewChild('photoSwipe', { static: true }) photoSwipe: PhotoSwipeComponent;
 
@@ -69,7 +71,9 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   refresh() {
-    this.httpClient.get<Image[]>(this.serverService.baseUrl + '/gallery/' + this.dialogData.postId).subscribe(
+    this.httpClient.get<Image[]>(this.serverService.baseUrl + '/gallery/' + this.dialogData.postId)
+    .pipe(finalize(() => this.disableRefresh.next(false)))
+    .subscribe(
       response => {
         this.ngZone.run(() => {
           response.forEach(i => {

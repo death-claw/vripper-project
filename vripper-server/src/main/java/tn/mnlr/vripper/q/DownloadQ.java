@@ -12,6 +12,7 @@ import tn.mnlr.vripper.services.AppStateService;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingDeque;
@@ -45,18 +46,19 @@ public class DownloadQ {
         appStateService.newDownloadJob(downloadJob);
     }
 
-    public void rePut(final DownloadJob downloadJob) throws InterruptedException {
-        downloadQ.get(downloadJob.getImage().getHost()).putFirst(downloadJob);
+    public void remove(final DownloadJob downloadJob) {
+        downloadQ.get(downloadJob.getImage().getHost()).remove(downloadJob);
     }
 
-    public List<DownloadJob> take() throws Exception {
-        if (hosts.size() == 0) {
-            throw new Exception("No host available in th application");
-        }
+    public List<DownloadJob> peek() {
         List<DownloadJob> downloadJobs = new ArrayList<>();
+        if (hosts.size() == 0) {
+            return downloadJobs;
+        }
         for (Host host : hosts) {
+            Iterator<DownloadJob> it = downloadQ.get(host).iterator();
             for (int i = 0; i < appSettingsService.getMaxThreads(); i++) {
-                DownloadJob downloadJob = downloadQ.get(host).pollFirst();
+                DownloadJob downloadJob = it.hasNext() ? it.next() : null;
                 if (downloadJob != null) {
                     downloadJobs.add(downloadJob);
                 }

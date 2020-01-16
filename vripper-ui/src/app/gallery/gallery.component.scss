@@ -3,23 +3,20 @@
 }
 
 .masonry {
-  display: flex;
-  flex-flow: row wrap;
-  margin-left: -8px;
   width: 100%;
 }
 
 .masonry-brick {
-  flex: auto;
   height: 250px;
-  min-width: 150px;
-  margin: 0 8px 8px 0;
+  width: 250px;
+  display: inline-block;
+  cursor: pointer;
+  margin: 0 3px;
+  transition: opacity 0.5s ease-in, visibility 0.5s;
 }
 
 img {
+  object-fit: cover;
   height: 250px;
-  width: auto;
-}
-
-figure {
+  width: 250px;
 }

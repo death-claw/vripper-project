@@ -67,7 +67,7 @@ public class AppStateService {
 
     public synchronized void postDownloadingUpdate(String postId) {
         Post post = currentPosts.get(postId);
-        if (!post.getStatus().equals(Post.Status.DOWNLOADING)) {
+        if (!post.getStatus().equals(Post.Status.DOWNLOADING) && !post.getStatus().equals(Post.Status.PARTIAL)) {
             post.setStatus(Post.Status.DOWNLOADING);
             livePostsState.onNext(post);
         }

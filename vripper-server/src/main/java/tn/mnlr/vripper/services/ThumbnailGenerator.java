@@ -10,23 +10,35 @@ import org.imgscalr.Scalr;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileSystemUtils;
 
 import javax.annotation.PostConstruct;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class ThumbnailGenerator {
 
     @Getter
     private LoadingCache<CacheKey, byte[]> thumbnails;
+
     @Value("${base.dir}")
     private String baseDir;
+
     @Autowired
     private PathService pathService;
+
+    @Getter
     private File cacheFolder;
     CacheLoader<CacheKey, byte[]> loader = new CacheLoader<>() {
         @Override
@@ -49,6 +61,52 @@ public class ThumbnailGenerator {
         thumbnails = CacheBuilder.newBuilder()
                 .maximumSize(20000)
                 .build(loader);
+    }
+
+    public void clearCache() {
+        thumbnails.invalidateAll();
+        for (File file : Optional.ofNullable(cacheFolder.listFiles()).orElse(new File[]{})) {
+            FileSystemUtils.deleteRecursively(file);
+        }
+    }
+
+    public long cacheSize() {
+
+        final AtomicLong size = new AtomicLong(0);
+
+        try {
+            Files.walkFileTree(cacheFolder.toPath(), new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+
+                    size.addAndGet(attrs.size());
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(Path file, IOException exc) {
+
+                    System.out.println("skipped: " + file + " (" + exc + ")");
+                    // Skip folders that can't be traversed
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+
+                    if (exc != null)
+                        System.out.println("had trouble traversing: " + dir + " (" + exc + ")");
+                    else
+                        size.addAndGet(dir.toFile().length());
+                    // Ignore errors traversing a folder
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            throw new AssertionError("walkFileTree will not throw IOException if the FileVisitor does not");
+        }
+
+        return size.get();
     }
 
     private File generateThumbnail(File inputFile, String postId) throws Exception {

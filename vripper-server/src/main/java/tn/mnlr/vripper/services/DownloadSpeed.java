@@ -13,7 +13,7 @@ public class DownloadSpeed {
     }
 
     private String formatSI(long bytes) {
-        return humanReadableByteCount(bytes, true);
+        return humanReadableByteCount(bytes, false);
     }
 
     private String humanReadableByteCount(long bytes, boolean si) {
