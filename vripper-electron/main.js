@@ -23,6 +23,11 @@ process.on("uncaughtException", err => {
 });
 
 function createWindow() {
+
+  if (process.platform === 'win32') {
+    app.setAppUserModelId("tn.mnlr.vripper");
+  }
+
   let icon;
   if(process.platform === "win32") {
     icon = __dirname + '/icon.ico';
@@ -64,7 +69,6 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
-  app.setAppUserModelId(process.execPath)
   getPort().then(port => {
     serverPort = port;
     ipcMain.on("get-port", event => {

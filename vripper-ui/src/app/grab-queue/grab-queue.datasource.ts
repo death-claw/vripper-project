@@ -49,7 +49,7 @@ export class GrabQueueDataSource {
             if (count > 0 && toAdd.length > 0) {
               this.notificationService.notifyFromGrabQueue(
                 'Link Collector',
-                `${count} ${count > 1 ? 'threads are' : 'thread is'} in the link collector`
+                `You have ${count} ${count > 1 ? 'threads' : 'thread'} waiting in the link collector`
               );
             }
           });

@@ -9,7 +9,7 @@ import { ServerService } from '../server-service';
 import { ElectronService } from 'ngx-electron';
 import { Settings } from '../common/settings.model';
 import { OpenDialogReturnValue } from 'electron';
-import { forkJoin, Subject, BehaviorSubject } from 'rxjs';
+import { Subject, BehaviorSubject } from 'rxjs';
 
 interface CacheSize {
   size: string;
@@ -68,13 +68,18 @@ export class SettingsComponent implements OnInit {
 
   ngOnInit() {
     this.darkTheme = this.appService.darkTheme;
-    forkJoin([
-      this.httpClient.get<Settings>(this.serverService.baseUrl + '/settings'),
-      this.httpClient.get<CacheSize>(this.serverService.baseUrl + '/gallery/cache')
-    ]).subscribe(data => {
-      this.generalSettingsForm.reset(data[0]);
-      this.desktopSettingsForm.reset(data[0]);
-      this.cacheSize.next(data[1]);
+    this.httpClient.get<Settings>(this.serverService.baseUrl + '/settings')
+    .subscribe(data => {
+      this.generalSettingsForm.reset(data);
+      this.desktopSettingsForm.reset(data);
+    }, error => {
+      this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+        duration: 5000
+      });
+    });
+    this.httpClient.get<CacheSize>(this.serverService.baseUrl + '/gallery/cache')
+    .subscribe(data => {
+      this.cacheSize.next(data);
     }, error => {
       this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
         duration: 5000
