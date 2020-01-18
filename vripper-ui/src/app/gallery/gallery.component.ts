@@ -5,7 +5,6 @@ import { MatDialogRef, MAT_DIALOG_DATA, MatSnackBar } from '@angular/material';
 import { ServerService } from '../server-service';
 import { PostState } from '../posts/post-state.model';
 import { BehaviorSubject, Subject } from 'rxjs';
-import { finalize } from 'rxjs/operators';
 
 class Image extends IImage {
   constructor(
@@ -19,6 +18,14 @@ class Image extends IImage {
     super(src, msrc, w, h);
   }
 }
+
+interface Progress {
+  loading: boolean;
+  progress: number;
+  done: boolean;
+}
+
+const initialProgressState: Progress = { loading: false, progress: 0, done: false };
 
 @Component({
   selector: 'app-gallery',
@@ -39,11 +46,22 @@ export class GalleryComponent implements OnInit, OnDestroy {
   images: Subject<Image[]> = new BehaviorSubject([]);
   _images: Image[] = [];
   disableRefresh: Subject<boolean> = new BehaviorSubject(true);
+  loadProgress: Subject<Progress> = new BehaviorSubject(initialProgressState);
+  loadedImages = 0;
 
   @ViewChild('photoSwipe', { static: true }) photoSwipe: PhotoSwipeComponent;
 
   loaded(img: Image) {
     img._initialized = true;
+    this.loadedImages++;
+    this.loadProgress.next({
+      loading: true,
+      progress: Math.floor((this.loadedImages / this._images.length) * 100),
+      done: this.loadedImages === this._images.length
+    });
+    if (this.loadedImages === this._images.length) {
+      this.disableRefresh.next(false);
+    }
   }
 
   ngOnInit() {
@@ -71,9 +89,10 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   refresh() {
-    this.httpClient.get<Image[]>(this.serverService.baseUrl + '/gallery/' + this.dialogData.postId)
-    .pipe(finalize(() => this.disableRefresh.next(false)))
-    .subscribe(
+    this.loadProgress.next(initialProgressState);
+    this.loadedImages = 0;
+    this.disableRefresh.next(true);
+    this.httpClient.get<Image[]>(this.serverService.baseUrl + '/gallery/' + this.dialogData.postId).subscribe(
       response => {
         this.ngZone.run(() => {
           response.forEach(i => {

@@ -170,7 +170,6 @@ public class ExecutionService {
         stopRunning(postId);
     }
 
-
     public synchronized void stop(String postId) {
         try {
             if (FINISHED.contains(appStateService.getPost(postId).getStatus())) {
@@ -200,7 +199,7 @@ public class ExecutionService {
         if (count == null) {
             threadCount.put(host, new AtomicInteger(0));
         }
-        canRun = threadCount.get(host).get() < settings.getMaxThreads() && threadCount.values().stream().mapToInt(AtomicInteger::get).sum() < settings.getMaxTotalThreads();
+        canRun = threadCount.get(host).get() < settings.getMaxThreads() && (settings.getMaxTotalThreads() == 0 || threadCount.values().stream().mapToInt(AtomicInteger::get).sum() < settings.getMaxTotalThreads());
         if (canRun && notPauseQ) {
             threadCount.get(host).incrementAndGet();
             return true;

@@ -50,7 +50,8 @@ export class SettingsComponent implements OnInit {
   });
 
   desktopSettingsForm = new FormGroup({
-    desktopClipboard: new FormControl(false)
+    desktopClipboard: new FormControl(false),
+    notification: new FormControl(false)
   });
 
   darkTheme = false;

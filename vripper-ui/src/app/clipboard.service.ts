@@ -1,6 +1,6 @@
 import { Subject, Observable } from 'rxjs';
 import { ElectronService } from 'ngx-electron';
-import { Injectable, OnInit } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Clipboard } from 'electron';
 import { HttpClient } from '@angular/common/http';
 import { Settings } from './common/settings.model';

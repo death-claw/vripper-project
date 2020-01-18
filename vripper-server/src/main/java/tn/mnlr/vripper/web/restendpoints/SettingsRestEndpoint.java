@@ -81,6 +81,7 @@ public class SettingsRestEndpoint {
             this.settings.setThreadSubLocation(settings.isThreadSubLocation());
             this.settings.setClearCompleted(settings.isClearCompleted());
             this.settings.setViewPhotos(settings.isViewPhotos());
+            this.settings.setNotificationEnabled(settings.isNotification());
 
             this.settings.save();
 
@@ -107,7 +108,8 @@ public class SettingsRestEndpoint {
                 settings.isSubLocation(),
                 settings.isThreadSubLocation(),
                 settings.isClearCompleted(),
-                settings.isViewPhotos()
+                settings.isViewPhotos(),
+                settings.isNotificationEnabled()
         );
     }
 

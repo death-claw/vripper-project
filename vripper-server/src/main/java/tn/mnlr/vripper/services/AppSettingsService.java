@@ -49,15 +49,15 @@ public class AppSettingsService {
     private final String CLEAR = "CLEAR";
     private final String DARK_THEME = "DARK_THEME";
     private final String VIEW_PHOTOS = "VIEW_PHOTOS";
-
-    private String downloadPath;
-    private int maxThreads;
+    private final String NOTIFICATION = "NOTIFICATION";
 
     @PostConstruct
     private void init() {
         restore();
     }
 
+    private String downloadPath;
+    private int maxThreads;
     private boolean autoStart;
     private boolean vLogin;
     private String vUsername;
@@ -70,6 +70,7 @@ public class AppSettingsService {
     private boolean clearCompleted;
     private boolean darkTheme;
     private boolean viewPhotos;
+    private boolean notificationEnabled;
 
     public void setVPassword(String vPassword) {
         if(vPassword.isEmpty()) {
@@ -83,7 +84,7 @@ public class AppSettingsService {
 
         downloadPath = prefs.get(DOWNLOAD_PATH, defaultDownloadPath);
         maxThreads = prefs.getInt(MAX_THREADS, 4);
-        maxTotalThreads = prefs.getInt(MAX_TOTAL_THREADS, 8);
+        maxTotalThreads = prefs.getInt(MAX_TOTAL_THREADS, 0);
         autoStart = prefs.getBoolean(AUTO_START, true);
         vLogin = prefs.getBoolean(V_LOGIN, false);
         vUsername = prefs.get(V_USERNAME, "");
@@ -96,6 +97,7 @@ public class AppSettingsService {
         clearCompleted = prefs.getBoolean(CLEAR, false);
         darkTheme = prefs.getBoolean(DARK_THEME, false);
         viewPhotos = prefs.getBoolean(VIEW_PHOTOS, false);
+        notificationEnabled = prefs.getBoolean(NOTIFICATION, false);
     }
 
     @PreDestroy
@@ -116,6 +118,7 @@ public class AppSettingsService {
         prefs.putBoolean(CLEAR, clearCompleted);
         prefs.putBoolean(DARK_THEME, darkTheme);
         prefs.putBoolean(VIEW_PHOTOS, viewPhotos);
+        prefs.putBoolean(NOTIFICATION, notificationEnabled);
 
         try {
             prefs.sync();
@@ -138,7 +141,7 @@ public class AppSettingsService {
             throw new ValidationException(String.format("%s is not a directory", settings.getDownloadPath()));
         }
 
-        if (settings.getMaxTotalThreads() < 1) {
+        if (settings.getMaxTotalThreads() < 0) {
             throw new ValidationException(String.format("Invalid max global concurrent download settings, values must be in greater than %d", 1));
         }
 
@@ -199,8 +202,10 @@ public class AppSettingsService {
         private boolean clearCompleted;
         @JsonProperty("viewPhotos")
         private boolean viewPhotos;
+        @JsonProperty("notification")
+        private boolean notification;
 
-        public Settings(String downloadPath, int maxThreads, int maxTotalThreads, boolean autoStart, boolean vLogin, String vUsername, String vPassword, boolean vThanks, boolean desktopClipboard, boolean forceOrder, boolean subLocation, boolean threadSubLocation, boolean clearCompleted, boolean viewPhotos) {
+        public Settings(String downloadPath, int maxThreads, int maxTotalThreads, boolean autoStart, boolean vLogin, String vUsername, String vPassword, boolean vThanks, boolean desktopClipboard, boolean forceOrder, boolean subLocation, boolean threadSubLocation, boolean clearCompleted, boolean viewPhotos, boolean notification) {
             this.downloadPath = downloadPath;
             this.maxThreads = maxThreads;
             this.maxTotalThreads = maxTotalThreads;
@@ -215,6 +220,7 @@ public class AppSettingsService {
             this.threadSubLocation = threadSubLocation;
             this.clearCompleted = clearCompleted;
             this.viewPhotos = viewPhotos;
+            this.notification = notification;
         }
     }
 }

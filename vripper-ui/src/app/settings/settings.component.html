@@ -43,7 +43,7 @@
                 <input
                   formControlName="maxTotalThreads"
                   matInput
-                  min="1"
+                  min="0"
                   name="maxTotalThreads"
                   placeholder="Max global concurrent downloads"
                   required
@@ -113,10 +113,17 @@
             </section>
           </form>
         </mat-tab>
-        <mat-tab label="Desktop Integration" *ngIf="electronService.isElectronApp">
+        <mat-tab label="Desktop Integration">
           <form [formGroup]="desktopSettingsForm" autocomplete="off">
-            <mat-checkbox color="primary" formControlName="desktopClipboard" name="desktopClipboard"
-              >Monitor Clipboard</mat-checkbox
+            <mat-checkbox *ngIf="electronService.isElectronApp" color="primary" formControlName="desktopClipboard"
+                          name="desktopClipboard"
+            >Monitor Clipboard
+            </mat-checkbox
+            >
+
+            <mat-checkbox color="primary" formControlName="notification" name="notification"
+            >Enable system notifications
+            </mat-checkbox
             >
           </form>
         </mat-tab>

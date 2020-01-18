@@ -5,10 +5,15 @@
   <mat-dialog-content fxFlex="grow">
     <div class="container">
       <div class="masonry">
-        <ng-container *ngFor="let img of images | async; let i=index">
-          <figure [style.opacity]="img._initialized ? 1 : 0"
-                  [style.visibility]="img._initialized ? 'visible' : 'hidden'" class="masonry-brick">
-            <img (click)="openSlideshow(i)" (load)="loaded(img)" [src]="img.msrc"/>
+        <ng-container *ngFor="let img of images | async; let i = index">
+          <figure class="masonry-brick">
+            <img
+              [style.opacity]="img._initialized ? 1 : 0"
+              [style.visibility]="img._initialized ? 'visible' : 'hidden'"
+              (click)="openSlideshow(i)"
+              (load)="loaded(img)"
+              [src]="img.msrc"
+            />
           </figure>
         </ng-container>
 
@@ -16,10 +21,20 @@
       </div>
     </div>
   </mat-dialog-content>
+  <div style="height: 5px; width: 100%; margin-top: 8px">
+    <div *ngIf="loadProgress | async as progress">
+      <mat-progress-bar
+        *ngIf="!progress.done"
+        [mode]="progress.loading ? 'determinate' : 'indeterminate'"
+        [value]="progress.progress"
+      ></mat-progress-bar>
+    </div>
+  </div>
   <mat-dialog-actions align="end" fxFlex="nogrow">
-    <button (click)="refresh()" [disabled]="(disableRefresh | async)" color="primary" mat-raised-button>
+    <button (click)="refresh()" [disabled]="disableRefresh | async" color="primary" mat-raised-button>
       <mat-icon>refresh</mat-icon>
-      <span>Refresh</span></button>
+      <span>Refresh</span>
+    </button>
     <button mat-dialog-close mat-raised-button>Close</button>
   </mat-dialog-actions>
 </div>

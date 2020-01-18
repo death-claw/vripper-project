@@ -3,6 +3,7 @@ import { CMD } from './../common/cmd.enum';
 import { WSMessage } from './../common/ws-message.model';
 import { Subscription } from 'rxjs';
 import { WsConnectionService } from '../ws-connection.service';
+import { NotificationService } from '../notification.service';
 import { GridOptions } from 'ag-grid-community';
 import { WsHandler } from '../ws-handler';
 import { NgZone } from '@angular/core';
@@ -11,7 +12,8 @@ export class GrabQueueDataSource {
   constructor(
     private wsConnectionService: WsConnectionService,
     private gridOptions: GridOptions,
-    private zone: NgZone
+    private zone: NgZone,
+    private notificationService: NotificationService
   ) {
     this.websocketHandlerPromise = this.wsConnectionService.getConnection();
   }
@@ -43,6 +45,13 @@ export class GrabQueueDataSource {
               }
             });
             this.gridOptions.api.updateRowData({ update: toUpdate, add: toAdd, remove: toRemove });
+            const count = this.gridOptions.api.getDisplayedRowCount();
+            if (count > 0 && toAdd.length > 0) {
+              this.notificationService.notifyFromGrabQueue(
+                'Link Collector',
+                `${count} ${count > 1 ? 'threads are' : 'thread is'} in the link collector`
+              );
+            }
           });
         })
       );

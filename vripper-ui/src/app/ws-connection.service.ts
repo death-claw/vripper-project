@@ -27,6 +27,10 @@ export class WsConnectionService {
   private wsHandler: WsHandler;
 
   constructor(private electronService: ElectronService, private serverService: ServerService) {
+    this.init();
+  }
+
+  init() {
     this.wsHandlerPromise = new Promise((resolve, reject) => {
       if (this.wsHandler != null) {
         return this.wsHandler;

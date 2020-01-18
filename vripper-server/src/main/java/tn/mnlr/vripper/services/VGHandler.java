@@ -57,21 +57,18 @@ public class VGHandler {
             if (queuedVGLink.getPostId() != null) {
                 postParser.addPost(queuedVGLink.getPostId(), queuedVGLink.getThreadId());
             } else {
-                appStateService.getGrabQueue().put(queuedVGLink.getLink(), queuedVGLink);
-                appStateService.getLiveGrabQueue().onNext(queuedVGLink);
-
                 Callable<Void> cl = () -> {
                     List<VRPostState> vrPostStates = cache.get(queuedVGLink.getThreadId());
                     logger.debug(String.format("%d found for %s", vrPostStates.size(), queuedVGLink.getLink()));
                     if (vrPostStates.size() == 1) {
                         postParser.addPost(vrPostStates.get(0).getPostId(), vrPostStates.get(0).getThreadId());
-                        remove(queuedVGLink.getLink());
                         logger.debug(String.format("threadId %s, postId %s is added automatically for download", queuedVGLink.getThreadId(), queuedVGLink.getPostId()));
+                    } else {
+                        appStateService.getGrabQueue().put(queuedVGLink.getLink(), queuedVGLink);
+                        appStateService.getLiveGrabQueue().onNext(queuedVGLink);
                     }
-
                     return null;
                 };
-
                 VripperApplication.commonExecutor.submit(cl);
             }
         }

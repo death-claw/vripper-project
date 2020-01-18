@@ -26,8 +26,6 @@ export class AppService {
   private _settings: Settings;
   private _renderer: Renderer2;
 
-  // private settings$: Subject<Settings> = new Subject();
-
   get settings(): Settings {
     return { ...this._settings };
   }

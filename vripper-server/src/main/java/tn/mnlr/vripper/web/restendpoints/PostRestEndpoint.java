@@ -13,7 +13,10 @@ import tn.mnlr.vripper.q.ExecutionService;
 import tn.mnlr.vripper.services.*;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -48,7 +51,6 @@ public class PostRestEndpoint {
 
     @Autowired
     private ExecutionService executionService;
-//    private DownloadQ downloadQ;
 
 
     @Autowired
@@ -61,6 +63,7 @@ public class PostRestEndpoint {
             return new ResponseEntity("Failed to process empty request", HttpStatus.BAD_REQUEST);
         }
         List<String> urls = Arrays.stream(_url.getUrl().split("\\r?\\n")).map(String::trim).filter(e -> !e.isEmpty()).collect(Collectors.toList());
+        ArrayList<QueuedVGLink> queuedVGLinks = new ArrayList<>();
         for (String url : urls) {
             logger.debug(String.format("Starting to process thread: %s", url));
             if (!url.startsWith("https://vipergirls.to")) {
@@ -80,8 +83,9 @@ public class PostRestEndpoint {
             } catch (Exception e) {
                 throw new PostParseException(String.format("Cannot retrieve thread id from URL %s", url), e);
             }
-            vgHandler.handle(Collections.singletonList(new QueuedVGLink(url, threadId, postId)));
+            queuedVGLinks.add(new QueuedVGLink(url, threadId, postId));
         }
+        vgHandler.handle(queuedVGLinks);
         return ResponseEntity.ok().build();
     }
 

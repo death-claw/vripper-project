@@ -9,4 +9,5 @@ export interface Settings {
     vThanks: boolean;
     desktopClipboard: boolean;
     viewPhotos: boolean;
+    notification: boolean;
   }
