@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.10.5] - 2020-01-18
+### Changed
+- Bug fixes
+
 ## [2.10.4] - 2020-01-18
 ### Changed
 - Zero value for total max download will disable the limit
