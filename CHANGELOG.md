@@ -1,11 +1,21 @@
 # Changelog
 
+## [2.10.4] - 2020-01-18
+### Changed
+- Zero value for total max download will disable the limit
+- Add system notification
+- Bug fixes
+
 ## [2.10.3] - 2020-01-16
 ### Changed
 - Some bug fixes
 - Enhance download queue logic
 - Clear cache button
 - Fix the partial status
+- Sanitize URLs with spaces
+### Added
+- Support for Postimg host
+- Support for Imagevenue host
 
 ## [2.10.2] - 2019-12-29
 ### Changed
