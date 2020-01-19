@@ -3,6 +3,7 @@ package tn.mnlr.vripper.services;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.cache.Weigher;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -22,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -59,7 +61,9 @@ public class ThumbnailGenerator {
             throw new Exception(String.format("%s could not be created", cacheFolder.toString()));
         }
         thumbnails = CacheBuilder.newBuilder()
-                .maximumSize(20000)
+                .expireAfterAccess(Duration.ofMinutes(30))
+                .weigher((Weigher<CacheKey, byte[]>) (k, v) -> v.length)
+                .maximumWeight(104_857_600)
                 .build(loader);
     }
 
