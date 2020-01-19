@@ -1,6 +1,6 @@
 {
   "name": "vripper-ui",
-  "version": "2.10.5",
+  "version": "2.10.6",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",

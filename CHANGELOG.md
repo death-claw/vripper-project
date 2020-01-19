@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.10.6] - 2020-01-19
+### Changed
+- Limit cache size
+
 ## [2.10.5] - 2020-01-18
 ### Changed
 - Bug fixes
