@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.10.8] - 2020-01-25
+### Changed
+- Fix app url
+
 ## [2.10.7] - 2020-01-25
 ### Changed
 - Drop SockJs and switch to WebSocket
