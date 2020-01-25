@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.10.7] - 2020-01-25
+### Changed
+- Drop SockJs and switch to WebSocket
+- Autoreconnect front to back
+
 ## [2.10.6] - 2020-01-19
 ### Changed
 - Limit cache size
