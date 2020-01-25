@@ -1,4 +1,12 @@
-import { Component, OnInit, NgZone, OnDestroy, ChangeDetectionStrategy, EventEmitter, AfterViewInit } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  NgZone,
+  OnDestroy,
+  ChangeDetectionStrategy,
+  EventEmitter,
+  AfterViewInit
+} from '@angular/core';
 import { RemoveAllResponse } from '../common/remove-all-response.model';
 import { ServerService } from '../server-service';
 import { AppService } from '../app.service';
@@ -26,7 +34,6 @@ import { PostsDataService } from '../posts-data.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
-
   constructor(
     private serverService: ServerService,
     private appService: AppService,
@@ -38,9 +45,7 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
     private ws: WsConnectionService,
     private selectionService: SelectionService,
     private postsDataService: PostsDataService
-  ) {
-    this.websocketHandlerPromise = this.ws.getConnection();
-  }
+  ) {}
 
   loggedUser: EventEmitter<LoggedUser> = new EventEmitter();
   isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
@@ -48,6 +53,7 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
   subscriptions: Subscription[] = [];
   selected: RowNode[] = [];
   disableSelection: EventEmitter<boolean> = new EventEmitter();
+  userSub: Subscription;
 
   openSettings(): void {
     const dialogRef = this.dialog.open(SettingsComponent, {
@@ -92,9 +98,7 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
       .afterClosed()
       .pipe(
         filter(e => e === 'yes'),
-        flatMap(e =>
-          this.httpClient.post<RemoveResponse[]>(this.serverService.baseUrl + '/post/remove', toRemove)
-        )
+        flatMap(e => this.httpClient.post<RemoveResponse[]>(this.serverService.baseUrl + '/post/remove', toRemove))
       )
       .subscribe(
         data => {
@@ -223,25 +227,34 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnInit() {
-    this.websocketHandlerPromise.then((handler: WsHandler) => {
-      console.log('Connecting to user stream');
-      this.subscriptions.push(
-        handler.subscribeForUser((e: LoggedUser[]) => {
-          this.ngZone.run(() => {
-            this.loggedUser.emit(e[0]);
+    console.log('Connecting to user stream');
+    this.subscriptions.push(
+      this.ws.state.subscribe(state => {
+        if (state) {
+          this.userSub = this.ws.subscribeForUser().subscribe((e: LoggedUser[]) => {
+            this.ngZone.run(() => {
+              this.loggedUser.emit(e[0]);
+            });
           });
-        })
-      );
-      handler.send(new WSMessage(CMD.USER_SUB.toString()));
-    });
+          this.ws.send(new WSMessage(CMD.USER_SUB.toString()));
+        } else if (this.userSub != null) {
+          this.userSub.unsubscribe();
+        }
+      })
+    );
 
-    this.selectionService.selected$.subscribe(selected => {
-      this.selected = selected;
-      this.ngZone.run(() => this.disableSelection.next(this.selected.length === 0));
-    });
+    this.subscriptions.push(
+      this.selectionService.selected$.subscribe(selected => {
+        this.selected = selected;
+        this.ngZone.run(() => this.disableSelection.next(this.selected.length === 0));
+      })
+    );
   }
 
   ngOnDestroy() {
     this.subscriptions.forEach(e => e.unsubscribe());
+    if (this.userSub != null) {
+      this.userSub.unsubscribe();
+    }
   }
 }

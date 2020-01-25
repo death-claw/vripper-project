@@ -1,3 +1,4 @@
+import { Subscription } from 'rxjs';
 import { LinkCollectorService } from './../link-collector.service';
 import { ServerService } from './../server-service';
 import { ElectronService } from 'ngx-electron';
@@ -24,8 +25,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     public linkCollectorService: LinkCollectorService
   ) {}
 
+  clipboardSub: Subscription;
+
   ngOnInit() {
-    this.clipboardService.links.subscribe(e => {
+    this.clipboardSub = this.clipboardService.links.subscribe(e => {
       this.ngZone.run(() => {
         this.httpClient
           .post<{ threadId: string; postId: string }>(this.serverService.baseUrl + '/post', { url: e })
@@ -45,5 +48,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
   }
 
-  ngOnDestroy() {}
+  ngOnDestroy() {
+    if (this.clipboardSub != null) {
+      this.clipboardSub.unsubscribe();
+    }
+  }
 }

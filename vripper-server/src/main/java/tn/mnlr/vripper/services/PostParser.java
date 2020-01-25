@@ -40,6 +40,12 @@ public class PostParser {
     @Autowired
     private List<Host> supportedHosts;
 
+    @Autowired
+    private HtmlProcessorService htmlProcessorService;
+
+    @Autowired
+    private XpathService xpathService;
+
     @PostConstruct
     private void init() {
 
@@ -52,7 +58,7 @@ public class PostParser {
             return;
         }
 
-        VRPostParser vrPostParser = new VRPostParser(threadId, postId, cm, vipergirlsAuthService, supportedHosts);
+        VRPostParser vrPostParser = new VRPostParser(threadId, postId, cm, vipergirlsAuthService, supportedHosts, htmlProcessorService, xpathService);
         Post post = vrPostParser.parse();
 
         post.setAppStateService(appStateService);

@@ -4,7 +4,7 @@ import { ElectronService } from 'ngx-electron';
 import { Component, OnDestroy, AfterViewInit, Renderer2, ChangeDetectionStrategy, NgZone } from '@angular/core';
 import { MatDialog } from '@angular/material';
 import { Subscription, BehaviorSubject, Subject, merge } from 'rxjs';
-import { WsConnectionService, WSState } from './ws-connection.service';
+import { WsConnectionService } from './ws-connection.service';
 
 @Component({
   selector: 'app-root',
@@ -15,7 +15,7 @@ import { WsConnectionService, WSState } from './ws-connection.service';
 export class AppComponent implements OnDestroy, AfterViewInit {
   constructor(
     private dialog: MatDialog,
-    private ws: WsConnectionService,
+    public ws: WsConnectionService,
     public electronService: ElectronService,
     private clipboardService: ClipboardService,
     private appService: AppService,
@@ -26,28 +26,33 @@ export class AppComponent implements OnDestroy, AfterViewInit {
   }
 
   private subscriptions: Subscription[] = [];
-  appState: Subject<string> = new BehaviorSubject('CONNECTING');
   electron: Subject<boolean>;
+
+  loaded: Subject<boolean> = new BehaviorSubject(false);
 
   ngAfterViewInit() {
     this.appService.renderer = this.renderer;
-    this.subscriptions.push(this.ws.state.subscribe(wsState => {
-      if (wsState === WSState.CLOSE || wsState === WSState.ERROR) {
-        setTimeout(() => this.ngZone.run(() => {
-          this.dialog.closeAll();
-          this.appState.next('DISCONNECTED');
-        }), 500);
-      } else if (wsState === WSState.OPEN) {
-        this.clipboardService.init();
-        merge(this.appService.loadTheme(), this.appService.loadSettings())
-        .subscribe(() => this.ngZone.run(() => this.appState.next('CONNECTED')));
-      }
-    }));
+    this.subscriptions.push(
+      this.ws.state.subscribe(online => {
+        if (!online) {
+          this.ngZone.run(() => this.loaded.next(false));
+          setTimeout(
+            () =>
+              this.ngZone.run(() => {
+                this.dialog.closeAll();
+              }),
+            500
+          );
+        } else {
+          this.ngZone.run(() => this.loaded.next(true));
+          this.clipboardService.init();
+          this.subscriptions.push(merge(this.appService.loadTheme(), this.appService.loadSettings()).subscribe());
+        }
+      })
+    );
   }
 
   ngOnDestroy() {
-    this.subscriptions.forEach(e => {
-      e.unsubscribe();
-    });
+    this.subscriptions.forEach(e => e.unsubscribe());
   }
 }

@@ -1,136 +1,191 @@
 import { Injectable } from '@angular/core';
-import { Observer, Subject, BehaviorSubject, ConnectableObservable, Observable, Subscription } from 'rxjs';
+import { Subject, BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { WebSocketSubject } from 'rxjs/webSocket';
 import { environment } from 'src/environments/environment';
-import { multicast } from 'rxjs/operators';
 import { ElectronService } from 'ngx-electron';
-import { WsHandler } from './ws-handler';
 import { ServerService } from './server-service';
-declare var SockJS;
-
-export enum WSState {
-  INIT,
-  CONNECTING,
-  ERROR,
-  CLOSE,
-  OPEN
-}
-
-const maxAttemps = 15;
+import { GrabQueueState } from './grab-queue/grab-queue.model';
+import { WSMessage } from './common/ws-message.model';
+import { PostDetails } from './post-detail/post-details.model';
+import { PostState } from './posts/post-state.model';
+import { LoggedUser } from './common/logged-user.model';
+import { DownloadSpeed } from './common/download-speed.model';
+import { GlobalState } from './common/global-state.model';
+import { map, filter } from 'rxjs/operators';
 
 @Injectable()
 export class WsConnectionService {
-  private websocket: Subject<any>;
-  private state$: BehaviorSubject<WSState> = new BehaviorSubject(WSState.INIT);
-  private sock;
-  private _state: WSState = WSState.INIT;
-  private wsHandlerPromise: Promise<WsHandler>;
-  private wsHandler: WsHandler;
+  private websocket: WebSocketSubject<any>;
+  private online: Subject<boolean> = new BehaviorSubject(false);
+
+  private open = false;
 
   constructor(private electronService: ElectronService, private serverService: ServerService) {
     this.init();
   }
 
   init() {
-    this.wsHandlerPromise = new Promise((resolve, reject) => {
-      if (this.wsHandler != null) {
-        return this.wsHandler;
-      }
-      if (this.electronService.isElectronApp) {
-        const portRequest = setInterval(() => {
-          this.electronService.ipcRenderer.send('get-port');
-        }, 1000);
+    if (this.electronService.isElectronApp) {
+      const portRequest = setInterval(() => {
+        this.electronService.ipcRenderer.send('get-port');
+      }, 1000);
 
-        // wait for MainIPC
-        this.electronService.ipcRenderer.once('port', (event, port) => {
-          clearInterval(portRequest);
-          console.log('server running on port', port);
-          this.serverService.baseUrl = 'http://localhost:' + port;
-          this.tryConnect(resolve, reject);
-        });
-      } else {
-        this.serverService.baseUrl = environment.localhost;
-        this.tryConnect(resolve, reject);
-      }
-    });
-  }
-
-  public get state(): Observable<WSState> {
-    return this.state$.asObservable();
-  }
-
-  tryConnect(resolve, reject) {
-    let attempts = 0;
-    this.connect();
-    const subscription: Subscription = this.state$.subscribe(e => {
-      if (e === WSState.OPEN) {
-        this.wsHandler = new WsHandler(this.websocket);
-        resolve(this.wsHandler);
-      }
-    });
-    const interval = setInterval(() => {
-      if (this._state !== WSState.OPEN && attempts >= maxAttemps) {
-        clearInterval(interval);
-        this._state = WSState.ERROR;
-        this.state$.next(this._state);
-        reject('Failed to connect to server');
-        if (subscription !=  null) {
-          subscription.unsubscribe();
-        }
-        return;
-      } else if (this._state === WSState.OPEN) {
-        clearInterval(interval);
-        if (subscription !=  null) {
-          subscription.unsubscribe();
-        }
-        return;
-      }
+      // wait for MainIPC
+      this.electronService.ipcRenderer.once('port', (event, port) => {
+        clearInterval(portRequest);
+        console.log('server running on port', port);
+        this.serverService.baseUrl = 'http://localhost:' + port;
+        this.serverService.wsBaseUrl = 'ws://localhost:' + port;
+        this.connect();
+      });
+    } else {
+      this.serverService.baseUrl = environment.localhost;
+      this.serverService.wsBaseUrl = environment.ws;
       this.connect();
-      attempts++;
-    }, 5000);
+    }
   }
 
   connect() {
-    this._state = WSState.CONNECTING;
-    this.state$.next(this._state);
-    this.sock = new SockJS(this.serverService.baseUrl + '/endpoint');
-    const observable = Observable.create((obs: Observer<string>) => {
-      this.sock.onmessage = message => obs.next(message.data);
-      this.sock.onerror = error => {
-        console.log('Sockjs error', error);
-        obs.error(error);
-        this._state = WSState.ERROR;
-        this.state$.next(this._state);
-      };
-      this.sock.onclose = () => {
-        console.log('Sockjs disconnected');
-        obs.complete();
-        this._state = WSState.CLOSE;
-        this.state$.next(this._state);
-      };
-    });
-
-    this.sock.onopen = () => {
-      console.log('Sockjs connection established');
-      const observer = {
-        next: (data: Object) => {
-          if (this.sock.readyState === WebSocket.OPEN) {
-            this.sock.send(JSON.stringify(data));
+    console.log('Connecting...');
+    if (this.websocket != null) {
+      this.websocket.unsubscribe();
+    }
+    this.websocket = new WebSocketSubject({
+      url: this.serverService.wsBaseUrl + '/endpoint',
+      openObserver: {
+        next: () => {
+          console.log('Connection established');
+          if (this.open !== true) {
+            this.open = true;
+            this.online.next(true);
           }
         }
-      };
-      this.websocket = Subject.create(observer, observable).pipe(multicast(() => new Subject()));
-      (<ConnectableObservable<any>>(<unknown>this.websocket)).connect();
-      this._state = WSState.OPEN;
-      this.state$.next(this._state);
-    };
+      },
+      closeObserver: {
+        next: () => {
+          if (this.open !== false) {
+            this.open = false;
+            this.online.next(false);
+          }
+          setTimeout(() => this.connect(), 1000);
+        }
+      }
+    });
+    this.websocket.subscribe();
   }
 
-  getConnection(): Promise<WsHandler> {
-    return this.wsHandlerPromise;
+  public get state(): Observable<boolean> {
+    return this.online.asObservable();
   }
 
   disconnect() {
-    console.log('Sockjs disconnecting');
-    this.sock.close();
+    this.websocket.unsubscribe();
+  }
+
+  subscribeForGlobalState(): Observable<GlobalState[]> {
+    return this.websocket.pipe(
+      filter(e => e.length > 0 && e.filter(v => v.type === 'globalState').length > 0),
+      map(e => {
+        const state: Array<GlobalState> = [];
+        (<Array<any>>e).forEach(element => {
+          state.push(new GlobalState(element.running, element.queued, element.remaining, element.error));
+        });
+        return state;
+      })
+    );
+  }
+
+  subscribeForSpeed(): Observable<DownloadSpeed[]> {
+    return this.websocket.pipe(
+      filter(e => e.length > 0 && e.filter(v => v.type === 'downSpeed').length > 0),
+      map(e => {
+        const speed: Array<DownloadSpeed> = [];
+        (<Array<any>>e).forEach(element => {
+          speed.push(new DownloadSpeed(element.speed));
+        });
+        return speed;
+      })
+    );
+  }
+
+  subscribeForUser(): Observable<LoggedUser[]> {
+    return this.websocket.pipe(
+      filter(e => e.length > 0 && e.filter(v => v.type === 'user').length > 0),
+      map(e => {
+        const user: Array<LoggedUser> = [];
+        (<Array<any>>e).forEach(element => {
+          user.push(new LoggedUser(element.user));
+        });
+        return user;
+      })
+    );
+  }
+
+  subscribeForPosts(): Observable<PostState[]> {
+    return this.websocket.pipe(
+      filter(e => e.length > 0 && e.filter(v => v.type === 'post').length > 0),
+      map(e => {
+        const posts: Array<PostState> = [];
+        (<Array<any>>e).forEach(element => {
+          posts.push(
+            new PostState(
+              element.type,
+              element.postId,
+              element.title,
+              element.done === 0 && element.total === 0 ? 0 : (element.done / element.total) * 100,
+              element.status,
+              element.removed,
+              element.url,
+              element.done,
+              element.total,
+              element.hosts,
+              element.metadata.PREVIEWS
+            )
+          );
+        });
+        return posts;
+      })
+    );
+  }
+
+  subscribeForPostDetails(): Observable<PostDetails[]> {
+    return this.websocket.pipe(
+      filter(e => e.length > 0 && e[0].type === 'img'),
+      map(e => {
+        const values = [];
+        (<Array<any>>e).forEach(element => {
+          values.push(
+            new PostDetails(
+              element.postId,
+              element.postName,
+              element.url,
+              element.current === 0 && element.total === 0 ? 0 : (element.current / element.total) * 100,
+              element.status,
+              element.index
+            )
+          );
+        });
+        return values;
+      })
+    );
+  }
+
+  subscribeForGrabQueue(): Observable<GrabQueueState[]> {
+    return this.websocket.pipe(
+      filter(e => e.length > 0 && e.filter(v => v.type === 'grabQueue').length > 0),
+      map(e => {
+        const grabQueue: Array<GrabQueueState> = [];
+        (<Array<any>>e).forEach(element => {
+          grabQueue.push(
+            new GrabQueueState(element.type, element.link, element.threadId, element.postId, element.removed)
+          );
+        });
+        return grabQueue;
+      })
+    );
+  }
+
+  send(wsMessage: WSMessage) {
+    this.websocket.next(wsMessage);
   }
 }

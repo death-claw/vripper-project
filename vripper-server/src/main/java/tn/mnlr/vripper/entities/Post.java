@@ -18,6 +18,10 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 public class Post {
 
+    public enum METADATA {
+        PREVIEWS, RESOLVED_NAME, POSTED_BY, THANKED
+    }
+
     private AppStateService appStateService;
 
     private Status status;

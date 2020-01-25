@@ -1,5 +1,15 @@
-<ng-container *ngIf="appState | async as state">
-  <div *ngIf="state === 'CONNECTING'" class="overlay loading" fxLayout="column" fxLayoutAlign="center center">
+<div *ngIf="loaded | async; else loading" [ngClass]="{ electron: electron | async }" fxLayout="column"
+     id="app-container">
+  <div fxFlex="nogrow" id="app-header">
+    <app-toolbar></app-toolbar>
+  </div>
+  <div fxFlex="grow" id="app-body" style="margin-bottom: 20px;">
+    <router-outlet></router-outlet>
+  </div>
+  <app-status-bar style="width: 100%"></app-status-bar>
+</div>
+<ng-template #loading>
+  <div class="overlay loading" fxLayout="column" fxLayoutAlign="center center">
     <div class="sk-chase">
       <div class="sk-chase-dot"></div>
       <div class="sk-chase-dot"></div>
@@ -9,17 +19,4 @@
       <div class="sk-chase-dot"></div>
     </div>
   </div>
-  <div *ngIf="state === 'DISCONNECTED'" class="overlay no-connection" fxLayout="column" fxLayoutAlign="center center">
-    <mat-icon class="overlay-icon">error</mat-icon>
-    <h2>Error connecting to daemon, try restarting the application</h2>
-  </div>
-  <div *ngIf="state === 'CONNECTED'" [ngClass]="{ electron: electron | async }" fxLayout="column" id="app-container">
-    <div fxFlex="nogrow" id="app-header">
-      <app-toolbar></app-toolbar>
-    </div>
-    <div fxFlex="grow" id="app-body" style="margin-bottom: 20px;">
-      <router-outlet></router-outlet>
-    </div>
-    <app-status-bar style="width: 100%"></app-status-bar>
-  </div>
-</ng-container>
+</ng-template>

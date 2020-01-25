@@ -7,7 +7,7 @@ import {
   NgZone,
   ChangeDetectionStrategy,
   AfterViewInit,
-  EventEmitter,
+  EventEmitter
 } from '@angular/core';
 import { AgRendererComponent } from 'ag-grid-angular';
 import { Subscription, BehaviorSubject, Subject } from 'rxjs';
@@ -25,13 +25,12 @@ import { ContextMenuService } from '../ctxt-menu.service';
 })
 export class PostProgressRendererComponent implements AgRendererComponent, OnInit, OnDestroy, AfterViewInit {
   constructor(
-    private wsConnectionService: WsConnectionService,
+    private ws: WsConnectionService,
     private zone: NgZone,
     public electronService: ElectronService,
     public dialog: MatDialog,
-    private contextMenuService: ContextMenuService) {
-    this.websocketHandlerPromise = this.wsConnectionService.getConnection();
-  }
+    private contextMenuService: ContextMenuService
+  ) {}
 
   websocketHandlerPromise: Promise<WsHandler>;
   postState$: EventEmitter<PostState> = new EventEmitter();
@@ -43,22 +42,29 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
   node: RowNode;
   gridApi: GridApi;
 
+  postsSub: Subscription;
+  stateSub: Subscription;
+
   trunc(value: number): number {
     return Math.trunc(value);
   }
 
   ngOnInit(): void {
-    this.websocketHandlerPromise.then((handler: WsHandler) => {
-      this.updatesSubscription = handler.subscribeForPosts(e => {
-        this.zone.run(() => {
-          e.forEach(v => {
-            if (this.postState.postId === v.postId) {
-              this.postState = v;
-              this.postState$.emit(this.postState);
-            }
+    this.stateSub = this.ws.state.subscribe(state => {
+      if (state) {
+        this.postsSub = this.ws.subscribeForPosts().subscribe(e => {
+          this.zone.run(() => {
+            e.forEach(v => {
+              if (this.postState.postId === v.postId) {
+                this.postState = v;
+                this.postState$.emit(this.postState);
+              }
+            });
           });
         });
-      });
+      } else if (this.postsSub != null) {
+        this.postsSub.unsubscribe();
+      }
     });
   }
 
@@ -70,6 +76,12 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
   ngOnDestroy(): void {
     if (this.updatesSubscription != null) {
       this.updatesSubscription.unsubscribe();
+    }
+    if (this.postsSub != null) {
+      this.postsSub.unsubscribe();
+    }
+    if (this.stateSub != null) {
+      this.stateSub.unsubscribe();
     }
     clearTimeout(this.loading);
   }

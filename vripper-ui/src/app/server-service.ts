@@ -4,6 +4,7 @@ import { Injectable } from '@angular/core';
 export class ServerService {
 
   private _baseUrl: string;
+  private _wsBaseUrl: string;
 
   constructor() {}
 
@@ -13,5 +14,13 @@ export class ServerService {
 
   get baseUrl(): string {
     return this._baseUrl;
+  }
+
+  set wsBaseUrl(wsBaseUrl: string) {
+    this._wsBaseUrl = wsBaseUrl;
+  }
+
+  get wsBaseUrl(): string {
+    return this._wsBaseUrl;
   }
 }

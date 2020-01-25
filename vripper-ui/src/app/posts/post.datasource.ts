@@ -8,53 +8,53 @@ import { WsHandler } from '../ws-handler';
 import { NgZone } from '@angular/core';
 
 export class PostsDataSource {
-  constructor(
-    private wsConnectionService: WsConnectionService,
-    private gridOptions: GridOptions,
-    private zone: NgZone
-  ) {
-    this.websocketHandlerPromise = this.wsConnectionService.getConnection();
-  }
+  constructor(private ws: WsConnectionService, private gridOptions: GridOptions, private zone: NgZone) {}
 
   websocketHandlerPromise: Promise<WsHandler>;
   subscriptions: Subscription[] = [];
 
-  connect() {
-    this.websocketHandlerPromise.then((handler: WsHandler) => {
-      console.log('Connecting to posts datasource');
-      this.subscriptions.push(
-        handler.subscribeForPosts((e: PostState[]) => {
-          this.zone.run(() => {
-            const toAdd = [];
-            const toUpdate = [];
-            const toRemove = [];
-            e.forEach(v => {
-              if (v.removed) {
-                if (this.gridOptions.api.getRowNode(v.postId) != null) {
-                  toRemove.push(this.gridOptions.api.getRowNode(v.postId).data);
-                }
-                return;
-              }
+  postsSub: Subscription;
 
-              if (this.gridOptions.api.getRowNode(v.postId) == null) {
-                toAdd.push(v);
-              } else {
-                toUpdate.push(v);
-              }
+  connect() {
+    console.log('Connecting to posts datasource');
+    this.subscriptions.push(
+      this.ws.state.subscribe(state => {
+        if (state) {
+          this.postsSub = this.ws.subscribeForPosts().subscribe((e: PostState[]) => {
+            this.zone.run(() => {
+              const toAdd = [];
+              const toUpdate = [];
+              const toRemove = [];
+              e.forEach(v => {
+                if (v.removed) {
+                  if (this.gridOptions.api.getRowNode(v.postId) != null) {
+                    toRemove.push(this.gridOptions.api.getRowNode(v.postId).data);
+                  }
+                  return;
+                }
+                if (this.gridOptions.api.getRowNode(v.postId) == null) {
+                  toAdd.push(v);
+                } else {
+                  toUpdate.push(v);
+                }
+              });
+              this.gridOptions.api.updateRowData({ update: toUpdate, add: toAdd, remove: toRemove });
             });
-            this.gridOptions.api.updateRowData({ update: toUpdate, add: toAdd, remove: toRemove });
           });
-        })
-      );
-      handler.send(new WSMessage(CMD.POSTS_SUB.toString()));
-    });
+          this.ws.send(new WSMessage(CMD.POSTS_SUB.toString()));
+        } else if (this.postsSub != null) {
+          this.postsSub.unsubscribe();
+        }
+      })
+    );
   }
 
   disconnect() {
     console.log('Disconnecting from posts datasource');
     this.subscriptions.forEach(e => e.unsubscribe());
-    this.websocketHandlerPromise.then((handler: WsHandler) => {
-      handler.send(new WSMessage(CMD.POSTS_UNSUB.toString()));
-    });
+    this.ws.send(new WSMessage(CMD.POSTS_UNSUB.toString()));
+    if (this.postsSub != null) {
+      this.postsSub.unsubscribe();
+    }
   }
 }

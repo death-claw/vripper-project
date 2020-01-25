@@ -22,13 +22,7 @@ import { ElectronService } from 'ngx-electron';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PostDetailsProgressRendererComponent implements AgRendererComponent, OnInit, OnDestroy, AfterViewInit {
-  constructor(
-    private wsConnectionService: WsConnectionService,
-    private zone: NgZone,
-    public electronService: ElectronService
-  ) {
-    this.websocketHandlerPromise = this.wsConnectionService.getConnection();
-  }
+  constructor(private ws: WsConnectionService, private zone: NgZone, public electronService: ElectronService) {}
 
   websocketHandlerPromise: Promise<WsHandler>;
   subscription: Subscription;
@@ -37,22 +31,29 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
   loaded: Subject<boolean> = new BehaviorSubject(false);
   loading;
 
+  stateSub: Subscription;
+  postDetailsSub: Subscription;
+
   trunc(value: number): number {
     return Math.trunc(value);
   }
 
   ngOnInit(): void {
-    this.websocketHandlerPromise.then((handler: WsHandler) => {
-      this.subscription = handler.subscribeForPostDetails(e => {
-        this.zone.run(() => {
-          e.forEach(v => {
-            if (this.postDetails.url === v.url) {
-              this.postDetails = v;
-              this.postDetails$.emit(this.postDetails);
-            }
+    this.stateSub = this.ws.state.subscribe(state => {
+      if (state) {
+        this.postDetailsSub = this.ws.subscribeForPostDetails().subscribe(e => {
+          this.zone.run(() => {
+            e.forEach(v => {
+              if (this.postDetails.url === v.url) {
+                this.postDetails = v;
+                this.postDetails$.emit(this.postDetails);
+              }
+            });
           });
         });
-      });
+      } else if (this.postDetailsSub != null) {
+        this.postDetailsSub.unsubscribe();
+      }
     });
   }
 
@@ -72,6 +73,12 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
   ngOnDestroy(): void {
     if (this.subscription != null) {
       this.subscription.unsubscribe();
+    }
+    if (this.postDetailsSub != null) {
+      this.postDetailsSub.unsubscribe();
+    }
+    if (this.stateSub != null) {
+      this.stateSub.unsubscribe();
     }
     clearTimeout(this.loading);
   }
