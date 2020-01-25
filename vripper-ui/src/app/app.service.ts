@@ -6,7 +6,7 @@ import { Injectable, Renderer2 } from '@angular/core';
 import { ServerService } from './server-service';
 import { tap } from 'rxjs/operators';
 import { ScanComponent } from './scan/scan.component';
-import { Observable, Subject } from 'rxjs';
+import { Observable } from 'rxjs';
 import { BreakpointState, Breakpoints, BreakpointObserver } from '@angular/cdk/layout';
 import { Title } from '@angular/platform-browser';
 
