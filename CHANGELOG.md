@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.11.0] - 2020-03-29
+### Changed
+- Upgrade Electron to v8
+- Upgrade Angular to v9
+- App settings are now portable in a json file
+- General code source maintenance
+### Added
+- Added Support for pixroute.com
+- Added grab post title from thread option
+
 ## [2.10.8] - 2020-01-25
 ### Changed
 - Fix app url
