@@ -12,7 +12,7 @@
   }
 
 .material-icons {
-  font-family: 'Material Icons';
+  font-family: 'Material Icons', sans-serif;
   font-weight: normal;
   font-style: normal;
   font-size: 24px;
@@ -29,7 +29,7 @@
 
 @import '~@angular/cdk/overlay-prebuilt.css';
 @import 'mat-theme.scss';
-@import 'app/status-bar/status-bar.component.scss.theme.scss';
+@import 'src/app/status-bar/status-bar.component.scss-theme';
 @import 'app/app.component.scss-theme.scss';
 @import 'app/posts/post-progress.renderer.component.scss-theme.scss';
 @import 'app/post-detail/post-details-progress.component.scss-theme.scss';
@@ -58,12 +58,6 @@ html {
   box-sizing: border-box;
   height: 100vh;
   width: 100vw;
-}
-
-body {
-  & .window-title {
-    font-family: 'Arial';
-  }
 }
 
 app-root {
@@ -96,7 +90,6 @@ body a {
   &:hover {
     text-decoration: underline;
   }
-  font-family: Tahoma;
   color: rgba(0, 0, 0, 0.87);
   text-decoration: none;
   font-weight: bold;
@@ -104,8 +97,4 @@ body a {
 
 .ag-row-selected app-progress-cell .checkbox {
   background-color: orange !important;
-}
-
-.col-white {
-  background-color: white;
 }

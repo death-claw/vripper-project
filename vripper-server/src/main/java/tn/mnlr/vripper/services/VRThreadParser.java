@@ -1,9 +1,7 @@
 package tn.mnlr.vripper.services;
 
-import io.reactivex.processors.ReplayProcessor;
 import lombok.Getter;
 import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -13,16 +11,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
+import tn.mnlr.vripper.SpringContext;
+import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.host.Host;
 
 import javax.xml.parsers.SAXParserFactory;
 import java.io.BufferedInputStream;
-import java.io.IOException;
 import java.net.URISyntaxException;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,45 +31,33 @@ public class VRThreadParser {
 
     private static final Logger logger = LoggerFactory.getLogger(VRThreadParser.class);
 
-    private static RetryPolicy<Object> retryPolicy = new RetryPolicy<>()
-            .handleIf(e -> e instanceof IOException)
-            .withDelay(1, 3, ChronoUnit.SECONDS)
-            .withMaxRetries(2)
-            .withMaxDuration(Duration.of(10, ChronoUnit.SECONDS))
-            .abortOn(InterruptedException.class)
-            .onFailedAttempt(e -> logger.warn(String.format("#%d tries failed", e.getAttemptCount()), e.getLastFailure()));
     private static SAXParserFactory factory = SAXParserFactory.newInstance();
-    @Getter
-    private final ReplayProcessor<VRPostState> postPublishProcessor = ReplayProcessor.create();
-    private final String threadId;
+    private final QueuedVGLink queuedVGLink;
     private final ConnectionManager cm;
     private final VipergirlsAuthService vipergirlsAuthService;
-    private final List<Host> hosts;
 
-
-    VRThreadParser(String threadId, ConnectionManager cm, VipergirlsAuthService vipergirlsAuthService, List<Host> hosts) {
-        this.threadId = threadId;
-        this.cm = cm;
-        this.vipergirlsAuthService = vipergirlsAuthService;
-        this.hosts = hosts;
+    VRThreadParser(QueuedVGLink queuedVGLink) {
+        this.queuedVGLink = queuedVGLink;
+        this.cm = SpringContext.getBean(ConnectionManager.class);
+        this.vipergirlsAuthService = SpringContext.getBean(VipergirlsAuthService.class);
     }
 
-    public Void parse() throws PostParseException {
+    public List<VRPostState> parse() throws PostParseException {
 
-        logger.debug(String.format("Parsing thread %s", threadId));
+        logger.debug(String.format("Parsing thread %s", queuedVGLink));
         HttpGet httpGet;
         try {
             URIBuilder uriBuilder = new URIBuilder(VR_API);
-            uriBuilder.setParameter("t", threadId);
+            uriBuilder.setParameter("t", queuedVGLink.getThreadId());
             httpGet = cm.buildHttpGet(uriBuilder.build());
         } catch (URISyntaxException e) {
             throw new PostParseException(e);
         }
 
-        VRThreadHandler handler = new VRThreadHandler(threadId, postPublishProcessor, hosts);
+        VRThreadHandler handler = new VRThreadHandler(queuedVGLink);
         AtomicReference<Throwable> thr = new AtomicReference<>();
         logger.debug(String.format("Requesting %s", httpGet));
-        Failsafe.with(retryPolicy)
+        List<VRPostState> posts = Failsafe.with(VripperApplication.retryPolicy)
                 .onFailure(e -> thr.set(e.getFailure()))
                 .get(() -> {
                     HttpClient connection = cm.getClient().build();
@@ -83,27 +68,26 @@ public class VRThreadParser {
 
                         try {
                             factory.newSAXParser().parse(new BufferedInputStream(response.getEntity().getContent()), handler);
+                            return handler.getPosts();
                         } catch (Exception e) {
-                            throw new PostParseException(String.format("Failed to parse thread %s", threadId), e);
+                            throw new PostParseException(String.format("Failed to parse thread %s", queuedVGLink), e);
                         } finally {
                             EntityUtils.consumeQuietly(response.getEntity());
                         }
                     }
-                    return null;
                 });
         if (thr.get() != null) {
-            logger.error(String.format("parsing failed for thread %s", threadId), thr.get());
+            logger.error(String.format("parsing failed for thread %s", queuedVGLink), thr.get());
             throw new PostParseException(thr.get());
         }
-        return null;
+        return posts;
     }
 }
 
 class VRThreadHandler extends DefaultHandler {
 
-    private final String threadId;
-    private final ReplayProcessor<VRPostState> vrPostPublishProcessor;
-    private final List<Host> supportedHosts;
+    private final QueuedVGLink queuedVGLink;
+    private final Collection<Host> supportedHosts;
     private final Map<Host, AtomicInteger> hostMap = new HashMap<>();
     private List<String> previews = new ArrayList<>();
     private String threadTitle;
@@ -113,10 +97,12 @@ class VRThreadHandler extends DefaultHandler {
     private int postCounter;
     private int previewCounter = 0;
 
-    VRThreadHandler(String threadId, ReplayProcessor<VRPostState> vrPostPublishProcessor, List<Host> supportedHosts) {
-        this.vrPostPublishProcessor = vrPostPublishProcessor;
-        this.threadId = threadId;
-        this.supportedHosts = supportedHosts;
+    @Getter
+    private List<VRPostState> posts = new ArrayList<>();
+
+    VRThreadHandler(QueuedVGLink queuedVGLink) {
+        this.queuedVGLink = queuedVGLink;
+        this.supportedHosts = SpringContext.getBeansOfType(Host.class).values();
     }
 
     @Override
@@ -152,16 +138,17 @@ class VRThreadHandler extends DefaultHandler {
     public void endElement(String uri, String localName, String qName) {
         if ("post".equals(qName.toLowerCase())) {
             if (imageCount != 0) {
-                vrPostPublishProcessor.onNext(new VRPostState(
-                        threadId,
+                posts.add(new VRPostState(
+                        queuedVGLink.getThreadId(),
                         postId,
                         postCounter,
                         postTitle,
                         imageCount,
-                        String.format("https://vipergirls.to/threads/%s/?p=%s&viewfull=1#post%s", threadId, postId, postId),
+                        String.format("https://vipergirls.to/threads/%s/?p=%s&viewfull=1#post%s", queuedVGLink, postId, postId),
                         previews,
                         hostMap.entrySet().stream().filter(v -> v.getValue().get() > 0).map(e -> e.getKey().getHost() + " (" + e.getValue().get() + ")").collect(Collectors.joining(", "))
                 ));
+                queuedVGLink.increment();
             }
             previewCounter = 0;
             previews = new ArrayList<>();
@@ -171,6 +158,6 @@ class VRThreadHandler extends DefaultHandler {
 
     @Override
     public void endDocument() {
-        vrPostPublishProcessor.onComplete();
+        queuedVGLink.done();
     }
 }

@@ -1,8 +1,6 @@
 package tn.mnlr.vripper.services;
 
-import lombok.Getter;
 import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -14,6 +12,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
+import tn.mnlr.vripper.SpringContext;
+import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.exception.DownloadException;
@@ -21,15 +21,9 @@ import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.host.Host;
 
 import javax.xml.parsers.SAXParserFactory;
-import java.io.BufferedInputStream;
-import java.io.IOException;
+import java.io.File;
 import java.net.URISyntaxException;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static tn.mnlr.vripper.services.PostParser.VR_API;
@@ -40,30 +34,22 @@ class VRPostParser {
 
     private static SAXParserFactory factory = SAXParserFactory.newInstance();
 
-    private static RetryPolicy<Object> retryPolicy = new RetryPolicy<>()
-            .handleIf(e -> e instanceof IOException)
-            .withDelay(1, 3, ChronoUnit.SECONDS)
-            .withMaxRetries(2)
-            .withMaxDuration(Duration.of(10, ChronoUnit.SECONDS))
-            .abortOn(InterruptedException.class)
-            .onFailedAttempt(e -> logger.warn(String.format("#%d tries failed", e.getAttemptCount()), e.getLastFailure()));
-
     private final String threadId;
     private final String postId;
     private final ConnectionManager cm;
     private final VipergirlsAuthService vipergirlsAuthService;
-    private final List<Host> supportedHosts;
     private final HtmlProcessorService htmlProcessorService;
     private final XpathService xpathService;
+    private final AppSettingsService appSettingsService;
 
-    VRPostParser(String threadId, String postId, ConnectionManager cm, VipergirlsAuthService vipergirlsAuthService, List<Host> supportedHosts, HtmlProcessorService htmlProcessorService, XpathService xpathService) {
+    VRPostParser(String threadId, String postId) {
         this.threadId = threadId;
         this.postId = postId;
-        this.cm = cm;
-        this.vipergirlsAuthService = vipergirlsAuthService;
-        this.supportedHosts = supportedHosts;
-        this.htmlProcessorService = htmlProcessorService;
-        this.xpathService = xpathService;
+        this.cm = SpringContext.getBean(ConnectionManager.class);
+        this.vipergirlsAuthService = SpringContext.getBean(VipergirlsAuthService.class);
+        this.htmlProcessorService = SpringContext.getBean(HtmlProcessorService.class);
+        this.xpathService = SpringContext.getBean(XpathService.class);
+        this.appSettingsService = SpringContext.getBean(AppSettingsService.class);
     }
 
     public Post parse() throws PostParseException {
@@ -77,19 +63,29 @@ class VRPostParser {
         } catch (URISyntaxException e) {
             throw new PostParseException(e);
         }
-        VRPostHandler handler = new VRPostHandler(threadId, postId, supportedHosts);
+
         AtomicReference<Throwable> thr = new AtomicReference<>();
+
+        HashMap<String, Object> metadata = new HashMap<>();
+        String postUrl = String.format("https://vipergirls.to/threads/%s/?p=%s&viewfull=1#post%s", threadId, postId, postId);
+        getPostExtraMetadata(postId, metadata, postUrl, thr);
+        if (thr.get() != null) {
+            logger.warn(String.format("Failed to get metadata for thread %s, post %s", threadId, postId), thr.get());
+            thr.set(null);
+        }
+
+        VRApiPostHandler handler = new VRApiPostHandler(threadId, postId, postUrl, metadata);
         logger.debug(String.format("Requesting %s", httpGet));
-        Post post = getPost(httpGet, handler, thr);
-        if (thr.get() != null || post == null) {
+        Optional<Post> post = getPost(httpGet, handler, thr);
+        if (thr.get() != null || post.isEmpty()) {
             logger.error(String.format("parsing failed for thread %s, post %s", threadId, postId), thr.get());
             throw new PostParseException(thr.get());
         }
-        return post;
+        return post.get();
     }
 
-    private Post getPost(HttpGet httpGet, VRPostHandler handler, AtomicReference<Throwable> thr) {
-        return Failsafe.with(retryPolicy)
+    private Optional<Post> getPost(HttpGet httpGet, VRApiPostHandler handler, AtomicReference<Throwable> thr) throws PostParseException {
+        return Failsafe.with(VripperApplication.retryPolicy)
                 .onFailure(e -> thr.set(e.getFailure()))
                 .get(() -> {
                     HttpClient connection = cm.getClient().build();
@@ -98,21 +94,16 @@ class VRPostParser {
                             throw new DownloadException(String.format("Unexpected response code '%d' for %s", response.getStatusLine().getStatusCode(), httpGet));
                         }
 
-                        try {
-                            factory.newSAXParser().parse(new BufferedInputStream(response.getEntity().getContent()), handler);
-                            return handler.getParsedPost();
-                        } catch (Exception e) {
-                            throw new PostParseException(String.format("Failed to parse thread %s, post %s", threadId, postId), e);
-                        } finally {
-                            EntityUtils.consumeQuietly(response.getEntity());
-                        }
+                        factory.newSAXParser().parse(response.getEntity().getContent(), handler);
+                        EntityUtils.consumeQuietly(response.getEntity());
+                        return handler.getParsedPost();
                     }
                 });
     }
 
-    private void getPostExtraMetadata(Post post, AtomicReference<Throwable> thr) {
-        HttpGet httpGet = cm.buildHttpGet(post.getUrl());
-        Failsafe.with(retryPolicy)
+    private void getPostExtraMetadata(String postId, HashMap<String, Object> metadata, String url, AtomicReference<Throwable> thr) {
+        HttpGet httpGet = cm.buildHttpGet(url);
+        Failsafe.with(VripperApplication.retryPolicy)
                 .onFailure(e -> thr.set(e.getFailure()))
                 .get(() -> {
                     HttpClient connection = cm.getClient().build();
@@ -120,15 +111,18 @@ class VRPostParser {
                         if (response.getStatusLine().getStatusCode() / 100 != 2) {
                             throw new DownloadException(String.format("Unexpected response code '%d' for %s", response.getStatusLine().getStatusCode(), httpGet));
                         }
-
                         try {
-
                             Document document = htmlProcessorService.clean(EntityUtils.toString(response.getEntity()));
-                            Node postNode = xpathService.getAsNode(document, String.format("//li[@id='post_%s']/div[contains(@class, 'postdetails')]", post.getPostId()));
+                            Node postNode = xpathService.getAsNode(document, String.format("//li[@id='post_%s']/div[contains(@class, 'postdetails')]", postId));
                             String postedBy = xpathService.getAsNode(postNode, "./div[contains(@class, 'userinfo')]//a[contains(@class, 'username')]//font").getTextContent().trim();
-                            HashMap<String, Object> stringObjectHashMap = new HashMap<>();
-                            response.getEntity().getContent();
-                            return stringObjectHashMap;
+                            metadata.put(Post.METADATA.POSTED_BY.name(), postedBy);
+
+                            if (appSettingsService.getSettings().getResolveTitle()) {
+                                Node node = xpathService.getAsNode(document, String.format("//div[@id='post_message_%s']", postId));
+                                findTitleInContent(node).ifPresent(e -> metadata.put(Post.METADATA.RESOLVED_NAME.name(), e));
+                            }
+
+                            return null;
                         } catch (Exception e) {
                             throw new PostParseException(String.format("Failed to parse thread %s, post %s", threadId, postId), e);
                         } finally {
@@ -136,16 +130,48 @@ class VRPostParser {
                         }
                     }
                 });
+    }
+
+    private Optional<String> findTitleInContent(Node node) {
+        ArrayList<String> strings = new ArrayList<>();
+        findTitle(node, strings);
+        return strings.stream().filter(e -> !e.toLowerCase().contains("download")).findFirst();
+    }
+
+    private boolean findTitle(Node node, List<String> allText) {
+        if (node.getNodeName().equals("a") || node.getNodeName().equals("img")) {
+            return false;
+        }
+        if (node.getNodeType() == Node.ELEMENT_NODE) {
+            for (int i = 0; i < node.getChildNodes().getLength(); i++) {
+                Node item = node.getChildNodes().item(i);
+                boolean keepGoing = findTitle(item, allText);
+                if (!keepGoing) {
+                    return false;
+                }
+            }
+
+        } else if (node.getNodeType() == Node.TEXT_NODE) {
+            String trim = node.getTextContent().trim();
+            if (!trim.isEmpty()) {
+                allText.add(trim);
+            }
+        }
+        return true;
     }
 }
 
-class VRPostHandler extends DefaultHandler {
+class VRApiPostHandler extends DefaultHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(VRPostHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(VRApiPostHandler.class);
 
-    private final List<Host> supportedHosts;
+    private final Collection<Host> supportedHosts;
+    private final PathService pathService;
+
     private final String threadId;
     private final String postId;
+    private final HashMap<String, Object> metadata;
+    private final String postUrl;
     private List<Image> images = new ArrayList<>();
     private List<String> previews = new ArrayList<>();
     private String threadTitle;
@@ -155,13 +181,20 @@ class VRPostHandler extends DefaultHandler {
     private int index = 0;
     private int imageCount;
 
-    @Getter
     private Post parsedPost;
 
-    VRPostHandler(String threadId, String postId, List<Host> supportedHosts) {
+    VRApiPostHandler(String threadId, String postId, String postUrl, HashMap<String, Object> metadata) {
         this.threadId = threadId;
         this.postId = postId;
-        this.supportedHosts = supportedHosts;
+        this.postUrl = postUrl;
+        this.metadata = metadata;
+        this.supportedHosts = SpringContext.getBeansOfType(Host.class).values();
+        this.pathService = SpringContext.getBean(PathService.class);
+    }
+
+
+    public Optional<Post> getParsedPost() {
+        return Optional.ofNullable(parsedPost);
     }
 
     @Override
@@ -193,7 +226,11 @@ class VRPostHandler extends DefaultHandler {
                     Host foundHost = supportedHosts.stream().filter(host -> host.isSupported(mainUrl)).findFirst().orElse(null);
                     if (foundHost != null) {
                         logger.debug(String.format("Found supported host %s for %s", foundHost.getClass().getSimpleName(), mainUrl));
-                        images.add(new Image(mainUrl, postId, postTitle, foundHost, index));
+                        try {
+                            images.add(new Image(mainUrl, postId, postTitle, foundHost, index));
+                        } catch (PostParseException e) {
+                            logger.error(String.format("Error occurred while parsing postId %s", postId));
+                        }
                     } else {
                         logger.warn(String.format("unsupported host for %s, skipping", mainUrl));
                     }
@@ -206,18 +243,26 @@ class VRPostHandler extends DefaultHandler {
     public void endElement(String uri, String localName, String qName) {
         if ("post".equals(qName.toLowerCase())) {
             if (imageCount != 0) {
-                HashMap<String, Object> metadata = new HashMap<>();
                 metadata.put(Post.METADATA.PREVIEWS.name(), previews);
-                parsedPost = new Post(
-                        postTitle,
-                        String.format("https://vipergirls.to/threads/%s/?p=%s&viewfull=1#post%s", threadId, postId, postId),
-                        images,
-                        metadata,
-                        postId,
-                        threadId,
-                        threadTitle,
-                        forum
-                );
+                AtomicReference<Throwable> thr = new AtomicReference<>();
+                if (thr.get() != null) {
+                    logger.error(String.format("Failed to get extra metadata for %s", postUrl), thr.get());
+                }
+                File destinationFolder = pathService.getDownloadDestinationFolder(postTitle, forum, threadTitle, metadata, null);
+                try {
+                    parsedPost = new Post(
+                            postTitle,
+                            postUrl,
+                            images,
+                            metadata,
+                            postId,
+                            threadId,
+                            threadTitle,
+                            forum,
+                            destinationFolder.getName());
+                } catch (PostParseException e) {
+                    logger.error(String.format("Error occurred while parsing postId %s", postId));
+                }
             }
             index = 0;
             previewCounter = 0;

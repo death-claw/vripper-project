@@ -1,13 +1,15 @@
-import { Injectable } from '@angular/core';
-import { Subject, Observable } from 'rxjs';
+import {Injectable} from '@angular/core';
+import {Observable, Subject} from 'rxjs';
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class SharedService {
 
-    private expandedPost$ = new Subject<string>();
+  private expandedPost$ = new Subject<string>();
 
-    get expandedPost(): Observable<string> {
-        return this.expandedPost$.asObservable();
+  get expandedPost(): Observable<string> {
+    return this.expandedPost$.asObservable();
     }
 
     publishExpanded(postId: string) {

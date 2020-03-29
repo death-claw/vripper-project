@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tn.mnlr.vripper.VripperApplication;
+import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.q.ExecutionService;
 import tn.mnlr.vripper.services.*;
@@ -29,17 +29,24 @@ public class PostRestEndpoint {
 
     private static final Pattern VG_URL_PATTERN = Pattern.compile("https://vipergirls\\.to/threads/(\\d+)((.*p=)(\\d+))?");
 
-    @Autowired
-    private AppStateService appStateService;
+    private final AppStateService appStateService;
+    private final AppStateExchange appStateExchange;
+    private final PathService pathService;
+    private final VGHandler vgHandler;
+    private final ExecutionService executionService;
+    private final PostParser postParser;
+    private final CommonExecutor commonExecutor;
 
     @Autowired
-    private AppSettingsService appSettingsService;
-
-    @Autowired
-    private PathService pathService;
-
-    @Autowired
-    private VGHandler vgHandler;
+    public PostRestEndpoint(AppStateService appStateService, AppStateExchange appStateExchange, PathService pathService, VGHandler vgHandler, ExecutionService executionService, PostParser postParser, CommonExecutor commonExecutor) {
+        this.appStateService = appStateService;
+        this.appStateExchange = appStateExchange;
+        this.pathService = pathService;
+        this.vgHandler = vgHandler;
+        this.executionService = executionService;
+        this.postParser = postParser;
+        this.commonExecutor = commonExecutor;
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleException(Exception e) {
@@ -49,16 +56,9 @@ public class PostRestEndpoint {
                 .body(e.getMessage());
     }
 
-    @Autowired
-    private ExecutionService executionService;
-
-
-    @Autowired
-    private PostParser postParser;
-
     @PostMapping("/post")
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized ResponseEntity processPost(@RequestBody ThreadUrl _url) throws Exception {
+    public ResponseEntity processPost(@RequestBody ThreadUrl _url) throws Exception {
         if (_url.getUrl() == null || _url.getUrl().isEmpty()) {
             return new ResponseEntity("Failed to process empty request", HttpStatus.BAD_REQUEST);
         }
@@ -91,17 +91,15 @@ public class PostRestEndpoint {
 
     @PostMapping("/post/restart")
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized void restartPost(@RequestBody @NonNull List<PostId> postIds) throws Exception {
-        for (PostId postId : postIds) {
-            executionService.restart(postId.getPostId());
-        }
+    public void restartPost(@RequestBody @NonNull List<PostId> postIds) throws Exception {
+        executionService.restartAll(postIds.stream().map(PostId::getPostId).collect(Collectors.toList()));
     }
 
     @PostMapping("/post/add")
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized void addPost(@RequestBody List<PostToAdd> posts) {
+    public void addPost(@RequestBody List<PostToAdd> posts) {
         for (PostToAdd post : posts) {
-            VripperApplication.commonExecutor.submit(() -> {
+            commonExecutor.getGeneralExecutor().submit(() -> {
                 try {
                     postParser.addPost(post.getPostId(), post.getThreadId());
                 } catch (PostParseException e) {
@@ -114,39 +112,36 @@ public class PostRestEndpoint {
     @GetMapping("/post/path/{postId}")
     @ResponseStatus(value = HttpStatus.OK)
     public ResponseEntity<DownloadPath> folderPath(@PathVariable("postId") String postId) {
-        File destinationFolder = pathService.getDownloadDestinationFolder(postId);
+        Post post = appStateExchange.getPost(postId);
+        File destinationFolder = pathService.getDownloadDestinationFolder(post.getTitle(), post.getForum(), post.getThreadTitle(), post.getMetadata(), post.getDestFolder());
         return ResponseEntity.ok(new DownloadPath(destinationFolder.getPath()));
     }
 
     @PostMapping("/post/restart/all")
     @ResponseStatus(value = HttpStatus.OK)
     public synchronized void restartPost() throws Exception {
-        executionService.restartAll();
+        executionService.restartAll(null);
     }
 
     @PostMapping("/post/stop")
     @ResponseStatus(value = HttpStatus.OK)
     public synchronized void stop(@RequestBody @NonNull List<PostId> postIds) {
-        for (PostId postId : postIds) {
-            executionService.stop(postId.getPostId());
-        }
+        executionService.stopAll(postIds.stream().map(PostId::getPostId).collect(Collectors.toList()));
     }
 
     @PostMapping("/post/stop/all")
     @ResponseStatus(value = HttpStatus.OK)
     public synchronized void stopAll() {
-        executionService.stopAll();
+        executionService.stopAll(null);
     }
 
     @PostMapping("/post/remove")
     @ResponseStatus(value = HttpStatus.OK)
     public synchronized ResponseEntity<List<RemoveResult>> remove(@RequestBody @NonNull List<PostId> postIds) {
         List<RemoveResult> result = new ArrayList<>();
-        for (PostId postId : postIds) {
-            executionService.stop(postId.getPostId());
-            appStateService.remove(postId.getPostId());
-            result.add(new RemoveResult(postId.getPostId()));
-        }
+        List<String> collect = postIds.stream().map(PostId::getPostId).peek(e -> result.add(new RemoveResult(e))).collect(Collectors.toList());
+        executionService.stopAll(collect);
+        appStateService.removeAll(collect);
         return ResponseEntity.ok(result);
     }
 
@@ -159,19 +154,20 @@ public class PostRestEndpoint {
     @PostMapping("/post/remove/all")
     @ResponseStatus(value = HttpStatus.OK)
     public synchronized ResponseEntity<RemoveAllResult> removeAll() {
-        return ResponseEntity.ok(new RemoveAllResult(appStateService.removeAll()));
+        return ResponseEntity.ok(new RemoveAllResult(appStateService.removeAll(null)));
     }
 
     @GetMapping("/grab/{threadId}")
     @ResponseStatus(value = HttpStatus.OK)
     public synchronized ResponseEntity<List<VRPostState>> grab(@PathVariable("threadId") @NonNull ThreadId threadId) throws Exception {
-        return ResponseEntity.ok(vgHandler.getCache().get(threadId.getThreadId()));
+        QueuedVGLink queuedVGLink = appStateExchange.getQueue().values().stream().filter(e -> e.getThreadId().equals(threadId.getThreadId())).findFirst().orElseThrow();
+        return ResponseEntity.ok(vgHandler.getCache().get(queuedVGLink));
     }
 
     @PostMapping("/grab/remove")
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized void grabRemove(@RequestBody @NonNull ThreadUrl threadUrl) {
-        vgHandler.remove(threadUrl.getUrl());
+    public synchronized void grabRemove(@RequestBody @NonNull ThreadId threadId) {
+        vgHandler.remove(threadId.getThreadId());
     }
 }
 

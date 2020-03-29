@@ -1,10 +1,10 @@
-import { AppService } from './app.service';
-import { ClipboardService } from './clipboard.service';
-import { ElectronService } from 'ngx-electron';
-import { Component, OnDestroy, AfterViewInit, Renderer2, ChangeDetectionStrategy, NgZone } from '@angular/core';
-import { MatDialog } from '@angular/material';
-import { Subscription, BehaviorSubject, Subject, merge } from 'rxjs';
-import { WsConnectionService } from './ws-connection.service';
+import {AppService} from './app.service';
+import {ClipboardService} from './clipboard.service';
+import {ElectronService} from 'ngx-electron';
+import {AfterViewInit, ChangeDetectionStrategy, Component, NgZone, OnDestroy, Renderer2} from '@angular/core';
+import {MatDialog} from '@angular/material/dialog';
+import {BehaviorSubject, merge, Subject, Subscription} from 'rxjs';
+import {WsConnectionService} from './ws-connection.service';
 
 @Component({
   selector: 'app-root',

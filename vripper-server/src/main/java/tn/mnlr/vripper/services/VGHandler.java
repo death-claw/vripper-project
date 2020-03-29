@@ -4,16 +4,13 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import lombok.Getter;
+import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import tn.mnlr.vripper.VripperApplication;
 
-import javax.annotation.PostConstruct;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -22,28 +19,24 @@ public class VGHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(VGHandler.class);
 
-    @Autowired
-    private AppStateService appStateService;
-
-    @Autowired
-    private PostParser postParser;
+    private final AppStateService appStateService;
+    private final PostParser postParser;
+    private final CommonExecutor commonExecutor;
 
     @Getter
-    private LoadingCache<String, List<VRPostState>> cache;
+    private final LoadingCache<QueuedVGLink, List<VRPostState>> cache;
 
-    @PostConstruct
-    private void init() {
+    @Autowired
+    public VGHandler(AppStateService appStateService, PostParser postParser, CommonExecutor commonExecutor) {
+        this.appStateService = appStateService;
+        this.postParser = postParser;
+        this.commonExecutor = commonExecutor;
 
-        CacheLoader<String, List<VRPostState>> loader = new CacheLoader<>() {
+        CacheLoader<QueuedVGLink, List<VRPostState>> loader = new CacheLoader<>() {
             @Override
-            public List<VRPostState> load(String threadId) throws Exception {
-                VRThreadParser vrThreadParser = postParser.createVRThreadParser(threadId);
-                List<VRPostState> posts = new ArrayList<>();
-                vrThreadParser.parse();
-                vrThreadParser.getPostPublishProcessor()
-                        .onBackpressureBuffer()
-                        .blockingSubscribe(posts::add);
-                return posts;
+            public List<VRPostState> load(@NonNull QueuedVGLink queuedVGLink) throws Exception {
+                VRThreadParser vrThreadParser = postParser.createVRThreadParser(queuedVGLink);
+                return vrThreadParser.parse();
             }
         };
 
@@ -58,26 +51,23 @@ public class VGHandler {
                 postParser.addPost(queuedVGLink.getPostId(), queuedVGLink.getThreadId());
             } else {
                 Callable<Void> cl = () -> {
-                    List<VRPostState> vrPostStates = cache.get(queuedVGLink.getThreadId());
+                    List<VRPostState> vrPostStates = cache.get(queuedVGLink);
                     logger.debug(String.format("%d found for %s", vrPostStates.size(), queuedVGLink.getLink()));
                     if (vrPostStates.size() == 1) {
+                        queuedVGLink.remove();
                         postParser.addPost(vrPostStates.get(0).getPostId(), vrPostStates.get(0).getThreadId());
                         logger.debug(String.format("threadId %s, postId %s is added automatically for download", queuedVGLink.getThreadId(), queuedVGLink.getPostId()));
                     } else {
-                        appStateService.getGrabQueue().put(queuedVGLink.getLink(), queuedVGLink);
-                        appStateService.getLiveGrabQueue().onNext(queuedVGLink);
+                        appStateService.newQueueLink(queuedVGLink);
                     }
                     return null;
                 };
-                VripperApplication.commonExecutor.submit(cl);
+                commonExecutor.getGeneralExecutor().submit(cl);
             }
         }
     }
 
-    public void remove(String url) {
-        Optional.ofNullable(appStateService.getGrabQueue().remove(url)).ifPresent(e -> {
-            e.setRemoved(true);
-            appStateService.getLiveGrabQueue().onNext(e);
-        });
+    public void remove(String threadId) {
+        appStateService.removeQueueLink(threadId);
     }
 }

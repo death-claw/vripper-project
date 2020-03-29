@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import tn.mnlr.vripper.entities.Image;
+import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.HtmlProcessorException;
@@ -62,6 +63,10 @@ abstract public class Host {
     @Autowired
     private PathService pathService;
 
+    protected Host() {
+
+    }
+
     abstract public String getHost();
 
     abstract public String getLookup();
@@ -75,7 +80,7 @@ abstract public class Host {
         return url.contains(getLookup());
     }
 
-    public void download(Image image, ImageFileData imageFileData) throws DownloadException, InterruptedException {
+    public void download(Post post, Image image, ImageFileData imageFileData) throws DownloadException, InterruptedException {
 
         HttpClientContext context = HttpClientContext.create();
         context.setCookieStore(new BasicCookieStore());
@@ -102,13 +107,8 @@ abstract public class Host {
             String formatImageFileName = pathService.formatImageFileName(imageFileData.getImageName());
             logger.debug(String.format("Sanitizing image name from %s to %s", imageFileData.getImageName(), formatImageFileName));
             imageFileData.setImageName(formatImageFileName);
-            File destinationFolder = pathService.getDownloadDestinationFolder(image.getPostId());
+            File destinationFolder = pathService.getDownloadDestinationFolder(post.getTitle(), post.getForum(), post.getThreadTitle(), post.getMetadata(), post.getDestFolder());
             logger.debug(String.format("Saving to %s", destinationFolder.getPath()));
-            logger.debug(String.format("Creating %s", destinationFolder.getPath()));
-            destinationFolder.mkdirs();
-            if (!destinationFolder.exists()) {
-                logger.debug(String.format("Folder %s is created", destinationFolder.toString()));
-            }
 
             HttpClient client = cm.getClient().build();
 
@@ -174,7 +174,7 @@ abstract public class Host {
             throw new HostException("Failed to guess image format", e);
         }
         try {
-            File outImage = new File(outputFile.getParent(), (appSettingsService.isForceOrder() ? String.format("%03d_", index) : "") + imageName);
+            File outImage = new File(outputFile.getParent(), (appSettingsService.getSettings().getForceOrder() ? String.format("%03d_", index) : "") + imageName);
             if (outImage.exists() && outImage.delete()) {
                 logger.debug(String.format("%s is deleted", outImage.toString()));
             }

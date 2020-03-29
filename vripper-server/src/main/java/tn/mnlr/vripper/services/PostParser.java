@@ -6,11 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.exception.PostParseException;
-import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.q.DownloadQ;
-
-import javax.annotation.PostConstruct;
-import java.util.List;
 
 @Service
 public class PostParser {
@@ -19,52 +15,31 @@ public class PostParser {
 
     static final String VR_API = "https://vipergirls.to/vr.php";
 
-    @Autowired
-    private ConnectionManager cm;
+    private final AppStateExchange appStateExchange;
+    private final VipergirlsAuthService authService;
+    private final AppSettingsService appSettingsService;
+    private final DownloadQ downloadQ;
 
     @Autowired
-    private AppStateService appStateService;
-
-    @Autowired
-    private VipergirlsAuthService authService;
-
-    @Autowired
-    private AppSettingsService appSettingsService;
-
-    @Autowired
-    private DownloadQ downloadQ;
-
-    @Autowired
-    private VipergirlsAuthService vipergirlsAuthService;
-
-    @Autowired
-    private List<Host> supportedHosts;
-
-    @Autowired
-    private HtmlProcessorService htmlProcessorService;
-
-    @Autowired
-    private XpathService xpathService;
-
-    @PostConstruct
-    private void init() {
-
+    public PostParser(AppStateExchange appStateExchange, VipergirlsAuthService authService, AppSettingsService appSettingsService, DownloadQ downloadQ) {
+        this.appStateExchange = appStateExchange;
+        this.authService = authService;
+        this.appSettingsService = appSettingsService;
+        this.downloadQ = downloadQ;
     }
 
     public synchronized void addPost(String postId, String threadId) throws PostParseException {
 
-        if (appStateService.getCurrentPosts().containsKey(postId)) {
+        if (appStateExchange.getPosts().containsKey(postId)) {
             logger.warn(String.format("skipping %s, already loaded", postId));
             return;
         }
 
-        VRPostParser vrPostParser = new VRPostParser(threadId, postId, cm, vipergirlsAuthService, supportedHosts, htmlProcessorService, xpathService);
+        VRPostParser vrPostParser = new VRPostParser(threadId, postId);
         Post post = vrPostParser.parse();
 
-        post.setAppStateService(appStateService);
-        post.getImages().forEach(e -> e.setAppStateService(appStateService));
-        authService.leaveThanks(post.getUrl(), post.getPostId());
-        if (appSettingsService.isAutoStart()) {
+        authService.leaveThanks(post);
+        if (appSettingsService.getSettings().getAutoStart()) {
             logger.debug("Auto start downloads option is enabled");
             logger.debug(String.format("Starting to enqueue %d jobs for %s", post.getImages().size(), post.getUrl()));
             post.setStatus(Post.Status.PENDING);
@@ -82,7 +57,7 @@ public class PostParser {
         }
     }
 
-    public VRThreadParser createVRThreadParser(String threadId) {
-        return new VRThreadParser(threadId, cm, vipergirlsAuthService, supportedHosts);
+    public VRThreadParser createVRThreadParser(QueuedVGLink queuedVGLink) {
+        return new VRThreadParser(queuedVGLink);
     }
 }

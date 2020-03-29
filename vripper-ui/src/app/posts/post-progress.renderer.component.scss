@@ -3,13 +3,18 @@
 }
 
 .row-text {
-    white-space: nowrap; 
-    overflow: hidden;
-    padding-right: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  padding-right: 15px;
 }
 
 .row-text > span {
-    white-space: nowrap; 
-    overflow: hidden;
-    text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  & .icon {
+    margin: 0 5px;
+    cursor: pointer;
+  }
 }

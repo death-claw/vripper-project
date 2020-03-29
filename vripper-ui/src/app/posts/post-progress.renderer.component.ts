@@ -1,21 +1,20 @@
-import { WsConnectionService } from '../ws-connection.service';
-import { PostState } from './post-state.model';
+import {WsConnectionService} from '../ws-connection.service';
+import {PostState} from './post-state.model';
 import {
-  Component,
-  OnInit,
-  OnDestroy,
-  NgZone,
-  ChangeDetectionStrategy,
   AfterViewInit,
-  EventEmitter
+  ChangeDetectionStrategy,
+  Component,
+  EventEmitter,
+  NgZone,
+  OnDestroy,
+  OnInit
 } from '@angular/core';
-import { AgRendererComponent } from 'ag-grid-angular';
-import { Subscription, BehaviorSubject, Subject } from 'rxjs';
-import { WsHandler } from '../ws-handler';
-import { ICellRendererParams, RowNode, GridApi } from 'ag-grid-community';
-import { ElectronService } from 'ngx-electron';
-import { MatDialog } from '@angular/material';
-import { ContextMenuService } from '../ctxt-menu.service';
+import {AgRendererComponent} from 'ag-grid-angular';
+import {BehaviorSubject, Subject, Subscription} from 'rxjs';
+import {GridApi, ICellRendererParams, RowNode} from 'ag-grid-community';
+import {ElectronService} from 'ngx-electron';
+import {MatDialog} from '@angular/material/dialog';
+import {CtxtMenuService} from "./ctxt-menu.service";
 
 @Component({
   selector: 'app-progress-cell',
@@ -29,13 +28,12 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
     private zone: NgZone,
     public electronService: ElectronService,
     public dialog: MatDialog,
-    private contextMenuService: ContextMenuService
-  ) {}
+    private contextMenuService: CtxtMenuService
+  ) {
+  }
 
-  websocketHandlerPromise: Promise<WsHandler>;
   postState$: EventEmitter<PostState> = new EventEmitter();
   private postState: PostState;
-  updatesSubscription: Subscription;
   expanded = false;
   loaded: Subject<boolean> = new BehaviorSubject(false);
   loading;
@@ -44,10 +42,6 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
 
   postsSub: Subscription;
   stateSub: Subscription;
-
-  trunc(value: number): number {
-    return Math.trunc(value);
-  }
 
   ngOnInit(): void {
     this.stateSub = this.ws.state.subscribe(state => {
@@ -74,9 +68,6 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
   }
 
   ngOnDestroy(): void {
-    if (this.updatesSubscription != null) {
-      this.updatesSubscription.unsubscribe();
-    }
     if (this.postsSub != null) {
       this.postsSub.unsubscribe();
     }
@@ -96,14 +87,6 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
     this.postState = params.data;
     this.postState$.emit(this.postState);
     return true;
-  }
-
-  goTo() {
-    if (this.electronService.isElectronApp) {
-      this.electronService.shell.openExternal(this.postState.url);
-    } else {
-      window.open(this.postState.url, '_blank');
-    }
   }
 
   context(event: MouseEvent) {

@@ -1,46 +1,40 @@
-import { LinkCollectorService } from './link-collector.service';
-import { ContextMenuService } from './ctxt-menu.service';
-import { PostContextMenuComponent } from './posts/post-context-menu.component';
-import { PostsDataService } from './posts-data.service';
-import { AppPreviewDirective } from './common/preview-tooltip.directive';
-import { WsConnectionService } from './ws-connection.service';
-import { AppService } from './app.service';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { NgModule } from '@angular/core';
+import {PostContextMenuComponent} from './posts/post-context-menu.component';
+import {PostDetailsContextMenuComponent} from './post-detail/post-details-context-menu.component';
+import {AppPreviewDirective} from './common/preview-tooltip.directive';
+import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
+import {NgModule} from '@angular/core';
 
-import { AppComponent } from './app.component';
-import { MaterialModule } from './material.module';
-import { PostsComponent } from './posts/posts.component';
-import { PostDetailComponent } from './post-detail/post-detail.component';
-import { FlexLayoutModule } from '@angular/flex-layout';
-import { AppRoutingModule } from './app-routing.module';
-import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { AgGridModule } from 'ag-grid-angular';
-import { PostProgressRendererComponent } from './posts/post-progress.renderer.component';
-import { PostDetailsProgressRendererComponent } from './post-detail/post-details-progress.component';
-import { LoginComponent } from './login/login.component';
-import { XhrInterceptorService } from './xhr-interceptor.service';
-import { HomeComponent } from './home/home.component';
-import { SettingsComponent } from './settings/settings.component';
+import {AppComponent} from './app.component';
+import {MaterialModule} from './material.module';
+import {PostsComponent} from './posts/posts.component';
+import {PostDetailComponent} from './post-detail/post-detail.component';
+import {FlexLayoutModule} from '@angular/flex-layout';
+import {AppRoutingModule} from './app-routing.module';
+import {HTTP_INTERCEPTORS, HttpClientModule} from '@angular/common/http';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {AgGridModule} from 'ag-grid-angular';
+import {PostProgressRendererComponent} from './posts/post-progress.renderer.component';
+import {PostDetailsProgressRendererComponent} from './post-detail/post-details-progress.component';
+import {LoginComponent} from './login/login.component';
+import {XhrInterceptorService} from './xhr-interceptor.service';
+import {HomeComponent} from './home/home.component';
+import {SettingsComponent} from './settings/settings.component';
 
-import { NgxElectronModule } from 'ngx-electron';
-import { ServerService } from './server-service';
-import { ConfirmDialogComponent } from './common/confirmation-component/confirmation-dialog';
-import { SharedService } from './posts/shared.service';
-import { MultiPostComponent } from './multi-post/multi-post.component';
-import { OverlayModule } from '@angular/cdk/overlay';
-import { AppPreviewComponent } from './common/preview-tooltip.component';
-import { UrlRendererComponent } from './multi-post/url-renderer.component';
-import { FilterComponent } from './filter/filter.component';
-import { ScanComponent } from './scan/scan.component';
-import { StatusBarComponent } from './status-bar/status-bar.component';
-import { SelectionService } from './selection-service';
-import { ToolbarComponent } from './toolbar/toolbar.component';
-import { GrabQueueComponent } from './grab-queue/grab-queue.component';
-import { UrlGrabRendererComponent } from './grab-queue/url-renderer.component';
-import { GalleryComponent } from './gallery/gallery.component';
-import { PhotoSwipeComponent } from './photo-swipe/photo-swipe.component';
+import {NgxElectronModule} from 'ngx-electron';
+import {ConfirmDialogComponent} from './common/confirmation-component/confirmation-dialog';
+import {MultiPostComponent} from './multi-post/multi-post.component';
+import {OverlayModule} from '@angular/cdk/overlay';
+import {AppPreviewComponent} from './common/preview-tooltip.component';
+import {UrlRendererComponent} from './multi-post/url-renderer.component';
+import {FilterComponent} from './filter/filter.component';
+import {ScanComponent} from './scan/scan.component';
+import {StatusBarComponent} from './status-bar/status-bar.component';
+import {ToolbarComponent} from './toolbar/toolbar.component';
+import {GrabQueueComponent} from './grab-queue/grab-queue.component';
+import {UrlGrabRendererComponent} from './grab-queue/url-renderer.component';
+import {GalleryComponent} from './gallery/gallery.component';
+import {PhotoSwipeComponent} from './photo-swipe/photo-swipe.component';
+import {ClipboardModule} from 'ngx-clipboard';
 
 @NgModule({
   declarations: [
@@ -64,6 +58,7 @@ import { PhotoSwipeComponent } from './photo-swipe/photo-swipe.component';
     ToolbarComponent,
     GrabQueueComponent,
     PostContextMenuComponent,
+    PostDetailsContextMenuComponent,
     GalleryComponent,
     PhotoSwipeComponent
   ],
@@ -75,6 +70,7 @@ import { PhotoSwipeComponent } from './photo-swipe/photo-swipe.component';
     ScanComponent,
     MultiPostComponent,
     PostContextMenuComponent,
+    PostDetailsContextMenuComponent,
     GalleryComponent
   ],
   imports: [
@@ -92,18 +88,11 @@ import { PhotoSwipeComponent } from './photo-swipe/photo-swipe.component';
       UrlRendererComponent,
       UrlGrabRendererComponent
     ]),
-    OverlayModule
+    OverlayModule,
+    ClipboardModule
   ],
   providers: [
-    AppService,
-    WsConnectionService,
-    { provide: HTTP_INTERCEPTORS, useClass: XhrInterceptorService, multi: true },
-    ServerService,
-    SharedService,
-    SelectionService,
-    PostsDataService,
-    ContextMenuService,
-    LinkCollectorService
+    {provide: HTTP_INTERCEPTORS, useClass: XhrInterceptorService, multi: true}
   ],
   bootstrap: [AppComponent]
 })

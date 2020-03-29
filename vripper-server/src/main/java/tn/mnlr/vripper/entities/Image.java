@@ -3,10 +3,11 @@ package tn.mnlr.vripper.entities;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.processors.BehaviorProcessor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tn.mnlr.vripper.SpringContext;
+import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.services.AppStateService;
 
@@ -14,48 +15,41 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Getter
-@NoArgsConstructor
 public class Image {
 
     private static final Logger logger = LoggerFactory.getLogger(Image.class);
-
-    private AppStateService appStateService;
-
-    private Disposable subscription;
+    private final AppStateService appStateService;
 
     private final String type = "img";
-
     private String postId;
-
     private String postName;
-
     private Host host;
-
     private String url;
-
     private int index;
-
     private AtomicLong current = new AtomicLong(0);
-    private Status status;
-    private BehaviorProcessor<Image> imageStateProcessor;
 
     @Setter
     private long total = 0;
+    private Status status;
+    private BehaviorProcessor<Image> imageStateProcessor;
+    private Disposable subscription;
 
-    public Image(String url, String postId, String postName, Host host, int index) {
+    public Image() {
+        this.appStateService = SpringContext.getBean(AppStateService.class);
+    }
+
+    public Image(String url, String postId, String postName, Host host, int index) throws PostParseException {
+        this();
         this.url = url;
         this.postId = postId;
         this.postName = postName;
         this.host = host;
         this.index = index;
         status = Status.STOPPED;
-        imageStateProcessor = BehaviorProcessor.create();
-    }
 
-    public void setAppStateService(AppStateService appStateService) {
-        this.appStateService = appStateService;
-        appStateService.getCurrentImages().put(this.url, this);
-        appStateService.getLiveImageUpdates().onNext(this);
+        if (!appStateService.newImage(this)) {
+            throw new PostParseException("Image already loaded");
+        }
     }
 
     public void setStatus(Status status) {
@@ -68,15 +62,11 @@ public class Image {
     }
 
     public void init() {
-        if (appStateService == null) {
-            logger.warn("Attempting to init the image whilst the App State is null, unexpected behaviour could occur from this");
-            return;
-        }
         cleanup();
         imageStateProcessor = BehaviorProcessor.create();
         subscription = imageStateProcessor
-                .onBackpressureLatest()
-                .doOnNext(appStateService::onImageUpdate)
+                .onBackpressureBuffer()
+                .doOnNext(appStateService::imageUpdated)
                 .subscribe();
 
         current.set(0);
@@ -104,7 +94,7 @@ public class Image {
     }
 
     private void update() {
-        if(imageStateProcessor == null) {
+        if (imageStateProcessor == null) {
             return;
         }
         imageStateProcessor.onNext(this);

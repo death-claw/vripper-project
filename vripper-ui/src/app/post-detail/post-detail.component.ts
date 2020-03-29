@@ -1,10 +1,11 @@
-import { PostDetailsProgressRendererComponent } from './post-details-progress.component';
-import { WsConnectionService } from './../ws-connection.service';
-import { Component, OnInit, Inject, OnDestroy, NgZone, ChangeDetectionStrategy } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
-import { PostDetailsDataSource } from './post-details.datasource';
-import { PostState } from '../posts/post-state.model';
-import { GridOptions } from 'ag-grid-community';
+import {PostDetailsProgressRendererComponent} from './post-details-progress.component';
+import {WsConnectionService} from './../ws-connection.service';
+import {ChangeDetectionStrategy, Component, Inject, NgZone, OnDestroy, OnInit} from '@angular/core';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {PostDetailsDataSource} from './post-details.datasource';
+import {PostState} from '../posts/post-state.model';
+import {GridOptions} from 'ag-grid-community';
+import {CtxtMenuService} from "./ctxt-menu.service";
 
 @Component({
   selector: 'app-post-detail',
@@ -18,9 +19,11 @@ export class PostDetailComponent implements OnInit, OnDestroy {
     public dialogRef: MatDialogRef<PostDetailComponent>,
     @Inject(MAT_DIALOG_DATA) public dialogData: PostState,
     private wsConnection: WsConnectionService,
-    private zone: NgZone) {
+    private zone: NgZone,
+    private contextMenuService: CtxtMenuService
+  ) {
 
-    this.gridOptions = <GridOptions> {
+    this.gridOptions = <GridOptions>{
       columnDefs: [
         {
           headerName: '#',
@@ -28,8 +31,8 @@ export class PostDetailComponent implements OnInit, OnDestroy {
           sortable: true,
           sort: 'asc',
           suppressMovable: true,
-          cellClass: 'col-white',
-          width: 10
+          width: 10,
+          maxWidth: 50
         },
         {
           headerName: 'URL',
@@ -55,7 +58,8 @@ export class PostDetailComponent implements OnInit, OnDestroy {
         this.dataSource.connect();
       },
       onGridSizeChanged: () => this.gridOptions.api.sizeColumnsToFit(),
-      onRowDataUpdated: () => this.gridOptions.api.sizeColumnsToFit()
+      onRowDataUpdated: () => this.gridOptions.api.sizeColumnsToFit(),
+      onBodyScroll: () => this.contextMenuService.closePostDetailsCtxtMenu()
     };
 
   }

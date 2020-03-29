@@ -4,6 +4,7 @@ import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tn.mnlr.vripper.entities.Image;
+import tn.mnlr.vripper.entities.Post;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
@@ -14,12 +15,14 @@ public class DownloadJob implements Callable<Image> {
 
     @Getter
     private final Image image;
+    private final Post post;
 
     @Getter
     private final ImageFileData imageFileData = new ImageFileData();
 
-    DownloadJob(Image image) {
+    DownloadJob(Post post, Image image) {
         this.image = image;
+        this.post = post;
     }
 
     @Override
@@ -28,7 +31,7 @@ public class DownloadJob implements Callable<Image> {
         logger.debug(String.format("Starting downloading %s", image.getUrl()));
         image.setStatus(Image.Status.DOWNLOADING);
         image.setCurrent(0);
-        image.getHost().download(image, imageFileData);
+        image.getHost().download(post, image, imageFileData);
         image.setStatus(Image.Status.COMPLETE);
         return image;
     }

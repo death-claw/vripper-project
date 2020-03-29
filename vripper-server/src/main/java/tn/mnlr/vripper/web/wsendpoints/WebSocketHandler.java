@@ -2,7 +2,6 @@ package tn.mnlr.vripper.web.wsendpoints;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -22,6 +21,7 @@ import tn.mnlr.vripper.services.*;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,35 +34,31 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(WebSocketHandler.class);
 
-    public WebSocketHandler() {
+    private final GlobalStateService globalStateService;
+    private final AppStateExchange appStateExchange;
+    private final DownloadSpeedService downloadSpeedService;
+    private final VipergirlsAuthService vipergirlsAuthService;
+    private final CommonExecutor commonExecutor;
+    private final Map<String, Disposable> postsSubscriptions = new ConcurrentHashMap<>();
+    private final Map<String, Disposable> postDetailsSubscriptions = new ConcurrentHashMap<>();
+    private final Map<String, Disposable> stateSubscriptions = new ConcurrentHashMap<>();
+    private final Map<String, Disposable> downloadSpeedSubscriptions = new ConcurrentHashMap<>();
+    private final Map<String, Disposable> userSubscriptions = new ConcurrentHashMap<>();
+    private final Map<String, Disposable> grabQueueSubscriptions = new ConcurrentHashMap<>();
+    private final Map<String, Future<Void>> threadParseRequests = new ConcurrentHashMap<>();
+
+    private final ObjectMapper om = new ObjectMapper();
+
+    @Autowired
+    public WebSocketHandler(GlobalStateService globalStateService, AppStateExchange appStateExchange, DownloadSpeedService downloadSpeedService, VipergirlsAuthService vipergirlsAuthService, CommonExecutor commonExecutor) {
+        this.globalStateService = globalStateService;
+        this.appStateExchange = appStateExchange;
+        this.downloadSpeedService = downloadSpeedService;
+        this.vipergirlsAuthService = vipergirlsAuthService;
+        this.commonExecutor = commonExecutor;
+
         om.addMixIn(Image.class, ImageUIMixin.class).addMixIn(Post.class, PostUIMixin.class);
     }
-
-    @Autowired
-    private GlobalStateService globalStateService;
-
-    @Autowired
-    private AppStateService appStateService;
-
-    @Autowired
-    private DownloadSpeedService downloadSpeedService;
-
-    @Autowired
-    private VipergirlsAuthService vipergirlsAuthService;
-
-    @Autowired
-    private PostParser postParser;
-
-    private Map<String, Disposable> postsSubscriptions = new ConcurrentHashMap<>();
-    private Map<String, Disposable> postDetailsSubscriptions = new ConcurrentHashMap<>();
-    private Map<String, Disposable> stateSubscriptions = new ConcurrentHashMap<>();
-    private Map<String, Disposable> downloadSpeedSubscriptions = new ConcurrentHashMap<>();
-    private Map<String, Disposable> userSubscriptions = new ConcurrentHashMap<>();
-    private Map<String, Disposable> grabQueueSubscriptions = new ConcurrentHashMap<>();
-
-    private Map<String, Future<Void>> threadParseRequests = new ConcurrentHashMap<>();
-
-    private ObjectMapper om = new ObjectMapper();
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
@@ -130,11 +126,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         stateSubscriptions.put(session.getId(),
                 globalStateService.getLiveGlobalState()
+                        .subscribeOn(commonExecutor.getScheduler())
                         .onBackpressureBuffer()
-                        .observeOn(Schedulers.io())
-                        .buffer(5000, TimeUnit.MILLISECONDS)
-                        .filter(e -> !e.isEmpty())
-                        .map(e -> e.subList(e.size() - 1, e.size()))
+                        .map(Collections::singleton)
                         .map(om::writeValueAsString)
                         .map(TextMessage::new)
                         .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))
@@ -156,12 +150,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         downloadSpeedSubscriptions.put(session.getId(),
                 downloadSpeedService.getReadBytesPerSecond()
+                        .subscribeOn(commonExecutor.getScheduler())
                         .onBackpressureBuffer()
-                        .observeOn(Schedulers.io())
-                        .buffer(5000, TimeUnit.MILLISECONDS)
-                        .filter(e -> !e.isEmpty())
-                        .map(e -> e.subList(e.size() - 1, e.size()))
-                        .map(e -> e.stream().map(DownloadSpeed::new).collect(Collectors.toList()))
+                        .map(e -> Collections.singleton(new DownloadSpeed(e)))
                         .map(om::writeValueAsString)
                         .map(TextMessage::new)
                         .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))
@@ -183,9 +174,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         userSubscriptions.put(session.getId(),
                 vipergirlsAuthService.getLoggedInUser()
+                        .subscribeOn(commonExecutor.getScheduler())
                         .onBackpressureBuffer()
-                        .observeOn(Schedulers.io())
-                        .map(e -> Collections.singletonList(new LoggedUser(e)))
+                        .map(e -> Collections.singleton(new LoggedUser(e)))
                         .map(om::writeValueAsString)
                         .map(TextMessage::new)
                         .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))
@@ -200,18 +191,18 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
 
         try {
-            send(session, new TextMessage(om.writeValueAsString(appStateService.getCurrentPosts().values())));
+            send(session, new TextMessage(om.writeValueAsString(appStateExchange.getPosts().values())));
         } catch (Exception e) {
             logger.error("Unexpected error occurred", e);
         }
 
         postsSubscriptions.put(session.getId(),
-                appStateService.getLivePostsState()
+                appStateExchange.livePost()
+                        .subscribeOn(commonExecutor.getScheduler())
                         .onBackpressureBuffer()
-                        .observeOn(Schedulers.io())
                         .buffer(2000, TimeUnit.MILLISECONDS, 200)
                         .filter(e -> !e.isEmpty())
-                        .map(e -> e.stream().distinct().collect(Collectors.toList()))
+                        .map(HashSet::new)
                         .map(om::writeValueAsString)
                         .map(TextMessage::new)
                         .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))
@@ -226,18 +217,18 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
 
         try {
-            send(session, new TextMessage(om.writeValueAsString(appStateService.getGrabQueue().values())));
+            send(session, new TextMessage(om.writeValueAsString(appStateExchange.getQueue().values())));
         } catch (Exception e) {
             logger.error("Unexpected error occurred", e);
         }
 
         grabQueueSubscriptions.put(session.getId(),
-                appStateService.getLiveGrabQueue()
+                appStateExchange.liveQueue()
+                        .subscribeOn(commonExecutor.getScheduler())
                         .onBackpressureBuffer()
-                        .observeOn(Schedulers.io())
                         .buffer(2000, TimeUnit.MILLISECONDS, 200)
                         .filter(e -> !e.isEmpty())
-                        .map(e -> e.stream().distinct().collect(Collectors.toList()))
+                        .map(HashSet::new)
                         .map(om::writeValueAsString)
                         .map(TextMessage::new)
                         .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))
@@ -253,23 +244,23 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         try {
             send(session, new TextMessage(om.writeValueAsString(
-                    appStateService.getCurrentImages()
+                    appStateExchange.getImages()
                             .values()
                             .stream()
                             .filter(e -> e.getPostId().equals(postId))
-                            .collect(Collectors.toList())))
+                            .collect(Collectors.toSet())))
             );
         } catch (Exception e) {
             logger.error("Unexpected error occurred", e);
         }
 
-        postDetailsSubscriptions.put(session.getId(), appStateService.getLiveImageUpdates()
+        postDetailsSubscriptions.put(session.getId(), appStateExchange.liveImage()
+                .subscribeOn(commonExecutor.getScheduler())
                 .onBackpressureBuffer()
-                .observeOn(Schedulers.io())
                 .filter(e -> e.getPostId().equals(postId))
                 .buffer(2000, TimeUnit.MILLISECONDS, 500)
                 .filter(e -> !e.isEmpty())
-                .map(e -> e.stream().distinct().collect(Collectors.toList()))
+                .map(HashSet::new)
                 .map(om::writeValueAsString)
                 .map(TextMessage::new)
                 .subscribe(msg -> send(session, msg), e -> logger.error("Failed to send data to client", e))

@@ -21,6 +21,10 @@ public class PostImgHost extends Host {
     private static final String TITLE_XPATH = "//span[contains(@class,'imagename')]";
     private static final String IMG_XPATH = "//a[@id='download']";
 
+    public PostImgHost() {
+        super();
+    }
+
     @Override
     public String getHost() {
         return host;

@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
+import tn.mnlr.vripper.entities.Post;
 
 import javax.annotation.PostConstruct;
 import javax.imageio.ImageIO;
@@ -37,21 +38,28 @@ public class ThumbnailGenerator {
     @Value("${base.dir}")
     private String baseDir;
 
-    @Autowired
-    private PathService pathService;
+    private final PathService pathService;
+    private final AppStateExchange appStateExchange;
 
     @Getter
     private File cacheFolder;
     CacheLoader<CacheKey, byte[]> loader = new CacheLoader<>() {
         @Override
         public byte[] load(CacheKey key) throws Exception {
-            File destinationFolder = pathService.getDownloadDestinationFolder(key.getPostId());
+            Post post = appStateExchange.getPost(key.getPostId());
+            File destinationFolder = pathService.getDownloadDestinationFolder(post.getTitle(), post.getForum(), post.getThreadTitle(), post.getMetadata(), post.getDestFolder());
             if (!destinationFolder.exists() || !destinationFolder.isDirectory()) {
                 return null;
             }
             return Files.readAllBytes(generateThumbnail(new File(destinationFolder, key.getImgName()), key.getPostId()).toPath());
         }
     };
+
+    @Autowired
+    public ThumbnailGenerator(PathService pathService, AppStateExchange appStateExchange) {
+        this.pathService = pathService;
+        this.appStateExchange = appStateExchange;
+    }
 
     @PostConstruct
     private void init() throws Exception {

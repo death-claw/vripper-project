@@ -24,24 +24,28 @@ public class DownloadQ {
 
     private static final Logger logger = LoggerFactory.getLogger(DownloadQ.class);
 
-    @Autowired
-    private AppStateService appStateService;
+    private final AppStateService appStateService;
+    private final AppSettingsService appSettingsService;
+    private final List<Host> hosts;
 
     private final ConcurrentHashMap<Host, BlockingDeque<DownloadJob>> downloadQ = new ConcurrentHashMap<>();
+
     @Autowired
-    private AppSettingsService appSettingsService;
-    @Autowired
-    private List<Host> hosts;
+    public DownloadQ(AppStateService appStateService, AppSettingsService appSettingsService, List<Host> hosts) {
+        this.appStateService = appStateService;
+        this.appSettingsService = appSettingsService;
+        this.hosts = hosts;
+    }
 
     @PostConstruct
     private void init() {
         hosts.forEach(host -> downloadQ.put(host, new LinkedBlockingDeque<>()));
     }
 
-    public void put(Image image) throws InterruptedException {
+    public void put(Post post, Image image) throws InterruptedException {
         logger.debug(String.format("Enqueuing a job for %s", image.getUrl()));
         image.init();
-        DownloadJob downloadJob = new DownloadJob(image);
+        DownloadJob downloadJob = new DownloadJob(post, image);
         downloadQ.get(downloadJob.getImage().getHost()).putLast(downloadJob);
         appStateService.newDownloadJob(downloadJob);
     }
@@ -57,7 +61,7 @@ public class DownloadQ {
         }
         for (Host host : hosts) {
             Iterator<DownloadJob> it = downloadQ.get(host).iterator();
-            for (int i = 0; i < appSettingsService.getMaxThreads(); i++) {
+            for (int i = 0; i < appSettingsService.getSettings().getMaxThreads(); i++) {
                 DownloadJob downloadJob = it.hasNext() ? it.next() : null;
                 if (downloadJob != null) {
                     downloadJobs.add(downloadJob);
@@ -69,7 +73,7 @@ public class DownloadQ {
 
     public void enqueue(Post post) throws InterruptedException {
         for (Image image : post.getImages()) {
-            put(image);
+            put(post, image);
         }
     }
 

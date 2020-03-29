@@ -103,7 +103,7 @@ public class ImxHost extends Host {
 
             imageFileData.setImageUrl(imgUrl);
             imageFileData.setImageName(imgTitle.isEmpty() ? imgUrl.substring(imgUrl.lastIndexOf('/') + 1) : imgTitle);
-        } catch(Exception e) {
+        } catch (Exception e) {
             throw new HostException("Unexpected error occurred", e);
         }
     }

@@ -1,17 +1,10 @@
-import {
-  Component,
-  OnInit,
-  NgZone,
-  Inject,
-  ChangeDetectionStrategy,
-  AfterViewInit
-} from '@angular/core';
-import { NgForm } from '@angular/forms';
-import { MatSnackBar, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
-import { HttpClient } from '@angular/common/http';
-import { finalize } from 'rxjs/operators';
-import { ServerService } from '../server-service';
-import { Subject, BehaviorSubject } from 'rxjs';
+import {AfterViewInit, ChangeDetectionStrategy, Component, Inject, NgZone, OnInit} from '@angular/core';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {HttpClient} from '@angular/common/http';
+import {finalize} from 'rxjs/operators';
+import {ServerService} from '../server-service';
+import {BehaviorSubject, Subject} from 'rxjs';
 
 @Component({
   selector: 'app-scan',

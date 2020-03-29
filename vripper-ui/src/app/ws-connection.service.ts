@@ -1,19 +1,21 @@
-import { Injectable } from '@angular/core';
-import { Subject, BehaviorSubject, Observable, Subscription } from 'rxjs';
-import { WebSocketSubject } from 'rxjs/webSocket';
-import { environment } from 'src/environments/environment';
-import { ElectronService } from 'ngx-electron';
-import { ServerService } from './server-service';
-import { GrabQueueState } from './grab-queue/grab-queue.model';
-import { WSMessage } from './common/ws-message.model';
-import { PostDetails } from './post-detail/post-details.model';
-import { PostState } from './posts/post-state.model';
-import { LoggedUser } from './common/logged-user.model';
-import { DownloadSpeed } from './common/download-speed.model';
-import { GlobalState } from './common/global-state.model';
-import { map, filter } from 'rxjs/operators';
+import {Injectable} from '@angular/core';
+import {BehaviorSubject, Observable, Subject} from 'rxjs';
+import {WebSocketSubject} from 'rxjs/webSocket';
+import {environment} from 'src/environments/environment';
+import {ElectronService} from 'ngx-electron';
+import {ServerService} from './server-service';
+import {GrabQueueState} from './grab-queue/grab-queue.model';
+import {WSMessage} from './common/ws-message.model';
+import {PostDetails} from './post-detail/post-details.model';
+import {PostState} from './posts/post-state.model';
+import {LoggedUser} from './common/logged-user.model';
+import {DownloadSpeed} from './common/download-speed.model';
+import {GlobalState} from './common/global-state.model';
+import {filter, map} from 'rxjs/operators';
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class WsConnectionService {
   private websocket: WebSocketSubject<any>;
   private online: Subject<boolean> = new BehaviorSubject(false);
@@ -131,7 +133,7 @@ export class WsConnectionService {
             new PostState(
               element.type,
               element.postId,
-              element.title,
+              element.metadata.RESOLVED_NAME ? element.metadata.RESOLVED_NAME : element.title,
               element.done === 0 && element.total === 0 ? 0 : (element.done / element.total) * 100,
               element.status,
               element.removed,
@@ -139,7 +141,8 @@ export class WsConnectionService {
               element.done,
               element.total,
               element.hosts,
-              element.metadata.PREVIEWS
+              element.metadata.PREVIEWS,
+              element.metadata.THANKED
             )
           );
         });
@@ -177,7 +180,7 @@ export class WsConnectionService {
         const grabQueue: Array<GrabQueueState> = [];
         (<Array<any>>e).forEach(element => {
           grabQueue.push(
-            new GrabQueueState(element.type, element.link, element.threadId, element.postId, element.removed)
+            new GrabQueueState(element.type, element.link, element.threadId, element.postId, element.removed, element.count, element.loading)
           );
         });
         return grabQueue;

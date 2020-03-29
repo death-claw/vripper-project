@@ -31,6 +31,10 @@ public class ImageBamHost extends Host {
     @Autowired
     private ConnectionManager cm;
 
+    public ImageBamHost() {
+        super();
+    }
+
     @Override
     public String getHost() {
         return host;
@@ -87,7 +91,7 @@ public class ImageBamHost extends Host {
 
             imageFileData.setImageUrl(imgUrl);
             imageFileData.setImageName(imgTitle.isEmpty() ? imgUrl.substring(imgUrl.lastIndexOf('/') + 1) : imgTitle);
-        } catch(Exception e) {
+        } catch (Exception e) {
             throw new HostException("Unexpected error occurred", e);
         }
     }

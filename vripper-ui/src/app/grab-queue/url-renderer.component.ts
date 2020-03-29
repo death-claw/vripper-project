@@ -1,30 +1,21 @@
-import { ElectronService } from 'ngx-electron';
-import { MultiPostComponent } from './../multi-post/multi-post.component';
-import { OnInit, OnDestroy, Component, ChangeDetectionStrategy } from '@angular/core';
-import { AgRendererComponent } from 'ag-grid-angular';
-import { ICellRendererParams } from 'ag-grid-community';
-import { GrabQueueState } from './grab-queue.model';
-import { MatDialog, MatSnackBar } from '@angular/material';
-import { BreakpointObserver, BreakpointState, Breakpoints } from '@angular/cdk/layout';
-import { Observable } from 'rxjs';
-import { ServerService } from '../server-service';
-import { HttpClient } from '@angular/common/http';
+import {ElectronService} from 'ngx-electron';
+import {MultiPostComponent} from '../multi-post/multi-post.component';
+import {ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit} from '@angular/core';
+import {AgRendererComponent} from 'ag-grid-angular';
+import {ICellRendererParams} from 'ag-grid-community';
+import {GrabQueueState} from './grab-queue.model';
+import {MatDialog} from '@angular/material/dialog';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {BreakpointObserver, Breakpoints, BreakpointState} from '@angular/cdk/layout';
+import {BehaviorSubject, Observable, Subject, Subscription} from 'rxjs';
+import {ServerService} from '../server-service';
+import {HttpClient} from '@angular/common/http';
+import {WsConnectionService} from "../ws-connection.service";
 
 @Component({
   selector: 'app-url-cell-grab',
-  template: `
-    <div fxLayout="row" fxLayoutAlign="space-between center">
-      <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-        ><a (click)="goTo()" href="javascript:void(0)">{{ grabQueue.link }}</a></span
-      >
-      <span>
-        <button style="margin-right: 5px" (click)="grab()" color="primary" mat-mini-fab>
-          <mat-icon>get_app</mat-icon>
-        </button>
-        <button (click)="remove()" color="primary" mat-mini-fab><mat-icon>delete</mat-icon></button>
-      </span>
-    </div>
-  `,
+  templateUrl: 'url-renderer.component.html',
+  styleUrls: ['url-renderer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UrlGrabRendererComponent implements OnInit, OnDestroy, AgRendererComponent {
@@ -34,19 +25,52 @@ export class UrlGrabRendererComponent implements OnInit, OnDestroy, AgRendererCo
     private httpClient: HttpClient,
     private serverService: ServerService,
     private _snackBar: MatSnackBar,
-    private electronService: ElectronService
-  ) {}
+    private electronService: ElectronService,
+    private ws: WsConnectionService,
+    private zone: NgZone,
+  ) {
+  }
 
-  grabQueue: GrabQueueState;
-  params: ICellRendererParams;
-  isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
+  private grabQueue: GrabQueueState;
+  private params: ICellRendererParams;
+  private isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
 
-  ngOnInit(): void {}
+  grabQueue$: Subject<GrabQueueState> = new BehaviorSubject(null);
 
-  ngOnDestroy(): void {}
+  private stateSub: Subscription;
+  private queueSub: Subscription;
+
+  ngOnInit(): void {
+    this.stateSub = this.ws.state.subscribe(state => {
+      if (state) {
+        this.queueSub = this.ws.subscribeForGrabQueue().subscribe(e => {
+          this.zone.run(() => {
+            e.forEach(v => {
+              if (this.grabQueue.threadId === v.threadId) {
+                this.grabQueue = v;
+                this.grabQueue$.next(this.grabQueue);
+              }
+            });
+          });
+        });
+      } else if (this.queueSub != null) {
+        this.queueSub.unsubscribe();
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.queueSub != null) {
+      this.queueSub.unsubscribe();
+    }
+    if (this.stateSub != null) {
+      this.stateSub.unsubscribe();
+    }
+  }
 
   agInit(params: ICellRendererParams): void {
     this.grabQueue = params.data;
+    this.grabQueue$.next(this.grabQueue);
   }
 
   refresh(params: ICellRendererParams): boolean {
@@ -86,8 +110,9 @@ export class UrlGrabRendererComponent implements OnInit, OnDestroy, AgRendererCo
   }
 
   remove() {
-    this.httpClient.post(this.serverService.baseUrl + '/grab/remove', { url: this.grabQueue.link }).subscribe(
-      () => {},
+    this.httpClient.post(this.serverService.baseUrl + '/grab/remove', {threadId: this.grabQueue.threadId}).subscribe(
+      () => {
+      },
       error => {
         this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
           duration: 5000

@@ -1,11 +1,12 @@
-import { Subscription } from 'rxjs';
-import { LinkCollectorService } from './../link-collector.service';
-import { ServerService } from './../server-service';
-import { ElectronService } from 'ngx-electron';
-import { ClipboardService } from './../clipboard.service';
-import { Component, OnInit, OnDestroy, NgZone, ChangeDetectionStrategy } from '@angular/core';
-import { MatDialog, MatSnackBar } from '@angular/material';
-import { HttpClient } from '@angular/common/http';
+import {Subscription} from 'rxjs';
+import {LinkCollectorService} from '../link-collector.service';
+import {ServerService} from '../server-service';
+import {ElectronService} from 'ngx-electron';
+import {ClipboardService} from '../clipboard.service';
+import {ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit} from '@angular/core';
+import {MatDialog} from '@angular/material/dialog';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {HttpClient} from '@angular/common/http';
 
 @Component({
   selector: 'app-home',

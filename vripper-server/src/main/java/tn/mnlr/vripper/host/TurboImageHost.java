@@ -3,14 +3,12 @@ package tn.mnlr.vripper.host;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.XpathException;
 import tn.mnlr.vripper.q.ImageFileData;
-import tn.mnlr.vripper.services.ConnectionManager;
 
 @Service
 public class TurboImageHost extends Host {
@@ -21,8 +19,9 @@ public class TurboImageHost extends Host {
     private static final String TITLE_XPATH = "//div[contains(@class,'titleFullS')]/h1";
     private static final String IMG_XPATH = "//img[@id='uImage']";
 
-    @Autowired
-    private ConnectionManager cm;
+    public TurboImageHost() {
+        super();
+    }
 
     @Override
     public String getHost() {
@@ -44,7 +43,7 @@ public class TurboImageHost extends Host {
             logger.debug(String.format("Looking for xpath expression %s in %s", TITLE_XPATH, url));
             Node titleNode = xpathService.getAsNode(doc, TITLE_XPATH);
             logger.debug(String.format("Resolving name for %s", url));
-            if(titleNode != null) {
+            if (titleNode != null) {
                 title = titleNode.getTextContent().trim();
             } else {
                 title = null;
@@ -53,7 +52,7 @@ public class TurboImageHost extends Host {
             throw new HostException(e);
         }
 
-        if(title == null || title.isEmpty()) {
+        if (title == null || title.isEmpty()) {
             title = getDefaultImageName(url);
         }
 

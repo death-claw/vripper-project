@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, Input } from '@angular/core';
+import {Component, ElementRef, ViewChild} from '@angular/core';
 
 import PhotoSwipe from 'photoswipe';
 import PhotoSwipeUI_Default from 'photoswipe/dist/photoswipe-ui-default';
@@ -13,7 +13,7 @@ export class IImage {
   styleUrls: ['./photo-swipe.component.css']
 })
 export class PhotoSwipeComponent {
-  @ViewChild('photoSwipe', { static: true }) photoSwipe: ElementRef;
+  @ViewChild('photoSwipe') photoSwipe: ElementRef;
 
   openGallery(images: IImage[], options?: any) {
     options = { ...options, history: false };

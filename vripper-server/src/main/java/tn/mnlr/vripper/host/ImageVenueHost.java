@@ -21,6 +21,10 @@ public class ImageVenueHost extends Host {
     private static final String CONTINUE_BUTTON_XPATH = "//a[@title='Continue to your image']";
     private static final String IMG_XPATH = "//img[@id='thepic']";
 
+    public ImageVenueHost() {
+        super();
+    }
+
     @Override
     public String getHost() {
         return host;

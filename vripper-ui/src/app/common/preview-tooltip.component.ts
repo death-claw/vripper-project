@@ -1,35 +1,36 @@
-import { Component, Input } from '@angular/core';
-import { trigger, state, style, transition, animate } from '@angular/animations';
+import {Component, Input} from '@angular/core';
 
 @Component({
   selector: 'app-preview',
   template: `
-  <div class="previews" style="display: inline-block; white-space: nowrap; height: 200px; max-width: 400px">
-    <ng-container *ngFor="let link of links">
-      <img
-        [@simpleFadeAnimation]="'in'"
-        [src]="link"
-      />
-    </ng-container>
-  </div>
+    <div class="previews" style="display: inline-block; white-space: nowrap;">
+      <ng-container *ngFor="let link of links">
+        <img
+          [src]="link"
+          (load)="loaded($event)"
+        />
+      </ng-container>
+    </div>
   `,
   styles: [
     `
       img {
-        max-height: 200px;
-        max-width: 400px;
+        height: 150px;
+        width: 150px;
         margin-left: 5px;
+        opacity: 0;
+        object-fit: cover;
+        visibility: hidden;
+        transition: opacity 0.2s ease-in, visibility 0.2s;
       }
     `
-  ],
-  animations: [
-    trigger('simpleFadeAnimation', [
-      state('in', style({ opacity: 1 })),
-
-      transition(':enter', [style({ opacity: 0 }), animate(300)])
-    ])
   ]
 })
 export class AppPreviewComponent {
   @Input() links: string[] = [];
+
+  loaded(event: Event) {
+    (<HTMLElement>event.target).style.visibility = 'visible';
+    (<HTMLElement>event.target).style.opacity = '1';
+  }
 }

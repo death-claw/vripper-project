@@ -1,21 +1,19 @@
-import { flatMap, filter } from 'rxjs/operators';
-import { SelectionService } from './../selection-service';
+import {SelectionService} from '../selection-service';
 import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
   Component,
-  OnInit,
+  EventEmitter,
   NgZone,
   OnDestroy,
-  ChangeDetectionStrategy,
-  EventEmitter,
-  AfterViewInit
+  OnInit
 } from '@angular/core';
-import { DownloadSpeed } from '../common/download-speed.model';
-import { WsConnectionService } from '../ws-connection.service';
-import { WsHandler } from '../ws-handler';
-import { Subscription } from 'rxjs';
-import { GlobalState } from '../common/global-state.model';
-import { WSMessage } from '../common/ws-message.model';
-import { CMD } from '../common/cmd.enum';
+import {DownloadSpeed} from '../common/download-speed.model';
+import {WsConnectionService} from '../ws-connection.service';
+import {Subscription} from 'rxjs';
+import {GlobalState} from '../common/global-state.model';
+import {WSMessage} from '../common/ws-message.model';
+import {CMD} from '../common/cmd.enum';
 
 @Component({
   selector: 'app-status-bar',
@@ -24,9 +22,9 @@ import { CMD } from '../common/cmd.enum';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class StatusBarComponent implements OnInit, OnDestroy, AfterViewInit {
-  constructor(private ws: WsConnectionService, private ngZone: NgZone, private selectionService: SelectionService) {}
+  constructor(private ws: WsConnectionService, private ngZone: NgZone, private selectionService: SelectionService) {
+  }
 
-  websocketHandlerPromise: Promise<WsHandler>;
   downloadSpeed: EventEmitter<DownloadSpeed> = new EventEmitter();
   subscriptions: Subscription[] = [];
   globalState: EventEmitter<GlobalState> = new EventEmitter();

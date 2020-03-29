@@ -6,6 +6,10 @@
   $green: mat-palette($mat-green);
   $orange: mat-palette($mat-orange);
 
+  .row-text {
+    color: mat-color($grey, 900);
+  }
+
   app-progress-cell .progress-bar .mat-progress-bar-fill::after {
     background-color: mat-color($grey, 400);
   }

@@ -34,6 +34,10 @@ public class AcidimgHost extends Host {
     @Autowired
     private ConnectionManager cm;
 
+    public AcidimgHost() {
+        super();
+    }
+
     @Override
     public String getHost() {
         return host;
@@ -88,7 +92,7 @@ public class AcidimgHost extends Host {
             throw new HostException(e);
         }
 
-        if(imgNode == null) {
+        if (imgNode == null) {
             throw new HostException("Cannot find the image node");
         }
 

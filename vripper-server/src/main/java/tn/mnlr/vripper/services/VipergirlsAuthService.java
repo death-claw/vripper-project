@@ -18,36 +18,29 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
-import tn.mnlr.vripper.VripperApplication;
+import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.exception.VripperException;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class VipergirlsAuthService {
 
     private static final Logger logger = LoggerFactory.getLogger(VipergirlsAuthService.class);
 
-    @Autowired
-    private ConnectionManager cm;
-
-    @Autowired
-    private HtmlProcessorService htmlProcessorService;
-
-    @Autowired
-    private XpathService xpathService;
-
-    @Autowired
-    private AppSettingsService appSettingsService;
+    private final ConnectionManager cm;
+    private final HtmlProcessorService htmlProcessorService;
+    private final XpathService xpathService;
+    private final AppSettingsService appSettingsService;
+    private final CommonExecutor commonExecutor;
 
     @Getter
     private HttpClientContext context = HttpClientContext.create();
 
+    @Getter
     private boolean authenticated = false;
 
     @Getter
@@ -55,6 +48,15 @@ public class VipergirlsAuthService {
 
     @Getter
     private PublishProcessor<String> loggedInUser = PublishProcessor.create();
+
+    @Autowired
+    public VipergirlsAuthService(ConnectionManager cm, HtmlProcessorService htmlProcessorService, XpathService xpathService, AppSettingsService appSettingsService, CommonExecutor commonExecutor) {
+        this.cm = cm;
+        this.htmlProcessorService = htmlProcessorService;
+        this.xpathService = xpathService;
+        this.appSettingsService = appSettingsService;
+        this.commonExecutor = commonExecutor;
+    }
 
     @PostConstruct
     private void init() {
@@ -66,19 +68,12 @@ public class VipergirlsAuthService {
         }
     }
 
-    @PreDestroy
-    private void destroy() throws InterruptedException {
-        logger.info("Shutting down VipergirlsAuthService");
-        VripperApplication.commonExecutor.shutdown();
-        VripperApplication.commonExecutor.awaitTermination(10, TimeUnit.SECONDS);
-    }
-
     public void authenticate() throws VripperException {
 
         logger.info("Authenticating using ViperGirls credentials");
         authenticated = false;
 
-        if(!appSettingsService.isVLogin()) {
+        if (!appSettingsService.getSettings().getVLogin()) {
             logger.debug("Authentication option is disabled");
             context.getCookieStore().clear();
             loggedUser = "";
@@ -86,8 +81,8 @@ public class VipergirlsAuthService {
             return;
         }
 
-        String username = appSettingsService.getVUsername();
-        String password = appSettingsService.getVPassword();
+        String username = appSettingsService.getSettings().getVUsername();
+        String password = appSettingsService.getSettings().getVPassword();
 
         if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
             logger.error("Cannot authenticate with ViperGirls credentials, username or password is empty");
@@ -149,13 +144,13 @@ public class VipergirlsAuthService {
         loggedInUser.onNext(loggedUser);
     }
 
-    void leaveThanks(String postUrl, String postId) {
-        VripperApplication.commonExecutor.submit(() -> {
-            if (!appSettingsService.isVLogin()) {
+    void leaveThanks(Post post) {
+        commonExecutor.getGeneralExecutor().submit(() -> {
+            if (!appSettingsService.getSettings().getVLogin()) {
                 logger.debug("Authentication with ViperGirls option is disabled");
                 return;
             }
-            if (!appSettingsService.isVThanks()) {
+            if (!appSettingsService.getSettings().getVThanks()) {
                 logger.debug("Leave thanks option is disabled");
                 return;
             }
@@ -164,9 +159,9 @@ public class VipergirlsAuthService {
                 return;
             }
             try {
-                postThanks(postId, getSecurityToken(postUrl));
+                postThanks(post, getSecurityToken(post.getUrl()));
             } catch (Exception e) {
-                logger.error(String.format("Failed to leave a thanks for url %s, post id %s", postUrl, postId), e);
+                logger.error(String.format("Failed to leave a thanks for url %s, post id %s", post.getUrl(), post.getPostId()), e);
             }
         });
     }
@@ -206,13 +201,13 @@ public class VipergirlsAuthService {
         return securityToken;
     }
 
-    private void postThanks(String postId, String securityKey) throws VripperException {
+    private void postThanks(Post post, String securityKey) throws VripperException {
 
         HttpPost postThanks = cm.buildHttpPost("https://vipergirls.to/post_thanks.php");
         List<NameValuePair> params = new ArrayList<>();
         params.add(new BasicNameValuePair("do", "post_thanks_add"));
         params.add(new BasicNameValuePair("using_ajax", "1"));
-        params.add(new BasicNameValuePair("p", postId));
+        params.add(new BasicNameValuePair("p", post.getPostId()));
         params.add(new BasicNameValuePair("securitytoken", securityKey));
         try {
             postThanks.setEntity(new UrlEncodedFormEntity(params));
@@ -226,6 +221,7 @@ public class VipergirlsAuthService {
         CloseableHttpClient client = cm.getClient().build();
 
         try (CloseableHttpResponse response = client.execute(postThanks, context)) {
+            post.getMetadata().put(Post.METADATA.THANKED.name(), true);
             EntityUtils.consumeQuietly(response.getEntity());
         } catch (Exception e) {
             throw new VripperException(e);

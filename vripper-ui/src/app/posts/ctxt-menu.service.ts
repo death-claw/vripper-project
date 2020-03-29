@@ -1,24 +1,28 @@
-import { PostState } from './posts/post-state.model';
-import { Injectable, ComponentRef } from '@angular/core';
-import { filter, take } from 'rxjs/operators';
-import { fromEvent, Subscription } from 'rxjs';
-import { OverlayPositionBuilder, Overlay, OverlayRef } from '@angular/cdk/overlay';
-import { ComponentPortal } from '@angular/cdk/portal';
-import { PostContextMenuComponent } from './posts/post-context-menu.component';
+import {ComponentRef, Injectable} from '@angular/core';
+import {ComponentPortal} from "@angular/cdk/portal";
+import {PostContextMenuComponent} from "./post-context-menu.component";
+import {Overlay, OverlayPositionBuilder, OverlayRef} from "@angular/cdk/overlay";
+import {fromEvent, Subscription} from "rxjs";
+import {PostState} from "./post-state.model";
+import {filter, take} from "rxjs/operators";
 
-@Injectable()
-export class ContextMenuService {
-  constructor(private overlayPositionBuilder: OverlayPositionBuilder, private overlay: Overlay) {}
+@Injectable({
+  providedIn: 'root'
+})
+export class CtxtMenuService {
+
+  constructor(private overlayPositionBuilder: OverlayPositionBuilder, private overlay: Overlay) {
+  }
 
   postCtxtMenuPortal = new ComponentPortal(PostContextMenuComponent);
   private postCtxtMenuOverlayRef: OverlayRef;
-  sub: Subscription;
+  postCtxt: Subscription;
 
   openPostCtxtMenu(mouseEvent: MouseEvent, postState: PostState) {
     mouseEvent.preventDefault();
     this.closePostCtxtMenu();
     const positionStrategy = this.overlayPositionBuilder
-      .flexibleConnectedTo({ x: mouseEvent.x, y: mouseEvent.y })
+      .flexibleConnectedTo({x: mouseEvent.x, y: mouseEvent.y})
       .withPush(true)
       .withGrowAfterOpen(true)
       .withPositions([
@@ -41,7 +45,7 @@ export class ContextMenuService {
     const ref: ComponentRef<PostContextMenuComponent> = this.postCtxtMenuOverlayRef.attach(this.postCtxtMenuPortal);
     ref.instance.postState = postState;
     ref.instance.contextMenuService = this;
-    this.sub = fromEvent<MouseEvent>(document, 'click')
+    this.postCtxt = fromEvent<MouseEvent>(document, 'click')
       .pipe(
         filter(event => {
           const clickTarget = event.target as HTMLElement;
@@ -53,16 +57,12 @@ export class ContextMenuService {
   }
 
   closePostCtxtMenu() {
-    if (this.sub != null) {
-      this.sub.unsubscribe();
+    if (this.postCtxt != null) {
+      this.postCtxt.unsubscribe();
     }
     if (this.postCtxtMenuOverlayRef) {
       this.postCtxtMenuOverlayRef.dispose();
       this.postCtxtMenuOverlayRef = null;
     }
   }
-}
-
-export interface Theme {
-  darkTheme: boolean;
 }

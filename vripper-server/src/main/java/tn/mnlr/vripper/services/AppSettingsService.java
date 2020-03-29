@@ -1,6 +1,8 @@
 package tn.mnlr.vripper.services;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,16 +11,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.exception.ValidationException;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.prefs.BackingStoreException;
-import java.util.prefs.Preferences;
+
+import static java.nio.file.StandardOpenOption.*;
 
 @Service
 @Getter
@@ -26,103 +30,133 @@ import java.util.prefs.Preferences;
 public class AppSettingsService {
 
     private final String MAX_TOTAL_THREADS = "MAX_TOTAL_THREADS";
+    private final String baseDir;
 
-    @Value("${base.dir}")
-    private String defaultDownloadPath;
+    private final Path configPath;
+    private final Logger logger = LoggerFactory.getLogger(AppSettingsService.class);
+    private final ObjectMapper om = new ObjectMapper();
 
-    private static final Logger logger = LoggerFactory.getLogger(AppSettingsService.class);
+    private Settings settings = new Settings();
 
-    private Preferences prefs = Preferences.userNodeForPackage(AppSettingsService.class);
-
-    private final String DOWNLOAD_PATH = "DOWNLOAD_PATH";
-    private final String MAX_THREADS = "MAX_THREADS";
-    private int maxTotalThreads;
-    private final String AUTO_START = "AUTO_START";
-    private final String V_LOGIN = "VLOGIN";
-    private final String V_USERNAME = "VUSERNAME";
-    private final String V_PASSWORD = "VPASSWORD";
-    private final String V_THANKS = "VTHANKS";
-    private final String DESKTOP_CLIPBOARD = "DESKTOP_CLIPBOARD";
-    private final String FORCE_ORDER = "FORCE_ORDER";
-    private final String SUBFOLDER = "SUBFOLDER";
-    private final String THREADSUBFOLDER = "THREADSUBFOLDER";
-    private final String CLEAR = "CLEAR";
-    private final String DARK_THEME = "DARK_THEME";
-    private final String VIEW_PHOTOS = "VIEW_PHOTOS";
-    private final String NOTIFICATION = "NOTIFICATION";
+    public AppSettingsService(@Value("${base.dir}") String baseDir) {
+        this.baseDir = baseDir;
+        this.configPath = Paths.get(baseDir, ".vripper", "config.json");
+    }
 
     @PostConstruct
     private void init() {
         restore();
     }
 
-    private String downloadPath;
-    private int maxThreads;
-    private boolean autoStart;
-    private boolean vLogin;
-    private String vUsername;
-    private String vPassword;
-    private boolean vThanks;
-    private boolean desktopClipboard;
-    private boolean subLocation;
-    private boolean threadSubLocation;
-    private boolean forceOrder;
-    private boolean clearCompleted;
-    private boolean darkTheme;
-    private boolean viewPhotos;
-    private boolean notificationEnabled;
+    public void newSettings(Settings settings) {
 
-    public void setVPassword(String vPassword) {
-        if(vPassword.isEmpty()) {
-            this.vPassword = "";
+        if (settings.getVLogin()) {
+            if (!this.settings.getVPassword().equals(settings.getVPassword())) {
+                settings.setVPassword(settings.getVPassword());
+            }
         } else {
-            this.vPassword = DigestUtils.md5Hex(vPassword);
+            settings.setVUsername("");
+            settings.setVPassword("");
+            settings.setVThanks(false);
         }
+        this.settings = settings;
+
+        save();
     }
 
     public void restore() {
+        try {
+            settings = om.readValue(configPath.toFile(), Settings.class);
+            try {
+                check(this.settings);
+            } catch (ValidationException e) {
+                logger.error(String.format("Your settings are invalid, either remove %s, or fix it", configPath.toString()), e);
+                SpringContext.close();
+            }
+        } catch (IOException e) {
+            logger.error("Failed restore user settings", e);
+            settings = new Settings();
+        }
 
-        downloadPath = prefs.get(DOWNLOAD_PATH, defaultDownloadPath);
-        maxThreads = prefs.getInt(MAX_THREADS, 4);
-        maxTotalThreads = prefs.getInt(MAX_TOTAL_THREADS, 0);
-        autoStart = prefs.getBoolean(AUTO_START, true);
-        vLogin = prefs.getBoolean(V_LOGIN, false);
-        vUsername = prefs.get(V_USERNAME, "");
-        vPassword = prefs.get(V_PASSWORD, "");
-        vThanks = prefs.getBoolean(V_THANKS, false);
-        desktopClipboard = prefs.getBoolean(DESKTOP_CLIPBOARD, false);
-        forceOrder = prefs.getBoolean(FORCE_ORDER, false);
-        subLocation = prefs.getBoolean(SUBFOLDER, false);
-        threadSubLocation = prefs.getBoolean(THREADSUBFOLDER, false);
-        clearCompleted = prefs.getBoolean(CLEAR, false);
-        darkTheme = prefs.getBoolean(DARK_THEME, false);
-        viewPhotos = prefs.getBoolean(VIEW_PHOTOS, false);
-        notificationEnabled = prefs.getBoolean(NOTIFICATION, false);
+        if (settings.getDownloadPath() == null) {
+            settings.setDownloadPath(baseDir);
+        }
+
+        if (settings.getMaxThreads() == null) {
+            settings.setMaxThreads(4);
+        }
+
+        if (settings.getMaxTotalThreads() == null) {
+            settings.setMaxTotalThreads(0);
+        }
+
+        if (settings.getAutoStart() == null) {
+            settings.setAutoStart(true);
+        }
+
+        if (settings.getVLogin() == null) {
+            settings.setVLogin(false);
+        }
+
+        if (settings.getVUsername() == null) {
+            settings.setVUsername("");
+        }
+
+        if (settings.getVPassword() == null) {
+            settings.setVPassword("");
+        }
+
+        if (settings.getVThanks() == null) {
+            settings.setVThanks(false);
+        }
+
+        if (settings.getDesktopClipboard() == null) {
+            settings.setDesktopClipboard(false);
+        }
+
+        if (settings.getForceOrder() == null) {
+            settings.setForceOrder(false);
+        }
+
+        if (settings.getSubLocation() == null) {
+            settings.setSubLocation(false);
+        }
+
+        if (settings.getThreadSubLocation() == null) {
+            settings.setThreadSubLocation(false);
+        }
+
+        if (settings.getClearCompleted() == null) {
+            settings.setClearCompleted(false);
+        }
+
+        if (settings.getDarkTheme() == null) {
+            settings.setDarkTheme(false);
+        }
+
+        if (settings.getViewPhotos() == null) {
+            settings.setViewPhotos(false);
+        }
+
+        if (settings.getNotification() == null) {
+            settings.setNotification(false);
+        }
+
+        if (settings.getResolveTitle() == null) {
+            settings.setResolveTitle(false);
+        }
+
+        save();
     }
 
     @PreDestroy
     public void save() {
-
-        prefs.put(DOWNLOAD_PATH, downloadPath);
-        prefs.putInt(MAX_THREADS, maxThreads);
-        prefs.putInt(MAX_TOTAL_THREADS, maxTotalThreads);
-        prefs.putBoolean(AUTO_START, autoStart);
-        prefs.putBoolean(V_LOGIN, vLogin);
-        prefs.put(V_USERNAME, vUsername);
-        prefs.put(V_PASSWORD, vPassword);
-        prefs.putBoolean(V_THANKS, vThanks);
-        prefs.putBoolean(DESKTOP_CLIPBOARD, desktopClipboard);
-        prefs.putBoolean(FORCE_ORDER, forceOrder);
-        prefs.putBoolean(SUBFOLDER, subLocation);
-        prefs.putBoolean(THREADSUBFOLDER, threadSubLocation);
-        prefs.putBoolean(CLEAR, clearCompleted);
-        prefs.putBoolean(DARK_THEME, darkTheme);
-        prefs.putBoolean(VIEW_PHOTOS, viewPhotos);
-        prefs.putBoolean(NOTIFICATION, notificationEnabled);
-
         try {
-            prefs.sync();
-        } catch (BackingStoreException e) {
+            // force disable gallery
+            settings.setViewPhotos(false);
+
+            Files.write(configPath, om.writeValueAsBytes(settings), CREATE, WRITE, TRUNCATE_EXISTING, SYNC);
+        } catch (IOException e) {
             logger.error("Failed to store user settings", e);
         }
     }
@@ -141,8 +175,8 @@ public class AppSettingsService {
             throw new ValidationException(String.format("%s is not a directory", settings.getDownloadPath()));
         }
 
-        if (settings.getMaxTotalThreads() < 0) {
-            throw new ValidationException(String.format("Invalid max global concurrent download settings, values must be in greater than %d", 1));
+        if (settings.getMaxTotalThreads() < 0 || settings.getMaxTotalThreads() > 12) {
+            throw new ValidationException(String.format("Invalid max global concurrent download settings, values must be in [%d,%d]", 0, 12));
         }
 
         if (settings.getMaxThreads() < 1 || settings.getMaxThreads() > 4) {
@@ -151,11 +185,11 @@ public class AppSettingsService {
     }
 
     public Theme getTheme() {
-        return new Theme(this.darkTheme);
+        return new Theme(this.settings.getDarkTheme());
     }
 
     public void setTheme(Theme theme) {
-        this.darkTheme = theme.darkTheme;
+        this.settings.setDarkTheme(theme.darkTheme);
         save();
     }
 
@@ -172,55 +206,52 @@ public class AppSettingsService {
     }
 
     @Getter
+    @Setter
+    @NoArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Settings {
 
         @JsonProperty("downloadPath")
         private String downloadPath;
         @JsonProperty("maxThreads")
-        private int maxThreads;
+        private Integer maxThreads;
         @JsonProperty("maxTotalThreads")
-        private int maxTotalThreads;
+        private Integer maxTotalThreads;
         @JsonProperty("autoStart")
-        private boolean autoStart;
+        private Boolean autoStart;
         @JsonProperty("vLogin")
-        private boolean vLogin;
+        private Boolean vLogin;
         @JsonProperty("vUsername")
         private String vUsername;
         @JsonProperty("vPassword")
         private String vPassword;
         @JsonProperty("vThanks")
-        private boolean vThanks;
+        private Boolean vThanks;
         @JsonProperty("desktopClipboard")
-        private boolean desktopClipboard;
+        private Boolean desktopClipboard;
         @JsonProperty("forceOrder")
-        private boolean forceOrder;
+        private Boolean forceOrder;
         @JsonProperty("subLocation")
-        private boolean subLocation;
+        private Boolean subLocation;
         @JsonProperty("threadSubLocation")
-        private boolean threadSubLocation;
+        private Boolean threadSubLocation;
         @JsonProperty("clearCompleted")
-        private boolean clearCompleted;
+        private Boolean clearCompleted;
         @JsonProperty("viewPhotos")
-        private boolean viewPhotos;
+        private Boolean viewPhotos;
         @JsonProperty("notification")
-        private boolean notification;
+        private Boolean notification;
+        @JsonProperty("darkTheme")
+        private Boolean darkTheme;
+        @JsonProperty("resolveTitle")
+        private Boolean resolveTitle;
 
-        public Settings(String downloadPath, int maxThreads, int maxTotalThreads, boolean autoStart, boolean vLogin, String vUsername, String vPassword, boolean vThanks, boolean desktopClipboard, boolean forceOrder, boolean subLocation, boolean threadSubLocation, boolean clearCompleted, boolean viewPhotos, boolean notification) {
-            this.downloadPath = downloadPath;
-            this.maxThreads = maxThreads;
-            this.maxTotalThreads = maxTotalThreads;
-            this.autoStart = autoStart;
-            this.vLogin = vLogin;
-            this.vUsername = vUsername;
-            this.vPassword = vPassword;
-            this.vThanks = vThanks;
-            this.desktopClipboard = desktopClipboard;
-            this.forceOrder = forceOrder;
-            this.subLocation = subLocation;
-            this.threadSubLocation = threadSubLocation;
-            this.clearCompleted = clearCompleted;
-            this.viewPhotos = viewPhotos;
-            this.notification = notification;
+        public void setVPassword(String vPassword) {
+            if (vPassword == null || vPassword.isEmpty()) {
+                this.vPassword = "";
+            } else {
+                this.vPassword = DigestUtils.md5Hex(vPassword);
+            }
         }
     }
 }

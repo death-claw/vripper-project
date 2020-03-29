@@ -15,7 +15,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.services.AppSettingsService;
+import tn.mnlr.vripper.services.AppStateExchange;
 import tn.mnlr.vripper.services.PathService;
 import tn.mnlr.vripper.services.ThumbnailGenerator;
 
@@ -38,16 +40,21 @@ import java.util.stream.Collectors;
 public class GalleryEndpoint {
 
     private static final Logger logger = LoggerFactory.getLogger(GalleryEndpoint.class);
-
-    @Autowired
-    private PathService pathService;
-
-    @Autowired
-    private ThumbnailGenerator thumbnailGenerator;
-
     private static final String cacheControl = CacheControl.maxAge(365, TimeUnit.DAYS).getHeaderValue();
+
+    private final PathService pathService;
+    private final ThumbnailGenerator thumbnailGenerator;
+    private final AppSettingsService appSettingsService;
+    private final AppStateExchange appStateExchange;
+
     @Autowired
-    private AppSettingsService appSettingsService;
+    public GalleryEndpoint(PathService pathService, ThumbnailGenerator thumbnailGenerator, AppSettingsService appSettingsService, AppStateExchange appStateExchange) {
+        this.pathService = pathService;
+        this.thumbnailGenerator = thumbnailGenerator;
+        this.appSettingsService = appSettingsService;
+        this.appStateExchange = appStateExchange;
+    }
+
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity handleException(Exception e) {
@@ -60,22 +67,24 @@ public class GalleryEndpoint {
     @GetMapping(value = "/image/{postId}/{imgName}", produces = {MediaType.IMAGE_JPEG_VALUE})
     @ResponseStatus(value = HttpStatus.OK)
     public ResponseEntity<byte[]> getImage(@PathVariable("postId") @NonNull String postId, @PathVariable("imgName") @NonNull String imgName, HttpServletResponse response) throws Exception {
-        if (!appSettingsService.isViewPhotos()) {
+        if (!appSettingsService.getSettings().getViewPhotos()) {
             return new ResponseEntity("Gallery option is disabled", HttpStatus.BAD_REQUEST);
         }
         response.addHeader("Cache-Control", cacheControl);
-        File destinationFolder = pathService.getDownloadDestinationFolder(postId);
+        Post post = appStateExchange.getPost(postId);
+        File destinationFolder = pathService.getDownloadDestinationFolder(post.getTitle(), post.getForum(), post.getThreadTitle(), post.getMetadata(), post.getDestFolder());
         return ResponseEntity.ok(Files.readAllBytes(Paths.get(destinationFolder.toPath().toString(), imgName)));
     }
 
     @GetMapping(value = "/image/thumb/{postId}/{imgName}", produces = {MediaType.IMAGE_JPEG_VALUE})
     @ResponseStatus(value = HttpStatus.OK)
     public ResponseEntity<byte[]> getImageThumb(@PathVariable("postId") @NonNull String postId, @PathVariable("imgName") @NonNull String imgName, HttpServletResponse response) throws Exception {
-        if (!appSettingsService.isViewPhotos()) {
+        if (!appSettingsService.getSettings().getViewPhotos()) {
             return new ResponseEntity("Gallery option is disabled", HttpStatus.BAD_REQUEST);
         }
         response.addHeader("Cache-Control", cacheControl);
-        File destinationFolder = pathService.getDownloadDestinationFolder(postId);
+        Post post = appStateExchange.getPost(postId);
+        File destinationFolder = pathService.getDownloadDestinationFolder(post.getTitle(), post.getForum(), post.getThreadTitle(), post.getMetadata(), post.getDestFolder());
         if (destinationFolder.exists() && destinationFolder.isDirectory()) {
             return ResponseEntity.ok(thumbnailGenerator.getThumbnails().get(new ThumbnailGenerator.CacheKey(postId, imgName)));
         }
@@ -85,10 +94,11 @@ public class GalleryEndpoint {
     @GetMapping("/gallery/{postId}")
     @ResponseStatus(value = HttpStatus.OK)
     public ResponseEntity<List<GalleryImage>> getGallery(@PathVariable("postId") @NonNull String postId) {
-        if (!appSettingsService.isViewPhotos()) {
+        if (!appSettingsService.getSettings().getViewPhotos()) {
             return new ResponseEntity("Gallery option is disabled", HttpStatus.BAD_REQUEST);
         }
-        File destinationFolder = pathService.getDownloadDestinationFolder(postId);
+        Post post = appStateExchange.getPost(postId);
+        File destinationFolder = pathService.getDownloadDestinationFolder(post.getTitle(), post.getForum(), post.getThreadTitle(), post.getMetadata(), post.getDestFolder());
         if (destinationFolder.exists() && destinationFolder.isDirectory()) {
             return ResponseEntity.ok(
                     Arrays.stream(Objects.requireNonNull(destinationFolder.listFiles()))

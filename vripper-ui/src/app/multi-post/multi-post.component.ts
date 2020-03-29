@@ -1,23 +1,23 @@
-import { finalize } from 'rxjs/operators';
-import { VRPostParse } from './../common/vr-post-parse.model';
+import {finalize} from 'rxjs/operators';
+import {VRPostParse} from './../common/vr-post-parse.model';
 import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
   Component,
-  OnInit,
+  EventEmitter,
+  Inject,
   NgZone,
   OnDestroy,
-  EventEmitter,
-  ChangeDetectionStrategy,
-  AfterViewInit,
-  Inject
+  OnInit
 } from '@angular/core';
-import { MatSnackBar, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
-import { GridOptions, RowNode } from 'ag-grid-community';
-import { UrlRendererComponent } from './url-renderer.component';
-import { WsHandler } from '../ws-handler';
-import { Subscription, BehaviorSubject, Subject } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
-import { ServerService } from '../server-service';
-import { GrabQueueState } from '../grab-queue/grab-queue.model';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {GridOptions, RowNode} from 'ag-grid-community';
+import {UrlRendererComponent} from './url-renderer.component';
+import {BehaviorSubject, Subject, Subscription} from 'rxjs';
+import {HttpClient} from '@angular/common/http';
+import {ServerService} from '../server-service';
+import {GrabQueueState} from '../grab-queue/grab-queue.model';
 
 @Component({
   selector: 'app-multi-post',
@@ -27,7 +27,6 @@ import { GrabQueueState } from '../grab-queue/grab-queue.model';
 })
 export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
   gridOptions: GridOptions;
-  websocketHandlerPromise: Promise<WsHandler>;
   subscription: Subscription;
   loading: EventEmitter<boolean> = new EventEmitter();
 
@@ -52,7 +51,6 @@ export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
         {
           headerName: 'Number',
           field: 'number',
-          cellClass: 'no-padding',
           maxWidth: 100,
           suppressMovable: true,
           checkboxSelection: true,

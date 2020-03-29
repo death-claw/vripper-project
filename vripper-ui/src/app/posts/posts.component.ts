@@ -1,12 +1,12 @@
-import { PostsDataService } from './../posts-data.service';
-import { SelectionService } from './../selection-service';
-import { Component, OnInit, OnDestroy, NgZone, ChangeDetectionStrategy, AfterViewInit } from '@angular/core';
-import { PostsDataSource } from './post.datasource';
-import { WsConnectionService } from '../ws-connection.service';
-import { GridOptions } from 'ag-grid-community';
-import { PostProgressRendererComponent } from './post-progress.renderer.component';
-import { Subject } from 'rxjs';
-import { ContextMenuService } from '../ctxt-menu.service';
+import {PostsDataService} from '../posts-data.service';
+import {SelectionService} from '../selection-service';
+import {AfterViewInit, ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit} from '@angular/core';
+import {PostsDataSource} from './post.datasource';
+import {WsConnectionService} from '../ws-connection.service';
+import {GridOptions} from 'ag-grid-community';
+import {PostProgressRendererComponent} from './post-progress.renderer.component';
+import {Subject} from 'rxjs';
+import {CtxtMenuService} from "./ctxt-menu.service";
 
 @Component({
   selector: 'app-posts',
@@ -19,7 +19,7 @@ export class PostsComponent implements OnInit, OnDestroy, AfterViewInit {
     private zone: NgZone,
     private selectionService: SelectionService,
     private postsDataService: PostsDataService,
-    private contextMenuService: ContextMenuService
+    private contextMenuService: CtxtMenuService
   ) {
     this.gridOptions = <GridOptions>{
       columnDefs: [

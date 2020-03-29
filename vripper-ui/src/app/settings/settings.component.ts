@@ -1,15 +1,15 @@
-import { finalize } from 'rxjs/operators';
-import { AppService } from './../app.service';
-import { ClipboardService } from './../clipboard.service';
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { FormGroup, FormControl } from '@angular/forms';
-import { MatSnackBar } from '@angular/material';
-import { ServerService } from '../server-service';
-import { ElectronService } from 'ngx-electron';
-import { Settings } from '../common/settings.model';
-import { OpenDialogReturnValue } from 'electron';
-import { Subject, BehaviorSubject } from 'rxjs';
+import {finalize} from 'rxjs/operators';
+import {AppService} from '../app.service';
+import {ClipboardService} from '../clipboard.service';
+import {ChangeDetectionStrategy, Component, OnInit} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {FormControl, FormGroup} from '@angular/forms';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {ServerService} from '../server-service';
+import {ElectronService} from 'ngx-electron';
+import {Settings} from '../common/settings.model';
+import {OpenDialogReturnValue} from 'electron';
+import {BehaviorSubject, Subject} from 'rxjs';
 
 interface CacheSize {
   size: string;
@@ -29,7 +29,8 @@ export class SettingsComponent implements OnInit {
     public electronService: ElectronService,
     private clipboardService: ClipboardService,
     private appService: AppService
-  ) {}
+  ) {
+  }
 
   loading = false;
 
@@ -46,7 +47,8 @@ export class SettingsComponent implements OnInit {
     vUsername: new FormControl(''),
     vPassword: new FormControl(''),
     vThanks: new FormControl(false),
-    viewPhotos: new FormControl(false)
+    viewPhotos: new FormControl(false),
+    resolveTitle: new FormControl(false)
   });
 
   desktopSettingsForm = new FormGroup({
@@ -69,35 +71,35 @@ export class SettingsComponent implements OnInit {
   ngOnInit() {
     this.darkTheme = this.appService.darkTheme;
     this.httpClient.get<Settings>(this.serverService.baseUrl + '/settings')
-    .subscribe(data => {
-      this.generalSettingsForm.reset(data);
-      this.desktopSettingsForm.reset(data);
-    }, error => {
-      this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
-        duration: 5000
+      .subscribe(data => {
+        this.generalSettingsForm.reset(data);
+        this.desktopSettingsForm.reset(data);
+      }, error => {
+        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+          duration: 5000
+        });
       });
-    });
     this.httpClient.get<CacheSize>(this.serverService.baseUrl + '/gallery/cache')
-    .subscribe(data => {
-      this.cacheSize.next(data);
-    }, error => {
-      this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
-        duration: 5000
+      .subscribe(data => {
+        this.cacheSize.next(data);
+      }, error => {
+        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+          duration: 5000
+        });
       });
-    });
   }
 
   clearCache() {
     this.cacheClearLoading.next(true);
     this.httpClient.get<CacheSize>(this.serverService.baseUrl + '/gallery/cache/clear')
-    .pipe(finalize(() => this.cacheClearLoading.next(false)))
-    .subscribe(data => {
-      this.cacheSize.next(data);
-    }, error => {
-      this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
-        duration: 5000
-      });
-    })
+      .pipe(finalize(() => this.cacheClearLoading.next(false)))
+      .subscribe(data => {
+        this.cacheSize.next(data);
+      }, error => {
+        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+          duration: 5000
+        });
+      })
   }
 
   browse() {
@@ -119,6 +121,7 @@ export class SettingsComponent implements OnInit {
     this.httpClient
       .post<Settings>(this.serverService.baseUrl + '/settings', {
         ...this.generalSettingsForm.value,
+        darkTheme: this.darkTheme,
         ...this.desktopSettingsForm.value
       })
       .pipe(finalize(() => (this.loading = false)))

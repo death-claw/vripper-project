@@ -1,19 +1,19 @@
-import { WsConnectionService } from '../ws-connection.service';
+import {WsConnectionService} from '../ws-connection.service';
 import {
-  Component,
-  OnInit,
-  OnDestroy,
-  NgZone,
+  AfterViewInit,
   ChangeDetectionStrategy,
+  Component,
   EventEmitter,
-  AfterViewInit
+  NgZone,
+  OnDestroy,
+  OnInit
 } from '@angular/core';
-import { AgRendererComponent } from 'ag-grid-angular';
-import { Subscription, Subject, BehaviorSubject } from 'rxjs';
-import { PostDetails } from './post-details.model';
-import { WsHandler } from '../ws-handler';
-import { ICellRendererParams } from 'ag-grid-community';
-import { ElectronService } from 'ngx-electron';
+import {AgRendererComponent} from 'ag-grid-angular';
+import {BehaviorSubject, Subject, Subscription} from 'rxjs';
+import {PostDetails} from './post-details.model';
+import {ICellRendererParams} from 'ag-grid-community';
+import {ElectronService} from 'ngx-electron';
+import {CtxtMenuService} from "./ctxt-menu.service";
 
 @Component({
   selector: 'app-details-cell',
@@ -22,9 +22,13 @@ import { ElectronService } from 'ngx-electron';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PostDetailsProgressRendererComponent implements AgRendererComponent, OnInit, OnDestroy, AfterViewInit {
-  constructor(private ws: WsConnectionService, private zone: NgZone, public electronService: ElectronService) {}
+  constructor(
+    private ws: WsConnectionService,
+    private zone: NgZone,
+    public electronService: ElectronService,
+    private contextMenuService: CtxtMenuService) {
+  }
 
-  websocketHandlerPromise: Promise<WsHandler>;
   subscription: Subscription;
   postDetails$: EventEmitter<PostDetails> = new EventEmitter();
   private postDetails: PostDetails;
@@ -57,14 +61,6 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
     });
   }
 
-  goTo() {
-    if (this.electronService.isElectronApp) {
-      this.electronService.shell.openExternal(this.postDetails.url);
-    } else {
-      window.open(this.postDetails.url, '_blank');
-    }
-  }
-
   ngAfterViewInit(): void {
     this.postDetails$.emit(this.postDetails);
     this.loading = setTimeout(() => this.loaded.next(true), 100);
@@ -91,5 +87,9 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
     this.postDetails = params.data;
     this.postDetails$.emit(this.postDetails);
     return true;
+  }
+
+  context(event: MouseEvent) {
+    this.contextMenuService.openPostDetailsCtxtMenu(event, this.postDetails);
   }
 }

@@ -1,8 +1,9 @@
 package tn.mnlr.vripper.entities;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.ToString;
+import tn.mnlr.vripper.SpringContext;
+import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.services.AppStateService;
 
@@ -15,14 +16,13 @@ import java.util.stream.Collectors;
 
 @Getter
 @ToString
-@NoArgsConstructor
 public class Post {
 
     public enum METADATA {
         PREVIEWS, RESOLVED_NAME, POSTED_BY, THANKED
     }
 
-    private AppStateService appStateService;
+    private final AppStateService appStateService;
 
     private Status status;
 
@@ -52,7 +52,15 @@ public class Post {
 
     private String forum;
 
-    public Post(String title, String url, List<Image> images, Map<String, Object> metadata, String postId, String threadId, String threadTitle, String forum) {
+    private String destFolder;
+
+    public Post() {
+        this.appStateService = SpringContext.getBean(AppStateService.class);
+    }
+
+    public Post(String title, String url, List<Image> images, Map<String, Object> metadata, String postId, String threadId, String threadTitle, String forum, String destFolder) throws PostParseException {
+        this();
+        this.destFolder = destFolder;
         this.title = title;
         this.url = url;
         this.images = images;
@@ -64,12 +72,10 @@ public class Post {
         this.hosts = this.images.stream().map(Image::getHost).map(Host::getHost).collect(Collectors.toSet());
         total = images.size();
         status = Status.STOPPED;
-    }
 
-    public void setAppStateService(AppStateService appStateService) {
-        this.appStateService = appStateService;
-        this.appStateService.getCurrentPosts().put(postId, this);
-        this.appStateService.getLivePostsState().onNext(this);
+        if (!this.appStateService.newPost(this)) {
+            throw new PostParseException("Post already loaded");
+        }
     }
 
     public void setRemoved(boolean removed) {
@@ -89,7 +95,7 @@ public class Post {
 
     private void updateNotification() {
         if (appStateService != null) {
-            appStateService.getLivePostsState().onNext(this);
+            appStateService.postUpdated(this);
         }
     }
 

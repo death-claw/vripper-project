@@ -1,7 +1,9 @@
-import { Injectable } from '@angular/core';
-import { GridApi } from 'ag-grid-community';
+import {Injectable} from '@angular/core';
+import {GridApi} from 'ag-grid-community';
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class PostsDataService {
   private api: GridApi;
 

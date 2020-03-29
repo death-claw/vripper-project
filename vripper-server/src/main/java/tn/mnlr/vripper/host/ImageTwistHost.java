@@ -3,14 +3,12 @@ package tn.mnlr.vripper.host;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.XpathException;
 import tn.mnlr.vripper.q.ImageFileData;
-import tn.mnlr.vripper.services.ConnectionManager;
 
 import java.util.Optional;
 
@@ -20,8 +18,10 @@ public class ImageTwistHost extends Host {
     private static final String IMG_XPATH = "//img[contains(@class, 'img')]";
     private static final Logger logger = LoggerFactory.getLogger(ImageTwistHost.class);
     private static final String host = "imagetwist.com";
-    @Autowired
-    private ConnectionManager cm;
+
+    public ImageTwistHost() {
+        super();
+    }
 
     @Override
     public String getHost() {

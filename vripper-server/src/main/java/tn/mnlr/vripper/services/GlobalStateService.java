@@ -14,14 +14,9 @@ import tn.mnlr.vripper.q.ExecutionService;
 @EnableScheduling
 public class GlobalStateService {
 
-    @Autowired
-    private DownloadQ downloadQ;
-
-    @Autowired
-    private ExecutionService executionService;
-
-    @Autowired
-    private AppStateService appStateService;
+    private final DownloadQ downloadQ;
+    private final ExecutionService executionService;
+    private final AppStateExchange appStateExchange;
 
     @Getter
     private GlobalState currentState;
@@ -29,7 +24,11 @@ public class GlobalStateService {
     @Getter
     private PublishProcessor<GlobalState> liveGlobalState = PublishProcessor.create();
 
-    public GlobalStateService() {
+    @Autowired
+    public GlobalStateService(DownloadQ downloadQ, ExecutionService executionService, AppStateExchange appStateExchange) {
+        this.downloadQ = downloadQ;
+        this.executionService = executionService;
+        this.appStateExchange = appStateExchange;
     }
 
     @Scheduled(fixedDelay = 3000)
@@ -37,12 +36,12 @@ public class GlobalStateService {
         GlobalState newGlobalState = new GlobalState(
                 executionService.runningCount(),
                 downloadQ.size(),
-                appStateService.getCurrentImages()
+                appStateExchange.getImages()
                         .values()
                         .stream()
                         .filter(e -> e.getTotal() == 0 || e.getTotal() != e.getCurrent().get())
                         .count(),
-                appStateService.getCurrentImages()
+                appStateExchange.getImages()
                         .values()
                         .stream()
                         .filter(e -> e.getStatus().equals(Image.Status.ERROR))

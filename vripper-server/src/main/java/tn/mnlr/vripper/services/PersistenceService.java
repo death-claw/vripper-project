@@ -25,7 +25,6 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,8 +35,7 @@ public class PersistenceService {
 
     private static final Logger logger = LoggerFactory.getLogger(PersistenceService.class);
 
-    @Autowired
-    private AppStateService stateService;
+    private final AppStateExchange appStateExchange;
 
     @Value("${base.dir}")
     private String baseDir;
@@ -52,14 +50,17 @@ public class PersistenceService {
     @Getter
     private PublishProcessor<Map<String, Post>> processor = PublishProcessor.create();
 
-    private PersistenceService() {
+    @Autowired
+    private PersistenceService(AppStateExchange appStateExchange) {
+        this.appStateExchange = appStateExchange;
         om = new ObjectMapper();
         om.addMixIn(Image.class, ImagePersistanceMixin.class);
         om.addMixIn(Post.class, PostPersistanceMixin.class);
         subscription = processor
-                .onBackpressureLatest()
-                .throttleLatest(1, TimeUnit.SECONDS)
-                .doOnNext(this::persist)
+                .onBackpressureBuffer()
+                .buffer(1, TimeUnit.SECONDS)
+                .filter(e -> !e.isEmpty())
+                .doOnNext(e -> this.persist(e.get(0)))
                 .subscribe();
     }
 
@@ -98,7 +99,7 @@ public class PersistenceService {
         logger.info(String.format("Destroying %s", PersistenceService.class.getSimpleName()));
         logger.info("Persisting data before destroying");
         if (EventListenerBean.isInit()) {
-            this.persist(stateService.getCurrentPosts());
+            this.persist(appStateExchange.getPosts());
         }
     }
 
@@ -140,22 +141,6 @@ public class PersistenceService {
             SpringContext.close();
         }
 
-        Map<String, Post> read = read(jsonContent);
-
-        stateService.getCurrentPosts().clear();
-        stateService.getCurrentPosts().putAll(read);
-        stateService.getCurrentPosts().values().forEach(p -> {
-            if (Arrays.asList(Post.Status.DOWNLOADING, Post.Status.PARTIAL, Post.Status.PENDING).contains(p.getStatus())) {
-                p.setStatus(Post.Status.STOPPED);
-            }
-        });
-
-        stateService.getCurrentImages().clear();
-        read.values().stream().flatMap(e -> e.getImages().stream()).forEach(e -> {
-            e.setAppStateService(stateService);
-            stateService.getCurrentImages().put(e.getUrl(), e);
-        });
-
-        read.values().forEach(e -> e.setAppStateService(stateService));
+        appStateExchange.restore(read(jsonContent));
     }
 }

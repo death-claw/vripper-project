@@ -1,26 +1,31 @@
-import { AppService } from './../app.service';
-import { GalleryComponent } from './../gallery/gallery.component';
-import { ServerService } from './../server-service';
-import { HttpClient } from '@angular/common/http';
-import { ElectronService } from 'ngx-electron';
-import { Component, ChangeDetectionStrategy, NgZone, OnDestroy } from '@angular/core';
-import { trigger, state, style, transition, animate } from '@angular/animations';
-import { MatDialog, MatSnackBar } from '@angular/material';
-import { PostDetailComponent } from '../post-detail/post-detail.component';
-import { Observable, Subject, BehaviorSubject, Subscription } from 'rxjs';
-import { BreakpointState, BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { PostState } from './post-state.model';
-import { DownloadPath } from '../common/download-path.model';
-import { ContextMenuService } from '../ctxt-menu.service';
-import { ConfirmDialogComponent } from '../common/confirmation-component/confirmation-dialog';
-import { filter, flatMap } from 'rxjs/operators';
-import { RemoveResponse } from '../common/remove-response.model';
+import {AppService} from '../app.service';
+import {GalleryComponent} from '../gallery/gallery.component';
+import {ServerService} from '../server-service';
+import {HttpClient} from '@angular/common/http';
+import {ElectronService} from 'ngx-electron';
+import {ChangeDetectionStrategy, Component, NgZone} from '@angular/core';
+import {animate, state, style, transition, trigger} from '@angular/animations';
+import {MatDialog} from '@angular/material/dialog';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {PostDetailComponent} from '../post-detail/post-detail.component';
+import {BehaviorSubject, Observable, Subject} from 'rxjs';
+import {BreakpointObserver, Breakpoints, BreakpointState} from '@angular/cdk/layout';
+import {PostState} from './post-state.model';
+import {DownloadPath} from '../common/download-path.model';
+import {ConfirmDialogComponent} from '../common/confirmation-component/confirmation-dialog';
+import {filter, flatMap} from 'rxjs/operators';
+import {RemoveResponse} from '../common/remove-response.model';
+import {CtxtMenuService} from "./ctxt-menu.service";
 
 @Component({
   selector: 'app-post-ctx-menu',
   template: `
     <mat-card class="mat-elevation-z4">
       <mat-action-list>
+        <button (click)="goTo()" ngxClipboard [cbContent]="postState.url" mat-list-item>
+          <mat-icon>open_in_new</mat-icon>
+          <span>Open link</span>
+        </button>
         <button
           (click)="restart()"
           *ngIf="
@@ -31,7 +36,7 @@ import { RemoveResponse } from '../common/remove-response.model';
           mat-list-item
         >
           <mat-icon>play_arrow</mat-icon>
-          <span>Start</span>
+          <span>{{postState.progress == 0 ? 'Start' : 'Resume'}}</span>
         </button>
         <button
           (click)="stop()"
@@ -54,7 +59,7 @@ import { RemoveResponse } from '../common/remove-response.model';
           <span>View Photos</span>
         </button>
         <button (click)="open()" *ngIf="electronService.isElectronApp" mat-list-item>
-          <mat-icon>open_in_new</mat-icon>
+          <mat-icon>folder</mat-icon>
           <span>Download Location</span>
         </button>
       </mat-action-list>
@@ -83,7 +88,7 @@ export class PostContextMenuComponent {
   postState: PostState;
   isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
   fs;
-  contextMenuService: ContextMenuService;
+  contextMenuService: CtxtMenuService;
   constructor(
     public electronService: ElectronService,
     private dialog: MatDialog,
@@ -115,6 +120,15 @@ export class PostContextMenuComponent {
         });
       }
     );
+  }
+
+  goTo() {
+    this.contextMenuService.closePostCtxtMenu();
+    if (this.electronService.isElectronApp) {
+      this.electronService.shell.openExternal(this.postState.url);
+    } else {
+      window.open(this.postState.url, '_blank');
+    }
   }
 
   remove() {

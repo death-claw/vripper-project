@@ -23,6 +23,10 @@ public class ImgboxHost extends Host {
     @Autowired
     private ConnectionManager cm;
 
+    public ImgboxHost() {
+        super();
+    }
+
     @Override
     public String getHost() {
         return host;

@@ -16,12 +16,14 @@ import tn.mnlr.vripper.services.VipergirlsAuthService;
 public class SettingsRestEndpoint {
 
     private static final Logger logger = LoggerFactory.getLogger(SettingsRestEndpoint.class);
+    private final AppSettingsService appSettingsService;
+    private final VipergirlsAuthService vipergirlsAuthService;
 
     @Autowired
-    private AppSettingsService settings;
-
-    @Autowired
-    private VipergirlsAuthService vipergirlsAuthService;
+    public SettingsRestEndpoint(AppSettingsService appSettingsService, VipergirlsAuthService vipergirlsAuthService) {
+        this.appSettingsService = appSettingsService;
+        this.vipergirlsAuthService = vipergirlsAuthService;
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity handleException(Exception e) {
@@ -34,83 +36,42 @@ public class SettingsRestEndpoint {
     @PostMapping("/settings/theme")
     @ResponseStatus(value = HttpStatus.OK)
     public AppSettingsService.Theme postTheme(@RequestBody AppSettingsService.Theme theme) {
-        synchronized (this.settings) {
-            this.settings.setTheme(theme);
-            return settings.getTheme();
+        synchronized (this.appSettingsService) {
+            this.appSettingsService.setTheme(theme);
+            return appSettingsService.getTheme();
         }
     }
 
     @GetMapping("/settings/theme")
     @ResponseStatus(value = HttpStatus.OK)
     public AppSettingsService.Theme getTheme() {
-        return settings.getTheme();
+        return appSettingsService.getTheme();
     }
 
     @PostMapping("/settings")
     @ResponseStatus(value = HttpStatus.OK)
     public ResponseEntity postSettings(@RequestBody AppSettingsService.Settings settings) throws Exception {
 
-        synchronized (this.settings) {
+        synchronized (this.appSettingsService) {
             try {
-                this.settings.check(settings);
+                this.appSettingsService.check(settings);
             } catch (ValidationException e) {
                 return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
                         .body(e.getMessage());
             }
-            this.settings.setDownloadPath(settings.getDownloadPath());
-            this.settings.setMaxThreads(settings.getMaxThreads());
-            this.settings.setMaxTotalThreads(settings.getMaxTotalThreads());
-            this.settings.setAutoStart(settings.isAutoStart());
-            this.settings.setVLogin(settings.isVLogin());
 
-            if (settings.isVLogin()) {
-                this.settings.setVUsername(settings.getVUsername());
-                if (!this.settings.getVPassword().equals(settings.getVPassword())) {
-                    this.settings.setVPassword(settings.getVPassword());
-                }
-                this.settings.setVThanks(settings.isVThanks());
-            } else {
-                this.settings.setVUsername("");
-                this.settings.setVPassword("");
-                this.settings.setVThanks(false);
-            }
-            this.settings.setDesktopClipboard(settings.isDesktopClipboard());
-            this.settings.setForceOrder(settings.isForceOrder());
-            this.settings.setSubLocation(settings.isSubLocation());
-            this.settings.setThreadSubLocation(settings.isThreadSubLocation());
-            this.settings.setClearCompleted(settings.isClearCompleted());
-            this.settings.setViewPhotos(settings.isViewPhotos());
-            this.settings.setNotificationEnabled(settings.isNotification());
-
-            this.settings.save();
-
+            this.appSettingsService.newSettings(settings);
             vipergirlsAuthService.authenticate();
         }
-        return ResponseEntity.ok(getSettings());
+        return ResponseEntity.ok(getAppSettingsService());
     }
 
     @GetMapping("/settings")
     @ResponseStatus(value = HttpStatus.OK)
-    public AppSettingsService.Settings getSettings() {
+    public AppSettingsService.Settings getAppSettingsService() {
 
-        return new AppSettingsService.Settings(
-                settings.getDownloadPath(),
-                settings.getMaxThreads(),
-                settings.getMaxTotalThreads(),
-                settings.isAutoStart(),
-                settings.isVLogin(),
-                settings.getVUsername(),
-                settings.getVPassword(),
-                settings.isVThanks(),
-                settings.isDesktopClipboard(),
-                settings.isForceOrder(),
-                settings.isSubLocation(),
-                settings.isThreadSubLocation(),
-                settings.isClearCompleted(),
-                settings.isViewPhotos(),
-                settings.isNotificationEnabled()
-        );
+        return appSettingsService.getSettings();
     }
 
     @Getter

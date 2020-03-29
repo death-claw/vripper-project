@@ -44,6 +44,7 @@
                   formControlName="maxTotalThreads"
                   matInput
                   min="0"
+                  max="12"
                   name="maxTotalThreads"
                   placeholder="Max global concurrent downloads"
                   required
@@ -65,6 +66,10 @@
             >Create a subfolder per thread
             </mat-checkbox>
 
+            <mat-checkbox color="primary" formControlName="resolveTitle" name="resolveTitle"
+            >Resolve titles from thread's content
+            </mat-checkbox>
+
             <mat-checkbox color="primary" formControlName="forceOrder" name="forceOrder"
             >Force image ordering (prepend incremental numbers)
             </mat-checkbox>
@@ -77,16 +82,16 @@
             >Clear Finished
             </mat-checkbox>
 
-            <mat-checkbox color="primary" formControlName="viewPhotos" name="viewPhotos">
-              Enable photo gallery
-            </mat-checkbox>
-            <div style="margin-left: 15px">
-              Cache size: {{(cacheSize | async).size}}
-              <button (click)="clearCache()" [disabled]="(cacheClearLoading | async)" color="primary"
-                      mat-stroked-button>
-                <mat-icon>clear</mat-icon>
-                <span>Clear</span></button>
-            </div>
+            <!--            <mat-checkbox color="primary" formControlName="viewPhotos" name="viewPhotos">-->
+            <!--              Enable photo gallery-->
+            <!--            </mat-checkbox>-->
+            <!--            <div style="margin-left: 15px">-->
+            <!--              Cache size: {{(cacheSize | async).size}}-->
+            <!--              <button (click)="clearCache()" [disabled]="(cacheClearLoading | async)" color="primary"-->
+            <!--                      mat-stroked-button>-->
+            <!--                <mat-icon>clear</mat-icon>-->
+            <!--                <span>Clear</span></button>-->
+            <!--            </div>-->
 
             <mat-slide-toggle color="primary" formControlName="vLogin" name="vLogin">
               ViperGirls Authentication

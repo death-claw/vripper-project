@@ -1,31 +1,31 @@
 import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
   Component,
-  OnInit,
+  EventEmitter,
   NgZone,
   OnDestroy,
-  ChangeDetectionStrategy,
-  EventEmitter,
-  AfterViewInit
+  OnInit
 } from '@angular/core';
-import { RemoveAllResponse } from '../common/remove-all-response.model';
-import { ServerService } from '../server-service';
-import { AppService } from '../app.service';
-import { HttpClient } from '@angular/common/http';
-import { MatSnackBar, MatDialog } from '@angular/material';
-import { ConfirmDialogComponent } from '../common/confirmation-component/confirmation-dialog';
-import { filter, flatMap } from 'rxjs/operators';
-import { LoggedUser } from '../common/logged-user.model';
-import { SettingsComponent } from '../settings/settings.component';
-import { Observable, Subscription } from 'rxjs';
-import { BreakpointState, Breakpoints, BreakpointObserver } from '@angular/cdk/layout';
-import { WsConnectionService } from '../ws-connection.service';
-import { WsHandler } from '../ws-handler';
-import { WSMessage } from '../common/ws-message.model';
-import { CMD } from '../common/cmd.enum';
-import { SelectionService } from '../selection-service';
-import { RowNode } from 'ag-grid-community';
-import { RemoveResponse } from '../common/remove-response.model';
-import { PostsDataService } from '../posts-data.service';
+import {RemoveAllResponse} from '../common/remove-all-response.model';
+import {ServerService} from '../server-service';
+import {AppService} from '../app.service';
+import {HttpClient} from '@angular/common/http';
+import {MatDialog} from '@angular/material/dialog';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {ConfirmDialogComponent} from '../common/confirmation-component/confirmation-dialog';
+import {filter, flatMap} from 'rxjs/operators';
+import {LoggedUser} from '../common/logged-user.model';
+import {SettingsComponent} from '../settings/settings.component';
+import {Observable, Subscription} from 'rxjs';
+import {BreakpointObserver, Breakpoints, BreakpointState} from '@angular/cdk/layout';
+import {WsConnectionService} from '../ws-connection.service';
+import {WSMessage} from '../common/ws-message.model';
+import {CMD} from '../common/cmd.enum';
+import {SelectionService} from '../selection-service';
+import {RowNode} from 'ag-grid-community';
+import {RemoveResponse} from '../common/remove-response.model';
+import {PostsDataService} from '../posts-data.service';
 
 @Component({
   selector: 'app-toolbar',
@@ -49,7 +49,6 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
 
   loggedUser: EventEmitter<LoggedUser> = new EventEmitter();
   isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
-  websocketHandlerPromise: Promise<WsHandler>;
   subscriptions: Subscription[] = [];
   selected: RowNode[] = [];
   disableSelection: EventEmitter<boolean> = new EventEmitter();
@@ -253,6 +252,7 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnDestroy() {
     this.subscriptions.forEach(e => e.unsubscribe());
+    this.ws.send(new WSMessage(CMD.USER_UNSUB.toString()));
     if (this.userSub != null) {
       this.userSub.unsubscribe();
     }

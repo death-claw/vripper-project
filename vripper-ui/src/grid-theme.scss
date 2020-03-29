@@ -1,14 +1,7 @@
 @import '~@angular/material/theming';
 
-$ag-font-family: Fira, sans-serif;
-$ag-font-size: 14px;
-$ag-font-weight: 700;
-$ag-secondary-font-family: Fira, sans-serif;
-$ag-secondary-font-size: 14px;
-$ag-secondary-font-weight:700;
-
-@import '~ag-grid-community/src/styles/ag-grid.scss';
-@import '~ag-grid-community/src/styles/ag-theme-material/sass/ag-theme-material.scss';
+@import "~ag-grid-community/src/styles/ag-grid.scss";
+@import "~ag-grid-community/src/styles/ag-theme-alpine/sass/ag-theme-alpine-mixin.scss";
 
 @mixin grid-theme($theme) {
   $primary: map-get($theme, primary);
@@ -17,37 +10,72 @@ $ag-secondary-font-weight:700;
   $foreground: map-get($theme, foreground);
   $background: map-get($theme, background);
 
-  .ag-header, .ag-header .ag-icon {
+  .ag-theme-alpine {
+    @include ag-theme-alpine((
+      odd-row-background-color: null,
+      row-border-color: transparent,
+      row-hover-color: null,
+      //checkbox-checked-color: #ff00b1,
+      font-family: (Fira, sans-serif),
+      font-size: 12px
+    ));
 
-    color: mat-color($foreground, secondary-text) !important;
-  }
+    .ag-checkbox-input-wrapper.ag-checked::after {
+      color: mat-color($accent);
+    }
 
-  .ag-theme-material {
+    .ag-checkbox {
+      margin-right: 5px;
+    }
+
+    .ag-header-row {
+      color: mat-color($foreground, text);
+    }
+
+    .ag-header, .ag-header .ag-icon {
+      color: mat-color($foreground, text);
+      background-color: mat-color($background, background);
+    }
+
+    .ag-root-wrapper {
+      background-color: mat-color($background, background);
+
+      & .ag-header-cell {
+        background-color: mat-color($background, background);
+      }
+    }
+
+    .ag-row-odd {
       background-color: mat-color($background, background) !important;
-  }
+    }
 
-  .ag-theme-material .ag-header-cell {
-    background-color: mat-color($background, background) !important;
-  }
+    .ag-row {
+      background-color: mat-color($background, background);
+      color: mat-color($foreground, text);
 
-  .ag-theme-material .ag-header-cell:hover {
-    background-color: mat-color($background, background) !important;
-  }
+      & a {
+        color: mat-color($foreground, text);
+      }
+    }
 
-  div.ag-cell.no-padding {
-    padding: 0;
-  }
+    .ag-row-selected {
+      background-color: transparent;
+    }
 
-  .ag-body-horizontal-scroll {
-    display: none !important;
-  }
+    div.ag-cell.no-padding {
+      padding: 0;
+    }
 
-  .ag-center-cols-viewport {
-    overflow: hidden !important;
-  }
+    .ag-body-horizontal-scroll {
+      display: none;
+    }
 
-  .ag-cell-focus,
-  .ag-cell {
-    border: none !important;
+    .ag-center-cols-viewport {
+      overflow: hidden;
+    }
+
+    .ag-cell-focus, .ag-cell {
+      border: none !important;
+    }
   }
 }

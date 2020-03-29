@@ -1,10 +1,9 @@
-import { WsHandler } from './../ws-handler';
-import { GridOptions } from 'ag-grid-community';
-import { Subscription } from 'rxjs';
-import { WsConnectionService } from '../ws-connection.service';
-import { WSMessage } from '../common/ws-message.model';
-import { CMD } from '../common/cmd.enum';
-import { NgZone } from '@angular/core';
+import {GridOptions} from 'ag-grid-community';
+import {Subscription} from 'rxjs';
+import {WsConnectionService} from '../ws-connection.service';
+import {WSMessage} from '../common/ws-message.model';
+import {CMD} from '../common/cmd.enum';
+import {NgZone} from '@angular/core';
 
 export class PostDetailsDataSource {
   constructor(
@@ -12,9 +11,8 @@ export class PostDetailsDataSource {
     private gridOptions: GridOptions,
     private postId: string,
     private zone: NgZone
-  ) {}
-
-  websocketHandlerPromise: Promise<WsHandler>;
+  ) {
+  }
 
   subscriptions: Subscription[] = [];
   postDetailsSub: Subscription;

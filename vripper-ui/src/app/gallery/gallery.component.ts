@@ -1,10 +1,11 @@
-import { IImage, PhotoSwipeComponent } from './../photo-swipe/photo-swipe.component';
-import { Component, OnInit, ChangeDetectionStrategy, Inject, NgZone, OnDestroy, ViewChild } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { MatDialogRef, MAT_DIALOG_DATA, MatSnackBar } from '@angular/material';
-import { ServerService } from '../server-service';
-import { PostState } from '../posts/post-state.model';
-import { BehaviorSubject, Subject } from 'rxjs';
+import {IImage, PhotoSwipeComponent} from './../photo-swipe/photo-swipe.component';
+import {ChangeDetectionStrategy, Component, Inject, NgZone, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {ServerService} from '../server-service';
+import {PostState} from '../posts/post-state.model';
+import {BehaviorSubject, Subject} from 'rxjs';
 
 class Image extends IImage {
   constructor(
@@ -49,7 +50,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
   loadProgress: Subject<Progress> = new BehaviorSubject(initialProgressState);
   loadedImages = 0;
 
-  @ViewChild('photoSwipe', { static: true }) photoSwipe: PhotoSwipeComponent;
+  @ViewChild('photoSwipe') photoSwipe: PhotoSwipeComponent;
 
   loaded(img: Image) {
     img._initialized = true;

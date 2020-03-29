@@ -1,10 +1,10 @@
-import { LinkCollectorService } from './../link-collector.service';
-import { UrlGrabRendererComponent } from './url-renderer.component';
-import { GrabQueueDataSource } from './grab-queue.datasource';
-import { Component, OnInit, NgZone, ChangeDetectionStrategy } from '@angular/core';
-import { GridOptions } from 'ag-grid-community';
-import { WsConnectionService } from '../ws-connection.service';
-import { NotificationService } from '../notification.service';
+import {LinkCollectorService} from './../link-collector.service';
+import {UrlGrabRendererComponent} from './url-renderer.component';
+import {GrabQueueDataSource} from './grab-queue.datasource';
+import {ChangeDetectionStrategy, Component, NgZone, OnInit} from '@angular/core';
+import {GridOptions} from 'ag-grid-community';
+import {WsConnectionService} from '../ws-connection.service';
+import {NotificationService} from '../notification.service';
 
 @Component({
   selector: 'app-grab-queue',
@@ -29,7 +29,7 @@ export class GrabQueueComponent implements OnInit {
           cellRenderer: 'urlCellRenderer'
         }
       ],
-      rowHeight: 48,
+      rowHeight: 50,
       animateRows: true,
       rowData: [],
       frameworkComponents: {

@@ -3,14 +3,12 @@ package tn.mnlr.vripper.host;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.XpathException;
 import tn.mnlr.vripper.q.ImageFileData;
-import tn.mnlr.vripper.services.ConnectionManager;
 
 @Service
 public class PixxxelsHost extends Host {
@@ -21,8 +19,9 @@ public class PixxxelsHost extends Host {
     private static final String IMG_XPATH = "//*[@id='download']";
     private static final String TITLE_XPATH = "//*[contains(@class,'imagename')]";
 
-    @Autowired
-    private ConnectionManager cm;
+    public PixxxelsHost() {
+        super();
+    }
 
     @Override
     public String getHost() {

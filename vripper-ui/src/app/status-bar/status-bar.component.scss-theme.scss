@@ -5,7 +5,7 @@
   $background: map-get($theme, background);
 
   .status-bar {
-    background-color: mat-color($background, status-bar);
-    color: mat-color($foreground, base);
+    background-color: mat-color($background, background);
+    color: mat-color($foreground, text);
   }
 }

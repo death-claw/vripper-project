@@ -1,8 +1,8 @@
 package tn.mnlr.vripper.q;
 
+import lombok.NonNull;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.FailsafeException;
-import net.jodah.failsafe.RetryPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,14 +11,10 @@ import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.entities.Image;
 import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.host.Host;
-import tn.mnlr.vripper.services.AppSettingsService;
-import tn.mnlr.vripper.services.AppStateService;
-import tn.mnlr.vripper.services.ThumbnailGenerator;
+import tn.mnlr.vripper.services.*;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,49 +24,45 @@ import java.util.stream.Collectors;
 public class ExecutionService {
 
     private static final Logger logger = LoggerFactory.getLogger(ExecutionService.class);
-
     private static final List<Post.Status> FINISHED = Arrays.asList(Post.Status.ERROR, Post.Status.COMPLETE, Post.Status.STOPPED);
 
-    @Autowired
-    private DownloadQ downloadQ;
+    private final DownloadQ downloadQ;
+    private final AppSettingsService settings;
+    private final AppStateService appStateService;
+    private final AppStateExchange appStateExchange;
+    private final ThumbnailGenerator thumbnailGenerator;
+    private final AppSettingsService appSettingsService;
+    private final CommonExecutor commonExecutor;
 
-    @Autowired
-    private AppSettingsService settings;
+    private final int MAX_POOL_SIZE = 12;
 
-    @Autowired
-    private AppStateService appStateService;
-
-    @Autowired
-    private ThumbnailGenerator thumbnailGenerator;
-
-    @Autowired
-    private AppSettingsService appSettingsService;
     private final ConcurrentHashMap<Host, AtomicInteger> threadCount = new ConcurrentHashMap<>();
+
     private boolean notPauseQ = true;
-    private ExecutorService executor = Executors.newFixedThreadPool(20);
+    private ExecutorService executor = Executors.newFixedThreadPool(MAX_POOL_SIZE);
 
     private Thread executionThread;
 
-    BlockingQueue<DownloadJob> queue = new LinkedBlockingQueue<>();
-
-    private RetryPolicy<Object> retryPolicy;
+    private BlockingQueue<DownloadJob> queue = new LinkedBlockingQueue<>();
 
     private List<DownloadJob> running = Collections.synchronizedList(new ArrayList<>());
 
     private Map<String, Future<?>> futures = new ConcurrentHashMap<>();
     private Thread pollThread;
 
+    @Autowired
+    public ExecutionService(DownloadQ downloadQ, AppSettingsService settings, AppStateService appStateService, AppStateExchange appStateExchange, ThumbnailGenerator thumbnailGenerator, AppSettingsService appSettingsService, CommonExecutor commonExecutor) {
+        this.downloadQ = downloadQ;
+        this.settings = settings;
+        this.appStateService = appStateService;
+        this.appStateExchange = appStateExchange;
+        this.thumbnailGenerator = thumbnailGenerator;
+        this.appSettingsService = appSettingsService;
+        this.commonExecutor = commonExecutor;
+    }
+
     @PostConstruct
     private void init() {
-
-        retryPolicy = new RetryPolicy<>()
-                .handleIf(e -> !(e instanceof InterruptedException))
-                .withBackoff(1, 10, ChronoUnit.SECONDS)
-                .withMaxDuration(Duration.of(10, ChronoUnit.SECONDS))
-                .withMaxAttempts(3)
-                .abortOn(InterruptedException.class)
-                .onFailedAttempt(e -> logger.warn(String.format("#%d tries failed", e.getAttemptCount()), e.getLastFailure()));
-
         executionThread = new Thread(this::start, "Executor thread");
         pollThread = new Thread(this::poll, "Polling thread");
         pollThread.start();
@@ -81,15 +73,16 @@ public class ExecutionService {
     private void destroy() throws InterruptedException {
         logger.info("Shutting down ExecutionService");
         executionThread.interrupt();
+        pollThread.interrupt();
         executor.shutdown();
-        appStateService.getCurrentPosts().keySet().forEach(p -> {
+        appStateExchange.getPosts().keySet().forEach(p -> {
             logger.debug(String.format("Stopping download jobs for %s", p));
             this.stopRunning(p);
         });
         executor.awaitTermination(10, TimeUnit.SECONDS);
     }
 
-    public void stopRunning(String postId) {
+    private void stopRunning(@NonNull String postId) {
         List<DownloadJob> data = running
                 .stream()
                 .filter(e -> e.getImage().getPostId().equals(postId))
@@ -107,23 +100,29 @@ public class ExecutionService {
     }
 
 
-    public synchronized void stopAll() {
-        appStateService.getCurrentPosts().values().stream().map(Post::getPostId).forEach(this::stop);
-    }
-
-    public synchronized void restartAll() throws InterruptedException {
-        for (Post post : appStateService.getCurrentPosts().values()) {
-            String postId = post.getPostId();
-            restart(postId);
+    public synchronized void stopAll(List<String> posIds) {
+        if (posIds != null) {
+            posIds.forEach(this::stop);
+        } else {
+            appStateExchange.getPosts().values().forEach(p -> this.stop(p.getPostId()));
         }
     }
 
-    public synchronized void restart(String postId) throws InterruptedException {
-        if (appStateService.getRunningPosts().get(postId) != null && appStateService.getRunningPosts().get(postId).get() > 0) {
+    public synchronized void restartAll(List<String> posIds) {
+        if (posIds != null) {
+            posIds.forEach(this::restart);
+        } else {
+            appStateExchange.getPosts().values().forEach(p -> this.restart(p.getPostId()));
+        }
+    }
+
+    private void restart(@NonNull String postId) {
+        if (appStateService.isRunning(postId)) {
             logger.warn(String.format("Cannot restart, jobs are currently running for post id %s", postId));
             return;
         }
-        List<Image> images = appStateService.getPost(postId)
+        Post post = appStateExchange.getPost(postId);
+        List<Image> images = post
                 .getImages()
                 .stream()
                 .filter(e -> !e.getStatus().equals(Image.Status.COMPLETE))
@@ -131,14 +130,20 @@ public class ExecutionService {
         if (images.isEmpty()) {
             return;
         }
-        appStateService.getPost(postId).setStatus(Post.Status.PENDING);
+
+        post.setStatus(Post.Status.PENDING);
         logger.debug(String.format("Restarting %d jobs for post id %s", images.size(), postId));
         for (Image image : images) {
-            downloadQ.put(image);
+            try {
+                downloadQ.put(post, image);
+            } catch (InterruptedException e) {
+                logger.warn("Thread was interrupted", e);
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
-    private synchronized void removeScheduled(Image image) {
+    private void removeScheduled(Image image) {
         image.setStatus(Image.Status.STOPPED);
         logger.debug(String.format("Removing scheduled job for %s", image.getUrl()));
 
@@ -165,19 +170,23 @@ public class ExecutionService {
         image.cleanup();
     }
 
-    private synchronized void removeRunning(String postId) {
+    private void removeRunning(String postId) {
         logger.debug(String.format("Interrupting running jobs for post id %s", postId));
         stopRunning(postId);
     }
 
-    public synchronized void stop(String postId) {
+    private void stop(String postId) {
         try {
-            if (FINISHED.contains(appStateService.getPost(postId).getStatus())) {
+            final Post post = appStateExchange.getPost(postId);
+            if (post == null) {
+                return;
+            }
+            if (FINISHED.contains(post.getStatus())) {
                 return;
             }
             notPauseQ = false;
-            appStateService.getPost(postId).setStatus(Post.Status.STOPPED);
-            List<Image> images = appStateService.getPost(postId)
+            post.setStatus(Post.Status.STOPPED);
+            List<Image> images = post
                     .getImages()
                     .stream()
                     .filter(e -> !e.getStatus().equals(Image.Status.COMPLETE))
@@ -199,7 +208,7 @@ public class ExecutionService {
         if (count == null) {
             threadCount.put(host, new AtomicInteger(0));
         }
-        canRun = threadCount.get(host).get() < settings.getMaxThreads() && (settings.getMaxTotalThreads() == 0 || threadCount.values().stream().mapToInt(AtomicInteger::get).sum() < settings.getMaxTotalThreads());
+        canRun = threadCount.get(host).get() < settings.getSettings().getMaxThreads() && (settings.getSettings().getMaxTotalThreads() == 0 ? threadCount.values().stream().mapToInt(AtomicInteger::get).sum() < MAX_POOL_SIZE : threadCount.values().stream().mapToInt(AtomicInteger::get).sum() < settings.getSettings().getMaxTotalThreads());
         if (canRun && notPauseQ) {
             threadCount.get(host).incrementAndGet();
             return true;
@@ -207,7 +216,7 @@ public class ExecutionService {
         return false;
     }
 
-    public void poll() {
+    private void poll() {
         while (!Thread.interrupted()) {
             try {
                 List<DownloadJob> peek = downloadQ.peek();
@@ -227,7 +236,7 @@ public class ExecutionService {
         }
     }
 
-    public void start() {
+    private void start() {
         while (!Thread.interrupted()) {
             try {
                 push(queue.take());
@@ -245,7 +254,7 @@ public class ExecutionService {
         Runnable task = () -> {
             running.add(take);
 
-            Failsafe.with(retryPolicy)
+            Failsafe.with(VripperApplication.retryPolicy)
                     .onFailure(e -> {
                         if (e.getFailure() instanceof InterruptedException || (e.getFailure() instanceof FailsafeException && e.getFailure().getCause() instanceof InterruptedException)) {
                             logger.debug("Job successfully interrupted");
@@ -257,8 +266,8 @@ public class ExecutionService {
                     .onComplete(e -> {
                         appStateService.doneDownloadJob(take.getImage());
                         logger.debug(String.format("Finished downloading %s", take.getImage().getUrl()));
-                        if (appSettingsService.isViewPhotos()) {
-                            VripperApplication.commonExecutor.submit(
+                        if (appSettingsService.getSettings().getViewPhotos()) {
+                            commonExecutor.getGeneralExecutor().submit(
                                     () -> thumbnailGenerator.getThumbnails()
                                             .get(new ThumbnailGenerator.CacheKey(take.getImage().getPostId(), take.getImageFileData().getFileName())));
                         }
