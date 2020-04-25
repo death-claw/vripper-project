@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.11.1] - 2020-04-25
+### Changed
+- Code source maintenance
+### Added
+- Added option to rename gallery
+
 ## [2.11.0] - 2020-03-29
 ### Changed
 - Upgrade Electron to v8
