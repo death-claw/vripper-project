@@ -1,0 +1,25 @@
+<div fxLayout="column" class="dialog-container" style="height: 100%;">
+  <h2 mat-dialog-title fxFlex="nogrow">Alternative title</h2>
+  <mat-dialog-content fxFlex="grow">
+
+    <form fxLayout="column" fxLayoutAlign="space-between center" [formGroup]="form" autocomplete="off">
+      <mat-form-field>
+        <mat-label>Choose a title</mat-label>
+        <mat-select formControlName="altNameSelect">
+          <mat-option *ngFor="let altName of data.post.alternativeTitle" [value]="altName">
+            {{altName}}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <input formControlName="altNameInput" matInput name="altNameInput" placeholder="New gallery name" required/>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+  <mat-dialog-actions fxFlex="nogrow" align="end">
+    <button [disabled]="form.invalid" color="primary" mat-dialog-close="yes" mat-raised-button (click)="rename()">
+      Rename
+    </button>
+  </mat-dialog-actions>
+</div>
+

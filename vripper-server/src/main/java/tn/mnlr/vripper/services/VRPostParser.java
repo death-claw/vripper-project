@@ -21,7 +21,6 @@ import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.host.Host;
 
 import javax.xml.parsers.SAXParserFactory;
-import java.io.File;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,13 +33,14 @@ class VRPostParser {
 
     private static SAXParserFactory factory = SAXParserFactory.newInstance();
 
+    private static List<String> dictionary = Arrays.asList("download", "link", "rapidgator", "filefactory", "filefox");
+
     private final String threadId;
     private final String postId;
     private final ConnectionManager cm;
     private final VipergirlsAuthService vipergirlsAuthService;
     private final HtmlProcessorService htmlProcessorService;
     private final XpathService xpathService;
-    private final AppSettingsService appSettingsService;
 
     VRPostParser(String threadId, String postId) {
         this.threadId = threadId;
@@ -49,7 +49,6 @@ class VRPostParser {
         this.vipergirlsAuthService = SpringContext.getBean(VipergirlsAuthService.class);
         this.htmlProcessorService = SpringContext.getBean(HtmlProcessorService.class);
         this.xpathService = SpringContext.getBean(XpathService.class);
-        this.appSettingsService = SpringContext.getBean(AppSettingsService.class);
     }
 
     public Post parse() throws PostParseException {
@@ -84,7 +83,7 @@ class VRPostParser {
         return post.get();
     }
 
-    private Optional<Post> getPost(HttpGet httpGet, VRApiPostHandler handler, AtomicReference<Throwable> thr) throws PostParseException {
+    private Optional<Post> getPost(HttpGet httpGet, VRApiPostHandler handler, AtomicReference<Throwable> thr) {
         return Failsafe.with(VripperApplication.retryPolicy)
                 .onFailure(e -> thr.set(e.getFailure()))
                 .get(() -> {
@@ -117,10 +116,8 @@ class VRPostParser {
                             String postedBy = xpathService.getAsNode(postNode, "./div[contains(@class, 'userinfo')]//a[contains(@class, 'username')]//font").getTextContent().trim();
                             metadata.put(Post.METADATA.POSTED_BY.name(), postedBy);
 
-                            if (appSettingsService.getSettings().getResolveTitle()) {
-                                Node node = xpathService.getAsNode(document, String.format("//div[@id='post_message_%s']", postId));
-                                findTitleInContent(node).ifPresent(e -> metadata.put(Post.METADATA.RESOLVED_NAME.name(), e));
-                            }
+                            Node node = xpathService.getAsNode(document, String.format("//div[@id='post_message_%s']", postId));
+                            metadata.put(Post.METADATA.RESOLVED_NAME.name(), findTitleInContent(node));
 
                             return null;
                         } catch (Exception e) {
@@ -132,29 +129,26 @@ class VRPostParser {
                 });
     }
 
-    private Optional<String> findTitleInContent(Node node) {
-        ArrayList<String> strings = new ArrayList<>();
-        findTitle(node, strings);
-        return strings.stream().filter(e -> !e.toLowerCase().contains("download")).findFirst();
+    private List<String> findTitleInContent(Node node) {
+        List<String> altTitle = new ArrayList<>();
+        findTitle(node, altTitle);
+        return altTitle;
     }
 
-    private boolean findTitle(Node node, List<String> allText) {
+    private boolean findTitle(Node node, List<String> altTitle) {
         if (node.getNodeName().equals("a") || node.getNodeName().equals("img")) {
             return false;
         }
         if (node.getNodeType() == Node.ELEMENT_NODE) {
             for (int i = 0; i < node.getChildNodes().getLength(); i++) {
                 Node item = node.getChildNodes().item(i);
-                boolean keepGoing = findTitle(item, allText);
-                if (!keepGoing) {
-                    return false;
-                }
+                findTitle(item, altTitle);
             }
 
         } else if (node.getNodeType() == Node.TEXT_NODE) {
-            String trim = node.getTextContent().trim();
-            if (!trim.isEmpty()) {
-                allText.add(trim);
+            String text = node.getTextContent().trim();
+            if (!text.isEmpty() && dictionary.stream().noneMatch(e -> text.toLowerCase().contains(e.toLowerCase()))) {
+                altTitle.add(text);
             }
         }
         return true;
@@ -166,7 +160,6 @@ class VRApiPostHandler extends DefaultHandler {
     private static final Logger logger = LoggerFactory.getLogger(VRApiPostHandler.class);
 
     private final Collection<Host> supportedHosts;
-    private final PathService pathService;
 
     private final String threadId;
     private final String postId;
@@ -189,7 +182,6 @@ class VRApiPostHandler extends DefaultHandler {
         this.postUrl = postUrl;
         this.metadata = metadata;
         this.supportedHosts = SpringContext.getBeansOfType(Host.class).values();
-        this.pathService = SpringContext.getBean(PathService.class);
     }
 
 
@@ -248,7 +240,6 @@ class VRApiPostHandler extends DefaultHandler {
                 if (thr.get() != null) {
                     logger.error(String.format("Failed to get extra metadata for %s", postUrl), thr.get());
                 }
-                File destinationFolder = pathService.getDownloadDestinationFolder(postTitle, forum, threadTitle, metadata, null);
                 try {
                     parsedPost = new Post(
                             postTitle,
@@ -258,8 +249,7 @@ class VRApiPostHandler extends DefaultHandler {
                             postId,
                             threadId,
                             threadTitle,
-                            forum,
-                            destinationFolder.getName());
+                            forum);
                 } catch (PostParseException e) {
                     logger.error(String.format("Error occurred while parsing postId %s", postId));
                 }

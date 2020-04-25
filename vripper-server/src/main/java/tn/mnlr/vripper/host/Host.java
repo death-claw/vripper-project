@@ -63,6 +63,12 @@ abstract public class Host {
     @Autowired
     private PathService pathService;
 
+    @Autowired
+    private AppStateExchange appStateExchange;
+
+    @Autowired
+    private VipergirlsAuthService authService;
+
     protected Host() {
 
     }
@@ -71,20 +77,24 @@ abstract public class Host {
 
     abstract public String getLookup();
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(pathService);
-    }
-
     public boolean isSupported(String url) {
         return url.contains(getLookup());
     }
 
-    public void download(Post post, Image image, ImageFileData imageFileData) throws DownloadException, InterruptedException {
+    public void download(final Post post, final Image image, final ImageFileData imageFileData) throws DownloadException, InterruptedException {
 
         HttpClientContext context = HttpClientContext.create();
         context.setCookieStore(new BasicCookieStore());
         try {
+
+            File destinationFolder;
+            synchronized (appStateExchange.getPost(post.getPostId())) {
+                if (post.getPostFolderName() == null) {
+                    pathService.createDefaultPostFolder(post);
+                }
+                destinationFolder = pathService.getDownloadDestinationFolder(post);
+                authService.leaveThanks(post);
+            }
 
             appStateService.postDownloadingUpdate(image.getPostId());
 
@@ -107,7 +117,6 @@ abstract public class Host {
             String formatImageFileName = pathService.formatImageFileName(imageFileData.getImageName());
             logger.debug(String.format("Sanitizing image name from %s to %s", imageFileData.getImageName(), formatImageFileName));
             imageFileData.setImageName(formatImageFileName);
-            File destinationFolder = pathService.getDownloadDestinationFolder(post.getTitle(), post.getForum(), post.getThreadTitle(), post.getMetadata(), post.getDestFolder());
             logger.debug(String.format("Saving to %s", destinationFolder.getPath()));
 
             HttpClient client = cm.getClient().build();
@@ -136,7 +145,7 @@ abstract public class Host {
                     fos.flush();
                     EntityUtils.consumeQuietly(response.getEntity());
                 }
-                File finalName = checkImageTypeAndRename(outputFile, imageFileData.getImageName(), image.getIndex());
+                File finalName = checkImageTypeAndRename(post, outputFile, imageFileData.getImageName(), image.getIndex());
                 imageFileData.setFileName(finalName.getName());
             }
         } catch (Exception e) {
@@ -147,7 +156,7 @@ abstract public class Host {
         }
     }
 
-    private File checkImageTypeAndRename(File outputFile, String imageName, int index) throws HostException {
+    private File checkImageTypeAndRename(Post post, File outputFile, String imageName, int index) throws HostException {
         try (ImageInputStream iis = ImageIO.createImageInputStream(outputFile)) {
             Iterator<ImageReader> it = ImageIO.getImageReaders(iis);
             if (!it.hasNext()) {
@@ -174,7 +183,8 @@ abstract public class Host {
             throw new HostException("Failed to guess image format", e);
         }
         try {
-            File outImage = new File(outputFile.getParent(), (appSettingsService.getSettings().getForceOrder() ? String.format("%03d_", index) : "") + imageName);
+            File downloadDestinationFolder = pathService.getDownloadDestinationFolder(post);
+            File outImage = new File(downloadDestinationFolder, (appSettingsService.getSettings().getForceOrder() ? String.format("%03d_", index) : "") + imageName);
             if (outImage.exists() && outImage.delete()) {
                 logger.debug(String.format("%s is deleted", outImage.toString()));
             }
@@ -245,6 +255,11 @@ abstract public class Host {
         if (o == null || getClass() != o.getClass()) return false;
         Host host = (Host) o;
         return Objects.equals(getHost(), host.getHost());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getHost());
     }
 
     @Getter

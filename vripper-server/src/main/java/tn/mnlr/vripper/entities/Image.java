@@ -34,7 +34,7 @@ public class Image {
     private BehaviorProcessor<Image> imageStateProcessor;
     private Disposable subscription;
 
-    public Image() {
+    private Image() {
         this.appStateService = SpringContext.getBean(AppStateService.class);
     }
 

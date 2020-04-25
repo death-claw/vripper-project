@@ -40,6 +40,10 @@ public class QueuedVGLink {
         this.appStateService.queueLinkUpdated(this);
     }
 
+    public void setCount(int count) {
+        this.count = count;
+    }
+
     public void remove() {
         this.removed = true;
         appStateService.queueLinkUpdated(this);

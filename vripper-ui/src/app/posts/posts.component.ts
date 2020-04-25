@@ -24,7 +24,7 @@ export class PostsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.gridOptions = <GridOptions>{
       columnDefs: [
         {
-          headerName: 'Posts',
+          headerName: 'Galleries',
           field: 'title',
           sortable: true,
           cellRenderer: 'progressCellRenderer',
@@ -36,7 +36,7 @@ export class PostsComponent implements OnInit, OnDestroy, AfterViewInit {
         }
       ],
       rowBuffer: 200,
-      rowHeight: 48,
+      rowHeight: 60,
       animateRows: true,
       rowSelection: 'multiple',
       rowDeselection: true,

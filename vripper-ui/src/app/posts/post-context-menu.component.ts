@@ -1,11 +1,11 @@
 import {AppService} from '../app.service';
 import {GalleryComponent} from '../gallery/gallery.component';
 import {ServerService} from '../server-service';
-import {HttpClient} from '@angular/common/http';
+import {HttpClient, HttpErrorResponse} from '@angular/common/http';
 import {ElectronService} from 'ngx-electron';
 import {ChangeDetectionStrategy, Component, NgZone} from '@angular/core';
 import {animate, state, style, transition, trigger} from '@angular/animations';
-import {MatDialog} from '@angular/material/dialog';
+import {MatDialog, MatDialogConfig} from '@angular/material/dialog';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {PostDetailComponent} from '../post-detail/post-detail.component';
 import {BehaviorSubject, Observable, Subject} from 'rxjs';
@@ -16,6 +16,8 @@ import {ConfirmDialogComponent} from '../common/confirmation-component/confirmat
 import {filter, flatMap} from 'rxjs/operators';
 import {RemoveResponse} from '../common/remove-response.model';
 import {CtxtMenuService} from "./ctxt-menu.service";
+import {PostsDataService} from "../posts-data.service";
+import {AlternativeTitleComponent, AlternativeTitleDialog} from "./alternative-title/alternative-title.component";
 
 @Component({
   selector: 'app-post-ctx-menu',
@@ -58,6 +60,10 @@ import {CtxtMenuService} from "./ctxt-menu.service";
           <mat-icon>photo_library</mat-icon>
           <span>View Photos</span>
         </button>
+        <button (click)="openRenameDialog()" mat-list-item>
+          <mat-icon>folder</mat-icon>
+          <span>Gallery name</span>
+        </button>
         <button (click)="open()" *ngIf="electronService.isElectronApp" mat-list-item>
           <mat-icon>folder</mat-icon>
           <span>Download Location</span>
@@ -66,10 +72,11 @@ import {CtxtMenuService} from "./ctxt-menu.service";
     </mat-card>
   `,
   styles: [
-    `
+      `
       mat-card {
         padding: 0 0 8px 0;
       }
+
       mat-icon {
         margin-right: 5px;
       }
@@ -77,9 +84,9 @@ import {CtxtMenuService} from "./ctxt-menu.service";
   ],
   animations: [
     trigger('simpleFadeAnimation', [
-      state('in', style({ opacity: 1 })),
+      state('in', style({opacity: 1})),
 
-      transition(':enter', [style({ opacity: 0 }), animate(300)])
+      transition(':enter', [style({opacity: 0}), animate(300)])
     ])
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -89,6 +96,7 @@ export class PostContextMenuComponent {
   isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
   fs;
   contextMenuService: CtxtMenuService;
+
   constructor(
     public electronService: ElectronService,
     private dialog: MatDialog,
@@ -97,7 +105,8 @@ export class PostContextMenuComponent {
     private serverService: ServerService,
     private _snackBar: MatSnackBar,
     private ngZone: NgZone,
-    private appService: AppService
+    private appService: AppService,
+    private postsDataService: PostsDataService
   ) {
     if (this.electronService.isElectronApp) {
       this.fs = this.electronService.remote.require('fs');
@@ -106,6 +115,7 @@ export class PostContextMenuComponent {
   }
 
   isViewEnabled: Subject<boolean> = new BehaviorSubject(false);
+
   restart() {
     this.contextMenuService.closePostCtxtMenu();
     this.httpClient.post(this.serverService.baseUrl + '/post/restart', [this.postState.postId]).subscribe(
@@ -115,7 +125,7 @@ export class PostContextMenuComponent {
         });
       },
       error => {
-        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+        this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
           duration: 5000
         });
       }
@@ -140,23 +150,40 @@ export class PostContextMenuComponent {
           maxWidth: '100vw',
           height: '200px',
           width: '60%',
-          data: { header: 'Confirmation', content: 'Are you sure you want to remove this item ?' }
+          data: {header: 'Confirmation', content: 'Are you sure you want to remove this item ?'}
         })
         .afterClosed()
         .pipe(
           filter(e => e === 'yes'),
-          flatMap(e =>
-            this.httpClient.post<RemoveResponse>(this.serverService.baseUrl + '/post/remove', [this.postState.postId])
+          flatMap(() =>
+            this.httpClient.post<RemoveResponse[]>(this.serverService.baseUrl + '/post/remove', [this.postState.postId])
           )
         )
         .subscribe(
-          () => {},
+          data => {
+            this.postsDataService.remove(data);
+          },
           error => {
-            this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+            this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
               duration: 5000
             });
           }
         );
+    });
+  }
+
+  openRenameDialog() {
+    this.contextMenuService.closePostCtxtMenu();
+    const dialogConfig: MatDialogConfig<AlternativeTitleDialog> = {
+      maxHeight: '100vh',
+      maxWidth: '100vw',
+      height: '300px',
+      width: '60%',
+      data: {post: this.postState}
+    };
+    this.ngZone.run(() => {
+      this.dialog
+        .open(AlternativeTitleComponent, dialogConfig);
     });
   }
 
@@ -169,7 +196,7 @@ export class PostContextMenuComponent {
         });
       },
       error => {
-        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+        this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
           duration: 5000
         });
       }
@@ -242,19 +269,13 @@ export class PostContextMenuComponent {
         if (this.fs.existsSync(path.path)) {
           this.electronService.shell.openItem(path.path);
         } else {
-          if (this.postState.done <= 0) {
-            this._snackBar.open('Download has not been started yet for this post', null, {
-              duration: 5000
-            });
-          } else {
-            this._snackBar.open(path.path + ' does not exist, you probably removed it', null, {
-              duration: 5000
-            });
-          }
+          this._snackBar.open(path.path + ' does not exist, you probably removed it', null, {
+            duration: 5000
+          });
         }
       },
-      error => {
-        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+      (error: HttpErrorResponse) => {
+        this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000
         });
       }

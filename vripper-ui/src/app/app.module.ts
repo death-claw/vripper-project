@@ -35,6 +35,7 @@ import {UrlGrabRendererComponent} from './grab-queue/url-renderer.component';
 import {GalleryComponent} from './gallery/gallery.component';
 import {PhotoSwipeComponent} from './photo-swipe/photo-swipe.component';
 import {ClipboardModule} from 'ngx-clipboard';
+import {AlternativeTitleComponent} from './posts/alternative-title/alternative-title.component';
 
 @NgModule({
   declarations: [
@@ -60,7 +61,8 @@ import {ClipboardModule} from 'ngx-clipboard';
     PostContextMenuComponent,
     PostDetailsContextMenuComponent,
     GalleryComponent,
-    PhotoSwipeComponent
+    PhotoSwipeComponent,
+    AlternativeTitleComponent
   ],
   entryComponents: [
     PostDetailComponent,

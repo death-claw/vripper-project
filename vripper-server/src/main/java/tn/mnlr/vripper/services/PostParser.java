@@ -16,14 +16,12 @@ public class PostParser {
     static final String VR_API = "https://vipergirls.to/vr.php";
 
     private final AppStateExchange appStateExchange;
-    private final VipergirlsAuthService authService;
     private final AppSettingsService appSettingsService;
     private final DownloadQ downloadQ;
 
     @Autowired
-    public PostParser(AppStateExchange appStateExchange, VipergirlsAuthService authService, AppSettingsService appSettingsService, DownloadQ downloadQ) {
+    public PostParser(AppStateExchange appStateExchange, AppSettingsService appSettingsService, DownloadQ downloadQ) {
         this.appStateExchange = appStateExchange;
-        this.authService = authService;
         this.appSettingsService = appSettingsService;
         this.downloadQ = downloadQ;
     }
@@ -38,7 +36,6 @@ public class PostParser {
         VRPostParser vrPostParser = new VRPostParser(threadId, postId);
         Post post = vrPostParser.parse();
 
-        authService.leaveThanks(post);
         if (appSettingsService.getSettings().getAutoStart()) {
             logger.debug("Auto start downloads option is enabled");
             logger.debug(String.format("Starting to enqueue %d jobs for %s", post.getImages().size(), post.getUrl()));

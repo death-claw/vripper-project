@@ -47,8 +47,7 @@ export class SettingsComponent implements OnInit {
     vUsername: new FormControl(''),
     vPassword: new FormControl(''),
     vThanks: new FormControl(false),
-    viewPhotos: new FormControl(false),
-    resolveTitle: new FormControl(false)
+    viewPhotos: new FormControl(false)
   });
 
   desktopSettingsForm = new FormGroup({
@@ -75,7 +74,7 @@ export class SettingsComponent implements OnInit {
         this.generalSettingsForm.reset(data);
         this.desktopSettingsForm.reset(data);
       }, error => {
-        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+        this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
           duration: 5000
         });
       });
@@ -83,7 +82,7 @@ export class SettingsComponent implements OnInit {
       .subscribe(data => {
         this.cacheSize.next(data);
       }, error => {
-        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+        this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
           duration: 5000
         });
       });
@@ -96,7 +95,7 @@ export class SettingsComponent implements OnInit {
       .subscribe(data => {
         this.cacheSize.next(data);
       }, error => {
-        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+        this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
           duration: 5000
         });
       })
@@ -136,7 +135,7 @@ export class SettingsComponent implements OnInit {
           this.updateSettings(data);
         },
         error => {
-          this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+          this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
             duration: 5000
           });
         }

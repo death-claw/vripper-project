@@ -114,7 +114,7 @@ export class UrlGrabRendererComponent implements OnInit, OnDestroy, AgRendererCo
       () => {
       },
       error => {
-        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+        this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
           duration: 5000
         });
       }

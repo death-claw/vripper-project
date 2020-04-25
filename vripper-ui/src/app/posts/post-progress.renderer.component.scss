@@ -18,3 +18,15 @@
     cursor: pointer;
   }
 }
+
+.title > p {
+  line-height: normal;
+  margin: 0;
+}
+
+.progress-bar {
+  position: absolute;
+  width: 100%;
+  top: 47px;
+  padding: 0 10px
+}

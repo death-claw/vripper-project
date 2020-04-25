@@ -72,7 +72,7 @@ public class GalleryEndpoint {
         }
         response.addHeader("Cache-Control", cacheControl);
         Post post = appStateExchange.getPost(postId);
-        File destinationFolder = pathService.getDownloadDestinationFolder(post.getTitle(), post.getForum(), post.getThreadTitle(), post.getMetadata(), post.getDestFolder());
+        File destinationFolder = pathService.getDownloadDestinationFolder(post);
         return ResponseEntity.ok(Files.readAllBytes(Paths.get(destinationFolder.toPath().toString(), imgName)));
     }
 
@@ -84,7 +84,7 @@ public class GalleryEndpoint {
         }
         response.addHeader("Cache-Control", cacheControl);
         Post post = appStateExchange.getPost(postId);
-        File destinationFolder = pathService.getDownloadDestinationFolder(post.getTitle(), post.getForum(), post.getThreadTitle(), post.getMetadata(), post.getDestFolder());
+        File destinationFolder = pathService.getDownloadDestinationFolder(post);
         if (destinationFolder.exists() && destinationFolder.isDirectory()) {
             return ResponseEntity.ok(thumbnailGenerator.getThumbnails().get(new ThumbnailGenerator.CacheKey(postId, imgName)));
         }
@@ -98,7 +98,7 @@ public class GalleryEndpoint {
             return new ResponseEntity("Gallery option is disabled", HttpStatus.BAD_REQUEST);
         }
         Post post = appStateExchange.getPost(postId);
-        File destinationFolder = pathService.getDownloadDestinationFolder(post.getTitle(), post.getForum(), post.getThreadTitle(), post.getMetadata(), post.getDestFolder());
+        File destinationFolder = pathService.getDownloadDestinationFolder(post);
         if (destinationFolder.exists() && destinationFolder.isDirectory()) {
             return ResponseEntity.ok(
                     Arrays.stream(Objects.requireNonNull(destinationFolder.listFiles()))

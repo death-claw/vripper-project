@@ -52,6 +52,8 @@ public class VGHandler {
             } else {
                 Callable<Void> cl = () -> {
                     List<VRPostState> vrPostStates = cache.get(queuedVGLink);
+                    queuedVGLink.setCount(vrPostStates.size());
+                    queuedVGLink.done();
                     logger.debug(String.format("%d found for %s", vrPostStates.size(), queuedVGLink.getLink()));
                     if (vrPostStates.size() == 1) {
                         queuedVGLink.remove();

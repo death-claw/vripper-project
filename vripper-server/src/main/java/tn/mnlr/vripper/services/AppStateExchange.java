@@ -31,10 +31,6 @@ public class AppStateExchange {
         return runningPosts;
     }
 
-    public AtomicInteger getRunningCount(String postId) {
-        return runningPosts.get(postId);
-    }
-
     public Map<String, Post> getPosts() {
         return this.currentPosts;
     }

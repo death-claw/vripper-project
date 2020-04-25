@@ -104,7 +104,7 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
           this.postsDataService.remove(data);
         },
         error => {
-          this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+          this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
             duration: 5000
           });
         }
@@ -121,7 +121,7 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
         });
       },
       error => {
-        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+        this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
           duration: 5000
         });
       }
@@ -138,7 +138,7 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
         });
       },
       error => {
-        this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+        this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
           duration: 5000
         });
       }
@@ -152,7 +152,7 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
           this._snackBar.open(`${data.removed} items cleared`, null, { duration: 5000 });
         },
         error => {
-          this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+          this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
             duration: 5000
           });
         }
@@ -180,7 +180,7 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
             this._snackBar.open(`${data.removed} items removed`, null, { duration: 5000 });
           },
           error => {
-            this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+            this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
               duration: 5000
             });
           }
@@ -195,7 +195,7 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
           this._snackBar.open(`Download stopped`, null, { duration: 5000 });
         },
         error => {
-          this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+          this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
             duration: 5000
           });
         }
@@ -210,7 +210,7 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
           this._snackBar.open(`Download started`, null, { duration: 5000 });
         },
         error => {
-          this._snackBar.open(error.error || 'Unexpected error, check log file', null, {
+          this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
             duration: 5000
           });
         }

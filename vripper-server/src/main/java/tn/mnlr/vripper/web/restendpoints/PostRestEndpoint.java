@@ -1,22 +1,23 @@
 package tn.mnlr.vripper.web.restendpoints;
 
-import lombok.*;
+import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.q.ExecutionService;
 import tn.mnlr.vripper.services.*;
+import tn.mnlr.vripper.web.restendpoints.domain.posts.*;
+import tn.mnlr.vripper.web.restendpoints.exceptions.BadRequestException;
+import tn.mnlr.vripper.web.restendpoints.exceptions.NotFoundException;
+import tn.mnlr.vripper.web.restendpoints.exceptions.ServerErrorException;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -48,19 +49,11 @@ public class PostRestEndpoint {
         this.commonExecutor = commonExecutor;
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleException(Exception e) {
-        logger.error("Error when process request", e);
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(e.getMessage());
-    }
-
     @PostMapping("/post")
-    @ResponseStatus(value = HttpStatus.OK)
-    public ResponseEntity processPost(@RequestBody ThreadUrl _url) throws Exception {
+    @ResponseStatus(code = HttpStatus.OK)
+    public void processPost(@RequestBody ThreadUrl _url) {
         if (_url.getUrl() == null || _url.getUrl().isEmpty()) {
-            return new ResponseEntity("Failed to process empty request", HttpStatus.BAD_REQUEST);
+            throw new BadRequestException("Failed to process empty request");
         }
         List<String> urls = Arrays.stream(_url.getUrl().split("\\r?\\n")).map(String::trim).filter(e -> !e.isEmpty()).collect(Collectors.toList());
         ArrayList<QueuedVGLink> queuedVGLinks = new ArrayList<>();
@@ -72,26 +65,25 @@ public class PostRestEndpoint {
             }
 
             String threadId, postId;
-            try {
-                Matcher m = VG_URL_PATTERN.matcher(url);
-                if (m.find()) {
-                    threadId = m.group(1);
-                    postId = m.group(4);
-                } else {
-                    throw new PostParseException(String.format("Cannot retrieve thread id from URL %s", url));
-                }
-            } catch (Exception e) {
-                throw new PostParseException(String.format("Cannot retrieve thread id from URL %s", url), e);
+            Matcher m = VG_URL_PATTERN.matcher(url);
+            if (m.find()) {
+                threadId = m.group(1);
+                postId = m.group(4);
+            } else {
+                throw new BadRequestException(String.format("Cannot retrieve thread id from URL %s", url));
             }
             queuedVGLinks.add(new QueuedVGLink(url, threadId, postId));
         }
-        vgHandler.handle(queuedVGLinks);
-        return ResponseEntity.ok().build();
+        try {
+            vgHandler.handle(queuedVGLinks);
+        } catch (Exception e) {
+            throw new ServerErrorException(e.getMessage());
+        }
     }
 
     @PostMapping("/post/restart")
     @ResponseStatus(value = HttpStatus.OK)
-    public void restartPost(@RequestBody @NonNull List<PostId> postIds) throws Exception {
+    public void restartPost(@RequestBody @NonNull List<PostId> postIds) {
         executionService.restartAll(postIds.stream().map(PostId::getPostId).collect(Collectors.toList()));
     }
 
@@ -111,171 +103,79 @@ public class PostRestEndpoint {
 
     @GetMapping("/post/path/{postId}")
     @ResponseStatus(value = HttpStatus.OK)
-    public ResponseEntity<DownloadPath> folderPath(@PathVariable("postId") String postId) {
+    public DownloadPath folderPath(@PathVariable("postId") String postId) {
         Post post = appStateExchange.getPost(postId);
-        File destinationFolder = pathService.getDownloadDestinationFolder(post.getTitle(), post.getForum(), post.getThreadTitle(), post.getMetadata(), post.getDestFolder());
-        return ResponseEntity.ok(new DownloadPath(destinationFolder.getPath()));
+        if (post.getPostFolderName() == null) {
+            throw new NotFoundException("Download has not been started yet for this post");
+        } else {
+            return new DownloadPath(pathService.getDownloadDestinationFolder(post).getPath());
+        }
     }
 
     @PostMapping("/post/restart/all")
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized void restartPost() throws Exception {
+    public void restartPost() {
         executionService.restartAll(null);
     }
 
     @PostMapping("/post/stop")
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized void stop(@RequestBody @NonNull List<PostId> postIds) {
+    public void stop(@RequestBody @NonNull List<PostId> postIds) {
         executionService.stopAll(postIds.stream().map(PostId::getPostId).collect(Collectors.toList()));
     }
 
     @PostMapping("/post/stop/all")
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized void stopAll() {
+    public void stopAll() {
         executionService.stopAll(null);
     }
 
     @PostMapping("/post/remove")
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized ResponseEntity<List<RemoveResult>> remove(@RequestBody @NonNull List<PostId> postIds) {
+    public List<RemoveResult> remove(@RequestBody @NonNull List<PostId> postIds) {
         List<RemoveResult> result = new ArrayList<>();
         List<String> collect = postIds.stream().map(PostId::getPostId).peek(e -> result.add(new RemoveResult(e))).collect(Collectors.toList());
         executionService.stopAll(collect);
         appStateService.removeAll(collect);
-        return ResponseEntity.ok(result);
+        return result;
+    }
+
+    @PostMapping("/post/rename")
+    @ResponseStatus(value = HttpStatus.OK)
+    public List<AltPostName> rename(@RequestBody @NonNull List<AltPostName> postToRename) {
+        for (AltPostName altPostName : postToRename) {
+            Post post = appStateExchange.getPost(altPostName.getPostId());
+            try {
+                pathService.rename(post, altPostName.getAltName());
+            } catch (Exception e) {
+                throw new ServerErrorException(e.getMessage());
+            }
+        }
+        return postToRename;
     }
 
     @PostMapping("/post/clear/all")
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized ResponseEntity<RemoveAllResult> clearAll() {
-        return ResponseEntity.ok(new RemoveAllResult(appStateService.clearAll()));
+    public RemoveAllResult clearAll() {
+        return new RemoveAllResult(appStateService.clearAll());
     }
 
     @PostMapping("/post/remove/all")
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized ResponseEntity<RemoveAllResult> removeAll() {
-        return ResponseEntity.ok(new RemoveAllResult(appStateService.removeAll(null)));
+    public RemoveAllResult removeAll() {
+        return new RemoveAllResult(appStateService.removeAll(null));
     }
 
     @GetMapping("/grab/{threadId}")
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized ResponseEntity<List<VRPostState>> grab(@PathVariable("threadId") @NonNull ThreadId threadId) throws Exception {
+    public List<VRPostState> grab(@PathVariable("threadId") @NonNull ThreadId threadId) throws Exception {
         QueuedVGLink queuedVGLink = appStateExchange.getQueue().values().stream().filter(e -> e.getThreadId().equals(threadId.getThreadId())).findFirst().orElseThrow();
-        return ResponseEntity.ok(vgHandler.getCache().get(queuedVGLink));
+        return vgHandler.getCache().get(queuedVGLink);
     }
 
     @PostMapping("/grab/remove")
     @ResponseStatus(value = HttpStatus.OK)
-    public synchronized void grabRemove(@RequestBody @NonNull ThreadId threadId) {
+    public void grabRemove(@RequestBody @NonNull ThreadId threadId) {
         vgHandler.remove(threadId.getThreadId());
-    }
-}
-
-@Getter
-@Setter
-@NoArgsConstructor
-class ThreadUrl {
-    private String url;
-
-    public ThreadUrl(String url) {
-        this.url = url;
-    }
-}
-
-@Getter
-@Setter
-@NoArgsConstructor
-class ThreadId {
-    private String threadId;
-
-    public ThreadId(String threadId) {
-        this.threadId = threadId;
-    }
-}
-
-@Getter
-@Setter
-@NoArgsConstructor
-class PostId {
-    private String postId;
-
-    public PostId(String postId) {
-        this.postId = postId;
-    }
-}
-
-@Getter
-@Setter
-@NoArgsConstructor
-class PostToAdd {
-    private String threadId;
-    private String postId;
-
-    public PostToAdd(String threadId, String postId) {
-        this.threadId = threadId;
-        this.postId = postId;
-    }
-}
-
-@Getter
-@Setter
-@NoArgsConstructor
-class RemoveAllResult {
-    private List<String> postIds;
-    private int removed;
-
-    RemoveAllResult(List<String> postIds) {
-        this.removed = postIds.size();
-        this.postIds = postIds;
-    }
-}
-
-@Getter
-@Setter
-@NoArgsConstructor
-class RemoveResult {
-    private String postId;
-
-    RemoveResult(String postId) {
-        this.postId = postId;
-    }
-}
-
-@Getter
-@Setter
-@NoArgsConstructor
-class DownloadPath {
-    private String path;
-
-    DownloadPath(String path) {
-        this.path = path;
-    }
-}
-
-@Getter
-@Setter
-@NoArgsConstructor
-@ToString
-class PairThreadIdPostId {
-    private String threadId;
-    private String postId;
-
-    public PairThreadIdPostId(String threadId, String postId) {
-        this.threadId = threadId;
-        this.postId = postId;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        PairThreadIdPostId that = (PairThreadIdPostId) o;
-        return Objects.equals(threadId, that.threadId) &&
-                Objects.equals(postId, that.postId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(threadId, postId);
     }
 }

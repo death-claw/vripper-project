@@ -17,6 +17,7 @@ import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatSnackBar, MatSnackBarModule} from '@angular/material/snack-bar';
 import {MatTabsModule} from '@angular/material/tabs';
 import {MatToolbarModule} from '@angular/material/toolbar';
+import {MatSelectModule} from "@angular/material/select";
 
 @NgModule({
   exports: [
@@ -27,18 +28,20 @@ import {MatToolbarModule} from '@angular/material/toolbar';
     MatIconModule,
     MatInputModule,
     MatFormFieldModule,
-        MatMenuModule,
-        MatDialogModule,
-        MatCardModule,
-        MatSlideToggleModule,
-        MatSnackBarModule,
-        MatTabsModule,
-        MatDividerModule,
-        MatChipsModule,
-        MatListModule,
-        MatProgressSpinnerModule,
-        MatBadgeModule
-    ],
-    providers: [MatSnackBar]
+    MatMenuModule,
+    MatDialogModule,
+    MatCardModule,
+    MatSlideToggleModule,
+    MatSnackBarModule,
+    MatTabsModule,
+    MatDividerModule,
+    MatChipsModule,
+    MatListModule,
+    MatProgressSpinnerModule,
+    MatBadgeModule,
+    MatSelectModule
+  ],
+  providers: [MatSnackBar]
 })
-export class MaterialModule { }
+export class MaterialModule {
+}

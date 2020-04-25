@@ -144,20 +144,24 @@ public class VipergirlsAuthService {
         loggedInUser.onNext(loggedUser);
     }
 
-    void leaveThanks(Post post) {
+    public void leaveThanks(Post post) {
+        if (!appSettingsService.getSettings().getVLogin()) {
+            logger.debug("Authentication with ViperGirls option is disabled");
+            return;
+        }
+        if (!appSettingsService.getSettings().getVThanks()) {
+            logger.debug("Leave thanks option is disabled");
+            return;
+        }
+        if (!authenticated) {
+            logger.error("You are not authenticated");
+            return;
+        }
+        if (post.getMetadata().get(Post.METADATA.THANKED.name()) != null && (boolean) post.getMetadata().get(Post.METADATA.THANKED.name())) {
+            logger.debug("Already left a thanks");
+            return;
+        }
         commonExecutor.getGeneralExecutor().submit(() -> {
-            if (!appSettingsService.getSettings().getVLogin()) {
-                logger.debug("Authentication with ViperGirls option is disabled");
-                return;
-            }
-            if (!appSettingsService.getSettings().getVThanks()) {
-                logger.debug("Leave thanks option is disabled");
-                return;
-            }
-            if (!authenticated) {
-                logger.error("You are not authenticated");
-                return;
-            }
             try {
                 postThanks(post, getSecurityToken(post.getUrl()));
             } catch (Exception e) {

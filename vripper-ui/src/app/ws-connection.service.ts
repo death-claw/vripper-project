@@ -133,7 +133,7 @@ export class WsConnectionService {
             new PostState(
               element.type,
               element.postId,
-              element.metadata.RESOLVED_NAME ? element.metadata.RESOLVED_NAME : element.title,
+              element.title,
               element.done === 0 && element.total === 0 ? 0 : (element.done / element.total) * 100,
               element.status,
               element.removed,
@@ -142,7 +142,8 @@ export class WsConnectionService {
               element.total,
               element.hosts,
               element.metadata.PREVIEWS,
-              element.metadata.THANKED
+              element.metadata.THANKED,
+              element.metadata.RESOLVED_NAME
             )
           );
         });

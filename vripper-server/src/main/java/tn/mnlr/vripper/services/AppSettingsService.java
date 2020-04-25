@@ -2,6 +2,7 @@ package tn.mnlr.vripper.services;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -41,6 +42,7 @@ public class AppSettingsService {
     public AppSettingsService(@Value("${base.dir}") String baseDir) {
         this.baseDir = baseDir;
         this.configPath = Paths.get(baseDir, ".vripper", "config.json");
+        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     @PostConstruct
@@ -142,9 +144,6 @@ public class AppSettingsService {
             settings.setNotification(false);
         }
 
-        if (settings.getResolveTitle() == null) {
-            settings.setResolveTitle(false);
-        }
 
         save();
     }
@@ -243,8 +242,6 @@ public class AppSettingsService {
         private Boolean notification;
         @JsonProperty("darkTheme")
         private Boolean darkTheme;
-        @JsonProperty("resolveTitle")
-        private Boolean resolveTitle;
 
         public void setVPassword(String vPassword) {
             if (vPassword == null || vPassword.isEmpty()) {

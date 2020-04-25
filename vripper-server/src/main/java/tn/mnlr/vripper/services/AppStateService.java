@@ -84,7 +84,7 @@ public class AppStateService {
     public synchronized void newDownloadJob(@NonNull DownloadJob downloadJob) {
         String postId = downloadJob.getImage().getPostId();
         checkKeyRunningPosts(postId);
-        appStateExchange.getRunningCount(postId).incrementAndGet();
+        appStateExchange.running().get(postId).incrementAndGet();
     }
 
     public synchronized void postDownloadingUpdate(@NonNull String postId) {
@@ -97,12 +97,13 @@ public class AppStateService {
 
     public synchronized void doneDownloadJob(@NonNull Image image) {
         String postId = image.getPostId();
-        int i = appStateExchange.getRunningCount(postId).decrementAndGet();
+        int i = appStateExchange.running().get(postId).decrementAndGet();
         Post post = appStateExchange.getPosts().get(postId);
         if (image.getStatus().equals(Image.Status.ERROR)) {
             post.setStatus(Post.Status.PARTIAL);
         }
         if (i == 0) {
+            appStateExchange.running().remove(postId);
             if (post.getImages().stream().map(Image::getStatus).anyMatch(e -> e.equals(Image.Status.ERROR))) {
                 post.setStatus(Post.Status.ERROR);
             } else {
@@ -117,7 +118,7 @@ public class AppStateService {
     }
 
     public boolean isRunning(String postId) {
-        AtomicInteger runningCount = appStateExchange.getRunningCount(postId);
+        AtomicInteger runningCount = appStateExchange.running().get(postId);
         return runningCount != null && runningCount.get() > 0;
     }
 

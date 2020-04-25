@@ -1,6 +1,7 @@
 package tn.mnlr.vripper.entities;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.exception.PostParseException;
@@ -52,15 +53,15 @@ public class Post {
 
     private String forum;
 
-    private String destFolder;
+    @Setter
+    private String postFolderName;
 
-    public Post() {
+    private Post() {
         this.appStateService = SpringContext.getBean(AppStateService.class);
     }
 
-    public Post(String title, String url, List<Image> images, Map<String, Object> metadata, String postId, String threadId, String threadTitle, String forum, String destFolder) throws PostParseException {
+    public Post(String title, String url, List<Image> images, Map<String, Object> metadata, String postId, String threadId, String threadTitle, String forum) throws PostParseException {
         this();
-        this.destFolder = destFolder;
         this.title = title;
         this.url = url;
         this.images = images;
@@ -76,6 +77,11 @@ public class Post {
         if (!this.appStateService.newPost(this)) {
             throw new PostParseException("Post already loaded");
         }
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+        updateNotification();
     }
 
     public void setRemoved(boolean removed) {

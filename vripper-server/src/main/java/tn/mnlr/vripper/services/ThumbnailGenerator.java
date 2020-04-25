@@ -47,7 +47,7 @@ public class ThumbnailGenerator {
         @Override
         public byte[] load(CacheKey key) throws Exception {
             Post post = appStateExchange.getPost(key.getPostId());
-            File destinationFolder = pathService.getDownloadDestinationFolder(post.getTitle(), post.getForum(), post.getThreadTitle(), post.getMetadata(), post.getDestFolder());
+            File destinationFolder = pathService.getDownloadDestinationFolder(post);
             if (!destinationFolder.exists() || !destinationFolder.isDirectory()) {
                 return null;
             }

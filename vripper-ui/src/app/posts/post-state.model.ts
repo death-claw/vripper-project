@@ -11,6 +11,7 @@ export class PostState {
     public total: number,
     public hosts: string[],
     public previews: string[],
-    public thanked: boolean
+    public thanked: boolean,
+    public alternativeTitle: string[]
   ) {}
 }
