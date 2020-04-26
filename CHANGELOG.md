@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.11.2] - 2020-04-26
+### Changed
+- Bug fixes
+
 ## [2.11.1] - 2020-04-25
 ### Changed
 - Code source maintenance
