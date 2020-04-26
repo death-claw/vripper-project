@@ -37,7 +37,7 @@ export class GrabQueueComponent implements OnInit {
       },
       overlayLoadingTemplate: '<span></span>',
       overlayNoRowsTemplate: '<span></span>',
-      getRowNodeId: data => data['link'],
+      getRowNodeId: data => data['threadId'],
       onGridReady: () => {
         this.gridOptions.api.sizeColumnsToFit();
         this.dataSource = new GrabQueueDataSource(this.wsConnection, this.gridOptions, this.zone, this.notificationService);

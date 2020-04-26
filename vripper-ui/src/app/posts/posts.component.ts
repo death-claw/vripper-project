@@ -1,4 +1,4 @@
-import {PostsDataService} from '../posts-data.service';
+import {PostsDataService} from './posts-data.service';
 import {SelectionService} from '../selection-service';
 import {AfterViewInit, ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit} from '@angular/core';
 import {PostsDataSource} from './post.datasource';

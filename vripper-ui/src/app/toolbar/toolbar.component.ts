@@ -25,7 +25,7 @@ import {CMD} from '../common/cmd.enum';
 import {SelectionService} from '../selection-service';
 import {RowNode} from 'ag-grid-community';
 import {RemoveResponse} from '../common/remove-response.model';
-import {PostsDataService} from '../posts-data.service';
+import {PostsDataService} from '../posts/posts-data.service';
 
 @Component({
   selector: 'app-toolbar',

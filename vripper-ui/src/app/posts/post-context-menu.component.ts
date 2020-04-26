@@ -16,7 +16,7 @@ import {ConfirmDialogComponent} from '../common/confirmation-component/confirmat
 import {filter, flatMap} from 'rxjs/operators';
 import {RemoveResponse} from '../common/remove-response.model';
 import {CtxtMenuService} from "./ctxt-menu.service";
-import {PostsDataService} from "../posts-data.service";
+import {PostsDataService} from "./posts-data.service";
 import {AlternativeTitleComponent, AlternativeTitleDialog} from "./alternative-title/alternative-title.component";
 
 @Component({
@@ -61,7 +61,7 @@ import {AlternativeTitleComponent, AlternativeTitleDialog} from "./alternative-t
           <span>View Photos</span>
         </button>
         <button (click)="openRenameDialog()" mat-list-item>
-          <mat-icon>folder</mat-icon>
+          <mat-icon>edit</mat-icon>
           <span>Gallery name</span>
         </button>
         <button (click)="open()" *ngIf="electronService.isElectronApp" mat-list-item>

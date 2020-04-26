@@ -168,14 +168,15 @@ public class PostRestEndpoint {
 
     @GetMapping("/grab/{threadId}")
     @ResponseStatus(value = HttpStatus.OK)
-    public List<VRPostState> grab(@PathVariable("threadId") @NonNull ThreadId threadId) throws Exception {
-        QueuedVGLink queuedVGLink = appStateExchange.getQueue().values().stream().filter(e -> e.getThreadId().equals(threadId.getThreadId())).findFirst().orElseThrow();
+    public List<VRPostState> grab(@PathVariable("threadId") @NonNull String threadId) throws Exception {
+        QueuedVGLink queuedVGLink = appStateExchange.getQueue().values().stream().filter(e -> e.getThreadId().equals(threadId)).findFirst().orElseThrow();
         return vgHandler.getCache().get(queuedVGLink);
     }
 
     @PostMapping("/grab/remove")
     @ResponseStatus(value = HttpStatus.OK)
-    public void grabRemove(@RequestBody @NonNull ThreadId threadId) {
+    public ThreadId grabRemove(@RequestBody @NonNull ThreadId threadId) {
         vgHandler.remove(threadId.getThreadId());
+        return threadId;
     }
 }

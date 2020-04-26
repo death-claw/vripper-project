@@ -1,12 +1,11 @@
-import { flatMap, filter } from 'rxjs/operators';
-import { GrabQueueState } from './grab-queue.model';
-import { CMD } from './../common/cmd.enum';
-import { WSMessage } from './../common/ws-message.model';
-import { Subscription } from 'rxjs';
-import { WsConnectionService } from '../ws-connection.service';
-import { NotificationService } from '../notification.service';
-import { GridOptions } from 'ag-grid-community';
-import { NgZone } from '@angular/core';
+import {GrabQueueState} from './grab-queue.model';
+import {CMD} from './../common/cmd.enum';
+import {WSMessage} from './../common/ws-message.model';
+import {Subscription} from 'rxjs';
+import {WsConnectionService} from '../ws-connection.service';
+import {NotificationService} from '../notification.service';
+import {GridOptions, RowNode} from 'ag-grid-community';
+import {NgZone} from '@angular/core';
 
 export class GrabQueueDataSource {
   constructor(
@@ -14,7 +13,8 @@ export class GrabQueueDataSource {
     private gridOptions: GridOptions,
     private zone: NgZone,
     private notificationService: NotificationService
-  ) {}
+  ) {
+  }
 
   subscriptions: Subscription[] = [];
   grabQueueSub: Subscription;
@@ -30,13 +30,14 @@ export class GrabQueueDataSource {
               const toUpdate = [];
               const toRemove = [];
               e.forEach(v => {
+                const rowNode: RowNode = this.gridOptions.api.getRowNode(v.threadId);
                 if (v.removed) {
-                  if (this.gridOptions.api.getRowNode(v.link) != null) {
-                    toRemove.push(this.gridOptions.api.getRowNode(v.link).data);
+                  if (rowNode != null) {
+                    toRemove.push(rowNode.data);
                   }
                   return;
                 }
-                if (this.gridOptions.api.getRowNode(v.link) == null) {
+                if (rowNode == null) {
                   toAdd.push(v);
                 } else {
                   toUpdate.push(v);

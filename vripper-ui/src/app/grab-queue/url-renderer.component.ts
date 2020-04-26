@@ -2,7 +2,7 @@ import {ElectronService} from 'ngx-electron';
 import {MultiPostComponent} from '../multi-post/multi-post.component';
 import {ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit} from '@angular/core';
 import {AgRendererComponent} from 'ag-grid-angular';
-import {ICellRendererParams} from 'ag-grid-community';
+import {GridApi, ICellRendererParams} from 'ag-grid-community';
 import {GrabQueueState} from './grab-queue.model';
 import {MatDialog} from '@angular/material/dialog';
 import {MatSnackBar} from '@angular/material/snack-bar';
@@ -32,7 +32,7 @@ export class UrlGrabRendererComponent implements OnInit, OnDestroy, AgRendererCo
   }
 
   private grabQueue: GrabQueueState;
-  private params: ICellRendererParams;
+  private api: GridApi;
   private isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
 
   grabQueue$: Subject<GrabQueueState> = new BehaviorSubject(null);
@@ -69,6 +69,7 @@ export class UrlGrabRendererComponent implements OnInit, OnDestroy, AgRendererCo
   }
 
   agInit(params: ICellRendererParams): void {
+    this.api = params.api;
     this.grabQueue = params.data;
     this.grabQueue$.next(this.grabQueue);
   }
@@ -110,8 +111,9 @@ export class UrlGrabRendererComponent implements OnInit, OnDestroy, AgRendererCo
   }
 
   remove() {
-    this.httpClient.post(this.serverService.baseUrl + '/grab/remove', {threadId: this.grabQueue.threadId}).subscribe(
-      () => {
+    this.httpClient.post<ThreadId>(this.serverService.baseUrl + '/grab/remove', {threadId: this.grabQueue.threadId}).subscribe(
+      data => {
+        this.removeFromGrid(data);
       },
       error => {
         this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
@@ -120,4 +122,17 @@ export class UrlGrabRendererComponent implements OnInit, OnDestroy, AgRendererCo
       }
     );
   }
+
+  private removeFromGrid(data: ThreadId) {
+    const removeTx = [];
+    const nodeToDelete = this.api.getRowNode(data.threadId);
+    if (nodeToDelete != null) {
+      removeTx.push(nodeToDelete.data);
+    }
+    this.api.updateRowData({remove: removeTx});
+  }
+}
+
+interface ThreadId {
+  threadId: string;
 }

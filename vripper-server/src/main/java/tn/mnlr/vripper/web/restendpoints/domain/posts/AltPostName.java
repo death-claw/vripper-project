@@ -1,18 +1,15 @@
 package tn.mnlr.vripper.web.restendpoints.domain.posts;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @ToString
 public class AltPostName {
-    private final String postId;
-    private final String altName;
-
-    public AltPostName(String postId, String altName) {
-        this.postId = postId;
-        this.altName = altName;
-    }
+    private String postId;
+    private String altName;
 }
