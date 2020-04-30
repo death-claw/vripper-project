@@ -8,15 +8,15 @@
   padding-right: 15px;
 }
 
-.row-text > span {
+.row-text * {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
 
-  & .icon {
-    margin: 0 5px;
-    cursor: pointer;
-  }
+.icon {
+  margin: 0 5px;
+  cursor: pointer;
 }
 
 .title > p {

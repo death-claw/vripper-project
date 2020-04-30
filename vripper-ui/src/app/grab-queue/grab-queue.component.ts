@@ -1,5 +1,5 @@
 import {LinkCollectorService} from './../link-collector.service';
-import {UrlGrabRendererComponent} from './url-renderer.component';
+import {UrlGrabRendererComponent} from './renderer/url-renderer.component';
 import {GrabQueueDataSource} from './grab-queue.datasource';
 import {ChangeDetectionStrategy, Component, NgZone, OnInit} from '@angular/core';
 import {GridOptions} from 'ag-grid-community';

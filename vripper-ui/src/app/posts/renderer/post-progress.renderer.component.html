@@ -21,15 +21,16 @@
         <div class="checkbox" fxFlex="nogrow" style="width: 5px; height: 100%;"></div>
         <span class="row-text" fxFlex="grow" fxLayout="row" fxLayoutAlign="space-between center" fxLayoutGap="20px">
           <span fxLayout="row" fxLayoutAlign="center center">
-            <mat-icon class="icon" color="primary" [appPreview]="postState.previews">image</mat-icon>
+            <mat-icon class="icon" fxFlex="none" color="primary" [appPreview]="postState.previews">image</mat-icon>
             <span class="title">
               <p [title]="postState.title">{{
                 postState.title
                 }}</p>
-              <p><label>Alternative titles: </label>{{postState.alternativeTitle.join(', ')}}</p>
+              <p><label>Alternative titles: </label><span
+                [title]="postState?.alternativeTitle?.join(', ')">{{postState?.alternativeTitle?.join(', ') || 'none'}}</span></p>
             </span>
           </span>
-          <span [title]="postState.done + '/' + postState.total + ' from ' + postState.hosts"
+          <span fxFlex="none" [title]="postState.done + '/' + postState.total + ' from ' + postState.hosts"
           >{{ postState.done + '/' + postState.total }} from {{ postState.hosts }}</span>
         </span>
       </div>

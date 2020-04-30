@@ -1,5 +1,5 @@
-import {WsConnectionService} from '../ws-connection.service';
-import {PostState} from './post-state.model';
+import {WsConnectionService} from '../../ws-connection.service';
+import {PostState} from '../../domain/post-state.model';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -14,7 +14,7 @@ import {BehaviorSubject, Subject, Subscription} from 'rxjs';
 import {GridApi, ICellRendererParams, RowNode} from 'ag-grid-community';
 import {ElectronService} from 'ngx-electron';
 import {MatDialog} from '@angular/material/dialog';
-import {CtxtMenuService} from "./ctxt-menu.service";
+import {CtxtMenuService} from "../context-menu/ctxt-menu.service";
 
 @Component({
   selector: 'app-progress-cell',

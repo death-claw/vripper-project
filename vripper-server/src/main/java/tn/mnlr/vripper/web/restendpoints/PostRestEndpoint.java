@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import tn.mnlr.vripper.entities.Post;
+import tn.mnlr.vripper.entities.Post.METADATA;
 import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.q.ExecutionService;
 import tn.mnlr.vripper.services.*;
@@ -149,6 +150,25 @@ public class PostRestEndpoint {
                 pathService.rename(post, altPostName.getAltName());
             } catch (Exception e) {
                 throw new ServerErrorException(e.getMessage());
+            }
+        }
+        return postToRename;
+    }
+
+    @PostMapping("/post/rename/first")
+    @ResponseStatus(value = HttpStatus.OK)
+    public List<PostId> renameFirst(@RequestBody @NonNull List<PostId> postToRename) {
+        for (PostId postId : postToRename) {
+            Post post = appStateExchange.getPost(postId.getPostId());
+            if (post.getMetadata().get(METADATA.RESOLVED_NAME.name()) != null) {
+                List<String> resolvedNames = ((List<String>) post.getMetadata().get(METADATA.RESOLVED_NAME.name()));
+                if (!resolvedNames.isEmpty()) {
+                    try {
+                        pathService.rename(post, resolvedNames.get(0));
+                    } catch (Exception e) {
+                        throw new ServerErrorException(e.getMessage());
+                    }
+                }
             }
         }
         return postToRename;

@@ -1,9 +1,9 @@
-import { AppPreviewComponent } from './preview-tooltip.component';
-import { Directive, Input, HostListener, ComponentRef, OnInit, ElementRef, NgZone, OnDestroy } from '@angular/core';
-import { OverlayRef, Overlay, OverlayPositionBuilder } from '@angular/cdk/overlay';
-import { ComponentPortal } from '@angular/cdk/portal';
+import {AppPreviewComponent} from './preview-tooltip.component';
+import {ComponentRef, Directive, ElementRef, HostListener, Input, NgZone, OnDestroy, OnInit} from '@angular/core';
+import {Overlay, OverlayPositionBuilder, OverlayRef} from '@angular/cdk/overlay';
+import {ComponentPortal} from '@angular/cdk/portal';
 
-@Directive({ selector: '[appPreview]' })
+@Directive({selector: '[appPreview]'})
 export class AppPreviewDirective implements OnInit, OnDestroy {
   private overlayRef: OverlayRef;
   tooltipPortal = new ComponentPortal(AppPreviewComponent);

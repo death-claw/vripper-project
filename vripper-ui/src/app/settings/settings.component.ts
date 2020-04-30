@@ -7,7 +7,7 @@ import {FormControl, FormGroup} from '@angular/forms';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {ServerService} from '../server-service';
 import {ElectronService} from 'ngx-electron';
-import {Settings} from '../common/settings.model';
+import {Settings} from '../domain/settings.model';
 import {OpenDialogReturnValue} from 'electron';
 import {BehaviorSubject, Subject} from 'rxjs';
 

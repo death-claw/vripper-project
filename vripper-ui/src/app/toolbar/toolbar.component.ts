@@ -7,25 +7,26 @@ import {
   OnDestroy,
   OnInit
 } from '@angular/core';
-import {RemoveAllResponse} from '../common/remove-all-response.model';
+import {RemoveAllResponse} from '../domain/remove-all-response.model';
 import {ServerService} from '../server-service';
 import {AppService} from '../app.service';
 import {HttpClient} from '@angular/common/http';
 import {MatDialog} from '@angular/material/dialog';
 import {MatSnackBar} from '@angular/material/snack-bar';
-import {ConfirmDialogComponent} from '../common/confirmation-component/confirmation-dialog';
+import {ConfirmDialogComponent} from '../confirmation-component/confirmation-dialog';
 import {filter, flatMap} from 'rxjs/operators';
-import {LoggedUser} from '../common/logged-user.model';
+import {LoggedUser} from '../domain/logged-user.model';
 import {SettingsComponent} from '../settings/settings.component';
 import {Observable, Subscription} from 'rxjs';
 import {BreakpointObserver, Breakpoints, BreakpointState} from '@angular/cdk/layout';
 import {WsConnectionService} from '../ws-connection.service';
-import {WSMessage} from '../common/ws-message.model';
-import {CMD} from '../common/cmd.enum';
+import {WSMessage} from '../domain/ws-message.model';
+import {CMD} from '../domain/cmd.enum';
 import {SelectionService} from '../selection-service';
 import {RowNode} from 'ag-grid-community';
-import {RemoveResponse} from '../common/remove-response.model';
+import {RemoveResponse} from '../domain/remove-response.model';
 import {PostsDataService} from '../posts/posts-data.service';
+import {PostId} from "../domain/post-id.model";
 
 @Component({
   selector: 'app-toolbar',
@@ -145,11 +146,28 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
     );
   }
 
+  rename() {
+    const toRename = [];
+    this.selected.forEach(e => toRename.push(e.data.postId));
+    this.httpClient.post<PostId[]>(this.serverService.baseUrl + '/post/rename/first', toRename).subscribe(
+      () => {
+        this._snackBar.open('Galleries renamed', null, {
+          duration: 5000
+        });
+      },
+      error => {
+        this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
+          duration: 5000
+        });
+      }
+    );
+  }
+
   clear() {
     this.ngZone.run(() => {
       this.httpClient.post<RemoveAllResponse>(this.serverService.baseUrl + '/post/clear/all', {}).subscribe(
         data => {
-          this._snackBar.open(`${data.removed} items cleared`, null, { duration: 5000 });
+          this._snackBar.open(`${data.removed} items cleared`, null, {duration: 5000});
         },
         error => {
           this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {

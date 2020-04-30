@@ -31,8 +31,8 @@
 @import 'mat-theme.scss';
 @import 'src/app/status-bar/status-bar.component.scss-theme';
 @import 'app/app.component.scss-theme.scss';
-@import 'app/posts/post-progress.renderer.component.scss-theme.scss';
-@import 'app/post-detail/post-details-progress.component.scss-theme.scss';
+@import 'src/app/posts/renderer/post-progress.renderer.component.scss-theme';
+@import 'src/app/post-progress/renderer/post-details-progress.component.scss-theme';
 @import 'grid-theme.scss';
 
 @mixin custom-components-theme($theme) {

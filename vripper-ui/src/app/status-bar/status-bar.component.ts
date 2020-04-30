@@ -8,12 +8,12 @@ import {
   OnDestroy,
   OnInit
 } from '@angular/core';
-import {DownloadSpeed} from '../common/download-speed.model';
+import {DownloadSpeed} from '../domain/download-speed.model';
 import {WsConnectionService} from '../ws-connection.service';
 import {Subscription} from 'rxjs';
-import {GlobalState} from '../common/global-state.model';
-import {WSMessage} from '../common/ws-message.model';
-import {CMD} from '../common/cmd.enum';
+import {GlobalState} from '../domain/global-state.model';
+import {WSMessage} from '../domain/ws-message.model';
+import {CMD} from '../domain/cmd.enum';
 
 @Component({
   selector: 'app-status-bar',

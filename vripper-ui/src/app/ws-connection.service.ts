@@ -4,13 +4,13 @@ import {WebSocketSubject} from 'rxjs/webSocket';
 import {environment} from 'src/environments/environment';
 import {ElectronService} from 'ngx-electron';
 import {ServerService} from './server-service';
-import {GrabQueueState} from './grab-queue/grab-queue.model';
-import {WSMessage} from './common/ws-message.model';
-import {PostDetails} from './post-detail/post-details.model';
-import {PostState} from './posts/post-state.model';
-import {LoggedUser} from './common/logged-user.model';
-import {DownloadSpeed} from './common/download-speed.model';
-import {GlobalState} from './common/global-state.model';
+import {GrabQueueState} from './domain/grab-queue.model';
+import {WSMessage} from './domain/ws-message.model';
+import {PostDetails} from './domain/post-details.model';
+import {PostState} from './domain/post-state.model';
+import {LoggedUser} from './domain/logged-user.model';
+import {DownloadSpeed} from './domain/download-speed.model';
+import {GlobalState} from './domain/global-state.model';
 import {filter, map} from 'rxjs/operators';
 
 @Injectable({

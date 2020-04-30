@@ -1,11 +1,11 @@
 import {GridOptions} from 'ag-grid-community';
 import {Subscription} from 'rxjs';
 import {WsConnectionService} from '../ws-connection.service';
-import {WSMessage} from '../common/ws-message.model';
-import {CMD} from '../common/cmd.enum';
+import {WSMessage} from '../domain/ws-message.model';
+import {CMD} from '../domain/cmd.enum';
 import {NgZone} from '@angular/core';
 
-export class PostDetailsDataSource {
+export class PostDetailDatasource {
   constructor(
     private ws: WsConnectionService,
     private gridOptions: GridOptions,

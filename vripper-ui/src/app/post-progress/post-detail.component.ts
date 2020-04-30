@@ -1,11 +1,11 @@
-import {PostDetailsProgressRendererComponent} from './post-details-progress.component';
+import {PostDetailsProgressRendererComponent} from './renderer/post-details-progress.component';
 import {WsConnectionService} from './../ws-connection.service';
 import {ChangeDetectionStrategy, Component, Inject, NgZone, OnDestroy, OnInit} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {PostDetailsDataSource} from './post-details.datasource';
-import {PostState} from '../posts/post-state.model';
+import {PostDetailDatasource} from './post-detail.datasource';
+import {PostState} from '../domain/post-state.model';
 import {GridOptions} from 'ag-grid-community';
-import {CtxtMenuService} from "./ctxt-menu.service";
+import {CtxtMenuService} from "./context-menu/ctxt-menu.service";
 
 @Component({
   selector: 'app-post-detail',
@@ -54,7 +54,7 @@ export class PostDetailComponent implements OnInit, OnDestroy {
       getRowNodeId: (data) => data['url'],
       onGridReady: () => {
         this.gridOptions.api.sizeColumnsToFit();
-        this.dataSource = new PostDetailsDataSource(this.wsConnection, this.gridOptions, this.dialogData.postId, this.zone);
+        this.dataSource = new PostDetailDatasource(this.wsConnection, this.gridOptions, this.dialogData.postId, this.zone);
         this.dataSource.connect();
       },
       onGridSizeChanged: () => this.gridOptions.api.sizeColumnsToFit(),
@@ -65,7 +65,7 @@ export class PostDetailComponent implements OnInit, OnDestroy {
   }
 
   gridOptions: GridOptions;
-  dataSource: PostDetailsDataSource;
+  dataSource: PostDetailDatasource;
 
   ngOnInit() {
   }

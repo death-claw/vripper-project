@@ -1,5 +1,5 @@
 import {ComponentRef, Injectable} from '@angular/core';
-import {PostDetails} from "./post-details.model";
+import {PostDetails} from "../../domain/post-details.model";
 import {PostDetailsContextMenuComponent} from "./post-details-context-menu.component";
 import {fromEvent, Subscription} from "rxjs";
 import {filter, take} from "rxjs/operators";

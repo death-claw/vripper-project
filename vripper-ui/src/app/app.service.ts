@@ -1,4 +1,4 @@
-import {Settings} from './common/settings.model';
+import {Settings} from './domain/settings.model';
 import {environment} from 'src/environments/environment';
 import {MatDialog} from '@angular/material/dialog';
 import {HttpClient} from '@angular/common/http';

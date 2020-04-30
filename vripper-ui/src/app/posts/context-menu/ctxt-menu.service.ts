@@ -3,7 +3,7 @@ import {ComponentPortal} from "@angular/cdk/portal";
 import {PostContextMenuComponent} from "./post-context-menu.component";
 import {Overlay, OverlayPositionBuilder, OverlayRef} from "@angular/cdk/overlay";
 import {fromEvent, Subscription} from "rxjs";
-import {PostState} from "./post-state.model";
+import {PostState} from "../../domain/post-state.model";
 import {filter, take} from "rxjs/operators";
 
 @Injectable({

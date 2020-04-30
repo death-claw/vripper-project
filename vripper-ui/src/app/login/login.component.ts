@@ -1,6 +1,6 @@
-import { Component, OnInit, HostBinding } from '@angular/core';
-import { SafeStyle, DomSanitizer } from '@angular/platform-browser';
-import { Credentials } from '../common/credential.model';
+import {Component, HostBinding, OnInit} from '@angular/core';
+import {DomSanitizer, SafeStyle} from '@angular/platform-browser';
+import {Credentials} from '../domain/credential.model';
 
 @Component({
   selector: 'app-login',

@@ -1,5 +1,5 @@
 import {finalize} from 'rxjs/operators';
-import {VRPostParse} from './../common/vr-post-parse.model';
+import {VRPostParse} from '../domain/vr-post-parse.model';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -13,11 +13,11 @@ import {
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {GridOptions, RowNode} from 'ag-grid-community';
-import {UrlRendererComponent} from './url-renderer.component';
+import {UrlRendererComponent} from './renderer/url-renderer.component';
 import {BehaviorSubject, Subject, Subscription} from 'rxjs';
 import {HttpClient} from '@angular/common/http';
 import {ServerService} from '../server-service';
-import {GrabQueueState} from '../grab-queue/grab-queue.model';
+import {GrabQueueState} from '../domain/grab-queue.model';
 
 @Component({
   selector: 'app-multi-post',

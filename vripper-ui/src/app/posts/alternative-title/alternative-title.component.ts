@@ -1,11 +1,11 @@
-import {Component, Inject, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, Inject, OnInit} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from "@angular/material/dialog";
-import {RenamePostModel} from "../../common/rename-post.model";
+import {RenamePostModel} from "../../domain/rename-post.model";
 import {HttpClient} from "@angular/common/http";
 import {ServerService} from "../../server-service";
 import {MatSnackBar} from "@angular/material/snack-bar";
 import {FormControl, FormGroup, Validators} from "@angular/forms";
-import {PostState} from "../post-state.model";
+import {PostState} from "../../domain/post-state.model";
 
 export interface AlternativeTitleDialog {
   post: PostState
@@ -14,7 +14,8 @@ export interface AlternativeTitleDialog {
 @Component({
   selector: 'app-alternative-title',
   templateUrl: './alternative-title.component.html',
-  styleUrls: ['./alternative-title.component.scss']
+  styleUrls: ['./alternative-title.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AlternativeTitleComponent implements OnInit {
 
@@ -28,6 +29,9 @@ export class AlternativeTitleComponent implements OnInit {
 
   ngOnInit(): void {
     this.form.get('altNameSelect').valueChanges.subscribe(v => this.form.get('altNameInput').setValue(v));
+    if (this.data.post.alternativeTitle == null || this.data.post.alternativeTitle.length == 0) {
+      this.form.get('altNameInput').setValue(this.data.post.title);
+    }
   }
 
   form = new FormGroup({

@@ -1,10 +1,10 @@
-import { Subject, Observable } from 'rxjs';
-import { ElectronService } from 'ngx-electron';
-import { Injectable } from '@angular/core';
-import { Clipboard } from 'electron';
-import { HttpClient } from '@angular/common/http';
-import { Settings } from './common/settings.model';
-import { ServerService } from './server-service';
+import {Observable, Subject} from 'rxjs';
+import {ElectronService} from 'ngx-electron';
+import {Injectable} from '@angular/core';
+import {Clipboard} from 'electron';
+import {HttpClient} from '@angular/common/http';
+import {Settings} from './domain/settings.model';
+import {ServerService} from './server-service';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +13,7 @@ export class ClipboardService {
   private links$: Subject<string> = new Subject();
   private interval: NodeJS.Timer;
   private lastText = '';
+
   constructor(
     private electronService: ElectronService,
     private serverService: ServerService,

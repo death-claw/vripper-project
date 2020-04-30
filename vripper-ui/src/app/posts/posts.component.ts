@@ -4,9 +4,9 @@ import {AfterViewInit, ChangeDetectionStrategy, Component, NgZone, OnDestroy, On
 import {PostsDataSource} from './post.datasource';
 import {WsConnectionService} from '../ws-connection.service';
 import {GridOptions} from 'ag-grid-community';
-import {PostProgressRendererComponent} from './post-progress.renderer.component';
+import {PostProgressRendererComponent} from './renderer/post-progress.renderer.component';
 import {Subject} from 'rxjs';
-import {CtxtMenuService} from "./ctxt-menu.service";
+import {CtxtMenuService} from "./context-menu/ctxt-menu.service";
 
 @Component({
   selector: 'app-posts',

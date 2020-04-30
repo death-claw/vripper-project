@@ -1,87 +1,29 @@
-import {AppService} from '../app.service';
-import {GalleryComponent} from '../gallery/gallery.component';
-import {ServerService} from '../server-service';
+import {AppService} from '../../app.service';
+import {GalleryComponent} from '../../gallery/gallery.component';
+import {ServerService} from '../../server-service';
 import {HttpClient, HttpErrorResponse} from '@angular/common/http';
 import {ElectronService} from 'ngx-electron';
 import {ChangeDetectionStrategy, Component, NgZone} from '@angular/core';
 import {animate, state, style, transition, trigger} from '@angular/animations';
 import {MatDialog, MatDialogConfig} from '@angular/material/dialog';
 import {MatSnackBar} from '@angular/material/snack-bar';
-import {PostDetailComponent} from '../post-detail/post-detail.component';
+import {PostDetailComponent} from '../../post-progress/post-detail.component';
 import {BehaviorSubject, Observable, Subject} from 'rxjs';
 import {BreakpointObserver, Breakpoints, BreakpointState} from '@angular/cdk/layout';
-import {PostState} from './post-state.model';
-import {DownloadPath} from '../common/download-path.model';
-import {ConfirmDialogComponent} from '../common/confirmation-component/confirmation-dialog';
+import {PostState} from '../../domain/post-state.model';
+import {DownloadPath} from '../../domain/download-path.model';
+import {ConfirmDialogComponent} from '../../confirmation-component/confirmation-dialog';
 import {filter, flatMap} from 'rxjs/operators';
-import {RemoveResponse} from '../common/remove-response.model';
+import {RemoveResponse} from '../../domain/remove-response.model';
 import {CtxtMenuService} from "./ctxt-menu.service";
-import {PostsDataService} from "./posts-data.service";
-import {AlternativeTitleComponent, AlternativeTitleDialog} from "./alternative-title/alternative-title.component";
+import {PostsDataService} from "../posts-data.service";
+import {AlternativeTitleComponent, AlternativeTitleDialog} from "../alternative-title/alternative-title.component";
+import {PostId} from "../../domain/post-id.model";
 
 @Component({
   selector: 'app-post-ctx-menu',
-  template: `
-    <mat-card class="mat-elevation-z4">
-      <mat-action-list>
-        <button (click)="goTo()" ngxClipboard [cbContent]="postState.url" mat-list-item>
-          <mat-icon>open_in_new</mat-icon>
-          <span>Open link</span>
-        </button>
-        <button
-          (click)="restart()"
-          *ngIf="
-            (postState.status === 'COMPLETE' && postState.progress !== 100) ||
-            postState.status === 'ERROR' ||
-            postState.status === 'STOPPED'
-          "
-          mat-list-item
-        >
-          <mat-icon>play_arrow</mat-icon>
-          <span>{{postState.progress == 0 ? 'Start' : 'Resume'}}</span>
-        </button>
-        <button
-          (click)="stop()"
-          *ngIf="postState.status === 'DOWNLOADING' || postState.status === 'PARTIAL' || postState.status === 'PENDING'"
-          mat-list-item
-        >
-          <mat-icon>stop</mat-icon>
-          <span>Stop</span>
-        </button>
-        <button (click)="remove()" mat-list-item>
-          <mat-icon>delete</mat-icon>
-          <span>Remove</span>
-        </button>
-        <button (click)="seeDetails()" mat-list-item>
-          <mat-icon>list</mat-icon>
-          <span>Files</span>
-        </button>
-        <button *ngIf="isViewEnabled | async" (click)="openGallery()" mat-list-item>
-          <mat-icon>photo_library</mat-icon>
-          <span>View Photos</span>
-        </button>
-        <button (click)="openRenameDialog()" mat-list-item>
-          <mat-icon>edit</mat-icon>
-          <span>Gallery name</span>
-        </button>
-        <button (click)="open()" *ngIf="electronService.isElectronApp" mat-list-item>
-          <mat-icon>folder</mat-icon>
-          <span>Download Location</span>
-        </button>
-      </mat-action-list>
-    </mat-card>
-  `,
-  styles: [
-      `
-      mat-card {
-        padding: 0 0 8px 0;
-      }
-
-      mat-icon {
-        margin-right: 5px;
-      }
-    `
-  ],
+  templateUrl: 'post-context-menu.component.html',
+  styleUrls: ['post-context-menu.component.scss'],
   animations: [
     trigger('simpleFadeAnimation', [
       state('in', style({opacity: 1})),
@@ -170,6 +112,21 @@ export class PostContextMenuComponent {
           }
         );
     });
+  }
+
+  useAltTitle() {
+    this.contextMenuService.closePostCtxtMenu();
+    this.httpClient.post<PostId[]>(this.serverService.baseUrl + '/post/rename/first', [{
+      postId: this.postState.postId
+    }]).subscribe(
+      () => {
+      },
+      error => {
+        this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
+          duration: 5000
+        });
+      }
+    );
   }
 
   openRenameDialog() {

@@ -1,5 +1,5 @@
 import {ChangeDetectionStrategy, Component} from '@angular/core';
-import {PostDetails} from './post-details.model';
+import {PostDetails} from '../../domain/post-details.model';
 import {CtxtMenuService} from "./ctxt-menu.service";
 import {ElectronService} from "ngx-electron";
 

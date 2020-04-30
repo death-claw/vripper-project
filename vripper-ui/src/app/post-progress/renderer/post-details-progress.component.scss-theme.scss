@@ -1,4 +1,4 @@
-@import '~@angular/material/theming';
+@import 'node_modules/@angular/material/theming';
 
 @mixin post-detail-renderer-component-theme($theme) {
   $blue: mat-palette($mat-blue);

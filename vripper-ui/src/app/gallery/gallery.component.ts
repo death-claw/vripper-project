@@ -4,7 +4,7 @@ import {HttpClient} from '@angular/common/http';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {ServerService} from '../server-service';
-import {PostState} from '../posts/post-state.model';
+import {PostState} from '../domain/post-state.model';
 import {BehaviorSubject, Subject} from 'rxjs';
 
 class Image extends IImage {

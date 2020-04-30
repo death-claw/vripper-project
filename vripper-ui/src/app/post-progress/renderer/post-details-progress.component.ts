@@ -1,4 +1,4 @@
-import {WsConnectionService} from '../ws-connection.service';
+import {WsConnectionService} from '../../ws-connection.service';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -10,10 +10,10 @@ import {
 } from '@angular/core';
 import {AgRendererComponent} from 'ag-grid-angular';
 import {BehaviorSubject, Subject, Subscription} from 'rxjs';
-import {PostDetails} from './post-details.model';
+import {PostDetails} from '../../domain/post-details.model';
 import {ICellRendererParams} from 'ag-grid-community';
 import {ElectronService} from 'ngx-electron';
-import {CtxtMenuService} from "./ctxt-menu.service";
+import {CtxtMenuService} from "../context-menu/ctxt-menu.service";
 
 @Component({
   selector: 'app-details-cell',

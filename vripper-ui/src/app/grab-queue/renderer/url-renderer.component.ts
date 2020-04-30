@@ -1,16 +1,16 @@
 import {ElectronService} from 'ngx-electron';
-import {MultiPostComponent} from '../multi-post/multi-post.component';
+import {MultiPostComponent} from '../../multi-post/multi-post.component';
 import {ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit} from '@angular/core';
 import {AgRendererComponent} from 'ag-grid-angular';
 import {GridApi, ICellRendererParams} from 'ag-grid-community';
-import {GrabQueueState} from './grab-queue.model';
+import {GrabQueueState} from '../../domain/grab-queue.model';
 import {MatDialog} from '@angular/material/dialog';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {BreakpointObserver, Breakpoints, BreakpointState} from '@angular/cdk/layout';
 import {BehaviorSubject, Observable, Subject, Subscription} from 'rxjs';
-import {ServerService} from '../server-service';
+import {ServerService} from '../../server-service';
 import {HttpClient} from '@angular/common/http';
-import {WsConnectionService} from "../ws-connection.service";
+import {WsConnectionService} from "../../ws-connection.service";
 
 @Component({
   selector: 'app-url-cell-grab',

@@ -1,20 +1,17 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
-import { AgRendererComponent } from 'ag-grid-angular';
-import { ICellRendererParams } from 'ag-grid-community';
-import { VRPostParse } from '../common/vr-post-parse.model';
-import { ElectronService } from 'ngx-electron';
+import {ChangeDetectionStrategy, Component, OnDestroy, OnInit} from '@angular/core';
+import {AgRendererComponent} from 'ag-grid-angular';
+import {ICellRendererParams} from 'ag-grid-community';
+import {VRPostParse} from '../../domain/vr-post-parse.model';
+import {ElectronService} from 'ngx-electron';
 
 @Component({
   selector: 'app-url-cell',
-  template: `
-    <a href="javascript:void(0)" [appPreview]="postResult.previews" (click)="goTo()"
-      >https://vipergirls/threads/?p={{ postResult.postId }}</a
-    >
-  `,
+  templateUrl: 'url-renderer.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UrlRendererComponent implements OnInit, OnDestroy, AgRendererComponent {
-  constructor(public electronService: ElectronService) {}
+  constructor(public electronService: ElectronService) {
+  }
 
   postResult: VRPostParse;
   params: ICellRendererParams;
