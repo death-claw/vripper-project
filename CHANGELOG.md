@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.11.3] - 2020-04-30
+### Changed
+- Source code restructure
+- UI fixes and enhancements
+### Added
+- Add menu entry to rename a gallery to first alternative title
+ -Add menu on toolbar for massive rename to first alternative title
+
 ## [2.11.2] - 2020-04-26
 ### Changed
 - Bug fixes
