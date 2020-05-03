@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.11.4] - 2020-05-03
+### Changed
+- Code cleanup
+- Dependencies update
+
 ## [2.11.3] - 2020-04-30
 ### Changed
 - Source code restructure
