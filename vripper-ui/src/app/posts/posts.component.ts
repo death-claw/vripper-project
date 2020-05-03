@@ -35,7 +35,6 @@ export class PostsComponent implements OnInit, OnDestroy, AfterViewInit {
           headerCheckboxSelectionFilteredOnly: true
         }
       ],
-      rowBuffer: 200,
       rowHeight: 60,
       animateRows: true,
       rowSelection: 'multiple',
