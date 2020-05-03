@@ -28,13 +28,7 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss",
-              "./node_modules/photoswipe/dist/photoswipe.css",
-              "./node_modules/photoswipe/dist/default-skin/default-skin.css"
-            ],
-            "scripts": [
-              "./node_modules/photoswipe/dist/photoswipe.min.js",
-              "./node_modules/photoswipe/dist/photoswipe-ui-default.min.js"
+              "src/styles.scss"
             ]
           },
           "configurations": {
@@ -93,13 +87,7 @@
             "tsConfig": "src/tsconfig.spec.json",
             "karmaConfig": "src/karma.conf.js",
             "styles": [
-              "src/styles.scss",
-              "./node_modules/photoswipe/dist/photoswipe.css",
-              "./node_modules/photoswipe/dist/default-skin/default-skin.css"
-            ],
-            "scripts": [
-              "./node_modules/photoswipe/dist/photoswipe.min.js",
-              "./node_modules/photoswipe/dist/photoswipe-ui-default.min.js"
+              "src/styles.scss"
             ],
             "assets": [
               "src/favicon.ico",

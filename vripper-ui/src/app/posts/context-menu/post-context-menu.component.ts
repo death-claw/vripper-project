@@ -1,5 +1,4 @@
 import {AppService} from '../../app.service';
-import {GalleryComponent} from '../../gallery/gallery.component';
 import {ServerService} from '../../server-service';
 import {HttpClient, HttpErrorResponse} from '@angular/common/http';
 import {ElectronService} from 'ngx-electron';
@@ -164,33 +163,6 @@ export class PostContextMenuComponent {
     this.contextMenuService.closePostCtxtMenu();
     this.ngZone.run(() => {
       const dialogRef = this.dialog.open(PostDetailComponent, {
-        width: '90%',
-        height: '90%',
-        maxWidth: '100vw',
-        maxHeight: '100vh',
-        data: this.postState
-      });
-
-      const smallDialogSubscription = this.isExtraSmall.subscribe(result => {
-        if (result.matches) {
-          dialogRef.updateSize('100%', '100%');
-        } else {
-          dialogRef.updateSize('90%', '90%');
-        }
-      });
-
-      dialogRef.afterClosed().subscribe(() => {
-        if (smallDialogSubscription != null) {
-          smallDialogSubscription.unsubscribe();
-        }
-      });
-    });
-  }
-
-  openGallery() {
-    this.contextMenuService.closePostCtxtMenu();
-    this.ngZone.run(() => {
-      const dialogRef = this.dialog.open(GalleryComponent, {
         width: '90%',
         height: '90%',
         maxWidth: '100vw',

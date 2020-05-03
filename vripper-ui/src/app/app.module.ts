@@ -10,13 +10,12 @@ import {PostsComponent} from './posts/posts.component';
 import {PostDetailComponent} from './post-progress/post-detail.component';
 import {FlexLayoutModule} from '@angular/flex-layout';
 import {AppRoutingModule} from './app-routing.module';
-import {HTTP_INTERCEPTORS, HttpClientModule} from '@angular/common/http';
+import {HttpClientModule} from '@angular/common/http';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {AgGridModule} from 'ag-grid-angular';
 import {PostProgressRendererComponent} from './posts/renderer/post-progress.renderer.component';
 import {PostDetailsProgressRendererComponent} from './post-progress/renderer/post-details-progress.component';
 import {LoginComponent} from './login/login.component';
-import {XhrInterceptorService} from './xhr-interceptor.service';
 import {HomeComponent} from './home/home.component';
 import {SettingsComponent} from './settings/settings.component';
 
@@ -32,8 +31,6 @@ import {StatusBarComponent} from './status-bar/status-bar.component';
 import {ToolbarComponent} from './toolbar/toolbar.component';
 import {GrabQueueComponent} from './grab-queue/grab-queue.component';
 import {UrlGrabRendererComponent} from './grab-queue/renderer/url-renderer.component';
-import {GalleryComponent} from './gallery/gallery.component';
-import {PhotoSwipeComponent} from './photo-swipe/photo-swipe.component';
 import {ClipboardModule} from 'ngx-clipboard';
 import {AlternativeTitleComponent} from './posts/alternative-title/alternative-title.component';
 
@@ -60,20 +57,17 @@ import {AlternativeTitleComponent} from './posts/alternative-title/alternative-t
     GrabQueueComponent,
     PostContextMenuComponent,
     PostDetailsContextMenuComponent,
-    GalleryComponent,
-    PhotoSwipeComponent,
     AlternativeTitleComponent
   ],
   entryComponents: [
-    PostDetailComponent,
-    SettingsComponent,
-    ConfirmDialogComponent,
-    AppPreviewComponent,
-    ScanComponent,
-    MultiPostComponent,
-    PostContextMenuComponent,
-    PostDetailsContextMenuComponent,
-    GalleryComponent
+    // PostDetailComponent,
+    // SettingsComponent,
+    // ConfirmDialogComponent,
+    // AppPreviewComponent,
+    // ScanComponent,
+    // MultiPostComponent,
+    // PostContextMenuComponent,
+    // PostDetailsContextMenuComponent
   ],
   imports: [
     BrowserAnimationsModule,
@@ -93,9 +87,7 @@ import {AlternativeTitleComponent} from './posts/alternative-title/alternative-t
     OverlayModule,
     ClipboardModule
   ],
-  providers: [
-    {provide: HTTP_INTERCEPTORS, useClass: XhrInterceptorService, multi: true}
-  ],
   bootstrap: [AppComponent]
 })
-export class AppModule {}
+export class AppModule {
+}
