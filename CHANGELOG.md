@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.11.5] - 2020-05-03
+### Changed
+- Reduce rows buffer size
+
 ## [2.11.4] - 2020-05-03
 ### Changed
 - Code cleanup
