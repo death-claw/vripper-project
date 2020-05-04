@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.11.6] - 2020-05-04
+### Changed
+- PNG filenames are now correctly named
+- Fix issue with special characters in post titles
+
 ## [2.11.5] - 2020-05-03
 ### Changed
 - Reduce rows buffer size
