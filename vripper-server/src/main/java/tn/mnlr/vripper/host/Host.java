@@ -178,6 +178,19 @@ abstract public class Host {
                         imageName = imageName.substring(0, imageName.length() - toReplace.length()) + ".jpg";
                     }
                 }
+            } else if (reader.getFormatName().toUpperCase().equals("PNG")) {
+                String imageNameLC = imageName.toLowerCase();
+                if (!imageNameLC.endsWith("_png")) {
+                    imageName += ".png";
+                } else {
+                    String toReplace = null;
+                    if (imageNameLC.endsWith("_png")) {
+                        toReplace = "_png";
+                    }
+                    if (toReplace != null) {
+                        imageName = imageName.substring(0, imageName.length() - toReplace.length()) + ".png";
+                    }
+                }
             }
         } catch (Exception e) {
             throw new HostException("Failed to guess image format", e);

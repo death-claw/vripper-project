@@ -42,7 +42,7 @@ public class PathService {
     private File _getDownloadDestinationFolder(@NonNull String forum, @NonNull String threadTitle, @NonNull String title) {
         File sourceFolder = appSettingsService.getSettings().getSubLocation() ? new File(appSettingsService.getSettings().getDownloadPath(), sanitize(forum)) : new File(appSettingsService.getSettings().getDownloadPath());
         sourceFolder = appSettingsService.getSettings().getThreadSubLocation() ? new File(sourceFolder, threadTitle) : sourceFolder;
-        return new File(sourceFolder, title);
+        return new File(sourceFolder, sanitize(title));
     }
 
     public synchronized final void createDefaultPostFolder(Post post) {
