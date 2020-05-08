@@ -1,9 +1,5 @@
 <mat-card class="mat-elevation-z4">
   <mat-action-list>
-    <button (click)="goTo()" ngxClipboard [cbContent]="postState.url" mat-list-item>
-      <mat-icon>open_in_new</mat-icon>
-      <span>Open link</span>
-    </button>
     <button
       (click)="restart()"
       *ngIf="
@@ -32,10 +28,6 @@
       <mat-icon>list</mat-icon>
       <span>Files</span>
     </button>
-    <button *ngIf="isViewEnabled | async" (click)="openGallery()" mat-list-item>
-      <mat-icon>photo_library</mat-icon>
-      <span>View Photos</span>
-    </button>
     <button (click)="useAltTitle()" mat-list-item>
       <mat-icon>edit</mat-icon>
       <span>Use alternative title</span>
@@ -43,6 +35,10 @@
     <button (click)="openRenameDialog()" mat-list-item>
       <mat-icon>edit</mat-icon>
       <span>Rename</span>
+    </button>
+    <button (click)="goTo()" ngxClipboard [cbContent]="postState.url" mat-list-item>
+      <mat-icon>open_in_new</mat-icon>
+      <span>Open link</span>
     </button>
     <button (click)="open()" *ngIf="electronService.isElectronApp" mat-list-item>
       <mat-icon>folder</mat-icon>

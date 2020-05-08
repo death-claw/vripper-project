@@ -42,11 +42,11 @@ public class PathService {
     private File _getDownloadDestinationFolder(@NonNull String forum, @NonNull String threadTitle, @NonNull String title) {
         File sourceFolder = appSettingsService.getSettings().getSubLocation() ? new File(appSettingsService.getSettings().getDownloadPath(), sanitize(forum)) : new File(appSettingsService.getSettings().getDownloadPath());
         sourceFolder = appSettingsService.getSettings().getThreadSubLocation() ? new File(sourceFolder, threadTitle) : sourceFolder;
-        return new File(sourceFolder, sanitize(title));
+        return new File(sourceFolder, title);
     }
 
     public synchronized final void createDefaultPostFolder(Post post) {
-        File sourceFolder = _getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), post.getTitle());
+        File sourceFolder = _getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), sanitize(post.getTitle()));
         File destFolder = makeDirs(sourceFolder);
         post.setPostFolderName(destFolder.getName());
     }
@@ -56,7 +56,7 @@ public class PathService {
         if (post.getPostFolderName() == null) {
             return;
         }
-        File newDestFolder = makeDirs(_getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), altName));
+        File newDestFolder = makeDirs(_getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), sanitize(altName)));
         File currentDesFolder = getDownloadDestinationFolder(post);
         post.setPostFolderName(newDestFolder.getName());
 
