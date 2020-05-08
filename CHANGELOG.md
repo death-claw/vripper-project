@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.11.7] - 2020-05-08
+### Changed
+- Fix bug with paths creation
+- Move Open Link button
+- Rename rename all title
+
 ## [2.11.6] - 2020-05-04
 ### Changed
 - PNG filenames are now correctly named
