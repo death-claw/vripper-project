@@ -170,6 +170,7 @@ class VRApiPostHandler extends DefaultHandler {
     private String threadTitle;
     private String postTitle;
     private String forum;
+    private String userHash;
     private int previewCounter = 0;
     private int index = 0;
     private int imageCount;
@@ -199,6 +200,9 @@ class VRApiPostHandler extends DefaultHandler {
         switch (qName.toLowerCase()) {
             case "forum":
                 forum = attributes.getValue("title").trim();
+                break;
+            case "user":
+                userHash = attributes.getValue("hash").trim();
                 break;
             case "thread":
                 threadTitle = attributes.getValue("title").trim();
@@ -249,7 +253,8 @@ class VRApiPostHandler extends DefaultHandler {
                             postId,
                             threadId,
                             threadTitle,
-                            forum);
+                            forum,
+                            userHash);
                 } catch (PostParseException e) {
                     logger.error(String.format("Error occurred while parsing postId %s", postId));
                 }

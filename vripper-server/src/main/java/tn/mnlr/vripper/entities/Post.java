@@ -43,7 +43,7 @@ public class Post {
 
     private Map<String, Object> metadata;
 
-    private AtomicInteger done = new AtomicInteger(0);
+    private final AtomicInteger done = new AtomicInteger(0);
 
     private int total;
 
@@ -53,6 +53,8 @@ public class Post {
 
     private String forum;
 
+    private String securityToken;
+
     @Setter
     private String postFolderName;
 
@@ -60,7 +62,7 @@ public class Post {
         this.appStateService = SpringContext.getBean(AppStateService.class);
     }
 
-    public Post(String title, String url, List<Image> images, Map<String, Object> metadata, String postId, String threadId, String threadTitle, String forum) throws PostParseException {
+    public Post(String title, String url, List<Image> images, Map<String, Object> metadata, String postId, String threadId, String threadTitle, String forum, String securityToken) throws PostParseException {
         this();
         this.title = title;
         this.url = url;
@@ -70,6 +72,7 @@ public class Post {
         this.forum = forum;
         this.threadId = threadId;
         this.threadTitle = threadTitle;
+        this.securityToken = securityToken;
         this.hosts = this.images.stream().map(Image::getHost).map(Host::getHost).collect(Collectors.toSet());
         total = images.size();
         status = Status.STOPPED;
