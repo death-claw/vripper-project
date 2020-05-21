@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.12.0] - 2020-05-21
+### Changed
+- Use new user hash from the api
+
 ## [2.11.7] - 2020-05-08
 ### Changed
 - Fix bug with paths creation
