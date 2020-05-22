@@ -23,6 +23,7 @@ import tn.mnlr.vripper.host.Host;
 import javax.xml.parsers.SAXParserFactory;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static tn.mnlr.vripper.services.PostParser.VR_API;
@@ -131,18 +132,25 @@ class VRPostParser {
 
     private List<String> findTitleInContent(Node node) {
         List<String> altTitle = new ArrayList<>();
-        findTitle(node, altTitle);
+        findTitle(node, altTitle, new AtomicBoolean(true));
         return altTitle;
     }
 
-    private boolean findTitle(Node node, List<String> altTitle) {
+    private void findTitle(Node node, List<String> altTitle, AtomicBoolean keepGoing) {
+        if (!keepGoing.get()) {
+            return;
+        }
         if (node.getNodeName().equals("a") || node.getNodeName().equals("img")) {
-            return false;
+            keepGoing.set(false);
+            return;
         }
         if (node.getNodeType() == Node.ELEMENT_NODE) {
             for (int i = 0; i < node.getChildNodes().getLength(); i++) {
                 Node item = node.getChildNodes().item(i);
-                findTitle(item, altTitle);
+                findTitle(item, altTitle, keepGoing);
+                if (!keepGoing.get()) {
+                    return;
+                }
             }
 
         } else if (node.getNodeType() == Node.TEXT_NODE) {
@@ -151,7 +159,6 @@ class VRPostParser {
                 altTitle.add(text);
             }
         }
-        return true;
     }
 }
 
