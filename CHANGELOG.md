@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.12.1] - 2020-05-22
+### Changed
+- Fix alternative name bug
+
+## [2.12.0] - 2020-05-21
+### Changed
+- Use new user hash from the api
+
 ## [2.11.7] - 2020-05-08
 ### Changed
 - Fix bug with paths creation
