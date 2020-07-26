@@ -13,7 +13,7 @@
         fxLayoutAlign="space-between"
         style="background-color: transparent; width: 100%; height: 100%;"
       >
-        <div class="progress-bar" style="position: absolute; width: 100%; top: 37px">
+        <div class="progress-bar">
           <mat-progress-bar *ngIf="(loaded | async)" [value]="details.progress" class="example-margin" color="primary"
                             mode="determinate">
           </mat-progress-bar>

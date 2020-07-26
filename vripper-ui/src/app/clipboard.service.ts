@@ -1,17 +1,17 @@
 import {Observable, Subject} from 'rxjs';
 import {ElectronService} from 'ngx-electron';
 import {Injectable} from '@angular/core';
-import {Clipboard} from 'electron';
 import {HttpClient} from '@angular/common/http';
 import {Settings} from './domain/settings.model';
 import {ServerService} from './server-service';
+import Clipboard = Electron.Clipboard;
 
 @Injectable({
   providedIn: 'root'
 })
 export class ClipboardService {
   private links$: Subject<string> = new Subject();
-  private interval: NodeJS.Timer;
+  private interval;
   private lastText = '';
 
   constructor(

@@ -19,7 +19,6 @@ import {LoginComponent} from './login/login.component';
 import {HomeComponent} from './home/home.component';
 import {SettingsComponent} from './settings/settings.component';
 
-import {NgxElectronModule} from 'ngx-electron';
 import {ConfirmDialogComponent} from './confirmation-component/confirmation-dialog';
 import {MultiPostComponent} from './multi-post/multi-post.component';
 import {OverlayModule} from '@angular/cdk/overlay';
@@ -31,8 +30,8 @@ import {StatusBarComponent} from './status-bar/status-bar.component';
 import {ToolbarComponent} from './toolbar/toolbar.component';
 import {GrabQueueComponent} from './grab-queue/grab-queue.component';
 import {UrlGrabRendererComponent} from './grab-queue/renderer/url-renderer.component';
-import {ClipboardModule} from 'ngx-clipboard';
 import {AlternativeTitleComponent} from './posts/alternative-title/alternative-title.component';
+import {NgxElectronModule} from 'ngx-electron';
 
 @NgModule({
   declarations: [
@@ -59,16 +58,6 @@ import {AlternativeTitleComponent} from './posts/alternative-title/alternative-t
     PostDetailsContextMenuComponent,
     AlternativeTitleComponent
   ],
-  entryComponents: [
-    // PostDetailComponent,
-    // SettingsComponent,
-    // ConfirmDialogComponent,
-    // AppPreviewComponent,
-    // ScanComponent,
-    // MultiPostComponent,
-    // PostContextMenuComponent,
-    // PostDetailsContextMenuComponent
-  ],
   imports: [
     BrowserAnimationsModule,
     FormsModule,
@@ -76,7 +65,6 @@ import {AlternativeTitleComponent} from './posts/alternative-title/alternative-t
     MaterialModule,
     FlexLayoutModule,
     AppRoutingModule,
-    NgxElectronModule,
     ReactiveFormsModule,
     AgGridModule.withComponents([
       PostProgressRendererComponent,
@@ -85,7 +73,7 @@ import {AlternativeTitleComponent} from './posts/alternative-title/alternative-t
       UrlGrabRendererComponent
     ]),
     OverlayModule,
-    ClipboardModule
+    NgxElectronModule
   ],
   bootstrap: [AppComponent]
 })

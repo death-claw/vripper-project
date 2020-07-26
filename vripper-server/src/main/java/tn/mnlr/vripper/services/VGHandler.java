@@ -5,37 +5,39 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import lombok.Getter;
 import lombok.NonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import tn.mnlr.vripper.exception.PostParseException;
+import tn.mnlr.vripper.jpa.domain.Queued;
+import tn.mnlr.vripper.services.post.CachedPost;
+import tn.mnlr.vripper.services.post.PostService;
 
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@Slf4j
 public class VGHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(VGHandler.class);
-
-    private final AppStateService appStateService;
-    private final PostParser postParser;
+    private final PostDataService postDataService;
+    private final PostService postService;
     private final CommonExecutor commonExecutor;
 
     @Getter
-    private final LoadingCache<QueuedVGLink, List<VRPostState>> cache;
+    private final LoadingCache<Queued, List<CachedPost>> cache;
 
     @Autowired
-    public VGHandler(AppStateService appStateService, PostParser postParser, CommonExecutor commonExecutor) {
-        this.appStateService = appStateService;
-        this.postParser = postParser;
+    public VGHandler(PostDataService postDataService, PostService postService, CommonExecutor commonExecutor) {
+        this.postDataService = postDataService;
+        this.postService = postService;
         this.commonExecutor = commonExecutor;
 
-        CacheLoader<QueuedVGLink, List<VRPostState>> loader = new CacheLoader<>() {
+        CacheLoader<Queued, List<CachedPost>> loader = new CacheLoader<>() {
             @Override
-            public List<VRPostState> load(@NonNull QueuedVGLink queuedVGLink) throws Exception {
-                VRThreadParser vrThreadParser = postParser.createVRThreadParser(queuedVGLink);
+            public List<CachedPost> load(@NonNull Queued queuedVGLink) throws Exception {
+                VRThreadParser vrThreadParser = new VRThreadParser(queuedVGLink);
                 return vrThreadParser.parse();
             }
         };
@@ -45,31 +47,40 @@ public class VGHandler {
                 .build(loader);
     }
 
-    public void handle(List<QueuedVGLink> queuedVGLinks) throws Exception {
-        for (QueuedVGLink queuedVGLink : queuedVGLinks) {
-            if (queuedVGLink.getPostId() != null) {
-                postParser.addPost(queuedVGLink.getPostId(), queuedVGLink.getThreadId());
+    public void handle(List<Queued> queuedList) throws Exception {
+        for (Queued queued : queuedList) {
+            if (queued.getPostId() != null) {
+                postService.addPost(queued.getPostId(), queued.getThreadId());
             } else {
-                Callable<Void> cl = () -> {
-                    List<VRPostState> vrPostStates = cache.get(queuedVGLink);
-                    queuedVGLink.setCount(vrPostStates.size());
-                    queuedVGLink.done();
-                    logger.debug(String.format("%d found for %s", vrPostStates.size(), queuedVGLink.getLink()));
-                    if (vrPostStates.size() == 1) {
-                        queuedVGLink.remove();
-                        postParser.addPost(vrPostStates.get(0).getPostId(), vrPostStates.get(0).getThreadId());
-                        logger.debug(String.format("threadId %s, postId %s is added automatically for download", queuedVGLink.getThreadId(), queuedVGLink.getPostId()));
-                    } else {
-                        appStateService.newQueueLink(queuedVGLink);
+                Runnable runnable = () -> {
+                    List<CachedPost> cachedPosts;
+                    try {
+                        cachedPosts = cache.get(queued);
+                    } catch (ExecutionException e) {
+                        log.error(String.format("Failed to add post with thread id %s, postId %s", queued.getThreadId(), queued.getPostId()), e);
+                        return;
                     }
-                    return null;
+                    queued.setTotal(cachedPosts.size());
+                    queued.done();
+                    log.debug(String.format("%d found for %s", cachedPosts.size(), queued.getLink()));
+                    if (cachedPosts.size() == 1) {
+                        try {
+                            postService.addPost(cachedPosts.get(0).getPostId(), cachedPosts.get(0).getThreadId());
+                        } catch (PostParseException e) {
+                            log.error(String.format("Failed to add post with postId %s", cachedPosts.get(0).getPostId()), e);
+                            return;
+                        }
+                        log.debug(String.format("threadId %s, postId %s is added automatically for download", queued.getThreadId(), queued.getPostId()));
+                    } else {
+                        postDataService.newQueueLink(queued);
+                    }
                 };
-                commonExecutor.getGeneralExecutor().submit(cl);
+                commonExecutor.getGeneralExecutor().submit(runnable);
             }
         }
     }
 
     public void remove(String threadId) {
-        appStateService.removeQueueLink(threadId);
+        postDataService.removeQueueLink(threadId);
     }
 }

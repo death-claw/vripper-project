@@ -1,3 +1,3 @@
-export class LoggedUser {
-    constructor(public user: string) {}
+export interface LoggedUser {
+  user: string
 }

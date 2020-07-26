@@ -1,5 +1,6 @@
 package tn.mnlr.vripper.web.restendpoints;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -9,6 +10,7 @@ import tn.mnlr.vripper.services.VipergirlsAuthService;
 import tn.mnlr.vripper.web.restendpoints.exceptions.BadRequestException;
 
 @RestController
+@Slf4j
 @CrossOrigin(value = "*")
 public class SettingsRestEndpoint {
 
@@ -24,10 +26,8 @@ public class SettingsRestEndpoint {
     @PostMapping("/settings/theme")
     @ResponseStatus(value = HttpStatus.OK)
     public AppSettingsService.Theme postTheme(@RequestBody AppSettingsService.Theme theme) {
-        synchronized (this.appSettingsService) {
-            this.appSettingsService.setTheme(theme);
-            return appSettingsService.getTheme();
-        }
+        this.appSettingsService.setTheme(theme);
+        return appSettingsService.getTheme();
     }
 
     @GetMapping("/settings/theme")
@@ -40,16 +40,15 @@ public class SettingsRestEndpoint {
     @ResponseStatus(value = HttpStatus.OK)
     public AppSettingsService.Settings postSettings(@RequestBody AppSettingsService.Settings settings) throws Exception {
 
-        synchronized (this.appSettingsService) {
-            try {
-                this.appSettingsService.check(settings);
-            } catch (ValidationException e) {
-                throw new BadRequestException(e.getMessage());
-            }
-
-            this.appSettingsService.newSettings(settings);
-            vipergirlsAuthService.authenticate();
+        try {
+            this.appSettingsService.check(settings);
+        } catch (ValidationException e) {
+            log.error("Invalid settings", e);
+            throw new BadRequestException(e.getMessage());
         }
+
+        this.appSettingsService.newSettings(settings);
+        vipergirlsAuthService.authenticate();
         return getAppSettingsService();
     }
 

@@ -131,7 +131,7 @@ export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
       .subscribe(
         () => {},
         error => {
-          this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
+          this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
             duration: 5000
           });
         }
@@ -144,10 +144,10 @@ export class MultiPostComponent implements OnInit, OnDestroy, AfterViewInit {
       .pipe(finalize(() => this.loading.emit(false)))
       .subscribe(
         data => {
-          this.gridOptions.api.updateRowData({ add: data });
+          this.gridOptions.api.applyTransaction({add: data});
         },
         error => {
-          this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
+          this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
             duration: 5000
           });
         }

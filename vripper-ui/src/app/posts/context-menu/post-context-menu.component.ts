@@ -14,10 +14,10 @@ import {DownloadPath} from '../../domain/download-path.model';
 import {ConfirmDialogComponent} from '../../confirmation-component/confirmation-dialog';
 import {filter, flatMap} from 'rxjs/operators';
 import {RemoveResponse} from '../../domain/remove-response.model';
-import {CtxtMenuService} from "./ctxt-menu.service";
-import {PostsDataService} from "../posts-data.service";
-import {AlternativeTitleComponent, AlternativeTitleDialog} from "../alternative-title/alternative-title.component";
-import {PostId} from "../../domain/post-id.model";
+import {CtxtMenuService} from './ctxt-menu.service';
+import {PostsDataService} from '../posts-data.service';
+import {AlternativeTitleComponent, AlternativeTitleDialog} from '../alternative-title/alternative-title.component';
+import {PostId} from '../../domain/post-id.model';
 
 @Component({
   selector: 'app-post-ctx-menu',
@@ -66,7 +66,7 @@ export class PostContextMenuComponent {
         });
       },
       error => {
-        this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
+        this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000
         });
       }
@@ -105,7 +105,7 @@ export class PostContextMenuComponent {
             this.postsDataService.remove(data);
           },
           error => {
-            this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
+            this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
               duration: 5000
             });
           }
@@ -152,7 +152,7 @@ export class PostContextMenuComponent {
         });
       },
       error => {
-        this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
+        this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000
         });
       }
@@ -196,7 +196,7 @@ export class PostContextMenuComponent {
     this.httpClient.get<DownloadPath>(this.serverService.baseUrl + '/post/path/' + this.postState.postId).subscribe(
       path => {
         if (this.fs.existsSync(path.path)) {
-          this.electronService.shell.openItem(path.path);
+          this.electronService.shell.openPath(path.path).then();
         } else {
           this._snackBar.open(path.path + ' does not exist, you probably removed it', null, {
             duration: 5000

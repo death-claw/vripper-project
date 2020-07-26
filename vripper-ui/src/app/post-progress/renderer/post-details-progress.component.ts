@@ -12,8 +12,7 @@ import {AgRendererComponent} from 'ag-grid-angular';
 import {BehaviorSubject, Subject, Subscription} from 'rxjs';
 import {PostDetails} from '../../domain/post-details.model';
 import {ICellRendererParams} from 'ag-grid-community';
-import {ElectronService} from 'ngx-electron';
-import {CtxtMenuService} from "../context-menu/ctxt-menu.service";
+import {CtxtMenuService} from '../context-menu/ctxt-menu.service';
 
 @Component({
   selector: 'app-details-cell',
@@ -25,7 +24,6 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
   constructor(
     private ws: WsConnectionService,
     private zone: NgZone,
-    public electronService: ElectronService,
     private contextMenuService: CtxtMenuService) {
   }
 
@@ -43,21 +41,15 @@ export class PostDetailsProgressRendererComponent implements AgRendererComponent
   }
 
   ngOnInit(): void {
-    this.stateSub = this.ws.state.subscribe(state => {
-      if (state) {
-        this.postDetailsSub = this.ws.subscribeForPostDetails().subscribe(e => {
-          this.zone.run(() => {
-            e.forEach(v => {
-              if (this.postDetails.url === v.url) {
-                this.postDetails = v;
-                this.postDetails$.emit(this.postDetails);
-              }
-            });
-          });
+    this.postDetailsSub = this.ws.postDetails$(this.postDetails.postId).subscribe(e => {
+      this.zone.run(() => {
+        e.forEach(v => {
+          if (this.postDetails.url === v.url) {
+            this.postDetails = v;
+            this.postDetails$.emit(this.postDetails);
+          }
         });
-      } else if (this.postDetailsSub != null) {
-        this.postDetailsSub.unsubscribe();
-      }
+      });
     });
   }
 

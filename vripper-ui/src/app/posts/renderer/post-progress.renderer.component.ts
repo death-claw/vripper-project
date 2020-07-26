@@ -12,9 +12,8 @@ import {
 import {AgRendererComponent} from 'ag-grid-angular';
 import {BehaviorSubject, Subject, Subscription} from 'rxjs';
 import {GridApi, ICellRendererParams, RowNode} from 'ag-grid-community';
-import {ElectronService} from 'ngx-electron';
 import {MatDialog} from '@angular/material/dialog';
-import {CtxtMenuService} from "../context-menu/ctxt-menu.service";
+import {CtxtMenuService} from '../context-menu/ctxt-menu.service';
 
 @Component({
   selector: 'app-progress-cell',
@@ -26,7 +25,6 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
   constructor(
     private ws: WsConnectionService,
     private zone: NgZone,
-    public electronService: ElectronService,
     public dialog: MatDialog,
     private contextMenuService: CtxtMenuService
   ) {
@@ -44,21 +42,15 @@ export class PostProgressRendererComponent implements AgRendererComponent, OnIni
   stateSub: Subscription;
 
   ngOnInit(): void {
-    this.stateSub = this.ws.state.subscribe(state => {
-      if (state) {
-        this.postsSub = this.ws.subscribeForPosts().subscribe(e => {
-          this.zone.run(() => {
-            e.forEach(v => {
-              if (this.postState.postId === v.postId) {
-                this.postState = v;
-                this.postState$.emit(this.postState);
-              }
-            });
-          });
+    this.postsSub = this.ws.posts$.subscribe(e => {
+      this.zone.run(() => {
+        e.forEach(v => {
+          if (this.postState.postId === v.postId) {
+            this.postState = v;
+            this.postState$.emit(this.postState);
+          }
         });
-      } else if (this.postsSub != null) {
-        this.postsSub.unsubscribe();
-      }
+      });
     });
   }
 

@@ -1,38 +1,41 @@
 package tn.mnlr.vripper.q;
 
+import lombok.Getter;
+import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import tn.mnlr.vripper.entities.Image;
-import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.host.Host;
+import tn.mnlr.vripper.jpa.domain.Image;
+import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.services.AppSettingsService;
-import tn.mnlr.vripper.services.AppStateService;
+import tn.mnlr.vripper.services.PostDataService;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class DownloadQ {
 
     private static final Logger logger = LoggerFactory.getLogger(DownloadQ.class);
 
-    private final AppStateService appStateService;
+    private final PostDataService postDataService;
     private final AppSettingsService appSettingsService;
     private final List<Host> hosts;
 
     private final ConcurrentHashMap<Host, BlockingDeque<DownloadJob>> downloadQ = new ConcurrentHashMap<>();
 
+    @Getter
+    private final Map<String, AtomicInteger> downloading = new ConcurrentHashMap<>();
+
     @Autowired
-    public DownloadQ(AppStateService appStateService, AppSettingsService appSettingsService, List<Host> hosts) {
-        this.appStateService = appStateService;
+    public DownloadQ(PostDataService postDataService, AppSettingsService appSettingsService, List<Host> hosts) {
+        this.postDataService = postDataService;
         this.appSettingsService = appSettingsService;
         this.hosts = hosts;
     }
@@ -45,9 +48,22 @@ public class DownloadQ {
     public void put(Post post, Image image) throws InterruptedException {
         logger.debug(String.format("Enqueuing a job for %s", image.getUrl()));
         image.init();
+        postDataService.updateImageStatus(image.getStatus(), image.getId());
+        postDataService.updateImageCurrent(image.getCurrent(), image.getId());
         DownloadJob downloadJob = new DownloadJob(post, image);
         downloadQ.get(downloadJob.getImage().getHost()).putLast(downloadJob);
-        appStateService.newDownloadJob(downloadJob);
+        beforeJobStart(post.getPostId());
+    }
+
+    public void beforeJobStart(String postId) {
+        checkKeyRunningPosts(postId);
+        downloading.get(postId).incrementAndGet();
+    }
+
+    private synchronized void checkKeyRunningPosts(@NonNull final String postId) {
+        if (!downloading.containsKey(postId)) {
+            downloading.put(postId, new AtomicInteger(0));
+        }
     }
 
     public void remove(final DownloadJob downloadJob) {
@@ -71,8 +87,8 @@ public class DownloadQ {
         return downloadJobs;
     }
 
-    public void enqueue(Post post) throws InterruptedException {
-        for (Image image : post.getImages()) {
+    public void enqueue(Post post, Set<Image> images) throws InterruptedException {
+        for (Image image : images) {
             put(post, image);
         }
     }

@@ -8,12 +8,7 @@ import {MatSnackBar} from '@angular/material/snack-bar';
 import {ServerService} from '../server-service';
 import {ElectronService} from 'ngx-electron';
 import {Settings} from '../domain/settings.model';
-import {OpenDialogReturnValue} from 'electron';
-import {BehaviorSubject, Subject} from 'rxjs';
-
-interface CacheSize {
-  size: string;
-}
+import OpenDialogReturnValue = Electron.OpenDialogReturnValue;
 
 @Component({
   selector: 'app-settings',
@@ -56,8 +51,6 @@ export class SettingsComponent implements OnInit {
   });
 
   darkTheme = false;
-  cacheSize: Subject<CacheSize> = new BehaviorSubject({size: '0'});
-  cacheClearLoading: Subject<boolean> = new BehaviorSubject(false);
 
   updateTheme() {
     this.appService.updateTheme(this.darkTheme);
@@ -74,31 +67,10 @@ export class SettingsComponent implements OnInit {
         this.generalSettingsForm.reset(data);
         this.desktopSettingsForm.reset(data);
       }, error => {
-        this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
+        this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000
         });
       });
-    this.httpClient.get<CacheSize>(this.serverService.baseUrl + '/gallery/cache')
-      .subscribe(data => {
-        this.cacheSize.next(data);
-      }, error => {
-        this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
-          duration: 5000
-        });
-      });
-  }
-
-  clearCache() {
-    this.cacheClearLoading.next(true);
-    this.httpClient.get<CacheSize>(this.serverService.baseUrl + '/gallery/cache/clear')
-      .pipe(finalize(() => this.cacheClearLoading.next(false)))
-      .subscribe(data => {
-        this.cacheSize.next(data);
-      }, error => {
-        this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
-          duration: 5000
-        });
-      })
   }
 
   browse() {
@@ -135,7 +107,7 @@ export class SettingsComponent implements OnInit {
           this.updateSettings(data);
         },
         error => {
-          this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
+          this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
             duration: 5000
           });
         }

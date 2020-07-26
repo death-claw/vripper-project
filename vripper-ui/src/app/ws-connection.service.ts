@@ -1,8 +1,6 @@
 import {Injectable} from '@angular/core';
-import {BehaviorSubject, Observable, Subject} from 'rxjs';
-import {WebSocketSubject} from 'rxjs/webSocket';
+import {BehaviorSubject, Observable, Subject, Subscription} from 'rxjs';
 import {environment} from 'src/environments/environment';
-import {ElectronService} from 'ngx-electron';
 import {ServerService} from './server-service';
 import {GrabQueueState} from './domain/grab-queue.model';
 import {WSMessage} from './domain/ws-message.model';
@@ -11,18 +9,29 @@ import {PostState} from './domain/post-state.model';
 import {LoggedUser} from './domain/logged-user.model';
 import {DownloadSpeed} from './domain/download-speed.model';
 import {GlobalState} from './domain/global-state.model';
-import {filter, map} from 'rxjs/operators';
+import {map, share} from 'rxjs/operators';
+import {RxStomp, RxStompConfig, RxStompState} from '@stomp/rx-stomp';
+import {ElectronService} from 'ngx-electron';
 
 @Injectable({
   providedIn: 'root'
 })
 export class WsConnectionService {
-  private websocket: WebSocketSubject<any>;
-  private online: Subject<boolean> = new BehaviorSubject(false);
+  rxStomp: RxStomp;
+  private globalState: Observable<GlobalState>;
+  private speed: Observable<DownloadSpeed>;
+  private user: Observable<LoggedUser>;
+  private posts: Observable<Array<PostState>>;
+  private postDetails: Observable<Array<PostDetails>>;
+  private queued: Observable<Array<GrabQueueState>>;
+  private queuedRemove: Observable<Array<string>>;
+  private postsRemove: Observable<Array<string>>;
+  private postIdDetails: string;
 
-  private open = false;
+  private connectionState$: Subject<RxStompState> = new BehaviorSubject(RxStompState.CLOSED);
+  private stateSubscription: Subscription;
 
-  constructor(private electronService: ElectronService, private serverService: ServerService) {
+  constructor(private serverService: ServerService, private electronService: ElectronService) {
     this.init();
   }
 
@@ -39,99 +48,86 @@ export class WsConnectionService {
         this.serverService.baseUrl = 'http://localhost:' + port;
         this.serverService.wsBaseUrl = 'ws://localhost:' + port;
         this.connect();
+        this.subscribe();
       });
     } else {
       this.serverService.baseUrl = environment.localhost;
       this.serverService.wsBaseUrl = environment.ws;
       this.connect();
+      this.subscribe();
     }
   }
 
   connect() {
-    console.log('Connecting...');
-    if (this.websocket != null) {
-      this.websocket.unsubscribe();
-    }
-    this.websocket = new WebSocketSubject({
-      url: this.serverService.wsBaseUrl + '/endpoint',
-      openObserver: {
-        next: () => {
-          console.log('Connection established');
-          if (this.open !== true) {
-            this.open = true;
-            this.online.next(true);
-          }
-        }
+    const stompConfig: RxStompConfig = {
+      connectHeaders: {
+        Authorization: localStorage.getItem('auth') ? 'Bearer ' + localStorage.getItem('auth') : ''
       },
-      closeObserver: {
-        next: () => {
-          if (this.open !== false) {
-            this.open = false;
-            this.online.next(false);
-          }
-          setTimeout(() => this.connect(), 1000);
-        }
-      }
-    });
-    this.websocket.subscribe();
+      brokerURL: this.serverService.wsBaseUrl + '/ws',
+      reconnectDelay: 5000,
+      // debug: function (str) {
+      //   console.log('STOMP: ' + str);
+      // },
+    };
+    this.rxStomp = new RxStomp();
+    this.rxStomp.configure(stompConfig);
+    this.rxStomp.activate();
   }
 
-  public get state(): Observable<boolean> {
-    return this.online.asObservable();
+  public get state(): Observable<RxStompState> {
+    return this.connectionState$.asObservable();
   }
 
   disconnect() {
-    this.websocket.unsubscribe();
+    this.rxStomp.deactivate();
   }
 
-  subscribeForGlobalState(): Observable<GlobalState[]> {
-    return this.websocket.pipe(
-      filter(e => e.length > 0 && e.filter(v => v.type === 'globalState').length > 0),
+  subscribe() {
+
+    this.stateSubscription = this.rxStomp.connectionState$.subscribe(e => this.connectionState$.next(e));
+
+    this.postsRemove = this.rxStomp.watch('/topic/posts/deleted').pipe(
       map(e => {
-        const state: Array<GlobalState> = [];
-        (<Array<any>>e).forEach(element => {
-          state.push(new GlobalState(element.running, element.queued, element.remaining, element.error));
-        });
+        return JSON.parse(e.body);
+      }),
+      share()
+    );
+
+    this.queuedRemove = this.rxStomp.watch('/topic/queued/deleted').pipe(
+      map(e => {
+        return JSON.parse(e.body);
+      }),
+      share()
+    );
+
+    this.globalState = this.rxStomp.watch('/topic/download-state').pipe(
+      map(e => {
+        const state: GlobalState = JSON.parse(e.body);
         return state;
-      })
+      }),
+      share()
     );
-  }
 
-  subscribeForSpeed(): Observable<DownloadSpeed[]> {
-    return this.websocket.pipe(
-      filter(e => e.length > 0 && e.filter(v => v.type === 'downSpeed').length > 0),
+    this.speed = this.rxStomp.watch('/topic/speed').pipe(
       map(e => {
-        const speed: Array<DownloadSpeed> = [];
-        (<Array<any>>e).forEach(element => {
-          speed.push(new DownloadSpeed(element.speed));
-        });
-        return speed;
-      })
+        return <DownloadSpeed>JSON.parse(e.body);
+      }),
+      share()
     );
-  }
 
-  subscribeForUser(): Observable<LoggedUser[]> {
-    return this.websocket.pipe(
-      filter(e => e.length > 0 && e.filter(v => v.type === 'user').length > 0),
+    this.user = this.rxStomp.watch('/topic/user').pipe(
       map(e => {
-        const user: Array<LoggedUser> = [];
-        (<Array<any>>e).forEach(element => {
-          user.push(new LoggedUser(element.user));
-        });
-        return user;
-      })
+        return <LoggedUser>JSON.parse(e.body);
+      }),
+      share()
     );
-  }
 
-  subscribeForPosts(): Observable<PostState[]> {
-    return this.websocket.pipe(
-      filter(e => e.length > 0 && e.filter(v => v.type === 'post').length > 0),
+    this.posts = this.rxStomp.watch('/topic/posts').pipe(
       map(e => {
         const posts: Array<PostState> = [];
-        (<Array<any>>e).forEach(element => {
+        (<Array<any>>JSON.parse(e.body)).forEach(element => {
           posts.push(
             new PostState(
-              element.type,
               element.postId,
               element.title,
               element.done === 0 && element.total === 0 ? 0 : (element.done / element.total) * 100,
@@ -141,27 +137,67 @@ export class WsConnectionService {
               element.done,
               element.total,
               element.hosts,
-              element.metadata.PREVIEWS,
-              element.metadata.THANKED,
-              element.metadata.RESOLVED_NAME
+              element.thanked,
+              element.previews,
+              element.metadata
             )
           );
         });
         return posts;
-      })
+      }),
+      share()
+    );
+
+    this.queued = this.rxStomp.watch('/topic/queued').pipe(
+      map(e => {
+        const grabQueue: Array<GrabQueueState> = [];
+        (<Array<any>>JSON.parse(e.body)).forEach(element => {
+          grabQueue.push(
+            new GrabQueueState(element.type, element.link, element.threadId, element.postId, element.removed, element.total, element.loading)
+          );
+        });
+        return grabQueue;
+      }),
+      share()
     );
   }
 
-  subscribeForPostDetails(): Observable<PostDetails[]> {
-    return this.websocket.pipe(
-      filter(e => e.length > 0 && e[0].type === 'img'),
+  get globalState$(): Observable<GlobalState> {
+    return this.globalState;
+  }
+
+  get speed$(): Observable<DownloadSpeed> {
+    return this.speed;
+  }
+
+  get user$(): Observable<LoggedUser> {
+    return this.user;
+  }
+
+  get posts$(): Observable<PostState[]> {
+    return this.posts;
+  }
+
+  get postsRemove$(): Observable<string[]> {
+    return this.postsRemove;
+  }
+
+  get queuedRemove$(): Observable<string[]> {
+    return this.queuedRemove;
+  }
+
+  postDetails$(postId: string): Observable<PostDetails[]> {
+    if (this.postDetails != null && this.postIdDetails === postId) {
+      return this.postDetails;
+    }
+    this.postIdDetails = postId;
+    this.postDetails = this.rxStomp.watch('/topic/images/' + this.postIdDetails).pipe(
       map(e => {
-        const values = [];
-        (<Array<any>>e).forEach(element => {
-          values.push(
+        const postDetails: PostDetails[] = [];
+        (<Array<any>>JSON.parse(e.body)).forEach(element => {
+          postDetails.push(
             new PostDetails(
               element.postId,
-              element.postName,
               element.url,
               element.current === 0 && element.total === 0 ? 0 : (element.current / element.total) * 100,
               element.status,
@@ -169,27 +205,18 @@ export class WsConnectionService {
             )
           );
         });
-        return values;
-      })
+        return postDetails;
+      }),
+      share()
     );
+    return this.postDetails;
   }
 
-  subscribeForGrabQueue(): Observable<GrabQueueState[]> {
-    return this.websocket.pipe(
-      filter(e => e.length > 0 && e.filter(v => v.type === 'grabQueue').length > 0),
-      map(e => {
-        const grabQueue: Array<GrabQueueState> = [];
-        (<Array<any>>e).forEach(element => {
-          grabQueue.push(
-            new GrabQueueState(element.type, element.link, element.threadId, element.postId, element.removed, element.count, element.loading)
-          );
-        });
-        return grabQueue;
-      })
-    );
+  get queued$(): Observable<GrabQueueState[]> {
+    return this.queued;
   }
 
   send(wsMessage: WSMessage) {
-    this.websocket.next(wsMessage);
+    this.rxStomp.publish({destination: wsMessage.destination, body: wsMessage.payload});
   }
 }

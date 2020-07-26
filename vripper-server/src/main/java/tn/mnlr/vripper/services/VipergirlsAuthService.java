@@ -16,8 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import tn.mnlr.vripper.entities.Post;
 import tn.mnlr.vripper.exception.VripperException;
+import tn.mnlr.vripper.jpa.domain.Post;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
@@ -31,6 +31,7 @@ public class VipergirlsAuthService {
     private final ConnectionManager cm;
     private final AppSettingsService appSettingsService;
     private final CommonExecutor commonExecutor;
+    private final PostDataService postDataService;
 
     @Getter
     private final HttpClientContext context = HttpClientContext.create();
@@ -39,16 +40,17 @@ public class VipergirlsAuthService {
     private boolean authenticated = false;
 
     @Getter
-    private String loggedUser;
+    private String loggedUser = "";
 
     @Getter
     private final PublishProcessor<String> loggedInUser = PublishProcessor.create();
 
     @Autowired
-    public VipergirlsAuthService(ConnectionManager cm, AppSettingsService appSettingsService, CommonExecutor commonExecutor) {
+    public VipergirlsAuthService(ConnectionManager cm, AppSettingsService appSettingsService, CommonExecutor commonExecutor, PostDataService postDataService) {
         this.cm = cm;
         this.appSettingsService = appSettingsService;
         this.commonExecutor = commonExecutor;
+        this.postDataService = postDataService;
     }
 
     @PostConstruct
@@ -146,7 +148,7 @@ public class VipergirlsAuthService {
             logger.error("You are not authenticated");
             return;
         }
-        if (post.getMetadata().get(Post.METADATA.THANKED.name()) != null && (boolean) post.getMetadata().get(Post.METADATA.THANKED.name())) {
+        if (post.isThanked()) {
             logger.debug("Already left a thanks");
             return;
         }
@@ -180,14 +182,15 @@ public class VipergirlsAuthService {
 
         try (CloseableHttpResponse response = client.execute(postThanks, context)) {
             if (response.getStatusLine().getStatusCode() / 100 == 2) {
-                post.getMetadata().put(Post.METADATA.THANKED.name(), true);
+                post.setThanked(true);
+                postDataService.updatePostThanked(post.isThanked(), post.getId());
             }
             EntityUtils.consumeQuietly(response.getEntity());
         } catch (Exception e) {
             throw new VripperException(e);
         }
 
-        if (!((Boolean) post.getMetadata().get(Post.METADATA.THANKED.name()))) {
+        if (!post.isThanked()) {
             throw new VripperException("Failed to leave");
         }
     }
