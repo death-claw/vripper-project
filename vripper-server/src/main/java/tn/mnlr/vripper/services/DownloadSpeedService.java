@@ -14,10 +14,11 @@ public class DownloadSpeedService {
 
     private AtomicLong read = new AtomicLong(0);
 
+    @Getter
     private long currentValue;
 
     @Getter
-    private PublishProcessor<Long> readBytesPerSecond = PublishProcessor.create();
+    private final PublishProcessor<Long> readBytesPerSecond = PublishProcessor.create();
 
     private boolean allowWrite = false;
 

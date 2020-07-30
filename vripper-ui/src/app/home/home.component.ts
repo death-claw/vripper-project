@@ -1,7 +1,6 @@
 import {Subscription} from 'rxjs';
 import {LinkCollectorService} from '../link-collector.service';
 import {ServerService} from '../server-service';
-import {ElectronService} from 'ngx-electron';
 import {ClipboardService} from '../clipboard.service';
 import {ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
@@ -18,7 +17,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   constructor(
     private clipboardService: ClipboardService,
     public dialog: MatDialog,
-    public electronService: ElectronService,
     private httpClient: HttpClient,
     private serverService: ServerService,
     private _snackBar: MatSnackBar,
@@ -40,7 +38,7 @@ export class HomeComponent implements OnInit, OnDestroy {
               });
             },
             error => {
-              this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
+              this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
                 duration: 5000
               });
             }

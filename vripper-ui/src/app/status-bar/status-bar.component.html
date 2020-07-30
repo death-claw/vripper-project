@@ -1,8 +1,8 @@
 <div class="status-bar" fxLayout="row">
-  <span *ngIf="selected | async as length">Selected: {{length}}</span>
+  <span *ngIf="selected$ | async as length">Selected: {{length}}</span>
   <span fxFlex="grow"></span>
-  <span *ngIf="downloadSpeed | async as speed">{{ speed!.speed + '/s' }}</span>
-  <ng-container *ngIf="globalState | async as state">
+  <span *ngIf="downloadSpeed$ | async as speed">{{ speed.speed + '/s' }}</span>
+  <ng-container *ngIf="globalState$ | async as state">
     <span>Downloading: {{ state!.running }}</span>
     <span>Pending: {{ state!.queued }}</span>
     <span>Remaining: {{ state!.remaining }}</span>

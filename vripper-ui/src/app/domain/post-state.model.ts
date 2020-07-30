@@ -1,6 +1,5 @@
 export class PostState {
   constructor(
-    public type: string,
     public postId: string,
     public title: string,
     public progress: number,
@@ -10,8 +9,14 @@ export class PostState {
     public done: number,
     public total: number,
     public hosts: string[],
-    public previews: string[],
     public thanked: boolean,
-    public alternativeTitle: string[]
-  ) {}
+    public previews: string[],
+    public metadata: Metadata
+  ) {
+  }
+}
+
+export interface Metadata {
+  resolvedNames: string[];
+  postedBy: string;
 }

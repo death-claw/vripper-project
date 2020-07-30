@@ -27,7 +27,7 @@
                 postState.title
                 }}</p>
               <p><label>Alternative titles: </label><span
-                [title]="postState?.alternativeTitle?.join(', ')">{{postState?.alternativeTitle?.join(', ') || 'none'}}</span></p>
+                [title]="postState.metadata?.resolvedNames?.join(', ')">{{postState.metadata?.resolvedNames?.join(', ') || 'none'}}</span></p>
             </span>
           </span>
           <span fxFlex="none" [title]="postState.done + '/' + postState.total + ' from ' + postState.hosts"

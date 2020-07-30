@@ -1,11 +1,10 @@
 package tn.mnlr.vripper.services;
 
 import lombok.NonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import tn.mnlr.vripper.entities.Post;
+import tn.mnlr.vripper.jpa.domain.Post;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,19 +18,20 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class PathService {
 
-    private static final Logger logger = LoggerFactory.getLogger(PathService.class);
-
     private final AppSettingsService appSettingsService;
+    private final PostDataService postDataService;
 
     private final CommonExecutor commonExecutor;
 
     private final int MAX_DELETE_ATTEMPTS = 180;
 
     @Autowired
-    public PathService(AppSettingsService appSettingsService, CommonExecutor commonExecutor) {
+    public PathService(AppSettingsService appSettingsService, PostDataService postDataService, CommonExecutor commonExecutor) {
         this.appSettingsService = appSettingsService;
+        this.postDataService = postDataService;
         this.commonExecutor = commonExecutor;
     }
 
@@ -45,13 +45,19 @@ public class PathService {
         return new File(sourceFolder, title);
     }
 
-    public synchronized final void createDefaultPostFolder(Post post) {
+    public final void createDefaultPostFolder(Post post) {
         File sourceFolder = _getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), sanitize(post.getTitle()));
         File destFolder = makeDirs(sourceFolder);
         post.setPostFolderName(destFolder.getName());
+        postDataService.updatePostFolderName(post.getPostFolderName(), post.getId());
     }
 
-    public synchronized final void rename(Post post, String altName) {
+    public final void rename(String postId, String altName) {
+        Optional<Post> _post = postDataService.findPostByPostId(postId);
+        if (_post.isEmpty()) {
+            return;
+        }
+        Post post = _post.get();
         post.setTitle(altName);
         if (post.getPostFolderName() == null) {
             return;
@@ -65,10 +71,12 @@ public class PathService {
             try {
                 Files.move(f.toPath(), Paths.get(newDestFolder.toString(), f.toPath().getFileName().toString()), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
-                logger.error(String.format("Failed to move files from %s to %s", currentDesFolder.toString(), newDestFolder.toString()), e);
+                log.error(String.format("Failed to move files from %s to %s", currentDesFolder.toString(), newDestFolder.toString()), e);
                 return;
             }
         }
+        postDataService.updatePostFolderName(post.getPostFolderName(), post.getId());
+        postDataService.updatePostTitle(post.getTitle(), post.getId());
 
         commonExecutor.getGeneralExecutor().submit(() -> {
             int attemptCount = 0;
@@ -81,12 +89,12 @@ public class PathService {
                 }
             }
             if (!currentDesFolder.delete()) {
-                logger.warn(String.format("Failed to remove %s", currentDesFolder.toString()));
+                log.warn(String.format("Failed to remove %s", currentDesFolder.toString()));
             }
         });
     }
 
-    private synchronized File makeDirs(@NonNull final File sourceFolder) {
+    private File makeDirs(@NonNull final File sourceFolder) {
         int counter = 1;
         File folder = sourceFolder;
 
@@ -103,7 +111,7 @@ public class PathService {
 
     private String sanitize(final String folderName) {
         String sanitizedFolderName = folderName.replaceAll("\\.|\\\\|/|\\||:|\\?|\\*|\"|<|>|\\p{Cntrl}", "_");
-        logger.debug(String.format("%s sanitized to %s", folderName, sanitizedFolderName));
+        log.debug(String.format("%s sanitized to %s", folderName, sanitizedFolderName));
         return sanitizedFolderName;
     }
 

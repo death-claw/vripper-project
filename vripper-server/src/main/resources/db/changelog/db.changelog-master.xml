@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+    <changeSet author="sysgen" id="1595764509827-1">
+        <createSequence sequenceName="HIBERNATE_SEQUENCE"/>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-2">
+        <createTable tableName="IMAGE">
+            <column name="ID" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="CURRENT" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="HOST" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="INDEX" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="POST_ID" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="STATUS" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="TOTAL" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="URL" type="VARCHAR(3000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="POST_ID_REF" type="BIGINT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-3">
+        <createTable tableName="METADATA">
+            <column name="ID" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="POSTED_BY" type="VARCHAR(255)"/>
+            <column name="RESOLVED_NAMES" type="VARCHAR(16777216)"/>
+            <column name="POST_ID_REF" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-4">
+        <createTable tableName="POST">
+            <column name="ID" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="DONE" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="FORUM" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="HOSTS" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="POST_FOLDER_NAME" type="VARCHAR(500)"/>
+            <column name="POST_ID" type="VARCHAR(255)"/>
+            <column name="PREVIEWS" type="VARCHAR(16777216)"/>
+            <column name="SECURITY_TOKEN" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="STATUS" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="THANKED" type="BOOLEAN"/>
+            <column name="THREAD_ID" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="THREAD_TITLE" type="VARCHAR(500)"/>
+            <column name="TITLE" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="TOTAL" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="URL" type="VARCHAR(3000)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-5">
+        <createTable tableName="QUEUED">
+            <column name="ID" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="TOTAL" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="LINK" type="VARCHAR(3000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="LOADING" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="POST_ID" type="VARCHAR(255)"/>
+            <column name="THREAD_ID" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-6">
+        <addPrimaryKey columnNames="ID" constraintName="SYS_PK_10092" tableName="IMAGE"/>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-7">
+        <addPrimaryKey columnNames="ID" constraintName="SYS_PK_10110" tableName="METADATA"/>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-8">
+        <addPrimaryKey columnNames="ID" constraintName="SYS_PK_10116" tableName="POST"/>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-9">
+        <addPrimaryKey columnNames="ID" constraintName="SYS_PK_10138" tableName="QUEUED"/>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-10">
+        <createIndex indexName="IMAGE_POST_ID_IDX" tableName="IMAGE">
+            <column name="POST_ID"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-11">
+        <createIndex indexName="IMAGE_STATUS_IDX" tableName="IMAGE">
+            <column name="STATUS"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-12">
+        <createIndex indexName="POST_POST_ID_IDX" tableName="POST">
+            <column name="POST_ID"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-13">
+        <createIndex indexName="POST_STATUS_IDX" tableName="POST">
+            <column name="STATUS"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-14">
+        <createIndex indexName="QUEUED_THREAD_ID_IDX" tableName="QUEUED">
+            <column name="THREAD_ID"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-15">
+        <createIndex indexName="SYS_IDX_IMAGE_POST_ID_REF_POST_ID_FK_10150" tableName="IMAGE">
+            <column name="POST_ID_REF"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-16">
+        <createIndex indexName="SYS_IDX_METADATA_POST_ID_REF_POST_ID_FK_10160" tableName="METADATA">
+            <column name="POST_ID_REF"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-17">
+        <addForeignKeyConstraint baseColumnNames="POST_ID_REF" baseTableName="IMAGE"
+                                 constraintName="IMAGE_POST_ID_REF_POST_ID_FK" deferrable="false"
+                                 initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                                 referencedColumnNames="ID" referencedTableName="POST"/>
+    </changeSet>
+    <changeSet author="sysgen" id="1595764509827-18">
+        <addForeignKeyConstraint baseColumnNames="POST_ID_REF" baseTableName="METADATA"
+                                 constraintName="METADATA_POST_ID_REF_POST_ID_FK" deferrable="false"
+                                 initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
+                                 referencedColumnNames="ID" referencedTableName="POST"/>
+    </changeSet>
+</databaseChangeLog>

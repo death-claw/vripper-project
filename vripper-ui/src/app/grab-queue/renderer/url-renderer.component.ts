@@ -10,7 +10,7 @@ import {BreakpointObserver, Breakpoints, BreakpointState} from '@angular/cdk/lay
 import {BehaviorSubject, Observable, Subject, Subscription} from 'rxjs';
 import {ServerService} from '../../server-service';
 import {HttpClient} from '@angular/common/http';
-import {WsConnectionService} from "../../ws-connection.service";
+import {WsConnectionService} from '../../ws-connection.service';
 
 @Component({
   selector: 'app-url-cell-grab',
@@ -41,21 +41,15 @@ export class UrlGrabRendererComponent implements OnInit, OnDestroy, AgRendererCo
   private queueSub: Subscription;
 
   ngOnInit(): void {
-    this.stateSub = this.ws.state.subscribe(state => {
-      if (state) {
-        this.queueSub = this.ws.subscribeForGrabQueue().subscribe(e => {
-          this.zone.run(() => {
-            e.forEach(v => {
-              if (this.grabQueue.threadId === v.threadId) {
-                this.grabQueue = v;
-                this.grabQueue$.next(this.grabQueue);
-              }
-            });
-          });
+    this.queueSub = this.ws.queued$.subscribe(e => {
+      this.zone.run(() => {
+        e.forEach(v => {
+          if (this.grabQueue.threadId === v.threadId) {
+            this.grabQueue = v;
+            this.grabQueue$.next(this.grabQueue);
+          }
         });
-      } else if (this.queueSub != null) {
-        this.queueSub.unsubscribe();
-      }
+      });
     });
   }
 
@@ -116,7 +110,7 @@ export class UrlGrabRendererComponent implements OnInit, OnDestroy, AgRendererCo
         this.removeFromGrid(data);
       },
       error => {
-        this._snackBar.open(error?.error?.message.error || 'Unexpected error, check log file', null, {
+        this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000
         });
       }
@@ -129,7 +123,7 @@ export class UrlGrabRendererComponent implements OnInit, OnDestroy, AgRendererCo
     if (nodeToDelete != null) {
       removeTx.push(nodeToDelete.data);
     }
-    this.api.updateRowData({remove: removeTx});
+    this.api.applyTransaction({remove: removeTx});
   }
 }
 

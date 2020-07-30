@@ -4,19 +4,20 @@
       <button (click)="scan()" class="add-button" color="primary" mat-icon-button>
         <mat-icon>add</mat-icon>
       </button>
-      <button (click)="remove()" [disabled]="disableSelection | async" aria-label="Remove selected" mat-icon-button
+      <button (click)="remove()" [disabled]="disableSelection$ | async" aria-label="Remove selected" mat-icon-button
               title="Remove selected">
         <mat-icon>delete</mat-icon>
       </button>
-      <button (click)="restart()" [disabled]="disableSelection | async" aria-label="Start selected" mat-icon-button
+      <button (click)="restart()" [disabled]="disableSelection$ | async" aria-label="Start selected" mat-icon-button
               title="Start selected">
         <mat-icon>play_arrow</mat-icon>
       </button>
-      <button (click)="stop()" [disabled]="disableSelection | async" aria-label="Stop selected" mat-icon-button
+      <button (click)="stop()" [disabled]="disableSelection$ | async" aria-label="Stop selected" mat-icon-button
               title="Stop selected">
         <mat-icon>pause</mat-icon>
       </button>
-      <button (click)="rename()" [disabled]="disableSelection | async" aria-label="Rename selected to alternative title"
+      <button (click)="rename()" [disabled]="disableSelection$ | async"
+              aria-label="Rename selected to alternative title"
               mat-icon-button
               title="Rename selected to alternative title">
         <mat-icon>edit</mat-icon>
@@ -40,8 +41,8 @@
       </form>
     </div>
     <div fxLayout="row" fxLayoutAlign="center center" fxLayoutGap="5px" id="right-controls">
-      <p class="logged-user" fxHide.lt-sm *ngIf="loggedUser | async as user">
-        Logged in as: {{ user!.user == null || user!.user === '' ? 'guest' : user.user }}
+      <p class="logged-user" fxHide.lt-sm *ngIf="user$ | async as user">
+        <span *ngIf="user.user.length > 0">Logged in as: {{ user.user }}</span>
       </p>
       <button (click)="openSettings()" aria-label="settings" mat-icon-button>
         <mat-icon>settings</mat-icon>

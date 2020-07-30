@@ -1,8 +1,7 @@
 package tn.mnlr.vripper.host;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.protocol.HttpClientContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -11,9 +10,8 @@ import tn.mnlr.vripper.exception.XpathException;
 import tn.mnlr.vripper.q.ImageFileData;
 
 @Service
+@Slf4j
 public class ImageVenueHost extends Host {
-
-    private static final Logger logger = LoggerFactory.getLogger(ImageVenueHost.class);
 
     private static final String host = "imagevenue.com";
     private static final String CONTINUE_BUTTON_XPATH = "//a[@title='Continue to ImageVenue']";
@@ -42,8 +40,8 @@ public class ImageVenueHost extends Host {
         Document doc = resp.getDocument();
 
         try {
-            logger.debug(String.format("Looking for xpath expression %s in %s", CONTINUE_BUTTON_XPATH, url));
-            if(xpathService.getAsNode(doc, CONTINUE_BUTTON_XPATH) != null) {
+            log.debug(String.format("Looking for xpath expression %s in %s", CONTINUE_BUTTON_XPATH, url));
+            if (xpathService.getAsNode(doc, CONTINUE_BUTTON_XPATH) != null) {
                 //Button detected. No need to actually click it, just make the call again.
                 resp = getResponse(url, context);
                 doc = resp.getDocument();
@@ -54,7 +52,7 @@ public class ImageVenueHost extends Host {
 
         Node imgNode;
         try {
-            logger.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url));
+            log.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url));
             imgNode = xpathService.getAsNode(doc, IMG_XPATH);
         } catch (XpathException e) {
             throw new HostException(e);
@@ -65,13 +63,13 @@ public class ImageVenueHost extends Host {
         }
 
         try {
-            logger.debug(String.format("Resolving name and image url for %s", url));
+            log.debug(String.format("Resolving name and image url for %s", url));
             String imgTitle = imgNode.getAttributes().getNamedItem("alt").getTextContent().trim();
             String imgUrl = imgNode.getAttributes().getNamedItem("src").getTextContent().trim();
 
             imageFileData.setImageUrl(imgUrl);
             imageFileData.setImageName(imgTitle.isEmpty() ? imgUrl.substring(imgUrl.lastIndexOf('/') + 1) : imgTitle);
-        } catch(Exception e) {
+        } catch (Exception e) {
             throw new HostException("Unexpected error occurred", e);
         }
     }

@@ -5,7 +5,7 @@ export class GrabQueueState {
     public threadId: string,
     public postId: string,
     public removed: boolean,
-    public count: number,
+    public total: number,
     public loading: boolean
   ) {}
 }

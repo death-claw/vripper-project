@@ -7,11 +7,10 @@ import java.util.Objects;
 @Getter
 public class GlobalState {
 
-    private final String type = "globalState";
-    private long running;
-    private long queued;
-    private long remaining;
-    private long error;
+    private final long running;
+    private final long queued;
+    private final long remaining;
+    private final long error;
 
     GlobalState(long running, long queued, long remaining, long error) {
         this.running = running;
@@ -30,6 +29,6 @@ public class GlobalState {
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, running, queued, remaining, error);
+        return Objects.hash(running, queued, remaining, error);
     }
 }

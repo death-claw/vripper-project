@@ -19,7 +19,7 @@ export class PostsDataService {
         removeTx.push(nodeToDelete.data);
       }
     });
-    this.api.updateRowData({ remove: removeTx });
+    this.api.applyTransaction({remove: removeTx});
   }
 
   search(event) {

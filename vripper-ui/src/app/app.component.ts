@@ -5,6 +5,7 @@ import {AfterViewInit, ChangeDetectionStrategy, Component, NgZone, OnDestroy, Re
 import {MatDialog} from '@angular/material/dialog';
 import {BehaviorSubject, merge, Subject, Subscription} from 'rxjs';
 import {WsConnectionService} from './ws-connection.service';
+import {RxStompState} from '@stomp/rx-stomp';
 
 @Component({
   selector: 'app-root',
@@ -33,8 +34,12 @@ export class AppComponent implements OnDestroy, AfterViewInit {
   ngAfterViewInit() {
     this.appService.renderer = this.renderer;
     this.subscriptions.push(
-      this.ws.state.subscribe(online => {
-        if (!online) {
+      this.ws.state.subscribe(state => {
+        if (state === RxStompState.OPEN) {
+          this.ngZone.run(() => this.loaded.next(true));
+          this.clipboardService.init();
+          this.subscriptions.push(merge(this.appService.loadTheme(), this.appService.loadSettings()).subscribe());
+        } else {
           this.ngZone.run(() => this.loaded.next(false));
           setTimeout(
             () =>
@@ -43,10 +48,6 @@ export class AppComponent implements OnDestroy, AfterViewInit {
               }),
             500
           );
-        } else {
-          this.ngZone.run(() => this.loaded.next(true));
-          this.clipboardService.init();
-          this.subscriptions.push(merge(this.appService.loadTheme(), this.appService.loadSettings()).subscribe());
         }
       })
     );

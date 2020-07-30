@@ -2,11 +2,11 @@
   <h2 mat-dialog-title fxFlex="nogrow">Alternative title</h2>
   <mat-dialog-content fxFlex="grow">
 
-    <form fxLayout="column" fxLayoutAlign="space-between center" [formGroup]="form" autocomplete="off">
-      <mat-form-field>
+    <form fxLayout="column" fxLayoutAlign="space-around center" [formGroup]="form" autocomplete="off">
+      <mat-form-field *ngIf="data.post?.metadata?.resolvedNames.length > 0">
         <mat-label>Choose a title</mat-label>
         <mat-select formControlName="altNameSelect">
-          <mat-option *ngFor="let altName of data.post.alternativeTitle" [value]="altName">
+          <mat-option *ngFor="let altName of data.post?.metadata?.resolvedNames" [value]="altName">
             {{altName}}
           </mat-option>
         </mat-select>

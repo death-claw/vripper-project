@@ -1,14 +1,13 @@
 package tn.mnlr.vripper.services;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.Failsafe;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 import tn.mnlr.vripper.SpringContext;
@@ -16,6 +15,8 @@ import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.host.Host;
+import tn.mnlr.vripper.jpa.domain.Queued;
+import tn.mnlr.vripper.services.post.CachedPost;
 
 import javax.xml.parsers.SAXParserFactory;
 import java.io.BufferedInputStream;
@@ -25,39 +26,38 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static tn.mnlr.vripper.services.PostParser.VR_API;
-
+@Slf4j
 public class VRThreadParser {
 
-    private static final Logger logger = LoggerFactory.getLogger(VRThreadParser.class);
+    private static final String VR_API = "https://vipergirls.to/vr.php";
 
-    private static SAXParserFactory factory = SAXParserFactory.newInstance();
-    private final QueuedVGLink queuedVGLink;
+    private static final SAXParserFactory factory = SAXParserFactory.newInstance();
+    private final Queued queued;
     private final ConnectionManager cm;
     private final VipergirlsAuthService vipergirlsAuthService;
 
-    VRThreadParser(QueuedVGLink queuedVGLink) {
-        this.queuedVGLink = queuedVGLink;
+    VRThreadParser(Queued queued) {
+        this.queued = queued;
         this.cm = SpringContext.getBean(ConnectionManager.class);
         this.vipergirlsAuthService = SpringContext.getBean(VipergirlsAuthService.class);
     }
 
-    public List<VRPostState> parse() throws PostParseException {
+    public List<CachedPost> parse() throws PostParseException {
 
-        logger.debug(String.format("Parsing thread %s", queuedVGLink));
+        log.debug(String.format("Parsing thread %s", queued));
         HttpGet httpGet;
         try {
             URIBuilder uriBuilder = new URIBuilder(VR_API);
-            uriBuilder.setParameter("t", queuedVGLink.getThreadId());
+            uriBuilder.setParameter("t", queued.getThreadId());
             httpGet = cm.buildHttpGet(uriBuilder.build());
         } catch (URISyntaxException e) {
             throw new PostParseException(e);
         }
 
-        VRThreadHandler handler = new VRThreadHandler(queuedVGLink);
+        VRThreadHandler handler = new VRThreadHandler(queued);
         AtomicReference<Throwable> thr = new AtomicReference<>();
-        logger.debug(String.format("Requesting %s", httpGet));
-        List<VRPostState> posts = Failsafe.with(VripperApplication.retryPolicy)
+        log.debug(String.format("Requesting %s", httpGet));
+        List<CachedPost> posts = Failsafe.with(VripperApplication.retryPolicy)
                 .onFailure(e -> thr.set(e.getFailure()))
                 .get(() -> {
                     HttpClient connection = cm.getClient().build();
@@ -70,14 +70,14 @@ public class VRThreadParser {
                             factory.newSAXParser().parse(new BufferedInputStream(response.getEntity().getContent()), handler);
                             return handler.getPosts();
                         } catch (Exception e) {
-                            throw new PostParseException(String.format("Failed to parse thread %s", queuedVGLink), e);
+                            throw new PostParseException(String.format("Failed to parse thread %s", queued), e);
                         } finally {
                             EntityUtils.consumeQuietly(response.getEntity());
                         }
                     }
                 });
         if (thr.get() != null) {
-            logger.error(String.format("parsing failed for thread %s", queuedVGLink), thr.get());
+            log.error(String.format("parsing failed for thread %s", queued), thr.get());
             throw new PostParseException(thr.get());
         }
         return posts;
@@ -86,7 +86,7 @@ public class VRThreadParser {
 
 class VRThreadHandler extends DefaultHandler {
 
-    private final QueuedVGLink queuedVGLink;
+    private final Queued queued;
     private final Collection<Host> supportedHosts;
     private final Map<Host, AtomicInteger> hostMap = new HashMap<>();
     private List<String> previews = new ArrayList<>();
@@ -98,10 +98,10 @@ class VRThreadHandler extends DefaultHandler {
     private int previewCounter = 0;
 
     @Getter
-    private List<VRPostState> posts = new ArrayList<>();
+    private List<CachedPost> posts = new ArrayList<>();
 
-    VRThreadHandler(QueuedVGLink queuedVGLink) {
-        this.queuedVGLink = queuedVGLink;
+    VRThreadHandler(Queued queued) {
+        this.queued = queued;
         this.supportedHosts = SpringContext.getBeansOfType(Host.class).values();
     }
 
@@ -138,17 +138,17 @@ class VRThreadHandler extends DefaultHandler {
     public void endElement(String uri, String localName, String qName) {
         if ("post".equals(qName.toLowerCase())) {
             if (imageCount != 0) {
-                posts.add(new VRPostState(
-                        queuedVGLink.getThreadId(),
+                posts.add(new CachedPost(
+                        queued.getThreadId(),
                         postId,
                         postCounter,
                         postTitle,
                         imageCount,
-                        String.format("https://vipergirls.to/threads/%s/?p=%s&viewfull=1#post%s", queuedVGLink, postId, postId),
+                        String.format("https://vipergirls.to/threads/?p=%s&viewfull=1#post%s", postId, postId),
                         previews,
                         hostMap.entrySet().stream().filter(v -> v.getValue().get() > 0).map(e -> e.getKey().getHost() + " (" + e.getValue().get() + ")").collect(Collectors.joining(", "))
                 ));
-                queuedVGLink.increment();
+                queued.increment();
             }
             previewCounter = 0;
             previews = new ArrayList<>();
@@ -158,6 +158,6 @@ class VRThreadHandler extends DefaultHandler {
 
     @Override
     public void endDocument() {
-        queuedVGLink.done();
+        queued.done();
     }
 }

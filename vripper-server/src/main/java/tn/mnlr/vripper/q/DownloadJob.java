@@ -1,20 +1,20 @@
 package tn.mnlr.vripper.q;
 
 import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import tn.mnlr.vripper.entities.Image;
-import tn.mnlr.vripper.entities.Post;
+import lombok.extern.slf4j.Slf4j;
+import net.jodah.failsafe.function.CheckedRunnable;
+import tn.mnlr.vripper.jpa.domain.Image;
+import tn.mnlr.vripper.jpa.domain.Post;
 
 import java.util.Objects;
-import java.util.concurrent.Callable;
 
-public class DownloadJob implements Callable<Image> {
-
-    private static final Logger logger = LoggerFactory.getLogger(DownloadJob.class);
+@Slf4j
+public class DownloadJob implements CheckedRunnable {
 
     @Getter
     private final Image image;
+
+    @Getter
     private final Post post;
 
     @Getter
@@ -26,14 +26,9 @@ public class DownloadJob implements Callable<Image> {
     }
 
     @Override
-    public Image call() throws Exception {
-
-        logger.debug(String.format("Starting downloading %s", image.getUrl()));
-        image.setStatus(Image.Status.DOWNLOADING);
-        image.setCurrent(0);
+    public void run() throws Exception {
+        log.debug(String.format("Starting downloading %s", image.getUrl()));
         image.getHost().download(post, image, imageFileData);
-        image.setStatus(Image.Status.COMPLETE);
-        return image;
     }
 
     @Override
@@ -41,11 +36,12 @@ public class DownloadJob implements Callable<Image> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         DownloadJob that = (DownloadJob) o;
-        return image.equals(that.image);
+        return Objects.equals(image, that.image) &&
+                Objects.equals(post, that.post);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(image);
+        return Objects.hash(image, post);
     }
 }

@@ -26,7 +26,8 @@
 
 .progress-bar {
   position: absolute;
-  width: 100%;
+  width: calc(100% - 20px);
   top: 47px;
-  padding: 0 10px
+  margin-left: 10px;
+  margin-right: 10px;
 }

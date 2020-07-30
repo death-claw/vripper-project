@@ -1,8 +1,7 @@
 package tn.mnlr.vripper.host;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.protocol.HttpClientContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -11,9 +10,8 @@ import tn.mnlr.vripper.exception.XpathException;
 import tn.mnlr.vripper.q.ImageFileData;
 
 @Service
+@Slf4j
 public class PixxxelsHost extends Host {
-
-    private static final Logger logger = LoggerFactory.getLogger(PixxxelsHost.class);
 
     private static final String host = "pixxxels.cc";
     private static final String IMG_XPATH = "//*[@id='download']";
@@ -42,10 +40,10 @@ public class PixxxelsHost extends Host {
 
         Node imgNode, titleNode;
         try {
-            logger.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url));
+            log.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url));
             imgNode = xpathService.getAsNode(doc, IMG_XPATH);
 
-            logger.debug(String.format("Looking for xpath expression %s in %s", TITLE_XPATH, url));
+            log.debug(String.format("Looking for xpath expression %s in %s", TITLE_XPATH, url));
             titleNode = xpathService.getAsNode(doc, TITLE_XPATH);
 
         } catch (XpathException e) {
@@ -53,7 +51,7 @@ public class PixxxelsHost extends Host {
         }
 
         try {
-            logger.debug(String.format("Resolving name and image url for %s", url));
+            log.debug(String.format("Resolving name and image url for %s", url));
             String imgTitle = titleNode.getTextContent().trim();
             String imgUrl = imgNode.getAttributes().getNamedItem("href").getTextContent().trim();
 

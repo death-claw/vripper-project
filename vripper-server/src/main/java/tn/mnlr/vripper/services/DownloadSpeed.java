@@ -5,8 +5,7 @@ import lombok.Getter;
 @Getter
 public class DownloadSpeed {
 
-    private final String type = "downSpeed";
-    private String speed;
+    private final String speed;
 
     public DownloadSpeed(long bytes) {
         speed = formatSI(bytes);

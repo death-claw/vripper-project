@@ -1,7 +1,7 @@
 <div *ngIf="grabQueue$ | async as grabQueue" class="container" fxLayout="row" fxLayoutAlign="space-between center">
       <span fxLayout="column" class="text">
         <a (click)="goTo()" href="javascript:void(0)">{{ grabQueue.link }}</a>
-        <span><label>Count: </label>{{ grabQueue.count }}</span>
+        <span><label>Count: </label>{{ grabQueue.total }}</span>
       </span>
   <span fxLayout="row">
         <mat-spinner *ngIf="grabQueue.loading" diameter="35"></mat-spinner>

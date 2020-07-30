@@ -7,9 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import tn.mnlr.vripper.SpringContext;
@@ -28,13 +27,13 @@ import static java.nio.file.StandardOpenOption.*;
 @Service
 @Getter
 @Setter
+@Slf4j
 public class AppSettingsService {
 
     private final String MAX_TOTAL_THREADS = "MAX_TOTAL_THREADS";
     private final String baseDir;
 
     private final Path configPath;
-    private final Logger logger = LoggerFactory.getLogger(AppSettingsService.class);
     private final ObjectMapper om = new ObjectMapper();
 
     private Settings settings = new Settings();
@@ -72,11 +71,11 @@ public class AppSettingsService {
             try {
                 check(this.settings);
             } catch (ValidationException e) {
-                logger.error(String.format("Your settings are invalid, either remove %s, or fix it", configPath.toString()), e);
+                log.error(String.format("Your settings are invalid, either remove %s, or fix it", configPath.toString()), e);
                 SpringContext.close();
             }
         } catch (IOException e) {
-            logger.error("Failed restore user settings", e);
+            log.error("Failed restore user settings", e);
             settings = new Settings();
         }
 
@@ -156,7 +155,7 @@ public class AppSettingsService {
 
             Files.write(configPath, om.writeValueAsBytes(settings), CREATE, WRITE, TRUNCATE_EXISTING, SYNC);
         } catch (IOException e) {
-            logger.error("Failed to store user settings", e);
+            log.error("Failed to store user settings", e);
         }
     }
 
