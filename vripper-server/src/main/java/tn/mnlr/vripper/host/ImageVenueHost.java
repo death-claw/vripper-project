@@ -9,15 +9,13 @@ import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.XpathException;
 import tn.mnlr.vripper.q.ImageFileData;
 
-import java.net.URI;
-
 @Service
 @Slf4j
 public class ImageVenueHost extends Host {
 
     private static final String host = "imagevenue.com";
-    private static final String CONTINUE_BUTTON_XPATH = "//a[@title='Continue to your image']";
-    private static final String IMG_XPATH = "//img[@id='thepic']";
+    private static final String CONTINUE_BUTTON_XPATH = "//a[@title='Continue to ImageVenue']";
+    private static final String IMG_XPATH = "//a[@data-toggle='full']/img";
 
     public ImageVenueHost() {
         super();
@@ -34,11 +32,9 @@ public class ImageVenueHost extends Host {
     }
 
     @Override
-    protected void setNameAndUrl(final String url, final ImageFileData imageFileData, final HttpClientContext context) throws HostException {
+    protected void setNameAndUrl(final String _url, final ImageFileData imageFileData, final HttpClientContext context) throws HostException {
 
-        //Sadly, they do not support https.
-        //If they add such support in the future,
-        //then we should automatically adapt the URL here as done elsewhere.
+        String url = _url.replace("http://", "https://");
 
         Response resp = getResponse(url, context);
         Document doc = resp.getDocument();
@@ -71,8 +67,7 @@ public class ImageVenueHost extends Host {
             String imgTitle = imgNode.getAttributes().getNamedItem("alt").getTextContent().trim();
             String imgUrl = imgNode.getAttributes().getNamedItem("src").getTextContent().trim();
 
-            URI baseUri = new URI(url);
-            imageFileData.setImageUrl(new URI(baseUri.getScheme(), baseUri.getHost(), '/' + imgUrl, null).toString());
+            imageFileData.setImageUrl(imgUrl);
             imageFileData.setImageName(imgTitle.isEmpty() ? imgUrl.substring(imgUrl.lastIndexOf('/') + 1) : imgTitle);
         } catch (Exception e) {
             throw new HostException("Unexpected error occurred", e);
