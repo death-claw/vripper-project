@@ -2,10 +2,8 @@ package tn.mnlr.vripper.q;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import net.jodah.failsafe.Failsafe;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.jpa.domain.Post;
@@ -16,41 +14,37 @@ import tn.mnlr.vripper.services.post.PostService;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class ExecutionService {
 
     private static final List<Status> FINISHED = Arrays.asList(Status.ERROR, Status.COMPLETE, Status.STOPPED);
+    private final int MAX_POOL_SIZE = 12;
 
-    private final DownloadQ downloadQ;
+    private final ConcurrentHashMap<Host, AtomicInteger> threadCount = new ConcurrentHashMap<>();
+    private final ExecutorService executor = Executors.newFixedThreadPool(MAX_POOL_SIZE);
+    private final BlockingQueue<DownloadJob> executionQueue = new LinkedBlockingQueue<>();
+    private final Map<DownloadJob, Future<?>> futures = new ConcurrentHashMap<>();
+    private final Map<String, AtomicInteger> downloadCount = new ConcurrentHashMap<>();
+
+    private final PendingQ pendingQ;
     private final AppSettingsService settings;
     private final PostDataService postDataService;
     private final PostService postService;
 
-    private final int MAX_POOL_SIZE = 12;
-
-    private final ConcurrentHashMap<Host, AtomicInteger> threadCount = new ConcurrentHashMap<>();
-
     private boolean pauseQ = false;
-    private final ExecutorService executor = Executors.newFixedThreadPool(MAX_POOL_SIZE);
-
     private Thread executionThread;
-
-    private final BlockingQueue<DownloadJob> queue = new LinkedBlockingQueue<>();
-
-    private final List<DownloadJob> running = Collections.synchronizedList(new ArrayList<>());
-
-    private final Map<String, Future<?>> futures = new ConcurrentHashMap<>();
     private Thread pollThread;
 
     @Autowired
-    public ExecutionService(DownloadQ downloadQ, AppSettingsService settings, PostDataService postDataService, PostService postService) {
-        this.downloadQ = downloadQ;
+    public ExecutionService(PendingQ pendingQ, AppSettingsService settings, PostDataService postDataService, PostService postService) {
+        this.pendingQ = pendingQ;
         this.settings = settings;
         this.postDataService = postDataService;
         this.postService = postService;
@@ -78,20 +72,18 @@ public class ExecutionService {
     }
 
     private void stopRunning(@NonNull String postId) {
-        List<DownloadJob> data = running
+        futures
+                .entrySet()
                 .stream()
-                .filter(e -> e.getImage().getPostId().equals(postId))
-                .collect(Collectors.toList());
-        log.debug(String.format("Interrupting %d jobs for post id %s", data.size(), postId));
-
-        data.forEach(e -> {
-            futures.get(e.getImage().getUrl()).cancel(true);
-            if (e.getImageFileData().getImageRequest() != null) {
-                e.getImageFileData().getImageRequest().abort();
-            }
-            e.getImage().setStatus(Status.STOPPED);
-            postDataService.updateImageStatus(e.getImage().getStatus(), e.getImage().getId());
-        });
+                .filter(e -> e.getKey().getImage().getPostId().equals(postId))
+                .forEach(e -> {
+                    e.getValue().cancel(true);
+                    if (e.getKey().getImageFileData().getImageRequest() != null) {
+                        e.getKey().getImageFileData().getImageRequest().abort();
+                    }
+                    e.getKey().getImage().setStatus(Status.STOPPED);
+                    postDataService.updateImageStatus(e.getKey().getImage().getStatus(), e.getKey().getImage().getId());
+                });
     }
 
     public void stopAll(List<String> posIds) {
@@ -125,7 +117,7 @@ public class ExecutionService {
         log.debug(String.format("Restarting %d jobs for post id %s", images.size(), postId));
         for (Image image : images) {
             try {
-                downloadQ.put(post, image);
+                pendingQ.put(post, image);
             } catch (InterruptedException e) {
                 log.warn("Thread was interrupted", e);
                 Thread.currentThread().interrupt();
@@ -134,12 +126,12 @@ public class ExecutionService {
     }
 
     public boolean isRunning(@NonNull final String postId) {
-        AtomicInteger runningCount = downloadQ.getDownloading().get(postId);
+        AtomicInteger runningCount = downloadCount.get(postId);
         return runningCount != null && runningCount.get() > 0;
     }
 
     private void removeScheduled(Post post) {
-        for (Map.Entry<Host, BlockingDeque<DownloadJob>> entry : downloadQ.entries()) {
+        for (Map.Entry<Host, BlockingDeque<DownloadJob>> entry : pendingQ.entries()) {
             entry.getValue().removeIf(next -> next.getImage().getPostId().equals(post.getPostId()));
         }
         postDataService.finishPost(post);
@@ -147,7 +139,6 @@ public class ExecutionService {
 
     private void stop(String postId) {
         try {
-            downloadQ.getDownloading().remove(postId);
             pauseQ = true;
             final Post post = postDataService.findPostByPostId(postId).orElseThrow();
             if (post == null) {
@@ -182,11 +173,11 @@ public class ExecutionService {
     private void poll() {
         while (!Thread.interrupted()) {
             try {
-                List<DownloadJob> peek = downloadQ.peek();
+                List<DownloadJob> peek = pendingQ.peek();
                 for (DownloadJob downloadJob : peek) {
                     if (canRun(downloadJob.getImage().getHost())) {
-                        queue.offer(downloadJob);
-                        downloadQ.remove(downloadJob);
+                        executionQueue.offer(downloadJob);
+                        pendingQ.remove(downloadJob);
                     }
                 }
                 synchronized (threadCount) {
@@ -202,7 +193,7 @@ public class ExecutionService {
     private void start() {
         while (!Thread.interrupted()) {
             try {
-                push(queue.take());
+                push(executionQueue.take());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -214,39 +205,36 @@ public class ExecutionService {
     }
 
     private void push(DownloadJob downloadJob) {
-        Runnable task = () -> {
-            running.add(downloadJob);
-
-            Failsafe.with(VripperApplication.retryPolicy)
-                    .onFailure(e -> {
-                        if (e.getFailure() instanceof InterruptedException || e.getFailure().getCause() instanceof InterruptedException) {
-                            log.debug("Job successfully interrupted");
-                            return;
-                        }
-                        log.error(String.format("Failed to download %s after %d tries", downloadJob.getImage().getUrl(), e.getAttemptCount()), e.getFailure());
-                        downloadJob.getImage().setStatus(Status.ERROR);
-                        postDataService.updateImageStatus(downloadJob.getImage().getStatus(), downloadJob.getImage().getId());
-                    })
-                    .onComplete(e -> {
-                        postDataService.afterJobFinish(downloadJob.getImage(), downloadJob.getPost());
-                        if (downloadQ.getDownloading().get(downloadJob.getPost().getPostId()).decrementAndGet() == 0) {
-                            downloadQ.getDownloading().remove(downloadJob.getPost().getPostId());
-                            postDataService.finishPost(downloadJob.getPost());
-                        }
-                        log.debug(String.format("Finished downloading %s", downloadJob.getImage().getUrl()));
-                        threadCount.get(downloadJob.getImage().getHost()).decrementAndGet();
-                        running.remove(downloadJob);
-                        futures.remove(downloadJob.getImage().getUrl());
-                        synchronized (threadCount) {
-                            threadCount.notify();
-                        }
-                    }).run(downloadJob);
-        };
+        ExecuteRunnable runnable = new ExecuteRunnable(downloadJob);
         log.debug(String.format("Scheduling a job for %s", downloadJob.getImage().getUrl()));
-        futures.put(downloadJob.getImage().getUrl(), executor.submit(task));
+        futures.put(downloadJob, executor.submit(runnable));
+    }
+
+    public void beforeJobStart(String postId) {
+        checkKeyRunningPosts(postId);
+        downloadCount.get(postId).incrementAndGet();
+    }
+
+    private synchronized void checkKeyRunningPosts(@NonNull final String postId) {
+        if (!downloadCount.containsKey(postId)) {
+            downloadCount.put(postId, new AtomicInteger(0));
+        }
+    }
+
+    public synchronized void afterJobFinish(DownloadJob downloadJob) {
+        int count = downloadCount.get(downloadJob.getPost().getPostId()).decrementAndGet();
+        if (count == 0) {
+            downloadCount.remove(downloadJob.getPost().getPostId());
+            postDataService.finishPost(downloadJob.getPost());
+        }
+        threadCount.get(downloadJob.getImage().getHost()).decrementAndGet();
+        futures.remove(downloadJob);
+        synchronized (threadCount) {
+            threadCount.notify();
+        }
     }
 
     public int runningCount() {
-        return running.size();
+        return futures.size();
     }
 }

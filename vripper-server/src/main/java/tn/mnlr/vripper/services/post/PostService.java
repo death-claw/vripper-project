@@ -7,7 +7,7 @@ import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.enums.Status;
-import tn.mnlr.vripper.q.DownloadQ;
+import tn.mnlr.vripper.q.PendingQ;
 import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.services.CommonExecutor;
 import tn.mnlr.vripper.services.PostDataService;
@@ -22,15 +22,15 @@ import java.util.concurrent.Future;
 public class PostService {
 
     private final AppSettingsService appSettingsService;
-    private final DownloadQ downloadQ;
+    private final PendingQ pendingQ;
     private final PostDataService postDataService;
     private final CommonExecutor commonExecutor;
     private final Map<String, Future<?>> fetchingMetadata = new ConcurrentHashMap<>();
 
     @Autowired
-    public PostService(AppSettingsService appSettingsService, DownloadQ downloadQ, PostDataService postDataService, PostDataService postDataService1, CommonExecutor commonExecutor) {
+    public PostService(AppSettingsService appSettingsService, PendingQ pendingQ, PostDataService postDataService, PostDataService postDataService1, CommonExecutor commonExecutor) {
         this.appSettingsService = appSettingsService;
-        this.downloadQ = downloadQ;
+        this.pendingQ = pendingQ;
         this.postDataService = postDataService1;
         this.commonExecutor = commonExecutor;
     }
@@ -60,7 +60,7 @@ public class PostService {
             log.debug("Auto start downloads option is enabled");
             post.setStatus(Status.PENDING);
             try {
-                downloadQ.enqueue(post, images);
+                pendingQ.enqueue(post, images);
             } catch (InterruptedException e) {
                 log.warn("Interruption was caught");
                 Thread.currentThread().interrupt();

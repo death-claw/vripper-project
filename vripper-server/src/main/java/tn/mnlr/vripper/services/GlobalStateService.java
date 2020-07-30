@@ -6,14 +6,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import tn.mnlr.vripper.q.DownloadQ;
 import tn.mnlr.vripper.q.ExecutionService;
+import tn.mnlr.vripper.q.PendingQ;
 
 @Service
 @EnableScheduling
 public class GlobalStateService {
 
-    private final DownloadQ downloadQ;
+    private final PendingQ pendingQ;
     private final ExecutionService executionService;
     private final PostDataService postDataService;
 
@@ -24,8 +24,8 @@ public class GlobalStateService {
     private final PublishProcessor<GlobalState> liveGlobalState = PublishProcessor.create();
 
     @Autowired
-    public GlobalStateService(DownloadQ downloadQ, ExecutionService executionService, PostDataService postDataService) {
-        this.downloadQ = downloadQ;
+    public GlobalStateService(PendingQ pendingQ, ExecutionService executionService, PostDataService postDataService) {
+        this.pendingQ = pendingQ;
         this.executionService = executionService;
         this.postDataService = postDataService;
     }
@@ -34,7 +34,7 @@ public class GlobalStateService {
     private void interval() {
         GlobalState newGlobalState = new GlobalState(
                 executionService.runningCount(),
-                downloadQ.size(),
+                pendingQ.size(),
                 postDataService.countRemainingImages(),
                 postDataService.countErrorImages());
         if (!newGlobalState.equals(currentState)) {

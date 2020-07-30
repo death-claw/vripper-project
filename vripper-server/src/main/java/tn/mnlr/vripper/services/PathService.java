@@ -1,8 +1,7 @@
 package tn.mnlr.vripper.services;
 
 import lombok.NonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tn.mnlr.vripper.jpa.domain.Post;
@@ -19,9 +18,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class PathService {
-
-    private static final Logger logger = LoggerFactory.getLogger(PathService.class);
 
     private final AppSettingsService appSettingsService;
     private final PostDataService postDataService;
@@ -55,7 +53,11 @@ public class PathService {
     }
 
     public final void rename(String postId, String altName) {
-        Post post = postDataService.findPostByPostId(postId).get();
+        Optional<Post> _post = postDataService.findPostByPostId(postId);
+        if (_post.isEmpty()) {
+            return;
+        }
+        Post post = _post.get();
         post.setTitle(altName);
         if (post.getPostFolderName() == null) {
             return;
@@ -69,7 +71,7 @@ public class PathService {
             try {
                 Files.move(f.toPath(), Paths.get(newDestFolder.toString(), f.toPath().getFileName().toString()), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
-                logger.error(String.format("Failed to move files from %s to %s", currentDesFolder.toString(), newDestFolder.toString()), e);
+                log.error(String.format("Failed to move files from %s to %s", currentDesFolder.toString(), newDestFolder.toString()), e);
                 return;
             }
         }
@@ -87,7 +89,7 @@ public class PathService {
                 }
             }
             if (!currentDesFolder.delete()) {
-                logger.warn(String.format("Failed to remove %s", currentDesFolder.toString()));
+                log.warn(String.format("Failed to remove %s", currentDesFolder.toString()));
             }
         });
     }
@@ -109,7 +111,7 @@ public class PathService {
 
     private String sanitize(final String folderName) {
         String sanitizedFolderName = folderName.replaceAll("\\.|\\\\|/|\\||:|\\?|\\*|\"|<|>|\\p{Cntrl}", "_");
-        logger.debug(String.format("%s sanitized to %s", folderName, sanitizedFolderName));
+        log.debug(String.format("%s sanitized to %s", folderName, sanitizedFolderName));
         return sanitizedFolderName;
     }
 

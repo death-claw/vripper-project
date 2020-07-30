@@ -68,25 +68,11 @@ public class Post {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Post post = (Post) o;
-        return done == post.done &&
-                total == post.total &&
-                thanked == post.thanked &&
-                Objects.equals(id, post.id) &&
-                status == post.status &&
-                Objects.equals(postId, post.postId) &&
-                Objects.equals(threadTitle, post.threadTitle) &&
-                Objects.equals(threadId, post.threadId) &&
-                Objects.equals(title, post.title) &&
-                Objects.equals(url, post.url) &&
-                Objects.equals(hosts, post.hosts) &&
-                Objects.equals(forum, post.forum) &&
-                Objects.equals(securityToken, post.securityToken) &&
-                Objects.equals(postFolderName, post.postFolderName) &&
-                Objects.equals(previews, post.previews);
+        return Objects.equals(postId, post.postId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, status, postId, threadTitle, threadId, title, url, done, total, hosts, forum, securityToken, postFolderName, thanked, previews);
+        return Objects.hash(postId);
     }
 }

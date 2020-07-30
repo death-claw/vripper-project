@@ -21,7 +21,8 @@ public class PostRowMapper implements RowMapper<Post> {
         post.setId(rs.getLong("post.ID"));
         post.setStatus(Status.valueOf(rs.getString("STATUS")));
         post.setPostId(rs.getString("POST_ID"));
-        post.setThreadId(rs.getString("THREAD_TITLE"));
+        post.setThreadTitle(rs.getString("THREAD_TITLE"));
+        post.setThreadId(rs.getString("THREAD_ID"));
         post.setTitle(rs.getString("TITLE"));
         post.setUrl(rs.getString("URL"));
         post.setDone(rs.getInt("DONE"));

@@ -1,7 +1,6 @@
 package tn.mnlr.vripper;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -11,9 +10,8 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Component
+@Slf4j
 public class SpringContext implements ApplicationContextAware {
-
-    private static final Logger logger = LoggerFactory.getLogger(SpringContext.class);
 
     private static ConfigurableApplicationContext context;
 
@@ -26,7 +24,7 @@ public class SpringContext implements ApplicationContextAware {
     }
 
     public static void close() {
-        logger.info("Application terminating...");
+        log.info("Application terminating...");
         if (context != null) {
             context.close();
         }

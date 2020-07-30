@@ -2,8 +2,7 @@ package tn.mnlr.vripper.web.wsendpoints;
 
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -20,9 +19,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class WebSocketBroadcast {
-
-    private static final Logger logger = LoggerFactory.getLogger(WebSocketBroadcast.class);
 
     private final SimpMessagingTemplate template;
     private final VipergirlsAuthService vipergirlsAuthService;
@@ -47,25 +45,25 @@ public class WebSocketBroadcast {
                 .subscribeOn(Schedulers.io())
                 .onBackpressureBuffer()
                 .map(AppDataController.LoggedUser::new)
-                .subscribe(user -> template.convertAndSend("/topic/user", user), e -> logger.error("Failed to send data to client", e)));
+                .subscribe(user -> template.convertAndSend("/topic/user", user), e -> log.error("Failed to send data to client", e)));
 
         disposables.add(globalStateService.getLiveGlobalState()
                 .subscribeOn(Schedulers.io())
                 .onBackpressureBuffer()
-                .subscribe(state -> template.convertAndSend("/topic/download-state", state), e -> logger.error("Failed to send data to client", e)));
+                .subscribe(state -> template.convertAndSend("/topic/download-state", state), e -> log.error("Failed to send data to client", e)));
 
         disposables.add(downloadSpeedService.getReadBytesPerSecond()
                 .subscribeOn(Schedulers.io())
                 .onBackpressureBuffer()
                 .map(DownloadSpeed::new)
-                .subscribe(speed -> template.convertAndSend("/topic/speed", speed), e -> logger.error("Failed to send data to client", e)));
+                .subscribe(speed -> template.convertAndSend("/topic/speed", speed), e -> log.error("Failed to send data to client", e)));
 
         disposables.add(postDataService.livePost()
                 .subscribeOn(Schedulers.io())
                 .buffer(500, TimeUnit.MILLISECONDS)
                 .map(HashSet::new)
                 .filter(e -> !e.isEmpty())
-                .subscribe(ids -> template.convertAndSend("/topic/posts", ids.stream().map(postDataService::findPostById).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList())), e -> logger.error("Failed to send data to client", e)));
+                .subscribe(ids -> template.convertAndSend("/topic/posts", ids.stream().map(postDataService::findPostById).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList())), e -> log.error("Failed to send data to client", e)));
 
         disposables.add(postDataService.liveImage()
                 .subscribeOn(Schedulers.io())
@@ -79,7 +77,7 @@ public class WebSocketBroadcast {
                                 .map(Optional::get)
                                 .collect(Collectors.groupingBy(Image::getPostId))
                                 .forEach((postId, images) -> template.convertAndSend("/topic/images/" + postId, images)),
-                        e -> logger.error("Failed to send data to client", e))
+                        e -> log.error("Failed to send data to client", e))
         );
 
         disposables.add(postDataService.liveQueue()
@@ -87,7 +85,7 @@ public class WebSocketBroadcast {
                 .buffer(500, TimeUnit.MILLISECONDS)
                 .map(HashSet::new)
                 .filter(e -> !e.isEmpty())
-                .subscribe(ids -> template.convertAndSend("/topic/queued", ids.stream().map(postDataService::findQueuedById).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList())), e -> logger.error("Failed to send data to client", e))
+                .subscribe(ids -> template.convertAndSend("/topic/queued", ids.stream().map(postDataService::findQueuedById).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList())), e -> log.error("Failed to send data to client", e))
         );
 
         disposables.add(postDataService.queueRemove()
@@ -95,7 +93,7 @@ public class WebSocketBroadcast {
                 .buffer(500, TimeUnit.MILLISECONDS)
                 .map(HashSet::new)
                 .filter(e -> !e.isEmpty())
-                .subscribe(threadIds -> template.convertAndSend("/topic/queued/deleted", threadIds), e -> logger.error("Failed to send data to client", e))
+                .subscribe(threadIds -> template.convertAndSend("/topic/queued/deleted", threadIds), e -> log.error("Failed to send data to client", e))
         );
 
         disposables.add(postDataService.postRemove()
@@ -103,7 +101,7 @@ public class WebSocketBroadcast {
                 .buffer(500, TimeUnit.MILLISECONDS)
                 .map(HashSet::new)
                 .filter(e -> !e.isEmpty())
-                .subscribe(postIds -> template.convertAndSend("/topic/posts/deleted", postIds), e -> logger.error("Failed to send data to client", e))
+                .subscribe(postIds -> template.convertAndSend("/topic/posts/deleted", postIds), e -> log.error("Failed to send data to client", e))
         );
     }
 

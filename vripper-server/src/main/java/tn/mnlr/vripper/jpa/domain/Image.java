@@ -60,18 +60,11 @@ public class Image {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Image image = (Image) o;
-        return index == image.index &&
-                current == image.current &&
-                total == image.total &&
-                Objects.equals(id, image.id) &&
-                Objects.equals(host, image.host) &&
-                Objects.equals(url, image.url) &&
-                status == image.status &&
-                Objects.equals(postId, image.postId);
+        return Objects.equals(url, image.url);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, host, url, index, current, total, status, postId);
+        return Objects.hash(url);
     }
 }

@@ -1,9 +1,6 @@
 package tn.mnlr.vripper.q;
 
-import lombok.Getter;
-import lombok.NonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tn.mnlr.vripper.host.Host;
@@ -17,24 +14,19 @@ import java.util.*;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
-public class DownloadQ {
-
-    private static final Logger logger = LoggerFactory.getLogger(DownloadQ.class);
+@Slf4j
+public class PendingQ {
 
     private final PostDataService postDataService;
     private final AppSettingsService appSettingsService;
     private final List<Host> hosts;
 
-    private final ConcurrentHashMap<Host, BlockingDeque<DownloadJob>> downloadQ = new ConcurrentHashMap<>();
-
-    @Getter
-    private final Map<String, AtomicInteger> downloading = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Host, BlockingDeque<DownloadJob>> pendingQ = new ConcurrentHashMap<>();
 
     @Autowired
-    public DownloadQ(PostDataService postDataService, AppSettingsService appSettingsService, List<Host> hosts) {
+    public PendingQ(PostDataService postDataService, AppSettingsService appSettingsService, List<Host> hosts) {
         this.postDataService = postDataService;
         this.appSettingsService = appSettingsService;
         this.hosts = hosts;
@@ -42,32 +34,20 @@ public class DownloadQ {
 
     @PostConstruct
     private void init() {
-        hosts.forEach(host -> downloadQ.put(host, new LinkedBlockingDeque<>()));
+        hosts.forEach(host -> pendingQ.put(host, new LinkedBlockingDeque<>()));
     }
 
     public void put(Post post, Image image) throws InterruptedException {
-        logger.debug(String.format("Enqueuing a job for %s", image.getUrl()));
+        log.debug(String.format("Enqueuing a job for %s", image.getUrl()));
         image.init();
         postDataService.updateImageStatus(image.getStatus(), image.getId());
         postDataService.updateImageCurrent(image.getCurrent(), image.getId());
         DownloadJob downloadJob = new DownloadJob(post, image);
-        downloadQ.get(downloadJob.getImage().getHost()).putLast(downloadJob);
-        beforeJobStart(post.getPostId());
-    }
-
-    public void beforeJobStart(String postId) {
-        checkKeyRunningPosts(postId);
-        downloading.get(postId).incrementAndGet();
-    }
-
-    private synchronized void checkKeyRunningPosts(@NonNull final String postId) {
-        if (!downloading.containsKey(postId)) {
-            downloading.put(postId, new AtomicInteger(0));
-        }
+        pendingQ.get(downloadJob.getImage().getHost()).putLast(downloadJob);
     }
 
     public void remove(final DownloadJob downloadJob) {
-        downloadQ.get(downloadJob.getImage().getHost()).remove(downloadJob);
+        pendingQ.get(downloadJob.getImage().getHost()).remove(downloadJob);
     }
 
     public List<DownloadJob> peek() {
@@ -76,7 +56,7 @@ public class DownloadQ {
             return downloadJobs;
         }
         for (Host host : hosts) {
-            Iterator<DownloadJob> it = downloadQ.get(host).iterator();
+            Iterator<DownloadJob> it = pendingQ.get(host).iterator();
             for (int i = 0; i < appSettingsService.getSettings().getMaxThreads(); i++) {
                 DownloadJob downloadJob = it.hasNext() ? it.next() : null;
                 if (downloadJob != null) {
@@ -94,10 +74,10 @@ public class DownloadQ {
     }
 
     public int size() {
-        return downloadQ.values().stream().mapToInt(BlockingDeque::size).sum();
+        return pendingQ.values().stream().mapToInt(BlockingDeque::size).sum();
     }
 
     public Iterable<? extends Map.Entry<Host, BlockingDeque<DownloadJob>>> entries() {
-        return downloadQ.entrySet();
+        return pendingQ.entrySet();
     }
 }

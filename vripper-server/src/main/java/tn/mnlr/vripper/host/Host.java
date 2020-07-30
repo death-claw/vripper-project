@@ -149,11 +149,6 @@ abstract public class Host {
                     byte[] buffer = new byte[READ_BUFFER_SIZE];
                     int read;
                     while ((read = downloadStream.read(buffer, 0, READ_BUFFER_SIZE)) != -1) {
-                        if (Thread.interrupted()) {
-                            image.setStatus(Status.ERROR);
-                            postDataService.updateImageStatus(image.getStatus(), image.getId());
-                            return;
-                        }
                         fos.write(buffer, 0, read);
                         image.increase(read);
                         downloadSpeedService.increase(read);
@@ -173,7 +168,7 @@ abstract public class Host {
                 imageFileData.setFileName(finalName.getName());
             }
         } catch (Exception e) {
-            if (Thread.interrupted()) {
+            if (Thread.interrupted() || imageFileData.getImageRequest().isAborted()) {
                 throw new InterruptedException("Download was interrupted");
             }
             throw new DownloadException(e);
