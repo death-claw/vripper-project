@@ -125,7 +125,7 @@ public class PostRestEndpoint {
         }
     }
 
-    public DownloadPath getDownloadPath(String postId) {
+    private DownloadPath getDownloadPath(String postId) {
         Optional<Post> _post = postDataService.findPostByPostId(postId);
         if (_post.isPresent()) {
             Post post = _post.get();

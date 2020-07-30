@@ -103,7 +103,7 @@ public class ExecutionService {
     }
 
     private void restart(@NonNull String postId) {
-        if (isRunning(postId)) {
+        if (isRunning(postId) || isPending(postId)) {
             log.warn(String.format("Cannot restart, jobs are currently running for post id %s", postId));
             return;
         }
@@ -125,16 +125,13 @@ public class ExecutionService {
         }
     }
 
+    private boolean isPending(String postId) {
+        return pendingQ.isPending(postId);
+    }
+
     public boolean isRunning(@NonNull final String postId) {
         AtomicInteger runningCount = downloadCount.get(postId);
         return runningCount != null && runningCount.get() > 0;
-    }
-
-    private void removeScheduled(Post post) {
-        for (Map.Entry<Host, BlockingDeque<DownloadJob>> entry : pendingQ.entries()) {
-            entry.getValue().removeIf(next -> next.getImage().getPostId().equals(post.getPostId()));
-        }
-        postDataService.finishPost(post);
     }
 
     private void stop(String postId) {
@@ -147,7 +144,7 @@ public class ExecutionService {
             if (FINISHED.contains(post.getStatus())) {
                 return;
             }
-            removeScheduled(post);
+            pendingQ.remove(post);
             stopRunning(postId);
             postDataService.stopImagesByPostIdAndIsNotCompleted(postId);
             postService.stopFetchingMetadata(post);

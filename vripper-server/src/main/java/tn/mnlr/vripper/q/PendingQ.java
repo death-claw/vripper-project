@@ -77,7 +77,14 @@ public class PendingQ {
         return pendingQ.values().stream().mapToInt(BlockingDeque::size).sum();
     }
 
-    public Iterable<? extends Map.Entry<Host, BlockingDeque<DownloadJob>>> entries() {
-        return pendingQ.entrySet();
+    public void remove(Post post) {
+        for (Map.Entry<Host, BlockingDeque<DownloadJob>> entry : pendingQ.entrySet()) {
+            entry.getValue().removeIf(next -> next.getImage().getPostId().equals(post.getPostId()));
+        }
+        postDataService.finishPost(post);
+    }
+
+    public boolean isPending(String postId) {
+        return pendingQ.values().stream().flatMap(Collection::stream).anyMatch(e -> e.getPost().getPostId().equals(postId));
     }
 }
