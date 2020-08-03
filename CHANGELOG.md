@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.0.0] - 2020-08-03
+### Changed
+- Major rewrites
+- Introducing a proper database for persistence
+
 ## [2.12.1] - 2020-05-22
 ### Changed
 - Fix alternative name bug
