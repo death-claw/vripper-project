@@ -16,7 +16,7 @@ export class StatusBarComponent implements OnInit, OnDestroy {
   }
 
   downloadSpeed$: Subject<DownloadSpeed> = new BehaviorSubject(new DownloadSpeed('0 B'));
-  globalState$: Subject<GlobalState> = new BehaviorSubject(new GlobalState(0, 0, 0, 0));
+  globalState$: Subject<GlobalState> = new BehaviorSubject(new GlobalState(0, 0, 0));
   selected$: Subject<number> = new BehaviorSubject(0);
   subscriptions: Subscription[] = [];
 

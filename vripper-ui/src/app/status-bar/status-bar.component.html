@@ -4,7 +4,6 @@
   <span *ngIf="downloadSpeed$ | async as speed">{{ speed.speed + '/s' }}</span>
   <ng-container *ngIf="globalState$ | async as state">
     <span>Downloading: {{ state!.running }}</span>
-    <span>Pending: {{ state!.queued }}</span>
     <span>Remaining: {{ state!.remaining }}</span>
     <span>Error: {{ state!.error }}</span>
   </ng-container>

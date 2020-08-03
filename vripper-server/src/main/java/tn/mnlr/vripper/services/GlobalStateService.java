@@ -35,7 +35,6 @@ public class GlobalStateService {
         GlobalState newGlobalState = new GlobalState(
                 executionService.runningCount(),
                 pendingQ.size(),
-                dataService.countRemainingImages(),
                 dataService.countErrorImages());
         if (!newGlobalState.equals(currentState)) {
             currentState = newGlobalState;

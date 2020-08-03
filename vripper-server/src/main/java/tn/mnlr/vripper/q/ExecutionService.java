@@ -32,7 +32,7 @@ public class ExecutionService {
     private final ExecutorService executor = Executors.newFixedThreadPool(MAX_POOL_SIZE);
     private final BlockingQueue<DownloadJob> executionQueue = new LinkedBlockingQueue<>();
     private final Map<DownloadJob, Future<?>> futures = new ConcurrentHashMap<>();
-    private final Map<String, AtomicInteger> downloadCount = new ConcurrentHashMap<>();
+//    private final Map<String, AtomicInteger> downloadCount = new ConcurrentHashMap<>();
 
     private final PendingQ pendingQ;
     private final AppSettingsService settings;
@@ -106,7 +106,7 @@ public class ExecutionService {
     }
 
     private void restart(@NonNull String postId) {
-        if (isRunning(postId) || isPending(postId)) {
+        if (isPending(postId)) {
             log.warn(String.format("Cannot restart, jobs are currently running for post id %s", postId));
             return;
         }
@@ -130,11 +130,6 @@ public class ExecutionService {
 
     private boolean isPending(String postId) {
         return pendingQ.isPending(postId);
-    }
-
-    public boolean isRunning(@NonNull final String postId) {
-        AtomicInteger runningCount = downloadCount.get(postId);
-        return runningCount != null && runningCount.get() > 0;
     }
 
     private void stop(String postId) {
@@ -210,21 +205,9 @@ public class ExecutionService {
         futures.put(downloadJob, executor.submit(runnable));
     }
 
-    public void beforeJobStart(String postId) {
-        checkKeyRunningPosts(postId);
-        downloadCount.get(postId).incrementAndGet();
-    }
-
-    private synchronized void checkKeyRunningPosts(@NonNull final String postId) {
-        if (!downloadCount.containsKey(postId)) {
-            downloadCount.put(postId, new AtomicInteger(0));
-        }
-    }
-
     public synchronized void afterJobFinish(DownloadJob downloadJob) {
-        int count = downloadCount.get(downloadJob.getPost().getPostId()).decrementAndGet();
-        if (count == 0 && !pendingQ.isPending(downloadJob.getPost().getPostId())) {
-            downloadCount.remove(downloadJob.getPost().getPostId());
+        int count = pendingQ.afterJobFinish(downloadJob.getPost().getPostId());
+        if (count == 0) {
             dataService.finishPost(downloadJob.getPost());
             mutexService.removePostLock(downloadJob.getPost().getPostId());
         }

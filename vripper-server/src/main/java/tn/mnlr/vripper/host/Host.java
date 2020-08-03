@@ -129,11 +129,12 @@ abstract public class Host {
                 }
                 File destinationFolder;
                 synchronized (LOCK) {
-                    if (post.getPostFolderName() == null) {
-                        pathService.createDefaultPostFolder(post);
+                    Post updatedPost = dataService.findPostById(post.getId()).orElseThrow();
+                    if (updatedPost.getPostFolderName() == null) {
+                        pathService.createDefaultPostFolder(updatedPost);
                     }
-                    destinationFolder = pathService.getDownloadDestinationFolder(post);
-                    authService.leaveThanks(post);
+                    destinationFolder = pathService.getDownloadDestinationFolder(updatedPost);
+                    authService.leaveThanks(updatedPost);
                 }
                 File outputFile = new File(destinationFolder.getPath() + File.separator + String.format("%03d_", image.getIndex()) + imageFileData.getImageName() + ".tmp");
                 try (InputStream downloadStream = response.getEntity().getContent(); FileOutputStream fos = new FileOutputStream(outputFile)) {
@@ -161,7 +162,7 @@ abstract public class Host {
                     }
                     dataService.updateImageStatus(image.getStatus(), image.getId());
                 }
-                File finalName = checkImageTypeAndRename(post, outputFile, imageFileData.getImageName(), image.getIndex());
+                File finalName = checkImageTypeAndRename(dataService.findPostById(post.getId()).orElseThrow(), outputFile, imageFileData.getImageName(), image.getIndex());
                 imageFileData.setFileName(finalName.getName());
             }
         } catch (Exception e) {
@@ -299,8 +300,8 @@ abstract public class Host {
             this.headers = headers;
         }
 
-        private Document document;
-        private Header[] headers;
+        private final Document document;
+        private final Header[] headers;
     }
 
     @Override

@@ -68,14 +68,6 @@ public class ImageRepository implements IImageRepository {
     }
 
     @Override
-    public Integer countRemaining() {
-        return jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM IMAGE AS image WHERE image.TOTAL = 0 OR image.TOTAL <> image.CURRENT",
-                Integer.class
-        );
-    }
-
-    @Override
     public Integer countError() {
         return jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM IMAGE AS image WHERE image.STATUS = 'ERROR'",

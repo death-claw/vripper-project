@@ -8,13 +8,11 @@ import java.util.Objects;
 public class GlobalState {
 
     private final long running;
-    private final long queued;
     private final long remaining;
     private final long error;
 
-    GlobalState(long running, long queued, long remaining, long error) {
+    GlobalState(long running, long remaining, long error) {
         this.running = running;
-        this.queued = queued;
         this.remaining = remaining;
         this.error = error;
     }
@@ -24,11 +22,11 @@ public class GlobalState {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GlobalState that = (GlobalState) o;
-        return running == that.running && queued == that.queued && remaining == that.remaining && error == that.error;
+        return running == that.running && remaining == that.remaining && error == that.error;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(running, queued, remaining, error);
+        return Objects.hash(running, remaining, error);
     }
 }

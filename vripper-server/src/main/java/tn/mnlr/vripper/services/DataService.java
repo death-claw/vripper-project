@@ -169,10 +169,6 @@ public class DataService {
 
     }
 
-    public long countRemainingImages() {
-        return imageRepository.countRemaining();
-    }
-
     public long countErrorImages() {
         return imageRepository.countError();
     }

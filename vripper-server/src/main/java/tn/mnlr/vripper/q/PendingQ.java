@@ -14,6 +14,7 @@ import java.util.*;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Slf4j
@@ -24,6 +25,7 @@ public class PendingQ {
     private final List<Host> hosts;
 
     private final ConcurrentHashMap<Host, BlockingDeque<DownloadJob>> pendingQ = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, AtomicInteger> toBeExecuted = new ConcurrentHashMap<>();
 
     @Autowired
     public PendingQ(DataService dataService, AppSettingsService appSettingsService, List<Host> hosts) {
@@ -44,6 +46,14 @@ public class PendingQ {
         dataService.updateImageCurrent(image.getCurrent(), image.getId());
         DownloadJob downloadJob = new DownloadJob(post, image);
         pendingQ.get(downloadJob.getImage().getHost()).putLast(downloadJob);
+        checkKey(post.getPostId());
+        toBeExecuted.get(post.getPostId()).incrementAndGet();
+    }
+
+    private synchronized void checkKey(String postId) {
+        if (!toBeExecuted.containsKey(postId)) {
+            toBeExecuted.put(postId, new AtomicInteger(0));
+        }
     }
 
     public void remove(final DownloadJob downloadJob) {
@@ -74,7 +84,7 @@ public class PendingQ {
     }
 
     public int size() {
-        return pendingQ.values().stream().mapToInt(BlockingDeque::size).sum();
+        return toBeExecuted.values().stream().mapToInt(AtomicInteger::get).sum();
     }
 
     public void remove(Post post) {
@@ -85,6 +95,14 @@ public class PendingQ {
     }
 
     public boolean isPending(String postId) {
-        return pendingQ.values().stream().flatMap(Collection::stream).anyMatch(e -> e.getPost().getPostId().equals(postId));
+        return toBeExecuted.containsKey(postId);
+    }
+
+    public int afterJobFinish(String postId) {
+        int count = toBeExecuted.get(postId).decrementAndGet();
+        if (count == 0) {
+            toBeExecuted.remove(postId);
+        }
+        return count;
     }
 }

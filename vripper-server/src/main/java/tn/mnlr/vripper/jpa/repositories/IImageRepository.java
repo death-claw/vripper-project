@@ -14,8 +14,6 @@ public interface IImageRepository extends IRepository {
 
     List<Image> findByPostId(String postId);
 
-    Integer countRemaining();
-
     Integer countError();
 
     List<Image> findByPostIdAndIsNotCompleted(String postId);
