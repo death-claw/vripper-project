@@ -7,7 +7,7 @@ import org.apache.http.impl.execchain.RequestAbortedException;
 import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.jpa.domain.Metadata;
 import tn.mnlr.vripper.jpa.domain.Post;
-import tn.mnlr.vripper.services.PostDataService;
+import tn.mnlr.vripper.services.DataService;
 
 @Slf4j
 public class MetadataRunnable implements Runnable {
@@ -16,19 +16,19 @@ public class MetadataRunnable implements Runnable {
     private final Post post;
 
     private final MetadataCache metadataCache;
-    private final PostDataService postDataService;
+    private final DataService dataService;
 
     public MetadataRunnable(Post post) {
         this.post = post;
         this.metadataCache = SpringContext.getBean(MetadataCache.class);
-        this.postDataService = SpringContext.getBean(PostDataService.class);
+        this.dataService = SpringContext.getBean(DataService.class);
     }
 
     @Override
     public void run() {
         try {
             Metadata metadata = metadataCache.get(post);
-            postDataService.setMetadata(post, metadata);
+            dataService.setMetadata(post, metadata);
         } catch (Exception e) {
             if (e.getCause() instanceof InterruptedException || (e.getCause() instanceof FailsafeException && (e.getCause().getCause() instanceof InterruptedException || e.getCause().getCause() instanceof RequestAbortedException))) {
                 return;

@@ -5,24 +5,34 @@ import net.jodah.failsafe.Failsafe;
 import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.jpa.domain.enums.Status;
-import tn.mnlr.vripper.services.PostDataService;
+import tn.mnlr.vripper.services.DataService;
+import tn.mnlr.vripper.services.MutexService;
+
+import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 public class ExecuteRunnable implements Runnable {
 
     private final ExecutionService executionService;
-    private final PostDataService postDataService;
+    private final DataService dataService;
+    private final MutexService mutexService;
+
     private final DownloadJob downloadJob;
 
     public ExecuteRunnable(final DownloadJob downloadJob) {
         executionService = SpringContext.getBean(ExecutionService.class);
-        postDataService = SpringContext.getBean(PostDataService.class);
+        dataService = SpringContext.getBean(DataService.class);
+        mutexService = SpringContext.getBean(MutexService.class);
         this.downloadJob = downloadJob;
     }
 
     @Override
     public void run() {
 
+        mutexService.createPostLock(downloadJob.getPost().getPostId());
+        ReentrantLock mutex = mutexService.getPostLock(downloadJob.getPost().getPostId());
+        mutex.lock();
+        downloadJob.refresh();
         executionService.beforeJobStart(downloadJob.getPost().getPostId());
         Failsafe.with(VripperApplication.retryPolicy)
                 .onFailure(e -> {
@@ -32,12 +42,13 @@ public class ExecuteRunnable implements Runnable {
                     }
                     log.error(String.format("Failed to download %s after %d tries", downloadJob.getImage().getUrl(), e.getAttemptCount()), e.getFailure());
                     downloadJob.getImage().setStatus(Status.ERROR);
-                    postDataService.updateImageStatus(downloadJob.getImage().getStatus(), downloadJob.getImage().getId());
+                    dataService.updateImageStatus(downloadJob.getImage().getStatus(), downloadJob.getImage().getId());
                 })
                 .onComplete(e -> {
-                    postDataService.afterJobFinish(downloadJob.getImage(), downloadJob.getPost());
+                    mutex.unlock();
+                    dataService.afterJobFinish(downloadJob.getImage(), downloadJob.getPost());
                     executionService.afterJobFinish(downloadJob);
-                    log.info(String.format("Finished downloading %s", downloadJob.getImage().getUrl()));
+                    log.debug(String.format("Finished downloading %s", downloadJob.getImage().getUrl()));
                 }).run(downloadJob);
     }
 }

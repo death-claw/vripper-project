@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class VGHandler {
 
-    private final PostDataService postDataService;
+    private final DataService dataService;
     private final PostService postService;
     private final CommonExecutor commonExecutor;
 
@@ -29,8 +29,8 @@ public class VGHandler {
     private final LoadingCache<Queued, List<CachedPost>> cache;
 
     @Autowired
-    public VGHandler(PostDataService postDataService, PostService postService, CommonExecutor commonExecutor) {
-        this.postDataService = postDataService;
+    public VGHandler(DataService dataService, PostService postService, CommonExecutor commonExecutor) {
+        this.dataService = dataService;
         this.postService = postService;
         this.commonExecutor = commonExecutor;
 
@@ -72,7 +72,7 @@ public class VGHandler {
                         }
                         log.debug(String.format("threadId %s, postId %s is added automatically for download", queued.getThreadId(), queued.getPostId()));
                     } else {
-                        postDataService.newQueueLink(queued);
+                        dataService.newQueueLink(queued);
                     }
                 };
                 commonExecutor.getGeneralExecutor().submit(runnable);
@@ -81,6 +81,6 @@ public class VGHandler {
     }
 
     public void remove(String threadId) {
-        postDataService.removeQueueLink(threadId);
+        dataService.removeQueueLink(threadId);
     }
 }

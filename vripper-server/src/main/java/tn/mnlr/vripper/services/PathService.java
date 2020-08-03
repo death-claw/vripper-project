@@ -13,8 +13,8 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,16 +22,16 @@ import java.util.stream.Collectors;
 public class PathService {
 
     private final AppSettingsService appSettingsService;
-    private final PostDataService postDataService;
+    private final DataService dataService;
+    private final MutexService mutexService;
 
     private final CommonExecutor commonExecutor;
 
-    private final int MAX_DELETE_ATTEMPTS = 180;
-
     @Autowired
-    public PathService(AppSettingsService appSettingsService, PostDataService postDataService, CommonExecutor commonExecutor) {
+    public PathService(AppSettingsService appSettingsService, DataService dataService, MutexService mutexService, CommonExecutor commonExecutor) {
         this.appSettingsService = appSettingsService;
-        this.postDataService = postDataService;
+        this.dataService = dataService;
+        this.mutexService = mutexService;
         this.commonExecutor = commonExecutor;
     }
 
@@ -49,47 +49,53 @@ public class PathService {
         File sourceFolder = _getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), sanitize(post.getTitle()));
         File destFolder = makeDirs(sourceFolder);
         post.setPostFolderName(destFolder.getName());
-        postDataService.updatePostFolderName(post.getPostFolderName(), post.getId());
+        dataService.updatePostFolderName(post.getPostFolderName(), post.getId());
     }
 
-    public final void rename(String postId, String altName) {
-        Optional<Post> _post = postDataService.findPostByPostId(postId);
-        if (_post.isEmpty()) {
-            return;
-        }
-        Post post = _post.get();
-        post.setTitle(altName);
-        if (post.getPostFolderName() == null) {
-            return;
-        }
-        File newDestFolder = makeDirs(_getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), sanitize(altName)));
-        File currentDesFolder = getDownloadDestinationFolder(post);
-        post.setPostFolderName(newDestFolder.getName());
-
-        List<File> files = Optional.ofNullable(currentDesFolder.listFiles()).stream().flatMap(Arrays::stream).filter(e -> !e.getName().endsWith(".tmp")).collect(Collectors.toList());
-        for (File f : files) {
-            try {
-                Files.move(f.toPath(), Paths.get(newDestFolder.toString(), f.toPath().getFileName().toString()), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException e) {
-                log.error(String.format("Failed to move files from %s to %s", currentDesFolder.toString(), newDestFolder.toString()), e);
-                return;
-            }
-        }
-        postDataService.updatePostFolderName(post.getPostFolderName(), post.getId());
-        postDataService.updatePostTitle(post.getTitle(), post.getId());
-
+    public final void rename(@NonNull String postId, @NonNull String altName) {
         commonExecutor.getGeneralExecutor().submit(() -> {
-            int attemptCount = 0;
-            while (Objects.requireNonNull(currentDesFolder.listFiles()).length != 0 && attemptCount < MAX_DELETE_ATTEMPTS) {
-                try {
-                    attemptCount++;
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+
+            ReentrantLock postLock = mutexService.getPostLock(postId);
+            if (postLock != null) {
+                postLock.lock();
             }
-            if (!currentDesFolder.delete()) {
-                log.warn(String.format("Failed to remove %s", currentDesFolder.toString()));
+
+            try {
+                Optional<Post> _post = dataService.findPostByPostId(postId);
+                if (_post.isEmpty()) {
+                    return;
+                }
+                Post post = _post.get();
+                if (altName.equals(post.getTitle())) {
+                    return;
+                }
+                post.setTitle(altName);
+                dataService.updatePostTitle(post.getTitle(), post.getId());
+                if (post.getPostFolderName() == null) {
+                    return;
+                }
+                File newDestFolder = makeDirs(_getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), sanitize(altName)));
+                File currentDesFolder = getDownloadDestinationFolder(post);
+                post.setPostFolderName(newDestFolder.getName());
+                dataService.updatePostFolderName(post.getPostFolderName(), post.getId());
+
+                List<File> files = Optional.ofNullable(currentDesFolder.listFiles()).stream().flatMap(Arrays::stream).filter(e -> !e.getName().endsWith(".tmp")).collect(Collectors.toList());
+                for (File f : files) {
+                    try {
+                        Files.move(f.toPath(), Paths.get(newDestFolder.toString(), f.toPath().getFileName().toString()), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException e) {
+                        log.error(String.format("Failed to move files from %s to %s", currentDesFolder.toString(), newDestFolder.toString()), e);
+                        return;
+                    }
+                }
+
+                if (!currentDesFolder.delete()) {
+                    log.warn(String.format("Failed to remove %s", currentDesFolder.toString()));
+                }
+            } finally {
+                if (postLock != null) {
+                    postLock.unlock();
+                }
             }
         });
     }

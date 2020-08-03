@@ -11,8 +11,8 @@ import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.Queued;
 import tn.mnlr.vripper.q.ExecutionService;
 import tn.mnlr.vripper.services.CommonExecutor;
+import tn.mnlr.vripper.services.DataService;
 import tn.mnlr.vripper.services.PathService;
-import tn.mnlr.vripper.services.PostDataService;
 import tn.mnlr.vripper.services.VGHandler;
 import tn.mnlr.vripper.services.post.CachedPost;
 import tn.mnlr.vripper.services.post.PostService;
@@ -37,7 +37,7 @@ public class PostRestEndpoint {
 
     private static final Pattern VG_URL_PATTERN = Pattern.compile("https://vipergirls\\.to/threads/(\\d+)((.*p=)(\\d+))?");
 
-    private final PostDataService postDataService;
+    private final DataService dataService;
     private final PathService pathService;
     private final VGHandler vgHandler;
     private final ExecutionService executionService;
@@ -47,8 +47,8 @@ public class PostRestEndpoint {
     private static final Byte LOCK = -1;
 
     @Autowired
-    public PostRestEndpoint(PostDataService postDataService, PathService pathService, VGHandler vgHandler, ExecutionService executionService, PostService postService, CommonExecutor commonExecutor) {
-        this.postDataService = postDataService;
+    public PostRestEndpoint(DataService dataService, PathService pathService, VGHandler vgHandler, ExecutionService executionService, PostService postService, CommonExecutor commonExecutor) {
+        this.dataService = dataService;
         this.pathService = pathService;
         this.vgHandler = vgHandler;
         this.executionService = executionService;
@@ -126,7 +126,7 @@ public class PostRestEndpoint {
     }
 
     private DownloadPath getDownloadPath(String postId) {
-        Optional<Post> _post = postDataService.findPostByPostId(postId);
+        Optional<Post> _post = dataService.findPostByPostId(postId);
         if (_post.isPresent()) {
             Post post = _post.get();
             if (post.getPostFolderName() == null) {
@@ -172,7 +172,7 @@ public class PostRestEndpoint {
             List<RemoveResult> result = new ArrayList<>();
             List<String> collect = postIds.stream().map(PostId::getPostId).peek(e -> result.add(new RemoveResult(e))).collect(Collectors.toList());
             executionService.stopAll(collect);
-            postDataService.removeAll(collect);
+            dataService.removeAll(collect);
             return result;
         }
     }
@@ -209,14 +209,15 @@ public class PostRestEndpoint {
     public void renamePostsToFirst(@RequestBody @NonNull List<PostId> postToRename) {
         synchronized (LOCK) {
             for (PostId postId : postToRename) {
-                Optional<Metadata> _metadata = postDataService.findMetadataByPostId(postId.getPostId());
+                Optional<Metadata> _metadata = dataService.findMetadataByPostId(postId.getPostId());
                 if (_metadata.isPresent()) {
                     Metadata metadata = _metadata.get();
                     if (metadata.getResolvedNames() != null) {
                         List<String> resolvedNames = metadata.getResolvedNames();
                         if (!resolvedNames.isEmpty()) {
+                            String altTitle = resolvedNames.get(0);
                             try {
-                                pathService.rename(postId.getPostId(), resolvedNames.get(0));
+                                pathService.rename(postId.getPostId(), altTitle);
                             } catch (Exception e) {
                                 log.error(String.format("Failed to rename post with postId = %s", postId.getPostId()), e);
                                 throw new ServerErrorException(e.getMessage());
@@ -232,14 +233,14 @@ public class PostRestEndpoint {
     @ResponseStatus(value = HttpStatus.OK)
     public RemoveAllResult clearAll() {
         synchronized (LOCK) {
-            return new RemoveAllResult(postDataService.clearCompleted());
+            return new RemoveAllResult(dataService.clearCompleted());
         }
     }
 
     @GetMapping("/grab/{threadId}")
     @ResponseStatus(value = HttpStatus.OK)
     public List<CachedPost> grab(@PathVariable("threadId") @NonNull String threadId) {
-        Queued queued = postDataService.findQueuedByThreadId(threadId).orElseThrow(() -> new NotFoundException(String.format("Unable to find links for threadId = %s", threadId)));
+        Queued queued = dataService.findQueuedByThreadId(threadId).orElseThrow(() -> new NotFoundException(String.format("Unable to find links for threadId = %s", threadId)));
         try {
             return vgHandler.getCache().get(queued);
         } catch (ExecutionException e) {

@@ -10,7 +10,7 @@ import tn.mnlr.vripper.jpa.domain.enums.Status;
 import tn.mnlr.vripper.q.PendingQ;
 import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.services.CommonExecutor;
-import tn.mnlr.vripper.services.PostDataService;
+import tn.mnlr.vripper.services.DataService;
 
 import java.util.Map;
 import java.util.Set;
@@ -23,21 +23,21 @@ public class PostService {
 
     private final AppSettingsService appSettingsService;
     private final PendingQ pendingQ;
-    private final PostDataService postDataService;
+    private final DataService dataService;
     private final CommonExecutor commonExecutor;
     private final Map<String, Future<?>> fetchingMetadata = new ConcurrentHashMap<>();
 
     @Autowired
-    public PostService(AppSettingsService appSettingsService, PendingQ pendingQ, PostDataService postDataService, PostDataService postDataService1, CommonExecutor commonExecutor) {
+    public PostService(AppSettingsService appSettingsService, PendingQ pendingQ, DataService dataService, DataService dataService1, CommonExecutor commonExecutor) {
         this.appSettingsService = appSettingsService;
         this.pendingQ = pendingQ;
-        this.postDataService = postDataService1;
+        this.dataService = dataService1;
         this.commonExecutor = commonExecutor;
     }
 
     public void addPost(String postId, String threadId) throws PostParseException {
 
-        if (postDataService.exists(postId)) {
+        if (dataService.exists(postId)) {
             log.warn(String.format("skipping %s, already loaded", postId));
             return;
         }
@@ -51,7 +51,7 @@ public class PostService {
         Post post = parseResult.getPost().get();
         Set<Image> images = parseResult.getImages();
 
-        postDataService.newPost(post, images);
+        dataService.newPost(post, images);
 
         // Metadata thread
         fetchingMetadata.put(post.getPostId(), commonExecutor.getGeneralExecutor().submit(new MetadataRunnable(post)));
@@ -71,7 +71,7 @@ public class PostService {
             post.setStatus(Status.STOPPED);
             log.debug("Auto start downloads option is disabled");
         }
-        postDataService.updatePostStatus(post.getStatus(), post.getId());
+        dataService.updatePostStatus(post.getStatus(), post.getId());
     }
 
     public void stopFetchingMetadata(Post post) {

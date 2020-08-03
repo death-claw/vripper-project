@@ -53,7 +53,7 @@ abstract public class Host {
     private AppSettingsService appSettingsService;
 
     @Autowired
-    private PostDataService postDataService;
+    private DataService dataService;
 
     @Autowired
     private ConnectionManager cm;
@@ -83,26 +83,17 @@ abstract public class Host {
 
         image.setStatus(Status.DOWNLOADING);
         image.setCurrent(0);
-        postDataService.updateImageStatus(image.getStatus(), image.getId());
-        postDataService.updateImageCurrent(image.getCurrent(), image.getId());
+        dataService.updateImageStatus(image.getStatus(), image.getId());
+        dataService.updateImageCurrent(image.getCurrent(), image.getId());
 
         HttpClientContext context = HttpClientContext.create();
         context.setCookieStore(new BasicCookieStore());
         try {
 
-            File destinationFolder;
-            synchronized (LOCK) {
-                if (post.getPostFolderName() == null) {
-                    pathService.createDefaultPostFolder(post);
-                }
-                destinationFolder = pathService.getDownloadDestinationFolder(post);
-                authService.leaveThanks(post);
-            }
-
             synchronized (LOCK) {
                 if (!post.getStatus().equals(Status.DOWNLOADING) && !post.getStatus().equals(Status.PARTIAL)) {
                     post.setStatus(Status.DOWNLOADING);
-                    postDataService.updatePostStatus(post.getStatus(), post.getId());
+                    dataService.updatePostStatus(post.getStatus(), post.getId());
                 }
             }
 
@@ -126,7 +117,6 @@ abstract public class Host {
             String formatImageFileName = pathService.formatImageFileName(imageFileData.getImageName());
             log.debug(String.format("Sanitizing image name from %s to %s", imageFileData.getImageName(), formatImageFileName));
             imageFileData.setImageName(formatImageFileName);
-            log.debug(String.format("Saving to %s", destinationFolder.getPath()));
 
             HttpClient client = cm.getClient().build();
 
@@ -137,11 +127,18 @@ abstract public class Host {
                     EntityUtils.consumeQuietly(response.getEntity());
                     throw new DownloadException(String.format("Server returned code %d", response.getStatusLine().getStatusCode()));
                 }
-
+                File destinationFolder;
+                synchronized (LOCK) {
+                    if (post.getPostFolderName() == null) {
+                        pathService.createDefaultPostFolder(post);
+                    }
+                    destinationFolder = pathService.getDownloadDestinationFolder(post);
+                    authService.leaveThanks(post);
+                }
                 File outputFile = new File(destinationFolder.getPath() + File.separator + String.format("%03d_", image.getIndex()) + imageFileData.getImageName() + ".tmp");
                 try (InputStream downloadStream = response.getEntity().getContent(); FileOutputStream fos = new FileOutputStream(outputFile)) {
                     image.setTotal(response.getEntity().getContentLength());
-                    postDataService.updateImageTotal(image.getTotal(), image.getId());
+                    dataService.updateImageTotal(image.getTotal(), image.getId());
 
                     log.debug(String.format("%s length is %d", imageFileData.getImageUrl(), image.getTotal()));
                     log.debug(String.format("Starting data transfer for %s", imageFileData.getImageUrl()));
@@ -152,7 +149,7 @@ abstract public class Host {
                         fos.write(buffer, 0, read);
                         image.increase(read);
                         downloadSpeedService.increase(read);
-                        postDataService.updateImageCurrent(image.getCurrent(), image.getId());
+                        dataService.updateImageCurrent(image.getCurrent(), image.getId());
                     }
                     fos.flush();
                     EntityUtils.consumeQuietly(response.getEntity());
@@ -162,7 +159,7 @@ abstract public class Host {
                     } else {
                         image.setStatus(Status.ERROR);
                     }
-                    postDataService.updateImageStatus(image.getStatus(), image.getId());
+                    dataService.updateImageStatus(image.getStatus(), image.getId());
                 }
                 File finalName = checkImageTypeAndRename(post, outputFile, imageFileData.getImageName(), image.getIndex());
                 imageFileData.setFileName(finalName.getName());

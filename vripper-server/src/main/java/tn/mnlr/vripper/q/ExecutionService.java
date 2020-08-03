@@ -9,7 +9,8 @@ import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.enums.Status;
 import tn.mnlr.vripper.services.AppSettingsService;
-import tn.mnlr.vripper.services.PostDataService;
+import tn.mnlr.vripper.services.DataService;
+import tn.mnlr.vripper.services.MutexService;
 import tn.mnlr.vripper.services.post.PostService;
 
 import javax.annotation.PostConstruct;
@@ -35,19 +36,21 @@ public class ExecutionService {
 
     private final PendingQ pendingQ;
     private final AppSettingsService settings;
-    private final PostDataService postDataService;
+    private final DataService dataService;
     private final PostService postService;
+    private final MutexService mutexService;
 
     private boolean pauseQ = false;
     private Thread executionThread;
     private Thread pollThread;
 
     @Autowired
-    public ExecutionService(PendingQ pendingQ, AppSettingsService settings, PostDataService postDataService, PostService postService) {
+    public ExecutionService(PendingQ pendingQ, AppSettingsService settings, DataService dataService, PostService postService, MutexService mutexService) {
         this.pendingQ = pendingQ;
         this.settings = settings;
-        this.postDataService = postDataService;
+        this.dataService = dataService;
         this.postService = postService;
+        this.mutexService = mutexService;
     }
 
     @PostConstruct
@@ -64,7 +67,7 @@ public class ExecutionService {
         executionThread.interrupt();
         pollThread.interrupt();
         executor.shutdown();
-        postDataService.findAllPosts().forEach(p -> {
+        dataService.findAllPosts().forEach(p -> {
             log.debug(String.format("Stopping download jobs for %s", p));
             this.stopRunning(p.getPostId());
         });
@@ -82,7 +85,7 @@ public class ExecutionService {
                         e.getKey().getImageFileData().getImageRequest().abort();
                     }
                     e.getKey().getImage().setStatus(Status.STOPPED);
-                    postDataService.updateImageStatus(e.getKey().getImage().getStatus(), e.getKey().getImage().getId());
+                    dataService.updateImageStatus(e.getKey().getImage().getStatus(), e.getKey().getImage().getId());
                 });
     }
 
@@ -90,7 +93,7 @@ public class ExecutionService {
         if (posIds != null) {
             posIds.forEach(this::stop);
         } else {
-            postDataService.findAllPosts().forEach(p -> this.stop(p.getPostId()));
+            dataService.findAllPosts().forEach(p -> this.stop(p.getPostId()));
         }
     }
 
@@ -98,7 +101,7 @@ public class ExecutionService {
         if (posIds != null) {
             posIds.forEach(this::restart);
         } else {
-            postDataService.findAllPosts().forEach(p -> this.restart(p.getPostId()));
+            dataService.findAllPosts().forEach(p -> this.restart(p.getPostId()));
         }
     }
 
@@ -107,13 +110,13 @@ public class ExecutionService {
             log.warn(String.format("Cannot restart, jobs are currently running for post id %s", postId));
             return;
         }
-        List<Image> images = postDataService.findByPostIdAndIsNotCompleted(postId);
+        List<Image> images = dataService.findByPostIdAndIsNotCompleted(postId);
         if (images.isEmpty()) {
             return;
         }
-        Post post = postDataService.findPostByPostId(postId).orElseThrow();
+        Post post = dataService.findPostByPostId(postId).orElseThrow();
         post.setStatus(Status.PENDING);
-        postDataService.updatePostStatus(post.getStatus(), post.getId());
+        dataService.updatePostStatus(post.getStatus(), post.getId());
         log.debug(String.format("Restarting %d jobs for post id %s", images.size(), postId));
         for (Image image : images) {
             try {
@@ -137,7 +140,7 @@ public class ExecutionService {
     private void stop(String postId) {
         try {
             pauseQ = true;
-            final Post post = postDataService.findPostByPostId(postId).orElseThrow();
+            final Post post = dataService.findPostByPostId(postId).orElseThrow();
             if (post == null) {
                 return;
             }
@@ -146,7 +149,7 @@ public class ExecutionService {
             }
             pendingQ.remove(post);
             stopRunning(postId);
-            postDataService.stopImagesByPostIdAndIsNotCompleted(postId);
+            dataService.stopImagesByPostIdAndIsNotCompleted(postId);
             postService.stopFetchingMetadata(post);
         } finally {
             pauseQ = false;
@@ -220,9 +223,10 @@ public class ExecutionService {
 
     public synchronized void afterJobFinish(DownloadJob downloadJob) {
         int count = downloadCount.get(downloadJob.getPost().getPostId()).decrementAndGet();
-        if (count == 0) {
+        if (count == 0 && !pendingQ.isPending(downloadJob.getPost().getPostId())) {
             downloadCount.remove(downloadJob.getPost().getPostId());
-            postDataService.finishPost(downloadJob.getPost());
+            dataService.finishPost(downloadJob.getPost());
+            mutexService.removePostLock(downloadJob.getPost().getPostId());
         }
         threadCount.get(downloadJob.getImage().getHost()).decrementAndGet();
         futures.remove(downloadJob);

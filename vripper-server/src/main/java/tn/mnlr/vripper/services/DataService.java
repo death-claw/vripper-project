@@ -24,7 +24,7 @@ import java.util.Optional;
 @Service
 @Transactional
 @Slf4j
-public class PostDataService {
+public class DataService {
 
     private final IPostRepository postRepository;
     private final IImageRepository imageRepository;
@@ -60,7 +60,7 @@ public class PostDataService {
     }
 
     @Autowired
-    public PostDataService(IPostRepository postRepository, IImageRepository imageRepository, IQueuedRepository queuedRepository, IMetadataRepository metadataRepository, AppSettingsService appSettingsService) {
+    public DataService(IPostRepository postRepository, IImageRepository imageRepository, IQueuedRepository queuedRepository, IMetadataRepository metadataRepository, AppSettingsService appSettingsService) {
         this.postRepository = postRepository;
         this.imageRepository = imageRepository;
         this.queuedRepository = queuedRepository;

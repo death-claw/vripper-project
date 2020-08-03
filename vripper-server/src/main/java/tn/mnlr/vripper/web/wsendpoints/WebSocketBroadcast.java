@@ -26,17 +26,17 @@ public class WebSocketBroadcast {
     private final VipergirlsAuthService vipergirlsAuthService;
     private final GlobalStateService globalStateService;
     private final DownloadSpeedService downloadSpeedService;
-    private final PostDataService postDataService;
+    private final DataService dataService;
 
     private final List<Disposable> disposables = new ArrayList<>();
 
     @Autowired
-    public WebSocketBroadcast(SimpMessagingTemplate template, VipergirlsAuthService vipergirlsAuthService, GlobalStateService globalStateService, DownloadSpeedService downloadSpeedService, PostDataService postDataService) {
+    public WebSocketBroadcast(SimpMessagingTemplate template, VipergirlsAuthService vipergirlsAuthService, GlobalStateService globalStateService, DownloadSpeedService downloadSpeedService, DataService dataService) {
         this.template = template;
         this.vipergirlsAuthService = vipergirlsAuthService;
         this.globalStateService = globalStateService;
         this.downloadSpeedService = downloadSpeedService;
-        this.postDataService = postDataService;
+        this.dataService = dataService;
     }
 
     @PostConstruct
@@ -58,21 +58,21 @@ public class WebSocketBroadcast {
                 .map(DownloadSpeed::new)
                 .subscribe(speed -> template.convertAndSend("/topic/speed", speed), e -> log.error("Failed to send data to client", e)));
 
-        disposables.add(postDataService.livePost()
+        disposables.add(dataService.livePost()
                 .subscribeOn(Schedulers.io())
                 .buffer(500, TimeUnit.MILLISECONDS)
                 .map(HashSet::new)
                 .filter(e -> !e.isEmpty())
-                .subscribe(ids -> template.convertAndSend("/topic/posts", ids.stream().map(postDataService::findPostById).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList())), e -> log.error("Failed to send data to client", e)));
+                .subscribe(ids -> template.convertAndSend("/topic/posts", ids.stream().map(dataService::findPostById).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList())), e -> log.error("Failed to send data to client", e)));
 
-        disposables.add(postDataService.liveImage()
+        disposables.add(dataService.liveImage()
                 .subscribeOn(Schedulers.io())
                 .buffer(500, TimeUnit.MILLISECONDS)
                 .map(HashSet::new)
                 .filter(e -> !e.isEmpty())
                 .subscribe(id -> id
                                 .stream()
-                                .map(postDataService::findImageById)
+                                .map(dataService::findImageById)
                                 .filter(Optional::isPresent)
                                 .map(Optional::get)
                                 .collect(Collectors.groupingBy(Image::getPostId))
@@ -80,15 +80,15 @@ public class WebSocketBroadcast {
                         e -> log.error("Failed to send data to client", e))
         );
 
-        disposables.add(postDataService.liveQueue()
+        disposables.add(dataService.liveQueue()
                 .subscribeOn(Schedulers.io())
                 .buffer(500, TimeUnit.MILLISECONDS)
                 .map(HashSet::new)
                 .filter(e -> !e.isEmpty())
-                .subscribe(ids -> template.convertAndSend("/topic/queued", ids.stream().map(postDataService::findQueuedById).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList())), e -> log.error("Failed to send data to client", e))
+                .subscribe(ids -> template.convertAndSend("/topic/queued", ids.stream().map(dataService::findQueuedById).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList())), e -> log.error("Failed to send data to client", e))
         );
 
-        disposables.add(postDataService.queueRemove()
+        disposables.add(dataService.queueRemove()
                 .subscribeOn(Schedulers.io())
                 .buffer(500, TimeUnit.MILLISECONDS)
                 .map(HashSet::new)
@@ -96,7 +96,7 @@ public class WebSocketBroadcast {
                 .subscribe(threadIds -> template.convertAndSend("/topic/queued/deleted", threadIds), e -> log.error("Failed to send data to client", e))
         );
 
-        disposables.add(postDataService.postRemove()
+        disposables.add(dataService.postRemove()
                 .subscribeOn(Schedulers.io())
                 .buffer(500, TimeUnit.MILLISECONDS)
                 .map(HashSet::new)

@@ -21,14 +21,14 @@ public class AppDataController {
     private final VipergirlsAuthService vipergirlsAuthService;
     private final GlobalStateService globalStateService;
     private final DownloadSpeedService downloadSpeedService;
-    private final PostDataService postDataService;
+    private final DataService dataService;
 
     @Autowired
-    public AppDataController(VipergirlsAuthService vipergirlsAuthService, GlobalStateService globalStateService, DownloadSpeedService downloadSpeedService, PostDataService postDataService) {
+    public AppDataController(VipergirlsAuthService vipergirlsAuthService, GlobalStateService globalStateService, DownloadSpeedService downloadSpeedService, DataService dataService) {
         this.vipergirlsAuthService = vipergirlsAuthService;
         this.globalStateService = globalStateService;
         this.downloadSpeedService = downloadSpeedService;
-        this.postDataService = postDataService;
+        this.dataService = dataService;
     }
 
     @Getter
@@ -58,16 +58,16 @@ public class AppDataController {
 
     @SubscribeMapping("/posts")
     public Collection<Post> posts() {
-        return StreamSupport.stream(postDataService.findAllPosts().spliterator(), false).collect(Collectors.toList());
+        return StreamSupport.stream(dataService.findAllPosts().spliterator(), false).collect(Collectors.toList());
     }
 
     @SubscribeMapping("/images/{postId}")
     public List<Image> postsDetails(@DestinationVariable("postId") String postId) {
-        return postDataService.findImagesByPostId(postId);
+        return dataService.findImagesByPostId(postId);
     }
 
     @SubscribeMapping("/queued")
     public Collection<Queued> queued() {
-        return StreamSupport.stream(postDataService.findAllQueued().spliterator(), false).collect(Collectors.toList());
+        return StreamSupport.stream(dataService.findAllQueued().spliterator(), false).collect(Collectors.toList());
     }
 }

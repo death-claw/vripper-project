@@ -7,7 +7,7 @@ import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.services.AppSettingsService;
-import tn.mnlr.vripper.services.PostDataService;
+import tn.mnlr.vripper.services.DataService;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
@@ -19,15 +19,15 @@ import java.util.concurrent.LinkedBlockingDeque;
 @Slf4j
 public class PendingQ {
 
-    private final PostDataService postDataService;
+    private final DataService dataService;
     private final AppSettingsService appSettingsService;
     private final List<Host> hosts;
 
     private final ConcurrentHashMap<Host, BlockingDeque<DownloadJob>> pendingQ = new ConcurrentHashMap<>();
 
     @Autowired
-    public PendingQ(PostDataService postDataService, AppSettingsService appSettingsService, List<Host> hosts) {
-        this.postDataService = postDataService;
+    public PendingQ(DataService dataService, AppSettingsService appSettingsService, List<Host> hosts) {
+        this.dataService = dataService;
         this.appSettingsService = appSettingsService;
         this.hosts = hosts;
     }
@@ -40,8 +40,8 @@ public class PendingQ {
     public void put(Post post, Image image) throws InterruptedException {
         log.debug(String.format("Enqueuing a job for %s", image.getUrl()));
         image.init();
-        postDataService.updateImageStatus(image.getStatus(), image.getId());
-        postDataService.updateImageCurrent(image.getCurrent(), image.getId());
+        dataService.updateImageStatus(image.getStatus(), image.getId());
+        dataService.updateImageCurrent(image.getCurrent(), image.getId());
         DownloadJob downloadJob = new DownloadJob(post, image);
         pendingQ.get(downloadJob.getImage().getHost()).putLast(downloadJob);
     }
@@ -81,7 +81,7 @@ public class PendingQ {
         for (Map.Entry<Host, BlockingDeque<DownloadJob>> entry : pendingQ.entrySet()) {
             entry.getValue().removeIf(next -> next.getImage().getPostId().equals(post.getPostId()));
         }
-        postDataService.finishPost(post);
+        dataService.finishPost(post);
     }
 
     public boolean isPending(String postId) {

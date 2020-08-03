@@ -6,7 +6,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import tn.mnlr.vripper.jpa.repositories.IRepository;
-import tn.mnlr.vripper.services.PostDataService;
+import tn.mnlr.vripper.services.DataService;
 
 import java.util.Set;
 
@@ -16,19 +16,19 @@ public class EventListenerBean {
     @Getter
     private static boolean init = false;
 
-    private final PostDataService postDataService;
+    private final DataService dataService;
     private final Set<IRepository> repositorySet;
 
     @Autowired
-    public EventListenerBean(PostDataService postDataService, Set<IRepository> repositorySet) {
-        this.postDataService = postDataService;
+    public EventListenerBean(DataService dataService, Set<IRepository> repositorySet) {
+        this.dataService = dataService;
         this.repositorySet = repositorySet;
     }
 
     @EventListener
     public void onApplicationEvent(ContextRefreshedEvent event) {
         repositorySet.forEach(IRepository::init);
-        postDataService.setDownloadingToStopped();
+        dataService.setDownloadingToStopped();
         init = true;
     }
 

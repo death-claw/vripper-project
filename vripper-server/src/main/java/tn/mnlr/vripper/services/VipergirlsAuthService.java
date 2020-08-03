@@ -29,7 +29,7 @@ public class VipergirlsAuthService {
     private final ConnectionManager cm;
     private final AppSettingsService appSettingsService;
     private final CommonExecutor commonExecutor;
-    private final PostDataService postDataService;
+    private final DataService dataService;
 
     @Getter
     private final HttpClientContext context = HttpClientContext.create();
@@ -44,11 +44,11 @@ public class VipergirlsAuthService {
     private final PublishProcessor<String> loggedInUser = PublishProcessor.create();
 
     @Autowired
-    public VipergirlsAuthService(ConnectionManager cm, AppSettingsService appSettingsService, CommonExecutor commonExecutor, PostDataService postDataService) {
+    public VipergirlsAuthService(ConnectionManager cm, AppSettingsService appSettingsService, CommonExecutor commonExecutor, DataService dataService) {
         this.cm = cm;
         this.appSettingsService = appSettingsService;
         this.commonExecutor = commonExecutor;
-        this.postDataService = postDataService;
+        this.dataService = dataService;
     }
 
     @PostConstruct
@@ -181,7 +181,7 @@ public class VipergirlsAuthService {
         try (CloseableHttpResponse response = client.execute(postThanks, context)) {
             if (response.getStatusLine().getStatusCode() / 100 == 2) {
                 post.setThanked(true);
-                postDataService.updatePostThanked(post.isThanked(), post.getId());
+                dataService.updatePostThanked(post.isThanked(), post.getId());
             }
             EntityUtils.consumeQuietly(response.getEntity());
         } catch (Exception e) {

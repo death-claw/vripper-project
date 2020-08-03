@@ -15,7 +15,7 @@ public class GlobalStateService {
 
     private final PendingQ pendingQ;
     private final ExecutionService executionService;
-    private final PostDataService postDataService;
+    private final DataService dataService;
 
     @Getter
     private GlobalState currentState;
@@ -24,10 +24,10 @@ public class GlobalStateService {
     private final PublishProcessor<GlobalState> liveGlobalState = PublishProcessor.create();
 
     @Autowired
-    public GlobalStateService(PendingQ pendingQ, ExecutionService executionService, PostDataService postDataService) {
+    public GlobalStateService(PendingQ pendingQ, ExecutionService executionService, DataService dataService) {
         this.pendingQ = pendingQ;
         this.executionService = executionService;
-        this.postDataService = postDataService;
+        this.dataService = dataService;
     }
 
     @Scheduled(fixedDelay = 3000)
@@ -35,8 +35,8 @@ public class GlobalStateService {
         GlobalState newGlobalState = new GlobalState(
                 executionService.runningCount(),
                 pendingQ.size(),
-                postDataService.countRemainingImages(),
-                postDataService.countErrorImages());
+                dataService.countRemainingImages(),
+                dataService.countErrorImages());
         if (!newGlobalState.equals(currentState)) {
             currentState = newGlobalState;
             liveGlobalState.onNext(currentState);
