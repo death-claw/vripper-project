@@ -80,7 +80,7 @@ public class AppSettingsService {
         }
 
         if (settings.getDownloadPath() == null) {
-            settings.setDownloadPath(baseDir);
+            settings.setDownloadPath(System.getProperty("user.home"));
         }
 
         if (settings.getMaxThreads() == null) {
