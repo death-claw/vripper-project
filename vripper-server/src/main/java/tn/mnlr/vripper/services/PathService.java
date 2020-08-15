@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -79,13 +80,19 @@ public class PathService {
                 post.setPostFolderName(newDestFolder.getName());
                 dataService.updatePostFolderName(post.getPostFolderName(), post.getId());
 
-                List<File> files = Optional.ofNullable(currentDesFolder.listFiles()).stream().flatMap(Arrays::stream).filter(e -> !e.getName().endsWith(".tmp")).collect(Collectors.toList());
+                List<File> files = Arrays.stream(Objects.requireNonNull(currentDesFolder.listFiles())).filter(e -> !e.getName().endsWith(".tmp")).collect(Collectors.toList());
                 for (File f : files) {
                     try {
                         Files.move(f.toPath(), Paths.get(newDestFolder.toString(), f.toPath().getFileName().toString()), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
                     } catch (IOException e) {
                         log.error(String.format("Failed to move files from %s to %s", currentDesFolder.toString(), newDestFolder.toString()), e);
                         return;
+                    }
+                }
+
+                for (File file : Objects.requireNonNull(currentDesFolder.listFiles())) {
+                    if (!file.delete()) {
+                        log.warn(String.format("Failed to remove %s", file.toString()));
                     }
                 }
 

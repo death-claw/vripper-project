@@ -1,12 +1,14 @@
 require('v8-compile-cache');
-const { app, BrowserWindow } = require("electron");
+const {app, BrowserWindow} = require("electron");
 const path = require("path");
 const url = require("url");
 const getPort = require("get-port");
-const { spawn } = require("child_process");
-const { ipcMain } = require("electron");
-const { dialog } = require("electron");
+const {spawn} = require("child_process");
+const {ipcMain} = require("electron");
+const {dialog} = require("electron");
 const axios = require('axios');
+
+// non null value when it is an AppImage
 const appDir = process.env.APPDIR;
 
 let win;
@@ -23,14 +25,14 @@ process.on("uncaughtException", err => {
     process.exit(1);
 });
 
-function createWindow() {
+createWindow = () => {
 
     if (process.platform === 'win32') {
         app.setAppUserModelId("tn.mnlr.vripper");
     }
 
     let icon;
-    if(process.platform === "win32") {
+    if (process.platform === "win32") {
         icon = __dirname + '/icon.ico';
     } else {
         icon = __dirname + '/icon.png';
@@ -76,29 +78,30 @@ if (!gotTheLock) {
         ipcMain.on("get-port", event => {
             event.reply("port", port);
         });
-        let javaBinPath;
-        if(appDir !== undefined) {
+
+        const appPath = path.join(app.getAppPath(), '../../');
+        let javaBinPath, jarPath, baseDir;
+        if (appDir !== undefined && process.platform === 'linux') {
             javaBinPath = path.join(appDir, "java-runtime/bin/java");
-        } else {
-            if(process.platform === 'darwin') {
-                javaBinPath = path.join(app.getPath('exe'), "../../java-runtime/bin/java");
-            } else {
-                javaBinPath = path.join(app.getPath('exe'), "../java-runtime/bin/java");
-            }
-        }
-        let jarPath;
-        if(appDir !== undefined) {
             jarPath = path.join(appDir, "bin/vripper-server.jar");
+            baseDir = appPath;
+        } else if (process.platform === 'darwin') {
+            javaBinPath = path.join(appPath, "../java-runtime/bin/java");
+            jarPath = path.join(appPath, "../bin/vripper-server.jar");
+            baseDir = appPath;
+        } else if (process.platform === 'win32') {
+            javaBinPath = path.join(appPath, "java-runtime/bin/java");
+            jarPath = path.join(appPath, "bin/vripper-server.jar");
+            baseDir = appPath;
         } else {
-            if(process.platform === 'darwin') {
-                jarPath = path.join(app.getPath('exe'), "../../bin/vripper-server.jar");
-            } else {
-                jarPath = path.join(app.getPath('exe'), "../bin/vripper-server.jar");
-            }
+            console.error(`Unknown platform ${process.platform}`);
+            app.quit();
         }
+
         vripperServer = spawn(javaBinPath, [
             "-Xms256m",
             "-Dvripper.server.port=" + port,
+            "-Dbase.dir=" + baseDir,
             "-jar",
             jarPath
         ], {

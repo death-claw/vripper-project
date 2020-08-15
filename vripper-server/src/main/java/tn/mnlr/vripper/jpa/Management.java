@@ -27,9 +27,9 @@ public class Management {
     private final String backupFolder;
 
     @Autowired
-    public Management(JdbcTemplate jdbcTemplate, @Value("${base.dir}") String baseDir) {
+    public Management(JdbcTemplate jdbcTemplate, @Value("${base.dir}") String baseDir, @Value("${base.dir.name}") String baseDirName) {
         this.jdbcTemplate = jdbcTemplate;
-        this.backupFolder = baseDir + File.separator + ".vripper" + File.separator + "backup";
+        this.backupFolder = baseDir + File.separator + baseDirName + File.separator + "backup";
     }
 
     @PostConstruct

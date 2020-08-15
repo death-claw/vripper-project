@@ -40,13 +40,8 @@
     "win": {
       "icon": "icon.ico",
       "target": [
-        "nsis"
+        "zip"
       ]
-    },
-    "nsis": {
-      "createDesktopShortcut": "always",
-      "oneClick": false,
-      "perMachine": false
     },
     "linux": {
       "synopsis": "vipergirls.to ripper",

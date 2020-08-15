@@ -38,9 +38,9 @@ public class AppSettingsService {
 
     private Settings settings = new Settings();
 
-    public AppSettingsService(@Value("${base.dir}") String baseDir) {
+    public AppSettingsService(@Value("${base.dir}") String baseDir, @Value("${base.dir.name}") String baseDirName) {
         this.baseDir = baseDir;
-        this.configPath = Paths.get(baseDir, ".vripper", "config.json");
+        this.configPath = Paths.get(baseDir, baseDirName, "config.json");
         om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 

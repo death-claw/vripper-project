@@ -38,10 +38,10 @@ public class ExecuteRunnable implements Runnable {
                     dataService.updateImageStatus(downloadJob.getImage().getStatus(), downloadJob.getImage().getId());
                 })
                 .onComplete(e -> {
-                    mutex.unlock();
                     dataService.afterJobFinish(downloadJob.getImage(), downloadJob.getPost());
                     executionService.afterJobFinish(downloadJob);
                     log.debug(String.format("Finished downloading %s", downloadJob.getImage().getUrl()));
+                    mutex.unlock();
                 }).run(downloadJob);
     }
 }
