@@ -9,7 +9,8 @@ const {dialog} = require("electron");
 const axios = require('axios');
 
 // non null value when it is an AppImage
-const appDir = process.env.APPDIR;
+const appImageDir = process.env.APPDIR;
+const appImagePath = process.env.APPIMAGE;
 
 let win;
 let vripperServer;
@@ -81,10 +82,10 @@ if (!gotTheLock) {
 
         const appPath = path.join(app.getAppPath(), '../../');
         let javaBinPath, jarPath, baseDir;
-        if (appDir !== undefined && process.platform === 'linux') {
-            javaBinPath = path.join(appDir, "java-runtime/bin/java");
-            jarPath = path.join(appDir, "bin/vripper-server.jar");
-            baseDir = appPath;
+        if (appImageDir !== undefined && process.platform === 'linux') {
+            javaBinPath = path.join(appImageDir, "java-runtime/bin/java");
+            jarPath = path.join(appImageDir, "bin/vripper-server.jar");
+            baseDir = path.join(appImagePath, '..');
         } else if (process.platform === 'darwin') {
             javaBinPath = path.join(appPath, "java-runtime/bin/java");
             jarPath = path.join(appPath, "bin/vripper-server.jar");

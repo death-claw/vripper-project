@@ -40,7 +40,7 @@
     "win": {
       "icon": "icon.ico",
       "target": [
-        "zip"
+        "dir"
       ]
     },
     "linux": {
@@ -55,7 +55,7 @@
     "mac": {
       "category": "public.app-category.utilities",
       "target": [
-        "dmg"
+        "dir"
       ],
       "icon": "icon.icns"
     }
