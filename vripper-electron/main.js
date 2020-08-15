@@ -89,7 +89,7 @@ if (!gotTheLock) {
         } else if (process.platform === 'darwin') {
             javaBinPath = path.join(appPath, "java-runtime/bin/java");
             jarPath = path.join(appPath, "bin/vripper-server.jar");
-            baseDir = appPath;
+            baseDir = path.join(appPath, '../..');
         } else if (process.platform === 'win32') {
             javaBinPath = path.join(appPath, "java-runtime/bin/java");
             jarPath = path.join(appPath, "bin/vripper-server.jar");
