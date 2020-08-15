@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.0.2] - 2020-08-15
+### Changed
+- Fix bugs with download queue
+
 ## [3.0.1] - 2020-08-03
 ### Changed
 - Fix bugs with download queue
