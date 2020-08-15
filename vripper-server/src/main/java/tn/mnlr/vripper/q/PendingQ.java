@@ -15,6 +15,7 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 @Service
 @Slf4j
@@ -87,19 +88,25 @@ public class PendingQ {
         return toBeExecuted.values().stream().mapToInt(AtomicInteger::get).sum();
     }
 
-    public void remove(Post post) {
+    public void stop(Post post) {
+        Predicate<DownloadJob> predicate = next -> next.getImage().getPostId().equals(post.getPostId());
         for (Map.Entry<Host, BlockingDeque<DownloadJob>> entry : pendingQ.entrySet()) {
-            entry.getValue().removeIf(next -> next.getImage().getPostId().equals(post.getPostId()));
+            entry.getValue().stream().filter(predicate).forEach(e -> decrement(post.getPostId()));
+            entry.getValue().removeIf(predicate);
+            decrement(post.getPostId());
         }
-        dataService.finishPost(post);
     }
 
     public boolean isPending(String postId) {
         return toBeExecuted.containsKey(postId);
     }
 
-    public int afterJobFinish(String postId) {
-        int count = toBeExecuted.get(postId).decrementAndGet();
+    public synchronized int decrement(String postId) {
+        AtomicInteger counter = toBeExecuted.get(postId);
+        if (counter == null) {
+            return 0;
+        }
+        int count = counter.decrementAndGet();
         if (count == 0) {
             toBeExecuted.remove(postId);
         }

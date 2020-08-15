@@ -28,16 +28,11 @@ public class ExecuteRunnable implements Runnable {
 
     @Override
     public void run() {
-
         mutexService.createPostLock(downloadJob.getPost().getPostId());
         ReentrantLock mutex = mutexService.getPostLock(downloadJob.getPost().getPostId());
         mutex.lock();
         Failsafe.with(VripperApplication.retryPolicy)
                 .onFailure(e -> {
-                    if (e.getFailure() instanceof InterruptedException || e.getFailure().getCause() instanceof InterruptedException) {
-                        log.debug("Job successfully interrupted");
-                        return;
-                    }
                     log.error(String.format("Failed to download %s after %d tries", downloadJob.getImage().getUrl(), e.getAttemptCount()), e.getFailure());
                     downloadJob.getImage().setStatus(Status.ERROR);
                     dataService.updateImageStatus(downloadJob.getImage().getStatus(), downloadJob.getImage().getId());

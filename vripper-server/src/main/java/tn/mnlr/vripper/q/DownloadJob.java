@@ -20,6 +20,12 @@ public class DownloadJob implements CheckedRunnable {
     @Getter
     private final ImageFileData imageFileData = new ImageFileData();
 
+    @Getter
+    private boolean stopped = false;
+
+    @Getter
+    private boolean finished = false;
+
     DownloadJob(Post post, Image image) {
         this.image = image;
         this.post = post;
@@ -27,9 +33,12 @@ public class DownloadJob implements CheckedRunnable {
 
     @Override
     public void run() throws Exception {
+        if (stopped) {
+            done();
+            return;
+        }
         log.debug(String.format("Starting downloading %s", image.getUrl()));
-        image.getHost().download(post, image, imageFileData);
-
+        image.getHost().download(post, image, imageFileData, this);
     }
 
     @Override
@@ -44,5 +53,13 @@ public class DownloadJob implements CheckedRunnable {
     @Override
     public int hashCode() {
         return Objects.hash(image, post);
+    }
+
+    public void stop() {
+        this.stopped = true;
+    }
+
+    public void done() {
+        finished = true;
     }
 }

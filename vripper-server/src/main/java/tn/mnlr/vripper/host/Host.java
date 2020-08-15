@@ -18,6 +18,7 @@ import tn.mnlr.vripper.exception.HtmlProcessorException;
 import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.enums.Status;
+import tn.mnlr.vripper.q.DownloadJob;
 import tn.mnlr.vripper.q.ImageFileData;
 import tn.mnlr.vripper.services.*;
 
@@ -79,16 +80,17 @@ abstract public class Host {
         return url.contains(getLookup());
     }
 
-    public void download(final Post post, final Image image, final ImageFileData imageFileData) throws DownloadException, InterruptedException {
+    public void download(final Post post, final Image image, final ImageFileData imageFileData, DownloadJob downloadJob) throws DownloadException, InterruptedException {
 
-        image.setStatus(Status.DOWNLOADING);
-        image.setCurrent(0);
-        dataService.updateImageStatus(image.getStatus(), image.getId());
-        dataService.updateImageCurrent(image.getCurrent(), image.getId());
-
-        HttpClientContext context = HttpClientContext.create();
-        context.setCookieStore(new BasicCookieStore());
         try {
+
+            image.setStatus(Status.DOWNLOADING);
+            image.setCurrent(0);
+            dataService.updateImageStatus(image.getStatus(), image.getId());
+            dataService.updateImageCurrent(image.getCurrent(), image.getId());
+
+            HttpClientContext context = HttpClientContext.create();
+            context.setCookieStore(new BasicCookieStore());
 
             synchronized (LOCK) {
                 if (!post.getStatus().equals(Status.DOWNLOADING) && !post.getStatus().equals(Status.PARTIAL)) {
@@ -127,6 +129,9 @@ abstract public class Host {
                     EntityUtils.consumeQuietly(response.getEntity());
                     throw new DownloadException(String.format("Server returned code %d", response.getStatusLine().getStatusCode()));
                 }
+                if (downloadJob.isStopped()) {
+                    return;
+                }
                 File destinationFolder;
                 synchronized (LOCK) {
                     Post updatedPost = dataService.findPostById(post.getId()).orElseThrow();
@@ -138,6 +143,11 @@ abstract public class Host {
                 }
                 File outputFile = new File(destinationFolder.getPath() + File.separator + String.format("%03d_", image.getIndex()) + imageFileData.getImageName() + ".tmp");
                 try (InputStream downloadStream = response.getEntity().getContent(); FileOutputStream fos = new FileOutputStream(outputFile)) {
+
+                    if (downloadJob.isStopped()) {
+                        return;
+                    }
+
                     image.setTotal(response.getEntity().getContentLength());
                     dataService.updateImageTotal(image.getTotal(), image.getId());
 
@@ -146,7 +156,7 @@ abstract public class Host {
 
                     byte[] buffer = new byte[READ_BUFFER_SIZE];
                     int read;
-                    while ((read = downloadStream.read(buffer, 0, READ_BUFFER_SIZE)) != -1) {
+                    while ((read = downloadStream.read(buffer, 0, READ_BUFFER_SIZE)) != -1 && !downloadJob.isStopped()) {
                         fos.write(buffer, 0, read);
                         image.increase(read);
                         downloadSpeedService.increase(read);
@@ -154,22 +164,25 @@ abstract public class Host {
                     }
                     fos.flush();
                     EntityUtils.consumeQuietly(response.getEntity());
-                } finally {
-                    if (image.getCurrent() == image.getTotal()) {
-                        image.setStatus(Status.COMPLETE);
-                    } else {
-                        image.setStatus(Status.ERROR);
+                    if (downloadJob.isStopped()) {
+                        return;
                     }
-                    dataService.updateImageStatus(image.getStatus(), image.getId());
                 }
                 File finalName = checkImageTypeAndRename(dataService.findPostById(post.getId()).orElseThrow(), outputFile, imageFileData.getImageName(), image.getIndex());
                 imageFileData.setFileName(finalName.getName());
             }
         } catch (Exception e) {
-            if (Thread.interrupted() || imageFileData.getImageRequest().isAborted()) {
-                throw new InterruptedException("Download was interrupted");
-            }
             throw new DownloadException(e);
+        } finally {
+            if (image.getCurrent() == image.getTotal()) {
+                image.setStatus(Status.COMPLETE);
+            } else if (downloadJob.isStopped()) {
+                image.setStatus(Status.STOPPED);
+            } else {
+                image.setStatus(Status.ERROR);
+            }
+            dataService.updateImageStatus(image.getStatus(), image.getId());
+            downloadJob.done();
         }
     }
 

@@ -15,9 +15,7 @@ import tn.mnlr.vripper.services.post.PostService;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -31,8 +29,7 @@ public class ExecutionService {
     private final ConcurrentHashMap<Host, AtomicInteger> threadCount = new ConcurrentHashMap<>();
     private final ExecutorService executor = Executors.newFixedThreadPool(MAX_POOL_SIZE);
     private final BlockingQueue<DownloadJob> executionQueue = new LinkedBlockingQueue<>();
-    private final Map<DownloadJob, Future<?>> futures = new ConcurrentHashMap<>();
-//    private final Map<String, AtomicInteger> downloadCount = new ConcurrentHashMap<>();
+    private final List<DownloadJob> executing = Collections.synchronizedList(new ArrayList<>());
 
     private final PendingQ pendingQ;
     private final AppSettingsService settings;
@@ -75,18 +72,25 @@ public class ExecutionService {
     }
 
     private void stopRunning(@NonNull String postId) {
-        futures
-                .entrySet()
-                .stream()
-                .filter(e -> e.getKey().getImage().getPostId().equals(postId))
-                .forEach(e -> {
-                    e.getValue().cancel(true);
-                    if (e.getKey().getImageFileData().getImageRequest() != null) {
-                        e.getKey().getImageFileData().getImageRequest().abort();
-                    }
-                    e.getKey().getImage().setStatus(Status.STOPPED);
-                    dataService.updateImageStatus(e.getKey().getImage().getStatus(), e.getKey().getImage().getId());
-                });
+        List<DownloadJob> stopping = new ArrayList<>();
+        Iterator<DownloadJob> iterator = executing.iterator();
+        while (iterator.hasNext()) {
+            DownloadJob downloadJob = iterator.next();
+            if (postId.equals(downloadJob.getPost().getPostId())) {
+                downloadJob.stop();
+                iterator.remove();
+                stopping.add(downloadJob);
+            }
+        }
+
+        while (!stopping.isEmpty()) {
+            stopping.removeIf(DownloadJob::isFinished);
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     public void stopAll(List<String> posIds) {
@@ -142,9 +146,10 @@ public class ExecutionService {
             if (FINISHED.contains(post.getStatus())) {
                 return;
             }
-            pendingQ.remove(post);
+            pendingQ.stop(post);
             stopRunning(postId);
             dataService.stopImagesByPostIdAndIsNotCompleted(postId);
+            dataService.finishPost(post);
             postService.stopFetchingMetadata(post);
         } finally {
             pauseQ = false;
@@ -200,25 +205,25 @@ public class ExecutionService {
     }
 
     private void push(DownloadJob downloadJob) {
-        ExecuteRunnable runnable = new ExecuteRunnable(downloadJob);
         log.debug(String.format("Scheduling a job for %s", downloadJob.getImage().getUrl()));
-        futures.put(downloadJob, executor.submit(runnable));
+        executor.execute(new ExecuteRunnable(downloadJob));
+        executing.add(downloadJob);
     }
 
     public synchronized void afterJobFinish(DownloadJob downloadJob) {
-        int count = pendingQ.afterJobFinish(downloadJob.getPost().getPostId());
+        int count = pendingQ.decrement(downloadJob.getPost().getPostId());
         if (count == 0) {
             dataService.finishPost(downloadJob.getPost());
             mutexService.removePostLock(downloadJob.getPost().getPostId());
         }
         threadCount.get(downloadJob.getImage().getHost()).decrementAndGet();
-        futures.remove(downloadJob);
+        executing.remove(downloadJob);
         synchronized (threadCount) {
             threadCount.notify();
         }
     }
 
     public int runningCount() {
-        return futures.size();
+        return executing.size();
     }
 }
