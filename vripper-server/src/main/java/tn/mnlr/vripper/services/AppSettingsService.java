@@ -139,11 +139,6 @@ public class AppSettingsService {
             settings.setViewPhotos(false);
         }
 
-        if (settings.getNotification() == null) {
-            settings.setNotification(false);
-        }
-
-
         save();
     }
 
@@ -237,8 +232,6 @@ public class AppSettingsService {
         private Boolean clearCompleted;
         @JsonProperty("viewPhotos")
         private Boolean viewPhotos;
-        @JsonProperty("notification")
-        private Boolean notification;
         @JsonProperty("darkTheme")
         private Boolean darkTheme;
 

@@ -1,10 +1,9 @@
-import {LinkCollectorService} from './../link-collector.service';
+import {LinkCollectorService} from '../link-collector.service';
 import {UrlGrabRendererComponent} from './renderer/url-renderer.component';
 import {GrabQueueDataSource} from './grab-queue.datasource';
 import {ChangeDetectionStrategy, Component, NgZone, OnInit} from '@angular/core';
 import {GridOptions} from 'ag-grid-community';
 import {WsConnectionService} from '../ws-connection.service';
-import {NotificationService} from '../notification.service';
 
 @Component({
   selector: 'app-grab-queue',
@@ -16,8 +15,7 @@ export class GrabQueueComponent implements OnInit {
   constructor(
     private wsConnection: WsConnectionService,
     private zone: NgZone,
-    private linkCollectorService: LinkCollectorService,
-    private notificationService: NotificationService) {
+    private linkCollectorService: LinkCollectorService) {
     this.gridOptions = <GridOptions>{
       columnDefs: [
         {
@@ -40,7 +38,7 @@ export class GrabQueueComponent implements OnInit {
       getRowNodeId: data => data['threadId'],
       onGridReady: () => {
         this.gridOptions.api.sizeColumnsToFit();
-        this.dataSource = new GrabQueueDataSource(this.wsConnection, this.gridOptions, this.zone, this.notificationService);
+        this.dataSource = new GrabQueueDataSource(this.wsConnection, this.gridOptions, this.zone);
         this.dataSource.connect();
       },
       onGridSizeChanged: () => this.gridOptions.api.sizeColumnsToFit(),

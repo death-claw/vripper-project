@@ -38,7 +38,7 @@ export class ClipboardService {
 
   _init(settings: Settings) {
     if (!this.electronService.isElectronApp) {
-      console.log('Clipboard deactive, not an electron app');
+      console.log('Clipboard deactivated, not an electron app');
       return;
     }
     if (this.interval != null) {
