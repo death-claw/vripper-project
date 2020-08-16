@@ -20,6 +20,11 @@ const maxTerminationAttemps = 5;
 let terminationAttemps = 0;
 let terminationInteval;
 let terminated = false;
+let forceQuit = true;
+
+if (process.platform === 'darwin') {
+    forceQuit = false;
+}
 
 process.on("uncaughtException", err => {
     dialog.showErrorBox(err.message, err.stack);
@@ -124,18 +129,22 @@ if (!gotTheLock) {
 
     app.on("ready", createWindow);
 
+    app.on('before-quit', () => {
+        forceQuit = true;
+    });
+
     app.on("window-all-closed", () => {
-        if (process.platform !== "darwin") {
+        if (forceQuit) {
             axios.post('http://localhost:' + serverPort + '/actuator/shutdown', {}, {
-                headers: { 'content-type': 'application/json' },
+                headers: {'content-type': 'application/json'},
             }).then((response) => {
-                terminationInteval=  setInterval(() => {
+                terminationInteval = setInterval(() => {
                     terminationAttemps++;
-                    if(terminated) {
+                    if (terminated) {
                         console.log('viper server terminated');
                         clearInterval(terminationInteval);
                         app.quit();
-                    } else if(terminationAttemps > maxTerminationAttemps) {
+                    } else if (terminationAttemps > maxTerminationAttemps) {
                         console.log('viper server is not terminated');
                         console.log('Proceed to kill');
                         vripperServer.kill('SIGKILL');
