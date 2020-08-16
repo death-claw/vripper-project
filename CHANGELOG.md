@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.0.3] - 2020-08-16
+### Changed
+- Fix bugs with electron app
+
 ## [3.0.2] - 2020-08-15
 ### Changed
 - Fix bugs with download queue
