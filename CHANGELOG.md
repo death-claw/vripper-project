@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.0.4] - 2020-08-16
+### Changed
+- Improve rename UI
+
 ## [3.0.3] - 2020-08-16
 ### Changed
 - Fix bugs with electron app
