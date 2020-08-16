@@ -11,7 +11,8 @@ export class PostState {
     public hosts: string[],
     public thanked: boolean,
     public previews: string[],
-    public metadata: Metadata
+    public metadata: Metadata,
+    public renaming: boolean
   ) {
   }
 }

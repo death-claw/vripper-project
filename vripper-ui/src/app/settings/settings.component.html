@@ -103,7 +103,7 @@
             </section>
           </form>
         </mat-tab>
-        <mat-tab label="Desktop Integration">
+        <mat-tab label="Desktop Integration" *ngIf="electronService.isElectronApp">
           <form [formGroup]="desktopSettingsForm" autocomplete="off">
             <mat-checkbox *ngIf="electronService.isElectronApp" color="primary" formControlName="desktopClipboard"
                           name="desktopClipboard"

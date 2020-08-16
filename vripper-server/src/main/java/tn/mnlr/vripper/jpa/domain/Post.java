@@ -52,6 +52,8 @@ public class Post {
 
     private Metadata metadata;
 
+    private boolean renaming;
+
     public Post(String title, String url, String postId, String threadId, String threadTitle, String forum, String securityToken) {
         this.title = title;
         this.url = url;

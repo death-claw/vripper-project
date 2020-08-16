@@ -1,5 +1,6 @@
 package tn.mnlr.vripper.services;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,10 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
@@ -27,6 +25,9 @@ public class PathService {
     private final MutexService mutexService;
 
     private final CommonExecutor commonExecutor;
+
+    @Getter
+    private final Set<String> renaming = Collections.synchronizedSet(new HashSet<>());
 
     @Autowired
     public PathService(AppSettingsService appSettingsService, DataService dataService, MutexService mutexService, CommonExecutor commonExecutor) {
@@ -54,19 +55,16 @@ public class PathService {
     }
 
     public final void rename(@NonNull String postId, @NonNull String altName) {
+        renaming.add(postId);
+        Post post = dataService.findPostByPostId(postId).orElseThrow();
+        dataService.refreshPost(post.getId());
         commonExecutor.getGeneralExecutor().submit(() -> {
-
-            ReentrantLock postLock = mutexService.getPostLock(postId);
-            if (postLock != null) {
-                postLock.lock();
-            }
-
+            ReentrantLock postLock = null;
             try {
-                Optional<Post> _post = dataService.findPostByPostId(postId);
-                if (_post.isEmpty()) {
-                    return;
+                postLock = mutexService.getPostLock(postId);
+                if (postLock != null) {
+                    postLock.lock();
                 }
-                Post post = _post.get();
                 if (altName.equals(post.getTitle())) {
                     return;
                 }
@@ -100,6 +98,9 @@ public class PathService {
                     log.warn(String.format("Failed to remove %s", currentDesFolder.toString()));
                 }
             } finally {
+                renaming.remove(postId);
+                dataService.refreshPost(post.getId());
+
                 if (postLock != null) {
                     postLock.unlock();
                 }

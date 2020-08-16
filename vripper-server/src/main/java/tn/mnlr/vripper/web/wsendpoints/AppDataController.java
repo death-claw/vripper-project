@@ -22,13 +22,15 @@ public class AppDataController {
     private final GlobalStateService globalStateService;
     private final DownloadSpeedService downloadSpeedService;
     private final DataService dataService;
+    private final PathService pathService;
 
     @Autowired
-    public AppDataController(VipergirlsAuthService vipergirlsAuthService, GlobalStateService globalStateService, DownloadSpeedService downloadSpeedService, DataService dataService) {
+    public AppDataController(VipergirlsAuthService vipergirlsAuthService, GlobalStateService globalStateService, DownloadSpeedService downloadSpeedService, DataService dataService, PathService pathService) {
         this.vipergirlsAuthService = vipergirlsAuthService;
         this.globalStateService = globalStateService;
         this.downloadSpeedService = downloadSpeedService;
         this.dataService = dataService;
+        this.pathService = pathService;
     }
 
     @Getter
@@ -58,7 +60,7 @@ public class AppDataController {
 
     @SubscribeMapping("/posts")
     public Collection<Post> posts() {
-        return StreamSupport.stream(dataService.findAllPosts().spliterator(), false).collect(Collectors.toList());
+        return StreamSupport.stream(dataService.findAllPosts().spliterator(), false).peek(this::isRenaming).collect(Collectors.toList());
     }
 
     @SubscribeMapping("/images/{postId}")
@@ -69,5 +71,11 @@ public class AppDataController {
     @SubscribeMapping("/queued")
     public Collection<Queued> queued() {
         return StreamSupport.stream(dataService.findAllQueued().spliterator(), false).collect(Collectors.toList());
+    }
+
+    private void isRenaming(Post post) {
+        if (pathService.getRenaming().contains(post.getPostId())) {
+            post.setRenaming(true);
+        }
     }
 }

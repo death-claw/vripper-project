@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import tn.mnlr.vripper.jpa.domain.Image;
+import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.services.*;
 
 import javax.annotation.PostConstruct;
@@ -27,16 +28,18 @@ public class WebSocketBroadcast {
     private final GlobalStateService globalStateService;
     private final DownloadSpeedService downloadSpeedService;
     private final DataService dataService;
+    private final PathService pathService;
 
     private final List<Disposable> disposables = new ArrayList<>();
 
     @Autowired
-    public WebSocketBroadcast(SimpMessagingTemplate template, VipergirlsAuthService vipergirlsAuthService, GlobalStateService globalStateService, DownloadSpeedService downloadSpeedService, DataService dataService) {
+    public WebSocketBroadcast(SimpMessagingTemplate template, VipergirlsAuthService vipergirlsAuthService, GlobalStateService globalStateService, DownloadSpeedService downloadSpeedService, DataService dataService, PathService pathService) {
         this.template = template;
         this.vipergirlsAuthService = vipergirlsAuthService;
         this.globalStateService = globalStateService;
         this.downloadSpeedService = downloadSpeedService;
         this.dataService = dataService;
+        this.pathService = pathService;
     }
 
     @PostConstruct
@@ -63,7 +66,7 @@ public class WebSocketBroadcast {
                 .buffer(500, TimeUnit.MILLISECONDS)
                 .map(HashSet::new)
                 .filter(e -> !e.isEmpty())
-                .subscribe(ids -> template.convertAndSend("/topic/posts", ids.stream().map(dataService::findPostById).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList())), e -> log.error("Failed to send data to client", e)));
+                .subscribe(ids -> template.convertAndSend("/topic/posts", ids.stream().map(dataService::findPostById).filter(Optional::isPresent).map(Optional::get).peek(this::isRenaming).collect(Collectors.toList())), e -> log.error("Failed to send data to client", e)));
 
         disposables.add(dataService.liveImage()
                 .subscribeOn(Schedulers.io())
@@ -103,6 +106,12 @@ public class WebSocketBroadcast {
                 .filter(e -> !e.isEmpty())
                 .subscribe(postIds -> template.convertAndSend("/topic/posts/deleted", postIds), e -> log.error("Failed to send data to client", e))
         );
+    }
+
+    private void isRenaming(Post post) {
+        if (pathService.getRenaming().contains(post.getPostId())) {
+            post.setRenaming(true);
+        }
     }
 
     @PreDestroy
