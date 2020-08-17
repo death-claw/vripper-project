@@ -2,12 +2,14 @@ package tn.mnlr.vripper.host;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.protocol.HttpClientContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.XpathException;
-import tn.mnlr.vripper.q.ImageFileData;
+import tn.mnlr.vripper.services.HostService;
+import tn.mnlr.vripper.services.XpathService;
 
 import java.util.Optional;
 
@@ -18,8 +20,13 @@ public class ImageTwistHost extends Host {
     private static final String IMG_XPATH = "//img[contains(@class, 'img')]";
     private static final String host = "imagetwist.com";
 
-    public ImageTwistHost() {
-        super();
+    private final HostService hostService;
+    private final XpathService xpathService;
+
+    @Autowired
+    public ImageTwistHost(HostService hostService, XpathService xpathService) {
+        this.hostService = hostService;
+        this.xpathService = xpathService;
     }
 
     @Override
@@ -33,9 +40,9 @@ public class ImageTwistHost extends Host {
     }
 
     @Override
-    protected void setNameAndUrl(final String url, final ImageFileData imageFileData, final HttpClientContext context) throws HostException {
+    public HostService.NameUrl getNameAndUrl(final String url, final HttpClientContext context) throws HostException {
 
-        Document doc = getResponse(url, context).getDocument();
+        Document doc = hostService.getResponse(url, context).getDocument();
 
         Node imgNode;
         try {
@@ -50,8 +57,7 @@ public class ImageTwistHost extends Host {
             String imgTitle = Optional.ofNullable(imgNode.getAttributes().getNamedItem("alt")).map(Node::getTextContent).map(String::trim).orElse(null);
             String imgUrl = imgNode.getAttributes().getNamedItem("src").getTextContent().trim();
 
-            imageFileData.setImageUrl(imgUrl);
-            imageFileData.setImageName(imgTitle);
+            return new HostService.NameUrl(imgTitle, imgUrl);
         } catch (Exception e) {
             throw new HostException("Unexpected error occurred", e);
         }

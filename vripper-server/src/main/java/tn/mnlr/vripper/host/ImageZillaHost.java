@@ -2,12 +2,14 @@ package tn.mnlr.vripper.host;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.protocol.HttpClientContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.XpathException;
-import tn.mnlr.vripper.q.ImageFileData;
+import tn.mnlr.vripper.services.HostService;
+import tn.mnlr.vripper.services.XpathService;
 
 @Service
 @Slf4j
@@ -17,8 +19,13 @@ public class ImageZillaHost extends Host {
     private static final String lookup = "imagezilla.net/show";
     private static final String IMG_XPATH = "//img[@id='photo']";
 
-    public ImageZillaHost() {
-        super();
+    private final HostService hostService;
+    private final XpathService xpathService;
+
+    @Autowired
+    public ImageZillaHost(HostService hostService, XpathService xpathService) {
+        this.hostService = hostService;
+        this.xpathService = xpathService;
     }
 
     @Override
@@ -32,9 +39,9 @@ public class ImageZillaHost extends Host {
     }
 
     @Override
-    protected void setNameAndUrl(final String url, final ImageFileData imageFileData, final HttpClientContext context) throws HostException {
+    public HostService.NameUrl getNameAndUrl(final String url, final HttpClientContext context) throws HostException {
 
-        Document doc = getResponse(url, context).getDocument();
+        Document doc = hostService.getResponse(url, context).getDocument();
 
         String title;
         try {
@@ -51,12 +58,11 @@ public class ImageZillaHost extends Host {
         }
 
         if (title == null || title.isEmpty()) {
-            title = getDefaultImageName(url);
+            title = hostService.getDefaultImageName(url);
         }
 
         try {
-            imageFileData.setImageUrl(url.replace("show", "images"));
-            imageFileData.setImageName(title);
+            return new HostService.NameUrl(title, url.replace("show", "images"));
         } catch (Exception e) {
             throw new HostException("Unexpected error occurred", e);
         }

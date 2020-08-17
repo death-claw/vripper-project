@@ -8,8 +8,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.XpathException;
-import tn.mnlr.vripper.q.ImageFileData;
-import tn.mnlr.vripper.services.ConnectionManager;
+import tn.mnlr.vripper.services.HostService;
+import tn.mnlr.vripper.services.XpathService;
 
 @Service
 @Slf4j
@@ -18,11 +18,14 @@ public class ImgboxHost extends Host {
     private static final String host = "imgbox.com";
     private static final String IMG_XPATH = "//img[@id='img']";
 
-    @Autowired
-    private ConnectionManager cm;
+    private final HostService hostService;
+    private final XpathService xpathService;
 
-    public ImgboxHost() {
-        super();
+
+    @Autowired
+    public ImgboxHost(HostService hostService, XpathService xpathService) {
+        this.hostService = hostService;
+        this.xpathService = xpathService;
     }
 
     @Override
@@ -36,9 +39,9 @@ public class ImgboxHost extends Host {
     }
 
     @Override
-    protected void setNameAndUrl(final String url, final ImageFileData imageFileData, final HttpClientContext context) throws HostException {
+    public HostService.NameUrl getNameAndUrl(final String url, final HttpClientContext context) throws HostException {
 
-        Document doc = getResponse(url, context).getDocument();
+        Document doc = hostService.getResponse(url, context).getDocument();
 
         Node imgNode;
         try {
@@ -53,8 +56,7 @@ public class ImgboxHost extends Host {
             String imgTitle = imgNode.getAttributes().getNamedItem("title").getTextContent().trim();
             String imgUrl = imgNode.getAttributes().getNamedItem("src").getTextContent().trim();
 
-            imageFileData.setImageUrl(imgUrl);
-            imageFileData.setImageName(imgTitle);
+            return new HostService.NameUrl(imgTitle, imgUrl);
         } catch (Exception e) {
             throw new HostException("Unexpected error occurred", e);
         }

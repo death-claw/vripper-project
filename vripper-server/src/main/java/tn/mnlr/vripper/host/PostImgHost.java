@@ -2,12 +2,14 @@ package tn.mnlr.vripper.host;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.protocol.HttpClientContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.XpathException;
-import tn.mnlr.vripper.q.ImageFileData;
+import tn.mnlr.vripper.services.HostService;
+import tn.mnlr.vripper.services.XpathService;
 
 import java.util.Optional;
 
@@ -19,8 +21,13 @@ public class PostImgHost extends Host {
     private static final String TITLE_XPATH = "//span[contains(@class,'imagename')]";
     private static final String IMG_XPATH = "//a[@id='download']";
 
-    public PostImgHost() {
-        super();
+    private final HostService hostService;
+    private final XpathService xpathService;
+
+    @Autowired
+    public PostImgHost(HostService hostService, XpathService xpathService) {
+        this.hostService = hostService;
+        this.xpathService = xpathService;
     }
 
     @Override
@@ -34,10 +41,10 @@ public class PostImgHost extends Host {
     }
 
     @Override
-    protected void setNameAndUrl(final String _url, final ImageFileData imageFileData, final HttpClientContext context) throws HostException {
+    public HostService.NameUrl getNameAndUrl(final String _url, final HttpClientContext context) throws HostException {
 
         String url = _url.replace("http://", "https://");
-        Document doc = getResponse(url, context).getDocument();
+        Document doc = hostService.getResponse(url, context).getDocument();
 
         Node urlNode, titleNode;
         try {
@@ -52,10 +59,9 @@ public class PostImgHost extends Host {
 
         try {
             log.debug(String.format("Resolving name and image url for %s", url));
-            String imgTitle = Optional.ofNullable(titleNode).map(node -> node.getTextContent().trim()).orElseGet(() -> getDefaultImageName(url));
+            String imgTitle = Optional.ofNullable(titleNode).map(node -> node.getTextContent().trim()).orElseGet(() -> hostService.getDefaultImageName(url));
 
-            imageFileData.setImageUrl(urlNode.getAttributes().getNamedItem("href").getTextContent().trim());
-            imageFileData.setImageName(imgTitle);
+            return new HostService.NameUrl(imgTitle, urlNode.getAttributes().getNamedItem("href").getTextContent().trim());
         } catch (Exception e) {
             throw new HostException("Unexpected error occurred", e);
         }

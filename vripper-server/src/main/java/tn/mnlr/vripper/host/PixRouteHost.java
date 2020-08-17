@@ -2,12 +2,14 @@ package tn.mnlr.vripper.host;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.protocol.HttpClientContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.XpathException;
-import tn.mnlr.vripper.q.ImageFileData;
+import tn.mnlr.vripper.services.HostService;
+import tn.mnlr.vripper.services.XpathService;
 
 @Service
 @Slf4j
@@ -15,6 +17,15 @@ public class PixRouteHost extends Host {
 
     private static final String host = "pixroute.com";
     private static final String IMG_XPATH = "//img[@id='imgpreview']";
+
+    private final HostService hostService;
+    private final XpathService xpathService;
+
+    @Autowired
+    public PixRouteHost(HostService hostService, XpathService xpathService) {
+        this.hostService = hostService;
+        this.xpathService = xpathService;
+    }
 
     @Override
     public String getHost() {
@@ -27,10 +38,10 @@ public class PixRouteHost extends Host {
     }
 
     @Override
-    protected void setNameAndUrl(final String _url, final ImageFileData imageFileData, final HttpClientContext context) throws HostException {
+    public HostService.NameUrl getNameAndUrl(final String _url, final HttpClientContext context) throws HostException {
 
         String url = _url.replace("http://", "https://");
-        Document doc = getResponse(url, context).getDocument();
+        Document doc = hostService.getResponse(url, context).getDocument();
 
         Node imgNode;
         try {
@@ -47,8 +58,10 @@ public class PixRouteHost extends Host {
         try {
             log.debug(String.format("Resolving name and image url for %s", url));
 
-            imageFileData.setImageUrl(imgNode.getAttributes().getNamedItem("src").getTextContent().trim());
-            imageFileData.setImageName(imgNode.getAttributes().getNamedItem("alt").getTextContent().trim());
+            return new HostService.NameUrl(
+                    imgNode.getAttributes().getNamedItem("alt").getTextContent().trim(),
+                    imgNode.getAttributes().getNamedItem("src").getTextContent().trim()
+            );
         } catch (Exception e) {
             throw new HostException("Unexpected error occurred", e);
         }

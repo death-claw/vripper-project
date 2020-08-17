@@ -2,12 +2,14 @@ package tn.mnlr.vripper.host;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.protocol.HttpClientContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.XpathException;
-import tn.mnlr.vripper.q.ImageFileData;
+import tn.mnlr.vripper.services.HostService;
+import tn.mnlr.vripper.services.XpathService;
 
 @Service
 @Slf4j
@@ -17,8 +19,13 @@ public class PixxxelsHost extends Host {
     private static final String IMG_XPATH = "//*[@id='download']";
     private static final String TITLE_XPATH = "//*[contains(@class,'imagename')]";
 
-    public PixxxelsHost() {
-        super();
+    private final HostService hostService;
+    private final XpathService xpathService;
+
+    @Autowired
+    public PixxxelsHost(HostService hostService, XpathService xpathService) {
+        this.hostService = hostService;
+        this.xpathService = xpathService;
     }
 
     @Override
@@ -32,10 +39,10 @@ public class PixxxelsHost extends Host {
     }
 
     @Override
-    protected void setNameAndUrl(final String _url, final ImageFileData imageFileData, final HttpClientContext context) throws HostException {
+    public HostService.NameUrl getNameAndUrl(final String _url, final HttpClientContext context) throws HostException {
 
         String url = _url.replace("http://", "https://");
-        Response resp = getResponse(url, context);
+        HostService.Response resp = hostService.getResponse(url, context);
         Document doc = resp.getDocument();
 
         Node imgNode, titleNode;
@@ -55,8 +62,7 @@ public class PixxxelsHost extends Host {
             String imgTitle = titleNode.getTextContent().trim();
             String imgUrl = imgNode.getAttributes().getNamedItem("href").getTextContent().trim();
 
-            imageFileData.setImageUrl(imgUrl);
-            imageFileData.setImageName(imgTitle.isEmpty() ? imgUrl.substring(imgUrl.lastIndexOf('/') + 1) : imgTitle);
+            return new HostService.NameUrl(imgTitle.isEmpty() ? imgUrl.substring(imgUrl.lastIndexOf('/') + 1) : imgTitle, imgUrl);
         } catch (Exception e) {
             throw new HostException("Unexpected error occurred", e);
         }

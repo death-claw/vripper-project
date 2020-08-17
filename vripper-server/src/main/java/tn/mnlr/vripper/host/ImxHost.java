@@ -16,8 +16,10 @@ import org.w3c.dom.Node;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.HtmlProcessorException;
 import tn.mnlr.vripper.exception.XpathException;
-import tn.mnlr.vripper.q.ImageFileData;
 import tn.mnlr.vripper.services.ConnectionManager;
+import tn.mnlr.vripper.services.HostService;
+import tn.mnlr.vripper.services.HtmlProcessorService;
+import tn.mnlr.vripper.services.XpathService;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,8 +33,18 @@ public class ImxHost extends Host {
     private static final String CONTINUE_BUTTON_XPATH = "//*[@name='imgContinue']";
     private static final String IMG_XPATH = "//img[@class='centred']";
 
+    private final HostService hostService;
+    private final XpathService xpathService;
+    private final ConnectionManager cm;
+    private final HtmlProcessorService htmlProcessorService;
+
     @Autowired
-    private ConnectionManager cm;
+    public ImxHost(HostService hostService, XpathService xpathService, ConnectionManager cm, HtmlProcessorService htmlProcessorService) {
+        this.hostService = hostService;
+        this.xpathService = xpathService;
+        this.cm = cm;
+        this.htmlProcessorService = htmlProcessorService;
+    }
 
     @Override
     public String getHost() {
@@ -45,10 +57,10 @@ public class ImxHost extends Host {
     }
 
     @Override
-    protected void setNameAndUrl(final String _url, final ImageFileData imageFileData, final HttpClientContext context) throws HostException {
+    public HostService.NameUrl getNameAndUrl(final String _url, final HttpClientContext context) throws HostException {
 
         String url = _url.replace("http://", "https://");
-        Response resp = getResponse(url, context);
+        HostService.Response resp = hostService.getResponse(url, context);
         Document doc = resp.getDocument();
 
         Node contDiv;
@@ -99,8 +111,7 @@ public class ImxHost extends Host {
             String imgTitle = imgNode.getAttributes().getNamedItem("alt").getTextContent().trim();
             String imgUrl = imgNode.getAttributes().getNamedItem("src").getTextContent().trim();
 
-            imageFileData.setImageUrl(imgUrl);
-            imageFileData.setImageName(imgTitle.isEmpty() ? imgUrl.substring(imgUrl.lastIndexOf('/') + 1) : imgTitle);
+            return new HostService.NameUrl(imgTitle.isEmpty() ? imgUrl.substring(imgUrl.lastIndexOf('/') + 1) : imgTitle, imgUrl);
         } catch (Exception e) {
             throw new HostException("Unexpected error occurred", e);
         }

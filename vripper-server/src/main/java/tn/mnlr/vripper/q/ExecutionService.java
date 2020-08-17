@@ -86,7 +86,7 @@ public class ExecutionService {
         while (!stopping.isEmpty()) {
             stopping.removeIf(DownloadJob::isFinished);
             try {
-                Thread.sleep(200);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }

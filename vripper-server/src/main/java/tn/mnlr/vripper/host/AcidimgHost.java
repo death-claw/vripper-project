@@ -15,8 +15,10 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.XpathException;
-import tn.mnlr.vripper.q.ImageFileData;
 import tn.mnlr.vripper.services.ConnectionManager;
+import tn.mnlr.vripper.services.HostService;
+import tn.mnlr.vripper.services.HtmlProcessorService;
+import tn.mnlr.vripper.services.XpathService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,11 +31,18 @@ public class AcidimgHost extends Host {
     private static final String CONTINUE_BUTTON_XPATH = "//input[@id='continuebutton']";
     private static final String IMG_XPATH = "//img[@class='centred']";
 
-    @Autowired
-    private ConnectionManager cm;
+    private final ConnectionManager cm;
+    private final HostService hostService;
+    private final XpathService xpathService;
+    private final HtmlProcessorService htmlProcessorService;
 
-    public AcidimgHost() {
-        super();
+
+    @Autowired
+    public AcidimgHost(ConnectionManager cm, HostService hostService, XpathService xpathService, HtmlProcessorService htmlProcessorService) {
+        this.cm = cm;
+        this.hostService = hostService;
+        this.xpathService = xpathService;
+        this.htmlProcessorService = htmlProcessorService;
     }
 
     @Override
@@ -47,9 +56,9 @@ public class AcidimgHost extends Host {
     }
 
     @Override
-    protected void setNameAndUrl(final String url, final ImageFileData imageFileData, final HttpClientContext context) throws HostException {
+    public HostService.NameUrl getNameAndUrl(final String url, final HttpClientContext context) throws HostException {
 
-        Document doc = getResponse(url, context).getDocument();
+        Document doc = hostService.getResponse(url, context).getDocument();
 
         Node contDiv;
         try {
@@ -99,8 +108,7 @@ public class AcidimgHost extends Host {
             String imgTitle = imgNode.getAttributes().getNamedItem("alt").getTextContent().trim();
             String imgUrl = imgNode.getAttributes().getNamedItem("src").getTextContent().trim();
 
-            imageFileData.setImageUrl(imgUrl);
-            imageFileData.setImageName(imgTitle.isEmpty() ? getDefaultImageName(imgUrl) : imgTitle);
+            return new HostService.NameUrl(imgTitle.isEmpty() ? hostService.getDefaultImageName(imgUrl) : imgTitle, imgUrl);
         } catch (Exception e) {
             throw new HostException("Unexpected error occurred", e);
         }
