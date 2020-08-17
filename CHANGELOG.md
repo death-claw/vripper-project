@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.0.5] - 2020-08-17
+### Changed
+- Update packages
+- Host class refactoring
+
 ## [3.0.4] - 2020-08-16
 ### Changed
 - Improve rename UI
