@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.0.6] - 2020-08-18
+### Changed
+- Fix TurboImageHost
+
 ## [3.0.5] - 2020-08-17
 ### Changed
 - Update packages
