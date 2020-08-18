@@ -106,7 +106,7 @@ public class DownloadJob implements CheckedRunnable {
             }
             String formatImageFileName = pathService.formatImageFileName(nameAndUrl.getName());
             log.debug(String.format("Sanitizing image name from %s to %s", nameAndUrl.getName(), formatImageFileName));
-            nameAndUrl.setName(formatImageFileName);
+            nameAndUrl = new HostService.NameUrl(formatImageFileName, nameAndUrl.getUrl());
 
             HttpClient client = cm.getClient().build();
 

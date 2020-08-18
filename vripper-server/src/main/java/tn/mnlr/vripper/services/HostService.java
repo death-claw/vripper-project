@@ -1,7 +1,6 @@
 package tn.mnlr.vripper.services;
 
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.Header;
 import org.apache.http.client.HttpClient;
@@ -45,7 +44,6 @@ public class HostService {
     }
 
     @Getter
-    @Setter
     public static class NameUrl {
 
         private String name;

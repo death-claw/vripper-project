@@ -17,7 +17,7 @@ public class TurboImageHost extends Host {
 
     private static final String host = "turboimagehost.com";
     private static final String TITLE_XPATH = "//div[contains(@class,'titleFullS')]/h1";
-    private static final String IMG_XPATH = "//img[@id='uImage']";
+    private static final String IMG_XPATH = "//img[@id='imageid']";
 
     private final HostService hostService;
     private final XpathService xpathService;
