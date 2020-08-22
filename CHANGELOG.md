@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.0.7] - 2020-08-22
+### Changed
+- Fix MacOs build
+
 ## [3.0.6] - 2020-08-18
 ### Changed
 - Fix TurboImageHost
