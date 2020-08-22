@@ -71,7 +71,7 @@ public class AcidimgHost extends Host {
         if (contDiv != null) {
             log.debug(String.format("Click button found for %s", url));
             HttpClient client = cm.getClient().build();
-            HttpPost httpPost = cm.buildHttpPost(url);
+            HttpPost httpPost = cm.buildHttpPost(url, context);
             httpPost.addHeader("Referer", url);
             List<NameValuePair> params = new ArrayList<>();
             params.add(new BasicNameValuePair("imgContinue", "Continue to your image"));

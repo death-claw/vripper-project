@@ -139,8 +139,7 @@ export class WsConnectionService {
               element.hosts,
               element.thanked,
               element.previews,
-              element.metadata,
-              element.renaming
+              element.metadata
             )
           );
         });

@@ -85,7 +85,7 @@ public class VipergirlsAuthService {
             return;
         }
 
-        HttpPost postAuth = cm.buildHttpPost("https://vipergirls.to/login.php?do=login");
+        HttpPost postAuth = cm.buildHttpPost("https://vipergirls.to/login.php?do=login", null);
         List<NameValuePair> params = new ArrayList<>();
         params.add(new BasicNameValuePair("vb_login_username", username));
 
@@ -161,7 +161,7 @@ public class VipergirlsAuthService {
 
     private void postThanks(Post post) throws VripperException {
 
-        HttpPost postThanks = cm.buildHttpPost("https://vipergirls.to/post_thanks.php");
+        HttpPost postThanks = cm.buildHttpPost("https://vipergirls.to/post_thanks.php", null);
         List<NameValuePair> params = new ArrayList<>();
         params.add(new BasicNameValuePair("do", "post_thanks_add"));
         params.add(new BasicNameValuePair("using_ajax", "1"));

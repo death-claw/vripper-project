@@ -68,7 +68,7 @@ public class ImageBamHost extends Host {
         if (contDiv != null) {
             log.debug(String.format("Click button found for %s", url));
             HttpClient client = cm.getClient().build();
-            HttpGet httpGet = cm.buildHttpGet(url);
+            HttpGet httpGet = cm.buildHttpGet(url, context);
             httpGet.addHeader("Referer", url);
             log.debug(String.format("Requesting %s", httpGet));
             try (CloseableHttpResponse res = (CloseableHttpResponse) client.execute(httpGet, context)) {

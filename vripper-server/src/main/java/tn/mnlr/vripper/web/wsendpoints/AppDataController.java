@@ -60,7 +60,7 @@ public class AppDataController {
 
     @SubscribeMapping("/posts")
     public Collection<Post> posts() {
-        return StreamSupport.stream(dataService.findAllPosts().spliterator(), false).peek(this::isRenaming).collect(Collectors.toList());
+        return StreamSupport.stream(dataService.findAllPosts().spliterator(), false).collect(Collectors.toList());
     }
 
     @SubscribeMapping("/images/{postId}")
@@ -71,11 +71,5 @@ public class AppDataController {
     @SubscribeMapping("/queued")
     public Collection<Queued> queued() {
         return StreamSupport.stream(dataService.findAllQueued().spliterator(), false).collect(Collectors.toList());
-    }
-
-    private void isRenaming(Post post) {
-        if (pathService.getRenaming().contains(post.getPostId())) {
-            post.setRenaming(true);
-        }
     }
 }

@@ -253,8 +253,4 @@ public class DataService {
         postRepository.updateThanked(thanked, id);
         livePostsState.onNext(id);
     }
-
-    public void refreshPost(Long id) {
-        livePostsState.onNext(id);
-    }
 }

@@ -60,7 +60,7 @@ public class HostService {
         String basePage;
 
         HttpClient client = cm.getClient().build();
-        HttpGet httpGet = cm.buildHttpGet(url);
+        HttpGet httpGet = cm.buildHttpGet(url, context);
         Header[] headers;
         log.debug(String.format("Requesting %s", url));
         try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(httpGet, context)) {

@@ -81,7 +81,7 @@ public class ImxHost extends Host {
         }
         log.debug(String.format("Click button found for %s", url));
         HttpClient client = cm.getClient().build();
-        HttpPost httpPost = cm.buildHttpPost(url);
+        HttpPost httpPost = cm.buildHttpPost(url, context);
         List<NameValuePair> params = new ArrayList<>();
         params.add(new BasicNameValuePair("imgContinue", value));
         try {

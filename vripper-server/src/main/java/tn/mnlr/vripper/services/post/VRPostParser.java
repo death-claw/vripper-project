@@ -44,7 +44,7 @@ public class VRPostParser {
         try {
             URIBuilder uriBuilder = new URIBuilder(VR_API);
             uriBuilder.setParameter("p", postId);
-            httpGet = cm.buildHttpGet(uriBuilder.build());
+            httpGet = cm.buildHttpGet(uriBuilder.build(), null);
         } catch (URISyntaxException e) {
             throw new PostParseException(e);
         }

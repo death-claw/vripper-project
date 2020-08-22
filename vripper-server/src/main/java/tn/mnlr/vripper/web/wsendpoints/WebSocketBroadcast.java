@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import tn.mnlr.vripper.jpa.domain.Image;
-import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.services.*;
 
 import javax.annotation.PostConstruct;
@@ -66,7 +65,7 @@ public class WebSocketBroadcast {
                 .buffer(500, TimeUnit.MILLISECONDS)
                 .map(HashSet::new)
                 .filter(e -> !e.isEmpty())
-                .subscribe(ids -> template.convertAndSend("/topic/posts", ids.stream().map(dataService::findPostById).filter(Optional::isPresent).map(Optional::get).peek(this::isRenaming).collect(Collectors.toList())), e -> log.error("Failed to send data to client", e)));
+                .subscribe(ids -> template.convertAndSend("/topic/posts", ids.stream().map(dataService::findPostById).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList())), e -> log.error("Failed to send data to client", e)));
 
         disposables.add(dataService.liveImage()
                 .subscribeOn(Schedulers.io())
@@ -106,12 +105,6 @@ public class WebSocketBroadcast {
                 .filter(e -> !e.isEmpty())
                 .subscribe(postIds -> template.convertAndSend("/topic/posts/deleted", postIds), e -> log.error("Failed to send data to client", e))
         );
-    }
-
-    private void isRenaming(Post post) {
-        if (pathService.getRenaming().contains(post.getPostId())) {
-            post.setRenaming(true);
-        }
     }
 
     @PreDestroy

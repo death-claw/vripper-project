@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.function.CheckedRunnable;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.AbstractExecutionAwareRequest;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -25,11 +26,25 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.Iterator;
-import java.util.Objects;
+import java.util.*;
 
 @Slf4j
 public class DownloadJob implements CheckedRunnable {
+
+    public enum ContextAttributes {
+        OPEN_CONNECTION("OPEN_CONNECTION");
+
+        private final String value;
+
+        ContextAttributes(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+    }
 
     private static final Byte LOCK = 0;
     private static final int READ_BUFFER_SIZE = 8192;
@@ -41,14 +56,13 @@ public class DownloadJob implements CheckedRunnable {
     private final DownloadSpeedService downloadSpeedService;
     private final AppSettingsService appSettingsService;
 
+    private final HttpClientContext context;
+
     @Getter
     private final Image image;
 
     @Getter
     private final Post post;
-
-    @Getter
-    private final ImageFileData imageFileData = new ImageFileData();
 
     private boolean stopped = false;
 
@@ -64,9 +78,12 @@ public class DownloadJob implements CheckedRunnable {
         authService = SpringContext.getBean(VipergirlsAuthService.class);
         downloadSpeedService = SpringContext.getBean(DownloadSpeedService.class);
         appSettingsService = SpringContext.getBean(AppSettingsService.class);
+        context = HttpClientContext.create();
+        context.setCookieStore(new BasicCookieStore());
+        context.setAttribute(ContextAttributes.OPEN_CONNECTION.toString(), Collections.synchronizedList(new ArrayList<AbstractExecutionAwareRequest>()));
     }
 
-    public void download(final Post post, final Image image, final ImageFileData imageFileData) throws DownloadException {
+    public void download(final Post post, final Image image) throws DownloadException {
 
         try {
 
@@ -74,9 +91,6 @@ public class DownloadJob implements CheckedRunnable {
             image.setCurrent(0);
             dataService.updateImageStatus(image.getStatus(), image.getId());
             dataService.updateImageCurrent(image.getCurrent(), image.getId());
-
-            HttpClientContext context = HttpClientContext.create();
-            context.setCookieStore(new BasicCookieStore());
 
             synchronized (LOCK) {
                 if (!post.getStatus().equals(Status.DOWNLOADING) && !post.getStatus().equals(Status.PARTIAL)) {
@@ -86,7 +100,6 @@ public class DownloadJob implements CheckedRunnable {
             }
 
 
-            imageFileData.setPageUrl(image.getUrl());
             if (stopped) {
                 return;
             }
@@ -111,8 +124,8 @@ public class DownloadJob implements CheckedRunnable {
             HttpClient client = cm.getClient().build();
 
             log.debug(String.format("Downloading %s", nameAndUrl.getUrl()));
-            HttpGet httpGet = cm.buildHttpGet(nameAndUrl.getUrl());
-            httpGet.addHeader("Referer", imageFileData.getPageUrl());
+            HttpGet httpGet = cm.buildHttpGet(nameAndUrl.getUrl(), context);
+            httpGet.addHeader("Referer", image.getUrl());
             try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(httpGet, context)) {
 
                 if (response.getStatusLine().getStatusCode() / 100 != 2) {
@@ -158,10 +171,12 @@ public class DownloadJob implements CheckedRunnable {
                         return;
                     }
                 }
-                File finalName = checkImageTypeAndRename(dataService.findPostById(post.getId()).orElseThrow(), outputFile, nameAndUrl.getName(), image.getIndex());
-                imageFileData.setFileName(finalName.getName());
+                checkImageTypeAndRename(dataService.findPostById(post.getId()).orElseThrow(), outputFile, nameAndUrl.getName(), image.getIndex());
             }
         } catch (Exception e) {
+            if (stopped) {
+                return;
+            }
             throw new DownloadException(e);
         } finally {
             if (image.getCurrent() == image.getTotal()) {
@@ -176,7 +191,7 @@ public class DownloadJob implements CheckedRunnable {
         }
     }
 
-    private File checkImageTypeAndRename(Post post, File outputFile, String imageName, int index) throws HostException {
+    private void checkImageTypeAndRename(Post post, File outputFile, String imageName, int index) throws HostException {
         try (ImageInputStream iis = ImageIO.createImageInputStream(outputFile)) {
             Iterator<ImageReader> it = ImageIO.getImageReaders(iis);
             if (!it.hasNext()) {
@@ -221,7 +236,7 @@ public class DownloadJob implements CheckedRunnable {
             if (outImage.exists() && outImage.delete()) {
                 log.debug(String.format("%s is deleted", outImage.toString()));
             }
-            return Files.move(outputFile.toPath(), outImage.toPath(), StandardCopyOption.ATOMIC_MOVE).toFile();
+            Files.move(outputFile.toPath(), outImage.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } catch (Exception e) {
             throw new HostException("Failed to rename the image", e);
         }
@@ -234,7 +249,7 @@ public class DownloadJob implements CheckedRunnable {
             return;
         }
         log.debug(String.format("Starting downloading %s", image.getUrl()));
-        download(post, image, imageFileData);
+        download(post, image);
     }
 
     @Override
@@ -252,6 +267,12 @@ public class DownloadJob implements CheckedRunnable {
     }
 
     public void stop() {
+        List<AbstractExecutionAwareRequest> requests = (List<AbstractExecutionAwareRequest>) this.context.getAttribute(ContextAttributes.OPEN_CONNECTION.toString());
+        if (requests != null) {
+            for (AbstractExecutionAwareRequest request : requests) {
+                request.abort();
+            }
+        }
         this.stopped = true;
     }
 }

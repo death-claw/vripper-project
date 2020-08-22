@@ -24,7 +24,7 @@
             <mat-icon class="icon" fxFlex="none" color="primary" [appPreview]="postState.previews">image</mat-icon>
             <span class="title">
               <p [title]="postState.title">{{
-                postState.renaming ? 'Renaming gallery...' : postState.title
+                postState.title
                 }}</p>
               <p><label>Alternative titles: </label><span
                 [title]="postState.metadata?.resolvedNames?.join(', ')">{{postState.metadata?.resolvedNames?.join(', ') || 'none'}}</span></p>

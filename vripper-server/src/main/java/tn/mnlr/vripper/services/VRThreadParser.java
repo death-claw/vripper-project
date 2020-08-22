@@ -49,7 +49,7 @@ public class VRThreadParser {
         try {
             URIBuilder uriBuilder = new URIBuilder(VR_API);
             uriBuilder.setParameter("t", queued.getThreadId());
-            httpGet = cm.buildHttpGet(uriBuilder.build());
+            httpGet = cm.buildHttpGet(uriBuilder.build(), null);
         } catch (URISyntaxException e) {
             throw new PostParseException(e);
         }

@@ -1,6 +1,5 @@
 package tn.mnlr.vripper.services;
 
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,28 +11,25 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class PathService {
 
+    public static final int MAX_ATTEMPTS = 24;
     private final AppSettingsService appSettingsService;
     private final DataService dataService;
-    private final MutexService mutexService;
 
     private final CommonExecutor commonExecutor;
 
-    @Getter
-    private final Set<String> renaming = Collections.synchronizedSet(new HashSet<>());
-
     @Autowired
-    public PathService(AppSettingsService appSettingsService, DataService dataService, MutexService mutexService, CommonExecutor commonExecutor) {
+    public PathService(AppSettingsService appSettingsService, DataService dataService, CommonExecutor commonExecutor) {
         this.appSettingsService = appSettingsService;
         this.dataService = dataService;
-        this.mutexService = mutexService;
         this.commonExecutor = commonExecutor;
     }
 
@@ -55,55 +51,44 @@ public class PathService {
     }
 
     public final void rename(@NonNull String postId, @NonNull String altName) {
-        renaming.add(postId);
         Post post = dataService.findPostByPostId(postId).orElseThrow();
-        dataService.refreshPost(post.getId());
         commonExecutor.getGeneralExecutor().submit(() -> {
-            ReentrantLock postLock = null;
-            try {
-                postLock = mutexService.getPostLock(postId);
-                if (postLock != null) {
-                    postLock.lock();
-                }
-                if (altName.equals(post.getTitle())) {
+            if (altName.equals(post.getTitle())) {
+                return;
+            }
+            post.setTitle(altName);
+            dataService.updatePostTitle(post.getTitle(), post.getId());
+            if (post.getPostFolderName() == null) {
+                return;
+            }
+            File newDestFolder = makeDirs(_getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), sanitize(altName)));
+            File currentDesFolder = getDownloadDestinationFolder(post);
+            post.setPostFolderName(newDestFolder.getName());
+            dataService.updatePostFolderName(post.getPostFolderName(), post.getId());
+
+            List<File> files = Arrays.stream(Objects.requireNonNull(currentDesFolder.listFiles())).filter(e -> !e.getName().endsWith(".tmp")).collect(Collectors.toList());
+            for (File f : files) {
+                try {
+                    Files.move(f.toPath(), Paths.get(newDestFolder.toString(), f.toPath().getFileName().toString()), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    log.error(String.format("Failed to move files from %s to %s", currentDesFolder.toString(), newDestFolder.toString()), e);
                     return;
                 }
-                post.setTitle(altName);
-                dataService.updatePostTitle(post.getTitle(), post.getId());
-                if (post.getPostFolderName() == null) {
-                    return;
-                }
-                File newDestFolder = makeDirs(_getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), sanitize(altName)));
-                File currentDesFolder = getDownloadDestinationFolder(post);
-                post.setPostFolderName(newDestFolder.getName());
-                dataService.updatePostFolderName(post.getPostFolderName(), post.getId());
+            }
 
-                List<File> files = Arrays.stream(Objects.requireNonNull(currentDesFolder.listFiles())).filter(e -> !e.getName().endsWith(".tmp")).collect(Collectors.toList());
-                for (File f : files) {
-                    try {
-                        Files.move(f.toPath(), Paths.get(newDestFolder.toString(), f.toPath().getFileName().toString()), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-                    } catch (IOException e) {
-                        log.error(String.format("Failed to move files from %s to %s", currentDesFolder.toString(), newDestFolder.toString()), e);
-                        return;
-                    }
-                }
-
-                for (File file : Objects.requireNonNull(currentDesFolder.listFiles())) {
-                    if (!file.delete()) {
-                        log.warn(String.format("Failed to remove %s", file.toString()));
-                    }
-                }
-
+            int attempts = 0;
+            while (currentDesFolder.exists() && attempts <= MAX_ATTEMPTS) {
+                attempts++;
                 if (!currentDesFolder.delete()) {
                     log.warn(String.format("Failed to remove %s", currentDesFolder.toString()));
                 }
-            } finally {
-                renaming.remove(postId);
-                dataService.refreshPost(post.getId());
-
-                if (postLock != null) {
-                    postLock.unlock();
+                try {
+                    Thread.sleep(5_000);
+                } catch (InterruptedException ignored) {
                 }
+            }
+            if (attempts > MAX_ATTEMPTS) {
+                log.error(String.format("Failed to rename post %s", postId));
             }
         });
     }

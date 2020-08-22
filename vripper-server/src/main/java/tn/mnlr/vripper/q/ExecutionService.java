@@ -10,7 +10,6 @@ import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.enums.Status;
 import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.services.DataService;
-import tn.mnlr.vripper.services.MutexService;
 import tn.mnlr.vripper.services.post.PostService;
 
 import javax.annotation.PostConstruct;
@@ -35,19 +34,17 @@ public class ExecutionService {
     private final AppSettingsService settings;
     private final DataService dataService;
     private final PostService postService;
-    private final MutexService mutexService;
 
     private boolean pauseQ = false;
     private Thread executionThread;
     private Thread pollThread;
 
     @Autowired
-    public ExecutionService(PendingQ pendingQ, AppSettingsService settings, DataService dataService, PostService postService, MutexService mutexService) {
+    public ExecutionService(PendingQ pendingQ, AppSettingsService settings, DataService dataService, PostService postService) {
         this.pendingQ = pendingQ;
         this.settings = settings;
         this.dataService = dataService;
         this.postService = postService;
-        this.mutexService = mutexService;
     }
 
     @PostConstruct
@@ -214,7 +211,6 @@ public class ExecutionService {
         int count = pendingQ.decrement(downloadJob.getPost().getPostId());
         if (count == 0) {
             dataService.finishPost(downloadJob.getPost());
-            mutexService.removePostLock(downloadJob.getPost().getPostId());
         }
         threadCount.get(downloadJob.getImage().getHost()).decrementAndGet();
         executing.remove(downloadJob);

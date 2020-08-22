@@ -99,7 +99,7 @@ public class MetadataCache {
     }
 
     private Metadata fetchMetadata(Key key) {
-        HttpGet httpGet = cm.buildHttpGet(key.getUrl());
+        HttpGet httpGet = cm.buildHttpGet(key.getUrl(), null);
         Metadata metadata = new Metadata();
         Failsafe.with(VripperApplication.retryPolicy)
                 .onFailure(e -> {
