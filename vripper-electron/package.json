@@ -55,7 +55,7 @@
     "mac": {
       "category": "public.app-category.utilities",
       "target": [
-        "dir"
+        "dmg"
       ],
       "icon": "icon.icns"
     }
