@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.0.8] - 2020-08-22
+### Changed
+- Bug fix which breaks concurrent downloads
+
 ## [3.0.7] - 2020-08-22
 ### Changed
 - Fix MacOs build
