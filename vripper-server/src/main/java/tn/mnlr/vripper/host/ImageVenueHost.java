@@ -20,6 +20,7 @@ public class ImageVenueHost extends Host {
     private static final String host = "imagevenue.com";
     private static final String CONTINUE_BUTTON_XPATH = "//a[@title='Continue to your image']";
     private static final String IMG_XPATH = "//img[@id='thepic']";
+    private static final String IMG_XPATH2 = "//img[@style]";
 
     public ImageVenueHost() {
         super();
@@ -64,11 +65,20 @@ public class ImageVenueHost extends Host {
             throw new HostException(e);
         }
 
-        if (imgNode == null) {
-            throw new HostException("Failed to locate image");
-        }
-
-        try {
+		if (imgNode == null) {
+			try {
+				logger.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH2, url));
+				imgNode = xpathService.getAsNode(doc, IMG_XPATH2);
+			} catch (XpathException e) {
+				throw new HostException(e);
+			}
+			
+			if (imgNode == null) {
+				throw new HostException("Failed to locate image using " + IMG_XPATH2);
+			}
+		}
+		
+		try {
             logger.debug(String.format("Resolving name and image url for %s", url));
             String imgTitle = imgNode.getAttributes().getNamedItem("alt").getTextContent().trim();
             String imgUrl = imgNode.getAttributes().getNamedItem("src").getTextContent().trim();
