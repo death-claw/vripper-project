@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.0.9] - 2020-09-27
+### Changed
+- Revert to appending post id to download folders
+- Fix a bug that lead to adding duplicate posts
+- Remove old unused settings
+ 
 ## [3.0.8] - 2020-08-22
 ### Changed
 - Bug fix which breaks concurrent downloads
