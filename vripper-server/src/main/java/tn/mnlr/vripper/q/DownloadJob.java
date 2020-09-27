@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 public class DownloadJob implements CheckedRunnable {
@@ -46,7 +47,7 @@ public class DownloadJob implements CheckedRunnable {
         }
     }
 
-    private static final Byte LOCK = 0;
+    private static final ReentrantLock LOCK = new ReentrantLock();
     private static final int READ_BUFFER_SIZE = 8192;
 
     private final DataService dataService;
@@ -92,11 +93,14 @@ public class DownloadJob implements CheckedRunnable {
             dataService.updateImageStatus(image.getStatus(), image.getId());
             dataService.updateImageCurrent(image.getCurrent(), image.getId());
 
-            synchronized (LOCK) {
+            try {
+                LOCK.lock();
                 if (!post.getStatus().equals(Status.DOWNLOADING) && !post.getStatus().equals(Status.PARTIAL)) {
                     post.setStatus(Status.DOWNLOADING);
                     dataService.updatePostStatus(post.getStatus(), post.getId());
                 }
+            } finally {
+                LOCK.unlock();
             }
 
 
@@ -136,13 +140,18 @@ public class DownloadJob implements CheckedRunnable {
                     return;
                 }
                 File destinationFolder;
-                synchronized (LOCK) {
+                try {
+                    LOCK.lock();
                     Post updatedPost = dataService.findPostById(post.getId()).orElseThrow();
                     if (updatedPost.getPostFolderName() == null) {
                         pathService.createDefaultPostFolder(updatedPost);
                     }
                     destinationFolder = pathService.getDownloadDestinationFolder(updatedPost);
-                    authService.leaveThanks(updatedPost);
+                    if (appSettingsService.getSettings().getLeaveThanksOnStart()) {
+                        authService.leaveThanks(updatedPost);
+                    }
+                } finally {
+                    LOCK.unlock();
                 }
                 File outputFile = new File(destinationFolder.getPath() + File.separator + String.format("%03d_", image.getIndex()) + nameAndUrl.getName() + ".tmp");
                 try (InputStream downloadStream = response.getEntity().getContent(); FileOutputStream fos = new FileOutputStream(outputFile)) {

@@ -30,16 +30,12 @@ import static java.nio.file.StandardOpenOption.*;
 @Slf4j
 public class AppSettingsService {
 
-    private final String MAX_TOTAL_THREADS = "MAX_TOTAL_THREADS";
-    private final String baseDir;
-
     private final Path configPath;
     private final ObjectMapper om = new ObjectMapper();
 
     private Settings settings = new Settings();
 
     public AppSettingsService(@Value("${base.dir}") String baseDir, @Value("${base.dir.name}") String baseDirName) {
-        this.baseDir = baseDir;
         this.configPath = Paths.get(baseDir, baseDirName, "config.json");
         om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
@@ -53,7 +49,7 @@ public class AppSettingsService {
 
         if (settings.getVLogin()) {
             if (!this.settings.getVPassword().equals(settings.getVPassword())) {
-                settings.setVPassword(settings.getVPassword());
+                settings.setVPassword(DigestUtils.md5Hex(settings.getVPassword()));
             }
         } else {
             settings.setVUsername("");
@@ -135,8 +131,12 @@ public class AppSettingsService {
             settings.setDarkTheme(false);
         }
 
-        if (settings.getViewPhotos() == null) {
-            settings.setViewPhotos(false);
+        if (settings.getAppendPostId() == null) {
+            settings.setAppendPostId(true);
+        }
+
+        if (settings.getLeaveThanksOnStart() == null) {
+            settings.setLeaveThanksOnStart(false);
         }
 
         save();
@@ -145,8 +145,6 @@ public class AppSettingsService {
     @PreDestroy
     public void save() {
         try {
-            // force disable gallery
-            settings.setViewPhotos(false);
 
             Files.write(configPath, om.writeValueAsBytes(settings), CREATE, WRITE, TRUNCATE_EXISTING, SYNC);
         } catch (IOException e) {
@@ -206,41 +204,50 @@ public class AppSettingsService {
 
         @JsonProperty("downloadPath")
         private String downloadPath;
+
         @JsonProperty("maxThreads")
         private Integer maxThreads;
+
         @JsonProperty("maxTotalThreads")
         private Integer maxTotalThreads;
+
         @JsonProperty("autoStart")
         private Boolean autoStart;
+
         @JsonProperty("vLogin")
         private Boolean vLogin;
+
         @JsonProperty("vUsername")
         private String vUsername;
+
         @JsonProperty("vPassword")
         private String vPassword;
+
         @JsonProperty("vThanks")
         private Boolean vThanks;
+
         @JsonProperty("desktopClipboard")
         private Boolean desktopClipboard;
+
         @JsonProperty("forceOrder")
         private Boolean forceOrder;
+
         @JsonProperty("subLocation")
         private Boolean subLocation;
+
         @JsonProperty("threadSubLocation")
         private Boolean threadSubLocation;
+
         @JsonProperty("clearCompleted")
         private Boolean clearCompleted;
-        @JsonProperty("viewPhotos")
-        private Boolean viewPhotos;
+
         @JsonProperty("darkTheme")
         private Boolean darkTheme;
 
-        public void setVPassword(String vPassword) {
-            if (vPassword == null || vPassword.isEmpty()) {
-                this.vPassword = "";
-            } else {
-                this.vPassword = DigestUtils.md5Hex(vPassword);
-            }
-        }
+        @JsonProperty("appendPostId")
+        private Boolean appendPostId;
+
+        @JsonProperty("leaveThanksOnStart")
+        private Boolean leaveThanksOnStart;
     }
 }

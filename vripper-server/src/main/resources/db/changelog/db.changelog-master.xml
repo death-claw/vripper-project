@@ -164,4 +164,9 @@
                                  initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
                                  referencedColumnNames="ID" referencedTableName="POST"/>
     </changeSet>
+    <changeSet id="1600798657000-01" author="sysgen">
+        <createIndex tableName="POST" indexName="POST_UQ_POST_ID_IDX">
+            <column name="POST_ID"/>
+        </createIndex>
+    </changeSet>
 </databaseChangeLog>

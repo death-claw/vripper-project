@@ -34,17 +34,26 @@ public class PathService {
     }
 
     public final File getDownloadDestinationFolder(Post post) {
-        return _getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), post.getPostFolderName());
+        return _getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), post.getPostFolderName(), post.getPostId());
     }
 
-    private File _getDownloadDestinationFolder(@NonNull String forum, @NonNull String threadTitle, @NonNull String title) {
+    private File _getRootFolder(@NonNull String forum, @NonNull String threadTitle) {
         File sourceFolder = appSettingsService.getSettings().getSubLocation() ? new File(appSettingsService.getSettings().getDownloadPath(), sanitize(forum)) : new File(appSettingsService.getSettings().getDownloadPath());
-        sourceFolder = appSettingsService.getSettings().getThreadSubLocation() ? new File(sourceFolder, threadTitle) : sourceFolder;
+        return appSettingsService.getSettings().getThreadSubLocation() ? new File(sourceFolder, threadTitle) : sourceFolder;
+    }
+
+    private File _getDownloadDestinationFolder(@NonNull String forum, @NonNull String threadTitle, @NonNull String title, @NonNull String postId) {
+        File sourceFolder = _getRootFolder(forum, threadTitle);
         return new File(sourceFolder, title);
     }
 
+    private File _createDownloadDestinationFolder(@NonNull String forum, @NonNull String threadTitle, @NonNull String title, @NonNull String postId) {
+        File sourceFolder = _getRootFolder(forum, threadTitle);
+        return new File(sourceFolder, appSettingsService.getSettings().getAppendPostId() ? title + "_" + postId : title);
+    }
+
     public final void createDefaultPostFolder(Post post) {
-        File sourceFolder = _getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), sanitize(post.getTitle()));
+        File sourceFolder = _createDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), sanitize(post.getTitle()), post.getPostId());
         File destFolder = makeDirs(sourceFolder);
         post.setPostFolderName(destFolder.getName());
         dataService.updatePostFolderName(post.getPostFolderName(), post.getId());
@@ -61,7 +70,7 @@ public class PathService {
             if (post.getPostFolderName() == null) {
                 return;
             }
-            File newDestFolder = makeDirs(_getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), sanitize(altName)));
+            File newDestFolder = makeDirs(_getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), sanitize(altName), postId));
             File currentDesFolder = getDownloadDestinationFolder(post);
             post.setPostFolderName(newDestFolder.getName());
             dataService.updatePostFolderName(post.getPostFolderName(), post.getId());

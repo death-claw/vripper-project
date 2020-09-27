@@ -78,7 +78,7 @@ public class MetadataRepository implements IMetadataRepository {
     @Override
     public int deleteByPostId(String postId) {
         return jdbcTemplate.update(
-                "DELETE FROM METADATA WHERE POST_ID_REF = (SELECT post.ID FROM POST AS post INNER JOIN METADATA metadata ON post.ID = metadata.POST_ID_REF WHERE post.POST_ID = ?)",
+                "DELETE FROM METADATA AS metadata WHERE metadata.ID = (SELECT inner_metadata.ID FROM POST AS post INNER JOIN METADATA inner_metadata ON post.ID = inner_metadata.POST_ID_REF WHERE post.POST_ID = ?)",
                 postId
         );
     }

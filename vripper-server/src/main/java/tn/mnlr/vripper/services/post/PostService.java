@@ -11,6 +11,7 @@ import tn.mnlr.vripper.q.PendingQ;
 import tn.mnlr.vripper.services.AppSettingsService;
 import tn.mnlr.vripper.services.CommonExecutor;
 import tn.mnlr.vripper.services.DataService;
+import tn.mnlr.vripper.services.VipergirlsAuthService;
 
 import java.util.Map;
 import java.util.Set;
@@ -26,13 +27,15 @@ public class PostService {
     private final DataService dataService;
     private final CommonExecutor commonExecutor;
     private final Map<String, Future<?>> fetchingMetadata = new ConcurrentHashMap<>();
+    private final VipergirlsAuthService vipergirlsAuthService;
 
     @Autowired
-    public PostService(AppSettingsService appSettingsService, PendingQ pendingQ, DataService dataService, DataService dataService1, CommonExecutor commonExecutor) {
+    public PostService(AppSettingsService appSettingsService, PendingQ pendingQ, DataService dataService, CommonExecutor commonExecutor, VipergirlsAuthService vipergirlsAuthService) {
         this.appSettingsService = appSettingsService;
         this.pendingQ = pendingQ;
-        this.dataService = dataService1;
+        this.dataService = dataService;
         this.commonExecutor = commonExecutor;
+        this.vipergirlsAuthService = vipergirlsAuthService;
     }
 
     public void addPost(String postId, String threadId) throws PostParseException {
@@ -70,6 +73,9 @@ public class PostService {
         } else {
             post.setStatus(Status.STOPPED);
             log.debug("Auto start downloads option is disabled");
+        }
+        if (!appSettingsService.getSettings().getLeaveThanksOnStart()) {
+            vipergirlsAuthService.leaveThanks(post);
         }
         dataService.updatePostStatus(post.getStatus(), post.getId());
     }
