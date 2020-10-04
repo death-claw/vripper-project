@@ -47,7 +47,7 @@ public class AppSettingsService {
 
     public void newSettings(Settings settings) {
 
-        if (settings.getVLogin()) {
+        if (settings.getVLogin() != null && settings.getVLogin()) {
             if (!this.settings.getVPassword().equals(settings.getVPassword())) {
                 settings.setVPassword(DigestUtils.md5Hex(settings.getVPassword()));
             }
@@ -55,7 +55,11 @@ public class AppSettingsService {
             settings.setVUsername("");
             settings.setVPassword("");
             settings.setVThanks(false);
+            settings.setVLogin(false);
         }
+        // The following two lines are needed because the UI does not support them yet
+        settings.setAppendPostId(this.settings.getAppendPostId());
+        settings.setLeaveThanksOnStart(this.settings.getLeaveThanksOnStart());
         this.settings = settings;
 
         save();
