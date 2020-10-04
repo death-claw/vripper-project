@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.0.10] - 2020-10-04
+### Changed
+- Fix bug on settings update
+
 ## [3.0.9] - 2020-09-27
 ### Changed
 - Revert to appending post id to download folders
