@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.0.11] - 2020-10-31
+### Added
+- Support for vipr.im
+
 ## [3.0.10] - 2020-10-04
 ### Changed
 - Fix bug on settings update
