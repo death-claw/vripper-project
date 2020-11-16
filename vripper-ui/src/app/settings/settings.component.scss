@@ -1,24 +1,14 @@
-.container {
+form {
+  padding: 10px;
+}
+
+.vg-inputs {
+  padding: 10px;
+}
+
+.input {
   display: flex;
-  flex-direction: column;
-}
-
-.container form > * {
-  width: 100%;
-}
-
-.container form {
-  padding: 15px;
-}
-
-.container form section > * {
-  width: 100%;
-}
-
-.container form section div > * {
-  width: 100%;
-}
-
-mat-checkbox {
-  display: block;
+  > :first-child {
+    margin-right: 5px;
+  }
 }

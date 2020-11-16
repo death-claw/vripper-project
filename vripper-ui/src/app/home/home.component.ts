@@ -1,7 +1,7 @@
 import {Subscription} from 'rxjs';
-import {LinkCollectorService} from '../link-collector.service';
-import {ServerService} from '../server-service';
-import {ClipboardService} from '../clipboard.service';
+import {LinkCollectorService} from '../services/link-collector.service';
+import {ServerService} from '../services/server-service';
+import {ClipboardService} from '../services/clipboard.service';
 import {ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {MatSnackBar} from '@angular/material/snack-bar';
@@ -33,7 +33,7 @@ export class HomeComponent implements OnInit, OnDestroy {
           .post<{ threadId: string; postId: string }>(this.serverService.baseUrl + '/post', { url: e })
           .subscribe(
             response => {
-              this._snackBar.open('Clipboard successfully scanned', null, {
+              this._snackBar.open('Clipboard scan complete', null, {
                 duration: 5000
               });
             },

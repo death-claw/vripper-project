@@ -1,7 +1,7 @@
 @import '~@angular/material/theming';
 
 $custom-typography: mat-typography-config(
-  $font-family: 'Fira, sans-serif'
+  $font-family: 'Open, sans-serif'
 );
 
 @include angular-material-typography($custom-typography);

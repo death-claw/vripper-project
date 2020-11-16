@@ -3,7 +3,7 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {HttpClient} from '@angular/common/http';
 import {finalize} from 'rxjs/operators';
-import {ServerService} from '../server-service';
+import {ServerService} from '../services/server-service';
 import {BehaviorSubject, Subject} from 'rxjs';
 
 @Component({

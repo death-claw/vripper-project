@@ -1,7 +1,7 @@
-import {SelectionService} from '../selection-service';
+import {SelectionService} from '../services/selection-service';
 import {ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit} from '@angular/core';
 import {DownloadSpeed} from '../domain/download-speed.model';
-import {WsConnectionService} from '../ws-connection.service';
+import {WsConnectionService} from '../services/ws-connection.service';
 import {BehaviorSubject, Subject, Subscription} from 'rxjs';
 import {GlobalState} from '../domain/global-state.model';
 

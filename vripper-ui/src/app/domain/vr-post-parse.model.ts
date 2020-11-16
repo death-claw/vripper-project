@@ -1,4 +1,4 @@
-export class VRPostParse {
+export class MultiPostItem {
   constructor(
     public threadId: string,
     public postId: string,

@@ -15,7 +15,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.XpathException;
-import tn.mnlr.vripper.services.ConnectionManager;
+import tn.mnlr.vripper.services.ConnectionService;
 import tn.mnlr.vripper.services.HostService;
 import tn.mnlr.vripper.services.HtmlProcessorService;
 import tn.mnlr.vripper.services.XpathService;
@@ -31,14 +31,14 @@ public class AcidimgHost extends Host {
     private static final String CONTINUE_BUTTON_XPATH = "//input[@id='continuebutton']";
     private static final String IMG_XPATH = "//img[@class='centred']";
 
-    private final ConnectionManager cm;
+    private final ConnectionService cm;
     private final HostService hostService;
     private final XpathService xpathService;
     private final HtmlProcessorService htmlProcessorService;
 
 
     @Autowired
-    public AcidimgHost(ConnectionManager cm, HostService hostService, XpathService xpathService, HtmlProcessorService htmlProcessorService) {
+    public AcidimgHost(ConnectionService cm, HostService hostService, XpathService xpathService, HtmlProcessorService htmlProcessorService) {
         this.cm = cm;
         this.hostService = hostService;
         this.xpathService = xpathService;

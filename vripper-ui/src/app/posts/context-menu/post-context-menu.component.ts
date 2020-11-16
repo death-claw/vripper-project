@@ -1,21 +1,21 @@
-import {AppService} from '../../app.service';
-import {ServerService} from '../../server-service';
+import {AppService} from '../../services/app.service';
+import {ServerService} from '../../services/server-service';
 import {HttpClient, HttpErrorResponse} from '@angular/common/http';
 import {ElectronService} from 'ngx-electron';
 import {ChangeDetectionStrategy, Component, NgZone} from '@angular/core';
 import {animate, state, style, transition, trigger} from '@angular/animations';
 import {MatDialog, MatDialogConfig} from '@angular/material/dialog';
 import {MatSnackBar} from '@angular/material/snack-bar';
-import {PostDetailComponent} from '../../post-progress/post-detail.component';
-import {BehaviorSubject, Observable, Subject} from 'rxjs';
+import {PhotosComponent} from '../../photos/photos.component';
+import {Observable} from 'rxjs';
 import {BreakpointObserver, Breakpoints, BreakpointState} from '@angular/cdk/layout';
-import {PostState} from '../../domain/post-state.model';
+import {Post} from '../../domain/post-state.model';
 import {DownloadPath} from '../../domain/download-path.model';
 import {ConfirmDialogComponent} from '../../confirmation-component/confirmation-dialog';
 import {filter, flatMap} from 'rxjs/operators';
 import {RemoveResponse} from '../../domain/remove-response.model';
-import {CtxtMenuService} from './ctxt-menu.service';
-import {PostsDataService} from '../posts-data.service';
+import {PostContextMenuService} from '../../services/post-context-menu.service';
+import {PostsService} from '../../services/posts.service';
 import {AlternativeTitleComponent, AlternativeTitleDialog} from '../alternative-title/alternative-title.component';
 import {PostId} from '../../domain/post-id.model';
 
@@ -33,10 +33,10 @@ import {PostId} from '../../domain/post-id.model';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PostContextMenuComponent {
-  postState: PostState;
+  post: Post;
   isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
   fs;
-  contextMenuService: CtxtMenuService;
+  contextMenuService: PostContextMenuService;
 
   constructor(
     public electronService: ElectronService,
@@ -47,24 +47,18 @@ export class PostContextMenuComponent {
     private _snackBar: MatSnackBar,
     private ngZone: NgZone,
     private appService: AppService,
-    private postsDataService: PostsDataService
+    private postsDataService: PostsService
   ) {
     if (this.electronService.isElectronApp) {
       this.fs = this.electronService.remote.require('fs');
     }
-    this.isViewEnabled.next(this.appService.settings.viewPhotos);
   }
 
-  isViewEnabled: Subject<boolean> = new BehaviorSubject(false);
 
   restart() {
-    this.contextMenuService.closePostCtxtMenu();
-    this.httpClient.post(this.serverService.baseUrl + '/post/restart', [this.postState.postId]).subscribe(
-      () => {
-        this._snackBar.open('Download started', null, {
-          duration: 5000
-        });
-      },
+    this.contextMenuService.closePostContextMenu();
+    this.httpClient.post(this.serverService.baseUrl + '/post/restart', [this.post.postId]).subscribe(
+      () => {},
       error => {
         this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000
@@ -74,16 +68,16 @@ export class PostContextMenuComponent {
   }
 
   goTo() {
-    this.contextMenuService.closePostCtxtMenu();
+    this.contextMenuService.closePostContextMenu();
     if (this.electronService.isElectronApp) {
-      this.electronService.shell.openExternal(this.postState.url);
+      this.electronService.shell.openExternal(this.post.url);
     } else {
-      window.open(this.postState.url, '_blank');
+      window.open(this.post.url, '_blank');
     }
   }
 
   remove() {
-    this.contextMenuService.closePostCtxtMenu();
+    this.contextMenuService.closePostContextMenu();
     this.ngZone.run(() => {
       this.dialog
         .open(ConfirmDialogComponent, {
@@ -97,7 +91,7 @@ export class PostContextMenuComponent {
         .pipe(
           filter(e => e === 'yes'),
           flatMap(() =>
-            this.httpClient.post<RemoveResponse[]>(this.serverService.baseUrl + '/post/remove', [this.postState.postId])
+            this.httpClient.post<RemoveResponse[]>(this.serverService.baseUrl + '/post/remove', [this.post.postId])
           )
         )
         .subscribe(
@@ -114,9 +108,9 @@ export class PostContextMenuComponent {
   }
 
   useAltTitle() {
-    this.contextMenuService.closePostCtxtMenu();
+    this.contextMenuService.closePostContextMenu();
     this.httpClient.post<PostId[]>(this.serverService.baseUrl + '/post/rename/first', [{
-      postId: this.postState.postId
+      postId: this.post.postId
     }]).subscribe(
       () => {
       },
@@ -129,13 +123,13 @@ export class PostContextMenuComponent {
   }
 
   openRenameDialog() {
-    this.contextMenuService.closePostCtxtMenu();
+    this.contextMenuService.closePostContextMenu();
     const dialogConfig: MatDialogConfig<AlternativeTitleDialog> = {
       maxHeight: '100vh',
       maxWidth: '100vw',
       height: '300px',
       width: '60%',
-      data: {post: this.postState}
+      data: {post: this.post}
     };
     this.ngZone.run(() => {
       this.dialog
@@ -144,13 +138,9 @@ export class PostContextMenuComponent {
   }
 
   stop() {
-    this.contextMenuService.closePostCtxtMenu();
-    this.httpClient.post(this.serverService.baseUrl + '/post/stop', [this.postState.postId]).subscribe(
-      () => {
-        this._snackBar.open('Download stopped', null, {
-          duration: 5000
-        });
-      },
+    this.contextMenuService.closePostContextMenu();
+    this.httpClient.post(this.serverService.baseUrl + '/post/stop', [this.post.postId]).subscribe(
+      () => {},
       error => {
         this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000
@@ -160,14 +150,14 @@ export class PostContextMenuComponent {
   }
 
   seeDetails() {
-    this.contextMenuService.closePostCtxtMenu();
+    this.contextMenuService.closePostContextMenu();
     this.ngZone.run(() => {
-      const dialogRef = this.dialog.open(PostDetailComponent, {
+      const dialogRef = this.dialog.open(PhotosComponent, {
         width: '90%',
         height: '90%',
         maxWidth: '100vw',
         maxHeight: '100vh',
-        data: this.postState
+        data: this.post
       });
 
       const smallDialogSubscription = this.isExtraSmall.subscribe(result => {
@@ -187,13 +177,13 @@ export class PostContextMenuComponent {
   }
 
   open() {
-    this.contextMenuService.closePostCtxtMenu();
+    this.contextMenuService.closePostContextMenu();
     if (!this.electronService.isElectronApp) {
       console.error('Cannot open downloader folder, not electron app');
       return;
     }
     // Request the server to give the correct file location
-    this.httpClient.get<DownloadPath>(this.serverService.baseUrl + '/post/path/' + this.postState.postId).subscribe(
+    this.httpClient.get<DownloadPath>(this.serverService.baseUrl + '/post/path/' + this.post.postId).subscribe(
       path => {
         if (this.fs.existsSync(path.path)) {
           this.electronService.shell.openPath(path.path).then();

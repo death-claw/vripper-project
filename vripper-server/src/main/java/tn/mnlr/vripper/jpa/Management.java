@@ -1,13 +1,15 @@
 package tn.mnlr.vripper.jpa;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import tn.mnlr.vripper.download.DownloadService;
+import tn.mnlr.vripper.services.ThreadPoolService;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.io.File;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,11 +27,26 @@ public class Management {
 
     private final JdbcTemplate jdbcTemplate;
     private final String backupFolder;
+    private final ThreadPoolService threadPoolService;
+    private final DownloadService downloadService;
 
-    @Autowired
-    public Management(JdbcTemplate jdbcTemplate, @Value("${base.dir}") String baseDir, @Value("${base.dir.name}") String baseDirName) {
+    public Management(JdbcTemplate jdbcTemplate, @Value("${base.dir}") String baseDir, @Value("${base.dir.name}") String baseDirName, ThreadPoolService threadPoolService, DownloadService downloadService) {
         this.jdbcTemplate = jdbcTemplate;
+        this.threadPoolService = threadPoolService;
+        this.downloadService = downloadService;
         this.backupFolder = baseDir + File.separator + baseDirName + File.separator + "backup";
+    }
+
+    @PreDestroy
+    public void destroy() {
+
+        try {
+            threadPoolService.destroy();
+            downloadService.destroy();
+            this.jdbcTemplate.execute("SHUTDOWN");
+        } catch (Exception ignored) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     @PostConstruct

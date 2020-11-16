@@ -22,11 +22,11 @@ import java.net.URISyntaxException;
 @Slf4j
 public class HostService {
 
-    private final ConnectionManager cm;
+    private final ConnectionService cm;
     private final HtmlProcessorService htmlProcessorService;
 
     @Autowired
-    public HostService(ConnectionManager cm, HtmlProcessorService htmlProcessorService) {
+    public HostService(ConnectionService cm, HtmlProcessorService htmlProcessorService) {
         this.cm = cm;
         this.htmlProcessorService = htmlProcessorService;
     }

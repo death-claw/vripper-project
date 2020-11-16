@@ -1,11 +1,11 @@
 import {finalize} from 'rxjs/operators';
-import {AppService} from '../app.service';
-import {ClipboardService} from '../clipboard.service';
-import {ChangeDetectionStrategy, Component, OnInit} from '@angular/core';
+import {AppService} from '../services/app.service';
+import {ClipboardService} from '../services/clipboard.service';
+import {ChangeDetectionStrategy, Component, NgZone, OnInit} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {FormControl, FormGroup} from '@angular/forms';
 import {MatSnackBar} from '@angular/material/snack-bar';
-import {ServerService} from '../server-service';
+import {ServerService} from '../services/server-service';
 import {ElectronService} from 'ngx-electron';
 import {Settings} from '../domain/settings.model';
 import OpenDialogReturnValue = Electron.OpenDialogReturnValue;
@@ -17,39 +17,46 @@ import OpenDialogReturnValue = Electron.OpenDialogReturnValue;
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SettingsComponent implements OnInit {
-  constructor(
-    private httpClient: HttpClient,
-    private _snackBar: MatSnackBar,
-    private serverService: ServerService,
-    public electronService: ElectronService,
-    private clipboardService: ClipboardService,
-    private appService: AppService
-  ) {
-  }
-
   loading = false;
+  darkTheme = false;
 
-  generalSettingsForm = new FormGroup({
+  viperGirlsSettingsForm = new FormGroup({
+    vLogin: new FormControl(false),
+    vUsername: new FormControl(''),
+    vPassword: new FormControl(''),
+    vThanks: new FormControl(false),
+    leaveThanksOnStart: new FormControl(false)
+  });
+
+  downloadSettingsForm = new FormGroup({
     downloadPath: new FormControl(''),
-    maxThreads: new FormControl(''),
-    maxTotalThreads: new FormControl(''),
     autoStart: new FormControl(false),
     forceOrder: new FormControl(false),
     subLocation: new FormControl(false),
     threadSubLocation: new FormControl(false),
     clearCompleted: new FormControl(false),
-    vLogin: new FormControl(false),
-    vUsername: new FormControl(''),
-    vPassword: new FormControl(''),
-    vThanks: new FormControl(false),
-    viewPhotos: new FormControl(false)
+    appendPostId: new FormControl(false)
+  });
+
+  connectionSettingsForm = new FormGroup({
+    maxThreads: new FormControl(''),
+    maxTotalThreads: new FormControl('')
   });
 
   desktopSettingsForm = new FormGroup({
     desktopClipboard: new FormControl(false)
   });
 
-  darkTheme = false;
+  constructor(
+    private httpClient: HttpClient,
+    private _snackBar: MatSnackBar,
+    private serverService: ServerService,
+    public electronService: ElectronService,
+    private clipboardService: ClipboardService,
+    private appService: AppService,
+    private zone: NgZone
+  ) {
+  }
 
   updateTheme() {
     this.appService.updateTheme(this.darkTheme);
@@ -63,7 +70,9 @@ export class SettingsComponent implements OnInit {
     this.darkTheme = this.appService.darkTheme;
     this.httpClient.get<Settings>(this.serverService.baseUrl + '/settings')
       .subscribe(data => {
-        this.generalSettingsForm.reset(data);
+        this.viperGirlsSettingsForm.reset(data);
+        this.downloadSettingsForm.reset(data);
+        this.connectionSettingsForm.reset(data);
         this.desktopSettingsForm.reset(data);
       }, error => {
         this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
@@ -78,11 +87,13 @@ export class SettingsComponent implements OnInit {
         properties: ['openDirectory']
       })
       .then((value: OpenDialogReturnValue) => {
-        if (value.filePaths !== undefined) {
-          this.generalSettingsForm.get('downloadPath').setValue(value.filePaths[0]);
-          this.generalSettingsForm.get('downloadPath').markAsDirty();
-          this.generalSettingsForm.get('downloadPath').markAsTouched();
-        }
+        this.zone.run(() => {
+          if (!value.canceled && value.filePaths !== undefined) {
+            this.downloadSettingsForm.get('downloadPath').setValue(value.filePaths[0]);
+            this.downloadSettingsForm.get('downloadPath').markAsDirty();
+            this.downloadSettingsForm.get('downloadPath').markAsTouched();
+          }
+        });
       });
   }
 
@@ -90,7 +101,9 @@ export class SettingsComponent implements OnInit {
     this.loading = true;
     this.httpClient
       .post<Settings>(this.serverService.baseUrl + '/settings', {
-        ...this.generalSettingsForm.value,
+        ...this.viperGirlsSettingsForm.value,
+        ...this.downloadSettingsForm.value,
+        ...this.connectionSettingsForm.value,
         darkTheme: this.darkTheme,
         ...this.desktopSettingsForm.value
       })
@@ -100,7 +113,9 @@ export class SettingsComponent implements OnInit {
           this._snackBar.open('Settings updated', null, {
             duration: 5000
           });
-          this.generalSettingsForm.reset(data);
+          this.viperGirlsSettingsForm.reset(data);
+          this.downloadSettingsForm.reset(data);
+          this.connectionSettingsForm.reset(data);
           this.desktopSettingsForm.reset(data);
           this.clipboardService.init(data);
           this.updateSettings(data);

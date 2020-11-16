@@ -1,10 +1,10 @@
-<mat-tab-group dynamicHeight style="height: 100%; margin-bottom: 20px; overflow: hidden;">
+<mat-tab-group animationDuration="0" dynamicHeight style="height: 100%; margin-bottom: 20px;">
   <mat-tab label="Downloads">
       <app-posts></app-posts>
   </mat-tab>
   <mat-tab>
     <ng-template mat-tab-label>
-      <span style="margin-right: 5px;">Link Collector</span>
+      <span>Multi-post links</span>
       <ng-container *ngIf="linkCollectorService.count | async as count">
         <mat-icon [matBadgeHidden]="count < 1" [matBadge]="count">link</mat-icon>
       </ng-container>
@@ -12,3 +12,4 @@
     <app-grab-queue></app-grab-queue>
   </mat-tab>
 </mat-tab-group>
+

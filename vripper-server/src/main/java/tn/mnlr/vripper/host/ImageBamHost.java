@@ -13,7 +13,7 @@ import org.w3c.dom.Node;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.HtmlProcessorException;
 import tn.mnlr.vripper.exception.XpathException;
-import tn.mnlr.vripper.services.ConnectionManager;
+import tn.mnlr.vripper.services.ConnectionService;
 import tn.mnlr.vripper.services.HostService;
 import tn.mnlr.vripper.services.HtmlProcessorService;
 import tn.mnlr.vripper.services.XpathService;
@@ -29,12 +29,12 @@ public class ImageBamHost extends Host {
     private static final String IMG_XPATH = "//img[@class='image']";
 
     private final HostService hostService;
-    private final ConnectionManager cm;
+    private final ConnectionService cm;
     private final XpathService xpathService;
     private final HtmlProcessorService htmlProcessorService;
 
     @Autowired
-    public ImageBamHost(HostService hostService, ConnectionManager cm, XpathService xpathService, HtmlProcessorService htmlProcessorService) {
+    public ImageBamHost(HostService hostService, ConnectionService cm, XpathService xpathService, HtmlProcessorService htmlProcessorService) {
         this.hostService = hostService;
         this.cm = cm;
         this.xpathService = xpathService;

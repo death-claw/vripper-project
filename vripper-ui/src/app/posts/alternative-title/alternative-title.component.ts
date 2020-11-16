@@ -2,13 +2,13 @@ import {ChangeDetectionStrategy, Component, Inject, OnInit} from '@angular/core'
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {RenamePostModel} from '../../domain/rename-post.model';
 import {HttpClient} from '@angular/common/http';
-import {ServerService} from '../../server-service';
+import {ServerService} from '../../services/server-service';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {FormControl, FormGroup, Validators} from '@angular/forms';
-import {PostState} from '../../domain/post-state.model';
+import {Post} from '../../domain/post-state.model';
 
 export interface AlternativeTitleDialog {
-  post: PostState
+  post: Post
 }
 
 @Component({

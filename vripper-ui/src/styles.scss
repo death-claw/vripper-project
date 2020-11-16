@@ -5,6 +5,11 @@
 }
 
 @font-face {
+  font-family: Open;
+  src: url(assets/OpenSans-Regular.ttf);
+}
+
+@font-face {
     font-family: 'Material Icons';
     font-style: normal;
     font-weight: 400;
@@ -31,33 +36,37 @@
 @import 'mat-theme.scss';
 @import 'src/app/status-bar/status-bar.component.scss-theme';
 @import 'app/app.component.scss-theme.scss';
-@import 'src/app/posts/renderer/post-progress.renderer.component.scss-theme';
-@import 'src/app/post-progress/renderer/post-details-progress.component.scss-theme';
+@import 'src/app/toolbar/toolbar.component.scss-theme';
 @import 'grid-theme.scss';
 
-@mixin custom-components-theme($theme) {
+@mixin custom-components-theme($theme, $dark: false) {
   @include status-bar-component-theme($theme);
   @include app-component-theme($theme);
-  @include post-progress-renderer-component-theme($theme);
-  @include post-detail-renderer-component-theme($theme);
+  @include toolbar-theme($theme, $dark);
 }
 
 .dark-theme {
-  @include custom-components-theme($my-dark-theme);
+  @include custom-components-theme($my-dark-theme, true);
   @include angular-material-theme($my-dark-theme);
-  @include grid-theme($my-dark-theme);
+  @include grid-theme($my-dark-theme, true);
 }
 
 .light-theme {
-  @include custom-components-theme($my-light-theme);
+  @include custom-components-theme($my-light-theme, false);
   @include angular-material-theme($my-light-theme);
-  @include grid-theme($my-light-theme);
+  @include grid-theme($my-light-theme, false);
 }
 
 html {
   box-sizing: border-box;
   height: 100vh;
   width: 100vw;
+}
+
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
 }
 
 app-root {
@@ -92,9 +101,16 @@ body a {
   }
   color: rgba(0, 0, 0, 0.87);
   text-decoration: none;
-  font-weight: bold;
 }
 
-.ag-row-selected app-progress-cell .checkbox {
-  background-color: orange !important;
+body .ag-cell {
+  line-height: 25px !important;
+}
+
+body .mat-list-base .mat-list-item {
+  height: 35px;
+  font-size: 14px;
+  .mat-icon {
+    font-size: 20px;
+  }
 }

@@ -1,7 +1,7 @@
 import {ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit} from '@angular/core';
 import {RemoveAllResponse} from '../domain/remove-all-response.model';
-import {ServerService} from '../server-service';
-import {AppService} from '../app.service';
+import {ServerService} from '../services/server-service';
+import {AppService} from '../services/app.service';
 import {HttpClient} from '@angular/common/http';
 import {MatDialog} from '@angular/material/dialog';
 import {MatSnackBar} from '@angular/material/snack-bar';
@@ -11,17 +11,17 @@ import {LoggedUser} from '../domain/logged-user.model';
 import {SettingsComponent} from '../settings/settings.component';
 import {BehaviorSubject, Observable, Subject, Subscription} from 'rxjs';
 import {BreakpointObserver, Breakpoints, BreakpointState} from '@angular/cdk/layout';
-import {WsConnectionService} from '../ws-connection.service';
-import {SelectionService} from '../selection-service';
+import {WsConnectionService} from '../services/ws-connection.service';
+import {SelectionService} from '../services/selection-service';
 import {RowNode} from 'ag-grid-community';
 import {RemoveResponse} from '../domain/remove-response.model';
-import {PostsDataService} from '../posts/posts-data.service';
 import {PostId} from '../domain/post-id.model';
+import {PostsService} from '../services/posts.service';
 
 @Component({
   selector: 'app-toolbar',
   templateUrl: './toolbar.component.html',
-  styleUrls: ['./tooltip.component.scss'],
+  styleUrls: ['./toolbar.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ToolbarComponent implements OnInit, OnDestroy {
@@ -35,7 +35,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     private breakpointObserver: BreakpointObserver,
     private ws: WsConnectionService,
     private selectionService: SelectionService,
-    private postsDataService: PostsDataService
+    private postsDataService: PostsService
   ) {
   }
 
@@ -106,11 +106,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     const toStart = [];
     this.selected.forEach(e => toStart.push(e.data.postId));
     this.httpClient.post(this.serverService.baseUrl + '/post/restart', toStart).subscribe(
-      () => {
-        this._snackBar.open('Download started', null, {
-          duration: 5000
-        });
-      },
+      () => {},
       error => {
         this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000
@@ -123,11 +119,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     const toStop = [];
     this.selected.forEach(e => toStop.push(e.data.postId));
     this.httpClient.post(this.serverService.baseUrl + '/post/stop', toStop).subscribe(
-      () => {
-        this._snackBar.open('Download stopped', null, {
-          duration: 5000
-        });
-      },
+      () => {},
       error => {
         this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000
@@ -140,11 +132,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     const toRename = [];
     this.selected.forEach(e => toRename.push(e.data.postId));
     this.httpClient.post<PostId[]>(this.serverService.baseUrl + '/post/rename/first', toRename).subscribe(
-      () => {
-        this._snackBar.open('Galleries renamed', null, {
-          duration: 5000
-        });
-      },
+      () => {},
       error => {
         this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000
@@ -156,9 +144,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   clear() {
     this.ngZone.run(() => {
       this.httpClient.post<RemoveAllResponse>(this.serverService.baseUrl + '/post/clear/all', {}).subscribe(
-        data => {
-          this._snackBar.open(`${data.removed} items cleared`, null, {duration: 5000});
-        },
+        data => {},
         error => {
           this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
             duration: 5000
@@ -171,9 +157,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   stopAll() {
     this.ngZone.run(() => {
       this.httpClient.post(this.serverService.baseUrl + '/post/stop/all', {}).subscribe(
-        () => {
-          this._snackBar.open(`Download stopped`, null, {duration: 5000});
-        },
+        () => {},
         error => {
           this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
             duration: 5000

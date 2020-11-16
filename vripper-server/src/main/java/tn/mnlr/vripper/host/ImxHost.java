@@ -16,7 +16,7 @@ import org.w3c.dom.Node;
 import tn.mnlr.vripper.exception.HostException;
 import tn.mnlr.vripper.exception.HtmlProcessorException;
 import tn.mnlr.vripper.exception.XpathException;
-import tn.mnlr.vripper.services.ConnectionManager;
+import tn.mnlr.vripper.services.ConnectionService;
 import tn.mnlr.vripper.services.HostService;
 import tn.mnlr.vripper.services.HtmlProcessorService;
 import tn.mnlr.vripper.services.XpathService;
@@ -35,11 +35,11 @@ public class ImxHost extends Host {
 
     private final HostService hostService;
     private final XpathService xpathService;
-    private final ConnectionManager cm;
+    private final ConnectionService cm;
     private final HtmlProcessorService htmlProcessorService;
 
     @Autowired
-    public ImxHost(HostService hostService, XpathService xpathService, ConnectionManager cm, HtmlProcessorService htmlProcessorService) {
+    public ImxHost(HostService hostService, XpathService xpathService, ConnectionService cm, HtmlProcessorService htmlProcessorService) {
         this.hostService = hostService;
         this.xpathService = xpathService;
         this.cm = cm;

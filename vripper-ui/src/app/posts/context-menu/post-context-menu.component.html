@@ -3,18 +3,18 @@
     <button
       (click)="restart()"
       *ngIf="
-            (postState.status === 'COMPLETE' && postState.progress !== 100) ||
-            postState.status === 'ERROR' ||
-            postState.status === 'STOPPED'
+            (post.status === 'COMPLETE' && post.progress !== 100) ||
+            post.status === 'ERROR' ||
+            post.status === 'STOPPED'
           "
       mat-list-item
     >
       <mat-icon>play_arrow</mat-icon>
-      <span>{{postState.progress == 0 ? 'Start' : 'Resume'}}</span>
+      <span>{{post.progress == 0 ? 'Start' : 'Resume'}}</span>
     </button>
     <button
       (click)="stop()"
-      *ngIf="postState.status === 'DOWNLOADING' || postState.status === 'PARTIAL' || postState.status === 'PENDING'"
+      *ngIf="post.status === 'DOWNLOADING' || post.status === 'PARTIAL' || post.status === 'PENDING'"
       mat-list-item
     >
       <mat-icon>stop</mat-icon>

@@ -5,18 +5,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import tn.mnlr.vripper.download.DownloadService;
 import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.jpa.domain.Metadata;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.Queued;
-import tn.mnlr.vripper.q.ExecutionService;
-import tn.mnlr.vripper.services.CommonExecutor;
+import tn.mnlr.vripper.services.ThreadPoolService;
 import tn.mnlr.vripper.services.DataService;
 import tn.mnlr.vripper.services.PathService;
-import tn.mnlr.vripper.services.VGHandler;
-import tn.mnlr.vripper.services.post.CachedPost;
-import tn.mnlr.vripper.services.post.PostService;
-import tn.mnlr.vripper.web.restendpoints.domain.posts.*;
+import tn.mnlr.vripper.services.domain.MultiPostItem;
+import tn.mnlr.vripper.services.PostService;
+import tn.mnlr.vripper.web.restendpoints.domain.*;
+import tn.mnlr.vripper.web.restendpoints.domain.PostId;
 import tn.mnlr.vripper.web.restendpoints.exceptions.BadRequestException;
 import tn.mnlr.vripper.web.restendpoints.exceptions.NotFoundException;
 import tn.mnlr.vripper.web.restendpoints.exceptions.ServerErrorException;
@@ -39,21 +39,19 @@ public class PostRestEndpoint {
 
     private final DataService dataService;
     private final PathService pathService;
-    private final VGHandler vgHandler;
-    private final ExecutionService executionService;
+    private final DownloadService downloadService;
     private final PostService postService;
-    private final CommonExecutor commonExecutor;
+    private final ThreadPoolService threadPoolService;
 
-    private static final Byte LOCK = -1;
+    private static final Object LOCK = new Object();
 
     @Autowired
-    public PostRestEndpoint(DataService dataService, PathService pathService, VGHandler vgHandler, ExecutionService executionService, PostService postService, CommonExecutor commonExecutor) {
+    public PostRestEndpoint(DataService dataService, PathService pathService, DownloadService downloadService, PostService postService, ThreadPoolService threadPoolService) {
         this.dataService = dataService;
         this.pathService = pathService;
-        this.vgHandler = vgHandler;
-        this.executionService = executionService;
+        this.downloadService = downloadService;
         this.postService = postService;
-        this.commonExecutor = commonExecutor;
+        this.threadPoolService = threadPoolService;
     }
 
     @PostMapping("/post")
@@ -84,7 +82,7 @@ public class PostRestEndpoint {
                 queuedList.add(new Queued(url, threadId, postId));
             }
             try {
-                vgHandler.handle(queuedList);
+                postService.processMultiPost(queuedList);
             } catch (Exception e) {
                 log.error("Failed to parse links", e);
                 throw new ServerErrorException(e.getMessage());
@@ -96,7 +94,7 @@ public class PostRestEndpoint {
     @ResponseStatus(value = HttpStatus.OK)
     public void restartPost(@RequestBody @NonNull List<PostId> postIds) {
         synchronized (LOCK) {
-            executionService.restartAll(postIds.stream().map(PostId::getPostId).collect(Collectors.toList()));
+            downloadService.restartAll(postIds.stream().map(PostId::getPostId).collect(Collectors.toList()));
         }
     }
 
@@ -105,7 +103,7 @@ public class PostRestEndpoint {
     public void addPost(@RequestBody List<PostToAdd> posts) {
         synchronized (LOCK) {
             for (PostToAdd post : posts) {
-                commonExecutor.getGeneralExecutor().submit(() -> {
+                threadPoolService.getGeneralExecutor().submit(() -> {
                     try {
                         postService.addPost(post.getPostId(), post.getThreadId());
                     } catch (PostParseException e) {
@@ -145,7 +143,7 @@ public class PostRestEndpoint {
     @ResponseStatus(value = HttpStatus.OK)
     public void restartPost() {
         synchronized (LOCK) {
-            executionService.restartAll(null);
+            downloadService.restartAll(null);
         }
     }
 
@@ -153,7 +151,7 @@ public class PostRestEndpoint {
     @ResponseStatus(value = HttpStatus.OK)
     public void stop(@RequestBody @NonNull List<PostId> postIds) {
         synchronized (LOCK) {
-            executionService.stopAll(postIds.stream().map(PostId::getPostId).collect(Collectors.toList()));
+            downloadService.stopAll(postIds.stream().map(PostId::getPostId).collect(Collectors.toList()));
         }
     }
 
@@ -161,7 +159,7 @@ public class PostRestEndpoint {
     @ResponseStatus(value = HttpStatus.OK)
     public void stopAll() {
         synchronized (LOCK) {
-            executionService.stopAll(null);
+            downloadService.stopAll(null);
         }
     }
 
@@ -171,7 +169,7 @@ public class PostRestEndpoint {
         synchronized (LOCK) {
             List<RemoveResult> result = new ArrayList<>();
             List<String> collect = postIds.stream().map(PostId::getPostId).peek(e -> result.add(new RemoveResult(e))).collect(Collectors.toList());
-            executionService.stopAll(collect);
+            downloadService.stopAll(collect);
             dataService.removeAll(collect);
             return result;
         }
@@ -239,10 +237,10 @@ public class PostRestEndpoint {
 
     @GetMapping("/grab/{threadId}")
     @ResponseStatus(value = HttpStatus.OK)
-    public List<CachedPost> grab(@PathVariable("threadId") @NonNull String threadId) {
+    public List<MultiPostItem> grab(@PathVariable("threadId") @NonNull String threadId) {
         Queued queued = dataService.findQueuedByThreadId(threadId).orElseThrow(() -> new NotFoundException(String.format("Unable to find links for threadId = %s", threadId)));
         try {
-            return vgHandler.getCache().get(queued);
+            return postService.getCache().get(queued);
         } catch (ExecutionException e) {
             log.error(String.format("Failed to get links for threadId = %s", threadId), e);
             throw new ServerErrorException(String.format("Failed to get links for threadId = %s", threadId));
@@ -252,7 +250,7 @@ public class PostRestEndpoint {
     @PostMapping("/grab/remove")
     @ResponseStatus(value = HttpStatus.OK)
     public ThreadId grabRemove(@RequestBody @NonNull ThreadId threadId) {
-        vgHandler.remove(threadId.getThreadId());
+        postService.remove(threadId.getThreadId());
         return threadId;
     }
 }

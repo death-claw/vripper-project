@@ -21,16 +21,16 @@ import java.util.stream.Collectors;
 public class PathService {
 
     public static final int MAX_ATTEMPTS = 24;
-    private final AppSettingsService appSettingsService;
+    private final SettingsService settingsService;
     private final DataService dataService;
 
-    private final CommonExecutor commonExecutor;
+    private final ThreadPoolService threadPoolService;
 
     @Autowired
-    public PathService(AppSettingsService appSettingsService, DataService dataService, CommonExecutor commonExecutor) {
-        this.appSettingsService = appSettingsService;
+    public PathService(SettingsService settingsService, DataService dataService, ThreadPoolService threadPoolService) {
+        this.settingsService = settingsService;
         this.dataService = dataService;
-        this.commonExecutor = commonExecutor;
+        this.threadPoolService = threadPoolService;
     }
 
     public final File getDownloadDestinationFolder(Post post) {
@@ -38,8 +38,8 @@ public class PathService {
     }
 
     private File _getRootFolder(@NonNull String forum, @NonNull String threadTitle) {
-        File sourceFolder = appSettingsService.getSettings().getSubLocation() ? new File(appSettingsService.getSettings().getDownloadPath(), sanitize(forum)) : new File(appSettingsService.getSettings().getDownloadPath());
-        return appSettingsService.getSettings().getThreadSubLocation() ? new File(sourceFolder, threadTitle) : sourceFolder;
+        File sourceFolder = settingsService.getSettings().getSubLocation() ? new File(settingsService.getSettings().getDownloadPath(), sanitize(forum)) : new File(settingsService.getSettings().getDownloadPath());
+        return settingsService.getSettings().getThreadSubLocation() ? new File(sourceFolder, threadTitle) : sourceFolder;
     }
 
     private File _getDownloadDestinationFolder(@NonNull String forum, @NonNull String threadTitle, @NonNull String title, @NonNull String postId) {
@@ -49,7 +49,7 @@ public class PathService {
 
     private File _createDownloadDestinationFolder(@NonNull String forum, @NonNull String threadTitle, @NonNull String title, @NonNull String postId) {
         File sourceFolder = _getRootFolder(forum, threadTitle);
-        return new File(sourceFolder, appSettingsService.getSettings().getAppendPostId() ? title + "_" + postId : title);
+        return new File(sourceFolder, settingsService.getSettings().getAppendPostId() ? title + "_" + postId : title);
     }
 
     public final void createDefaultPostFolder(Post post) {
@@ -61,7 +61,7 @@ public class PathService {
 
     public final void rename(@NonNull String postId, @NonNull String altName) {
         Post post = dataService.findPostByPostId(postId).orElseThrow();
-        commonExecutor.getGeneralExecutor().submit(() -> {
+        threadPoolService.getGeneralExecutor().submit(() -> {
             if (altName.equals(post.getTitle())) {
                 return;
             }

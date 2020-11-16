@@ -17,6 +17,7 @@
     </form>
   </mat-dialog-content>
   <mat-dialog-actions fxFlex="nogrow" align="end">
+    <button mat-raised-button mat-dialog-close>Close</button>
     <button [disabled]="form.invalid" color="primary" mat-dialog-close="yes" mat-raised-button (click)="rename()">
       Rename
     </button>

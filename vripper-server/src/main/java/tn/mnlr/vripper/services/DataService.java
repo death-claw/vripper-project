@@ -30,7 +30,7 @@ public class DataService {
     private final IImageRepository imageRepository;
     private final IQueuedRepository queuedRepository;
     private final IMetadataRepository metadataRepository;
-    private final AppSettingsService appSettingsService;
+    private final SettingsService settingsService;
 
     private final PublishProcessor<Long> liveGrabQueue = PublishProcessor.create();
     private final PublishProcessor<Long> liveImageUpdates = PublishProcessor.create();
@@ -60,12 +60,12 @@ public class DataService {
     }
 
     @Autowired
-    public DataService(IPostRepository postRepository, IImageRepository imageRepository, IQueuedRepository queuedRepository, IMetadataRepository metadataRepository, AppSettingsService appSettingsService) {
+    public DataService(IPostRepository postRepository, IImageRepository imageRepository, IQueuedRepository queuedRepository, IMetadataRepository metadataRepository, SettingsService settingsService) {
         this.postRepository = postRepository;
         this.imageRepository = imageRepository;
         this.queuedRepository = queuedRepository;
         this.metadataRepository = metadataRepository;
-        this.appSettingsService = appSettingsService;
+        this.settingsService = settingsService;
     }
 
     private void save(Post post) {
@@ -125,7 +125,7 @@ public class DataService {
             } else {
                 post.setStatus(Status.COMPLETE);
                 updatePostStatus(post.getStatus(), post.getId());
-                if (appSettingsService.getSettings().getClearCompleted()) {
+                if (settingsService.getSettings().getClearCompleted()) {
                     remove(post.getPostId());
                 }
             }

@@ -1,34 +1,33 @@
-<mat-toolbar class="mat-elevation-z8" color="accent">
+<mat-toolbar class="mat-elevation-z8">
   <mat-toolbar-row fxLayout="row" fxLayoutAlign="space-between center" fxLayoutGap="10px">
     <div fxLayout="row" fxLayoutAlign="center center" fxLayoutGap="5px" id="left-controls">
-      <button (click)="scan()" class="add-button" color="primary" mat-icon-button>
+      <button matTooltip="Add links" (click)="scan()" class="add-button" color="primary" mat-icon-button>
         <mat-icon>add</mat-icon>
       </button>
-      <button (click)="remove()" [disabled]="disableSelection$ | async" aria-label="Remove selected" mat-icon-button
-              title="Remove selected">
+      <button (click)="remove()" [disabled]="disableSelection$ | async" mat-icon-button
+              matTooltip="Remove selected">
         <mat-icon>delete</mat-icon>
       </button>
-      <button (click)="restart()" [disabled]="disableSelection$ | async" aria-label="Start selected" mat-icon-button
-              title="Start selected">
+      <button (click)="restart()" [disabled]="disableSelection$ | async" mat-icon-button
+              matTooltip="Start selected">
         <mat-icon>play_arrow</mat-icon>
       </button>
-      <button (click)="stop()" [disabled]="disableSelection$ | async" aria-label="Stop selected" mat-icon-button
-              title="Stop selected">
+      <button (click)="stop()" [disabled]="disableSelection$ | async" mat-icon-button
+              matTooltip="Stop selected">
         <mat-icon>pause</mat-icon>
       </button>
       <button (click)="rename()" [disabled]="disableSelection$ | async"
-              aria-label="Rename selected to alternative title"
               mat-icon-button
-              title="Rename selected to alternative title">
+              matTooltip="Rename selected to first alternative title">
         <mat-icon>edit</mat-icon>
       </button>
       <div class="or-spacer-vertical left">
         <div class="mask"></div>
       </div>
-      <button (click)="clear()" aria-label="Clear completed" mat-icon-button title="Clear completed">
+      <button (click)="clear()" mat-icon-button matTooltip="Clear completed">
         <mat-icon>clear_all</mat-icon>
       </button>
-      <button (click)="stopAll()" aria-label="Stop All" mat-icon-button title="Stop All">
+      <button (click)="stopAll()" mat-icon-button matTooltip="Stop All">
         <mat-icon>stop</mat-icon>
       </button>
     </div>
@@ -44,7 +43,7 @@
       <p class="logged-user" fxHide.lt-sm *ngIf="user$ | async as user">
         <span *ngIf="user.user.length > 0">Logged in as: {{ user.user }}</span>
       </p>
-      <button (click)="openSettings()" aria-label="settings" mat-icon-button>
+      <button (click)="openSettings()" matTooltip="Preferences" mat-icon-button>
         <mat-icon>settings</mat-icon>
       </button>
     </div>

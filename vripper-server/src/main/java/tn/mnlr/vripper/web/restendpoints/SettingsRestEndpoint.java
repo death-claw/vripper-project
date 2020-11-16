@@ -5,8 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import tn.mnlr.vripper.exception.ValidationException;
-import tn.mnlr.vripper.services.AppSettingsService;
-import tn.mnlr.vripper.services.VipergirlsAuthService;
+import tn.mnlr.vripper.services.SettingsService;
+import tn.mnlr.vripper.services.VGAuthService;
 import tn.mnlr.vripper.web.restendpoints.exceptions.BadRequestException;
 
 @RestController
@@ -14,48 +14,48 @@ import tn.mnlr.vripper.web.restendpoints.exceptions.BadRequestException;
 @CrossOrigin(value = "*")
 public class SettingsRestEndpoint {
 
-    private final AppSettingsService appSettingsService;
-    private final VipergirlsAuthService vipergirlsAuthService;
+    private final SettingsService settingsService;
+    private final VGAuthService VGAuthService;
 
     @Autowired
-    public SettingsRestEndpoint(AppSettingsService appSettingsService, VipergirlsAuthService vipergirlsAuthService) {
-        this.appSettingsService = appSettingsService;
-        this.vipergirlsAuthService = vipergirlsAuthService;
+    public SettingsRestEndpoint(SettingsService settingsService, VGAuthService VGAuthService) {
+        this.settingsService = settingsService;
+        this.VGAuthService = VGAuthService;
     }
 
     @PostMapping("/settings/theme")
     @ResponseStatus(value = HttpStatus.OK)
-    public AppSettingsService.Theme postTheme(@RequestBody AppSettingsService.Theme theme) {
-        this.appSettingsService.setTheme(theme);
-        return appSettingsService.getTheme();
+    public SettingsService.Theme postTheme(@RequestBody SettingsService.Theme theme) {
+        this.settingsService.setTheme(theme);
+        return settingsService.getTheme();
     }
 
     @GetMapping("/settings/theme")
     @ResponseStatus(value = HttpStatus.OK)
-    public AppSettingsService.Theme getTheme() {
-        return appSettingsService.getTheme();
+    public SettingsService.Theme getTheme() {
+        return settingsService.getTheme();
     }
 
     @PostMapping("/settings")
     @ResponseStatus(value = HttpStatus.OK)
-    public AppSettingsService.Settings postSettings(@RequestBody AppSettingsService.Settings settings) throws Exception {
+    public SettingsService.Settings postSettings(@RequestBody SettingsService.Settings settings) throws Exception {
 
         try {
-            this.appSettingsService.check(settings);
+            this.settingsService.check(settings);
         } catch (ValidationException e) {
             log.error("Invalid settings", e);
             throw new BadRequestException(e.getMessage());
         }
 
-        this.appSettingsService.newSettings(settings);
-        vipergirlsAuthService.authenticate();
+        this.settingsService.newSettings(settings);
+        VGAuthService.authenticate();
         return getAppSettingsService();
     }
 
     @GetMapping("/settings")
     @ResponseStatus(value = HttpStatus.OK)
-    public AppSettingsService.Settings getAppSettingsService() {
+    public SettingsService.Settings getAppSettingsService() {
 
-        return appSettingsService.getSettings();
+        return settingsService.getSettings();
     }
 }

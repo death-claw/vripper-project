@@ -65,8 +65,8 @@
     "dist": "node pre-build.js && electron-builder"
   },
   "devDependencies": {
-    "electron": "9.1.0",
-    "electron-builder": "22.7.0"
+    "electron": "10.1.5",
+    "electron-builder": "22.9.1"
   },
   "dependencies": {
     "axios": "0.19.2",

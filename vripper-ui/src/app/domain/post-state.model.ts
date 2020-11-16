@@ -1,4 +1,4 @@
-export class PostState {
+export class Post {
   constructor(
     public postId: string,
     public title: string,

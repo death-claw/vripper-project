@@ -1,15 +1,15 @@
 <div fxLayout="column" class="dialog-container" style="height: 100%;">
   <div fxFlex="nogrow" fxLayout="row" fxLayoutAlign="space-between center">
-    <h2 class="no-wrap" mat-dialog-title>Settings</h2>
+    <h2 class="no-wrap" mat-dialog-title>Preferences</h2>
     <mat-slide-toggle (change)="updateTheme()" [(ngModel)]="darkTheme"
     >{{ darkTheme ? 'Dark theme' : 'Light theme' }}
     </mat-slide-toggle>
   </div>
   <mat-dialog-content fxFlex="grow">
     <div class="container">
-      <mat-tab-group dynamicHeight="true">
-        <mat-tab label="General Settings">
-          <form [formGroup]="generalSettingsForm" autocomplete="off">
+      <mat-tab-group dynamicHeight="true" animationDuration="0ms">
+        <mat-tab label="Download">
+          <form fxLayout="column" [formGroup]="downloadSettingsForm" autocomplete="off">
             <div fxLayout="row" fxLayoutGap="20px" fxLayoutAlign="center center">
               <mat-form-field fxFlex="grow">
                 <input
@@ -25,91 +25,122 @@
               </button>
             </div>
 
-            <div fxLayout="row" fxLayoutAlign="center center" fxLayoutGap="10px">
-              <mat-form-field fxFlex="grow">
-                <input
-                  formControlName="maxThreads"
-                  matInput
-                  max="4"
-                  min="1"
-                  name="maxThreads"
-                  placeholder="Max concurrent downloads per host"
-                  required
-                  type="number"
-                />
-              </mat-form-field>
+            <section class="input">
+              <mat-checkbox color="primary" formControlName="autoStart" name="autoStart"
+              >Auto start downloads
+              </mat-checkbox>
+              <mat-icon matTooltip="Gallery download will start as soon as it is added to the download queue, download will not automatically start otherwise" svgIcon="help-circle-outline"></mat-icon>
+            </section>
 
-              <mat-form-field fxFlex="grow">
-                <input
-                  formControlName="maxTotalThreads"
-                  matInput
-                  min="0"
-                  max="12"
-                  name="maxTotalThreads"
-                  placeholder="Max global concurrent downloads"
-                  required
-                  type="number"
-                />
-              </mat-form-field>
-            </div>
+            <section class="input">
+              <mat-checkbox color="primary" formControlName="subLocation" name="subLocation"
+              >Save posts in sub folders
+              </mat-checkbox>
+              <mat-icon matTooltip="Gallery will be downloaded in sub folders based on the forum section they belong to" svgIcon="help-circle-outline"></mat-icon>
+            </section>
 
-            <mat-checkbox color="primary" formControlName="subLocation" name="subLocation"
-            >Save posts in sub folders
-            </mat-checkbox>
+            <section class="input">
+              <mat-checkbox
+                color="primary"
+                formControlName="threadSubLocation"
+                name="threadSubLocation"
+              >Create a subfolder per thread
+              </mat-checkbox>
+              <mat-icon matTooltip="Gallery will be downloaded inside a sub folder based on the thread they belong to" svgIcon="help-circle-outline"></mat-icon>
+            </section>
 
-            <mat-checkbox
-              *ngIf="generalSettingsForm.get('subLocation').value"
-              color="primary"
-              formControlName="threadSubLocation"
-              name="threadSubLocation"
-              style="margin-left: 15px"
-            >Create a subfolder per thread
-            </mat-checkbox>
+            <section class="input">
+              <mat-checkbox color="primary" formControlName="forceOrder" name="forceOrder"
+              >Order images
+              </mat-checkbox>
+              <mat-icon matTooltip="Downloaded images will be ordered by adding a number at the start of the filename e.g 001_,002_..." svgIcon="help-circle-outline"></mat-icon>
+            </section>
 
-            <mat-checkbox color="primary" formControlName="forceOrder" name="forceOrder"
-            >Force image ordering (prepend incremental numbers)
-            </mat-checkbox>
+            <section class="input">
+              <mat-checkbox color="primary" formControlName="appendPostId" name="appendPostId"
+              >Append post id to download folder
+              </mat-checkbox>
+              <mat-icon matTooltip="Downloaded gallery name will include the post id at the end" svgIcon="help-circle-outline"></mat-icon>
+            </section>
 
-            <mat-checkbox color="primary" formControlName="autoStart" name="autoStart"
-            >Auto start downloads
-            </mat-checkbox>
-
-            <mat-checkbox color="primary" formControlName="clearCompleted" name="clearCompleted"
-            >Clear Finished
-            </mat-checkbox>
-
+            <section class="input">
+              <mat-checkbox color="primary" formControlName="clearCompleted" name="clearCompleted"
+              >Clear Finished
+              </mat-checkbox>
+              <mat-icon matTooltip="Galleries will be automatically removed from the download queue once successfully completed" svgIcon="help-circle-outline"></mat-icon>
+            </section>
+          </form>
+        </mat-tab>
+        <mat-tab label="Connection">
+          <form fxLayout="column" [formGroup]="connectionSettingsForm" autocomplete="off">
+            <mat-form-field fxFlex="grow">
+              <input
+                formControlName="maxTotalThreads"
+                matInput
+                min="0"
+                max="12"
+                name="maxTotalThreads"
+                placeholder="Global concurrent downloads"
+                required
+                type="number"
+              />
+            </mat-form-field>
+            <mat-form-field>
+              <input
+                formControlName="maxThreads"
+                matInput
+                max="4"
+                min="1"
+                name="maxThreads"
+                placeholder="Concurrent downloads per host"
+                required
+                type="number"
+              />
+            </mat-form-field>
+          </form>
+        </mat-tab>
+        <mat-tab label="ViperGirls">
+          <form fxLayout="column" [formGroup]="viperGirlsSettingsForm" autocomplete="off">
             <mat-slide-toggle color="primary" formControlName="vLogin" name="vLogin">
-              ViperGirls Authentication
+              Enable ViperGirls Authentication
             </mat-slide-toggle>
 
-            <section *ngIf="generalSettingsForm.get('vLogin').value">
-              <div>
-                <mat-form-field>
-                  <input formControlName="vUsername" matInput name="vUsername" placeholder="ViperGirls Username"/>
-                </mat-form-field>
+            <section class="vg-inputs" fxLayout="column" *ngIf="viperGirlsSettingsForm.get('vLogin').value">
+              <mat-form-field>
+                <input formControlName="vUsername" matInput name="vUsername" placeholder="ViperGirls Username"/>
+              </mat-form-field>
 
-                <mat-form-field>
-                  <input
-                    formControlName="vPassword"
-                    type="password"
-                    matInput
-                    placeholder="ViperGirls Password"
-                    name="vPassword"
-                  />
-                </mat-form-field>
+              <mat-form-field>
+                <input
+                  formControlName="vPassword"
+                  type="password"
+                  matInput
+                  placeholder="ViperGirls Password"
+                  name="vPassword"
+                />
+              </mat-form-field>
 
+              <section class="input">
                 <mat-checkbox color="primary" formControlName="vThanks" name="vThanks">Leave thanks</mat-checkbox>
-              </div>
+                <mat-icon matTooltip="Automatically leave a thanks to the poster" svgIcon="help-circle-outline"></mat-icon>
+              </section>
+              <section class="input">
+                <mat-checkbox color="primary" formControlName="leaveThanksOnStart" name="leaveThanksOnStart">Leave thanks when download starts
+                </mat-checkbox>
+                <mat-icon matTooltip="Leave a thanks only when the download starts, if unchecked, leave a thanks once a gallery is added to the download queue" svgIcon="help-circle-outline"></mat-icon>
+              </section>
             </section>
           </form>
         </mat-tab>
         <mat-tab label="Desktop Integration" *ngIf="electronService.isElectronApp">
           <form [formGroup]="desktopSettingsForm" autocomplete="off">
-            <mat-checkbox *ngIf="electronService.isElectronApp" color="primary" formControlName="desktopClipboard"
-                          name="desktopClipboard"
-            >Monitor Clipboard
-            </mat-checkbox
-            >
+            <section class="input">
+              <mat-checkbox *ngIf="electronService.isElectronApp" color="primary" formControlName="desktopClipboard"
+                            name="desktopClipboard"
+              >Monitor Clipboard
+              </mat-checkbox>
+              <mat-icon matTooltip="Monitor clipboard for vipergirls.to links" svgIcon="help-circle-outline"></mat-icon>
+            </section>
           </form>
         </mat-tab>
       </mat-tab-group>
@@ -123,8 +154,10 @@
       color="primary"
       type="submit"
       [disabled]="
-        (generalSettingsForm.pristine && desktopSettingsForm.pristine) ||
-        generalSettingsForm.invalid ||
+        (desktopSettingsForm.pristine && connectionSettingsForm.pristine && downloadSettingsForm.pristine && viperGirlsSettingsForm.pristine) ||
+        viperGirlsSettingsForm.invalid ||
+        downloadSettingsForm.invalid ||
+        connectionSettingsForm.invalid ||
         desktopSettingsForm.invalid ||
         loading
       "
