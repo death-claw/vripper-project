@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.2] - 2020-11-16
+### Changed
+- Fix build issue
+
 ## [3.1.0] - 2020-11-16
 ### Changed
 - UI revamp
