@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.1.0] - 2020-11-16
+### Changed
+- UI revamp
+- Fix bugs
+
 ## [3.0.11] - 2020-10-31
 ### Added
 - Support for vipr.im
