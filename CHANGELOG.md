@@ -1,6 +1,15 @@
 # Changelog
 
-## [3.2] - 2020-11-16
+## [3.2.1] - 2021-01-12
+### Added
+- Add settings for connection timeout
+- Add settings for maximum attempts
+### Changed
+- Enhance posts rename logic
+- Dependencies update
+- Switch reactive from rx-java to reactor
+
+## [3.2.0] - 2020-11-16
 ### Changed
 - Fix build issue
 

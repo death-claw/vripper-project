@@ -76,12 +76,6 @@ public class SettingsService {
     public void restore() {
         try {
             settings = om.readValue(configPath.toFile(), Settings.class);
-            try {
-                check(this.settings);
-            } catch (ValidationException e) {
-                log.error(String.format("Your settings are invalid, either remove %s, or fix it", configPath.toString()), e);
-                SpringContext.close();
-            }
         } catch (IOException e) {
             log.error("Failed restore user settings", e);
             settings = new Settings();
@@ -157,6 +151,13 @@ public class SettingsService {
 
         if (settings.getMaxAttempts() == null) {
             settings.setMaxAttempts(5);
+        }
+
+        try {
+            check(this.settings);
+        } catch (ValidationException e) {
+            log.error(String.format("Your settings are invalid, either remove %s, or fix it", configPath.toString()), e);
+            SpringContext.close();
         }
 
         save();
