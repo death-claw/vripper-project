@@ -1,5 +1,8 @@
 package tn.mnlr.vripper.services;
 
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import net.jodah.failsafe.RetryPolicy;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.AbstractExecutionAwareRequest;
@@ -13,37 +16,77 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
 import tn.mnlr.vripper.download.DownloadJob;
 
+import javax.annotation.PreDestroy;
 import java.net.URI;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @EnableScheduling
+@Slf4j
 public class ConnectionService {
 
-    private ConnectionService() {
+    private final Disposable disposable;
+    private PoolingHttpClientConnectionManager pcm;
+    private RequestConfig rc;
+
+    @Getter
+    private RetryPolicy<Object> retryPolicy;
+
+    private int connectionTimeout;
+    private int maxAttempts;
+
+    public ConnectionService(SettingsService settingsService) {
+        connectionTimeout = settingsService.getSettings().getConnectionTimeout();
+        maxAttempts = settingsService.getSettings().getMaxAttempts();
+        Flux<SettingsService.Settings> settingsFlux = settingsService.getSettingsFlux();
+        disposable = settingsFlux.subscribe(settings -> {
+            if(connectionTimeout != settings.getConnectionTimeout()) {
+                connectionTimeout = settings.getConnectionTimeout();
+                buildRequestConfig();
+            }
+            if(maxAttempts != settings.getMaxAttempts()) {
+                maxAttempts = settings.getMaxAttempts();
+                buildRetryPolicy();
+            }
+        });
+
+        buildRequestConfig();
+        buildRetryPolicy();
         buildConnectionPool();
     }
 
-    private PoolingHttpClientConnectionManager pcm;
-
-    private RequestConfig rc = RequestConfig.custom()
-            .setConnectionRequestTimeout(5_000)
-            .setConnectTimeout(5_000)
-            .setSocketTimeout(5_000)
-            .setCookieSpec(CookieSpecs.STANDARD)
-            .build();
-
-    private void buildConnectionPool() {
-
-        pcm = new PoolingHttpClientConnectionManager();
-        pcm.setMaxTotal(50);
-        pcm.setDefaultMaxPerRoute(4);
+    @PreDestroy
+    private void destroy() {
+        disposable.dispose();
     }
 
-    @Scheduled(fixedDelay = 1000)
+    private void buildRetryPolicy() {
+        retryPolicy = new RetryPolicy<>()
+                .withDelay(2, 5, ChronoUnit.SECONDS)
+                .withMaxAttempts(maxAttempts)
+                .onFailedAttempt(e -> log.warn(String.format("#%d tries failed", e.getAttemptCount()), e.getLastFailure()));
+    }
+
+    private void buildConnectionPool() {
+        pcm = new PoolingHttpClientConnectionManager();
+    }
+
+    private void buildRequestConfig() {
+        rc = RequestConfig.custom()
+                .setConnectionRequestTimeout(connectionTimeout * 1000)
+                .setConnectTimeout(connectionTimeout * 1000)
+                .setSocketTimeout(connectionTimeout * 1000)
+                .setCookieSpec(CookieSpecs.STANDARD)
+                .build();
+    }
+
+    @Scheduled(fixedDelay = 5_000)
     private void idleConnectionMonitoring() {
         pcm.closeExpiredConnections();
         pcm.closeIdleConnections(30, TimeUnit.SECONDS);

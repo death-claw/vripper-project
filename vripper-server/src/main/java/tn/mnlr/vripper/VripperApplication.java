@@ -11,11 +11,6 @@ import java.time.temporal.ChronoUnit;
 @Slf4j
 public class VripperApplication {
 
-    public static final RetryPolicy<Object> retryPolicy = new RetryPolicy<>()
-            .withDelay(1, 3, ChronoUnit.SECONDS)
-            .withMaxAttempts(5)
-            .onFailedAttempt(e -> log.warn(String.format("#%d tries failed", e.getAttemptCount()), e.getLastFailure()));
-
     public static void main(String[] args) {
         try {
             Runtime.getRuntime().addShutdownHook(new Thread(SpringContext::close));

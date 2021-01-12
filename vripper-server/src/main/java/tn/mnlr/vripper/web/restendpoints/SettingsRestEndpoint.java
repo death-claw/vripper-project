@@ -15,12 +15,10 @@ import tn.mnlr.vripper.web.restendpoints.exceptions.BadRequestException;
 public class SettingsRestEndpoint {
 
     private final SettingsService settingsService;
-    private final VGAuthService VGAuthService;
 
     @Autowired
-    public SettingsRestEndpoint(SettingsService settingsService, VGAuthService VGAuthService) {
+    public SettingsRestEndpoint(SettingsService settingsService) {
         this.settingsService = settingsService;
-        this.VGAuthService = VGAuthService;
     }
 
     @PostMapping("/settings/theme")
@@ -48,7 +46,6 @@ public class SettingsRestEndpoint {
         }
 
         this.settingsService.newSettings(settings);
-        VGAuthService.authenticate();
         return getAppSettingsService();
     }
 

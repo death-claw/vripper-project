@@ -10,13 +10,11 @@ public interface IPostRepository extends IRepository {
 
     Post save(Post post);
 
-    int delete(Long id);
-
     Optional<Post> findByPostId(String postId);
 
-    List<String> findCompleted();
-
     Optional<Post> findById(Long id);
+
+    List<String> findCompleted();
 
     List<Post> findAll();
 

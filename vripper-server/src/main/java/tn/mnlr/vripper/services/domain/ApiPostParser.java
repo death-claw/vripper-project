@@ -8,7 +8,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EntityUtils;
 import tn.mnlr.vripper.SpringContext;
-import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.services.ConnectionService;
@@ -61,7 +60,7 @@ public class ApiPostParser {
     }
 
     private ApiPost getPost(HttpGet httpGet, ApiPostHandler apiPostHandler, AtomicReference<Throwable> thr) {
-        return Failsafe.with(VripperApplication.retryPolicy)
+        return Failsafe.with(cm.getRetryPolicy())
                 .onFailure(e -> thr.set(e.getFailure()))
                 .get(() -> {
                     HttpClient connection = cm.getClient().build();

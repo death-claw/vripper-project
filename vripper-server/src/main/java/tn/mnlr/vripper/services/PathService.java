@@ -1,108 +1,82 @@
 package tn.mnlr.vripper.services;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import tn.mnlr.vripper.exception.RenameException;
 import tn.mnlr.vripper.jpa.domain.Post;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @Slf4j
 public class PathService {
 
-    public static final int MAX_ATTEMPTS = 24;
     private final SettingsService settingsService;
     private final DataService dataService;
 
-    private final ThreadPoolService threadPoolService;
+    @Getter
+    private final ReentrantLock directoryAccess = new ReentrantLock();
 
-    @Autowired
-    public PathService(SettingsService settingsService, DataService dataService, ThreadPoolService threadPoolService) {
+    public PathService(SettingsService settingsService, DataService dataService) {
         this.settingsService = settingsService;
         this.dataService = dataService;
-        this.threadPoolService = threadPoolService;
     }
 
-    public final File getDownloadDestinationFolder(Post post) {
-        return _getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), post.getPostFolderName(), post.getPostId());
+    public final File calcDownloadDirectory(Post post) {
+        return new File(settingsService.getSettings().getDownloadPath(), post.getDownloadDirectory());
     }
 
-    private File _getRootFolder(@NonNull String forum, @NonNull String threadTitle) {
+    private File getRootFolder(@NonNull String forum, @NonNull String threadTitle) {
         File sourceFolder = settingsService.getSettings().getSubLocation() ? new File(settingsService.getSettings().getDownloadPath(), sanitize(forum)) : new File(settingsService.getSettings().getDownloadPath());
         return settingsService.getSettings().getThreadSubLocation() ? new File(sourceFolder, threadTitle) : sourceFolder;
     }
 
-    private File _getDownloadDestinationFolder(@NonNull String forum, @NonNull String threadTitle, @NonNull String title, @NonNull String postId) {
-        File sourceFolder = _getRootFolder(forum, threadTitle);
-        return new File(sourceFolder, title);
-    }
-
-    private File _createDownloadDestinationFolder(@NonNull String forum, @NonNull String threadTitle, @NonNull String title, @NonNull String postId) {
-        File sourceFolder = _getRootFolder(forum, threadTitle);
-        return new File(sourceFolder, settingsService.getSettings().getAppendPostId() ? title + "_" + postId : title);
-    }
-
     public final void createDefaultPostFolder(Post post) {
-        File sourceFolder = _createDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), sanitize(post.getTitle()), post.getPostId());
-        File destFolder = makeDirs(sourceFolder);
-        post.setPostFolderName(destFolder.getName());
-        dataService.updatePostFolderName(post.getPostFolderName(), post.getId());
+        File downloadDirectory = getRootFolder(post.getForum(), post.getThreadTitle());
+        downloadDirectory = new File(downloadDirectory, settingsService.getSettings().getAppendPostId() ? sanitize(post.getTitle()) + "_" + post.getPostId() : sanitize(post.getTitle()));
+        downloadDirectory = makeDir(downloadDirectory);
+        post.setDownloadDirectory(downloadDirectory.getAbsolutePath().replace(settingsService.getSettings().getDownloadPath(), ""));
+        dataService.updateDownloadDirectory(post.getDownloadDirectory(), post.getId());
     }
 
-    public final void rename(@NonNull String postId, @NonNull String altName) {
+    public final void rename(@NonNull String postId, @NonNull String altName) throws RenameException {
         Post post = dataService.findPostByPostId(postId).orElseThrow();
-        threadPoolService.getGeneralExecutor().submit(() -> {
-            if (altName.equals(post.getTitle())) {
-                return;
-            }
+        if (altName.equals(post.getTitle())) {
+            return;
+        }
+
+        // Download have not started yet
+        if (post.getDownloadDirectory() == null) {
             post.setTitle(altName);
             dataService.updatePostTitle(post.getTitle(), post.getId());
-            if (post.getPostFolderName() == null) {
-                return;
-            }
-            File newDestFolder = makeDirs(_getDownloadDestinationFolder(post.getForum(), post.getThreadTitle(), sanitize(altName), postId));
-            File currentDesFolder = getDownloadDestinationFolder(post);
-            post.setPostFolderName(newDestFolder.getName());
-            dataService.updatePostFolderName(post.getPostFolderName(), post.getId());
+            return;
+        }
 
-            List<File> files = Arrays.stream(Objects.requireNonNull(currentDesFolder.listFiles())).filter(e -> !e.getName().endsWith(".tmp")).collect(Collectors.toList());
-            for (File f : files) {
-                try {
-                    Files.move(f.toPath(), Paths.get(newDestFolder.toString(), f.toPath().getFileName().toString()), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException e) {
-                    log.error(String.format("Failed to move files from %s to %s", currentDesFolder.toString(), newDestFolder.toString()), e);
-                    return;
-                }
-            }
+        File newDownloadDirectory = getRootFolder(post.getForum(), post.getThreadTitle());
+        newDownloadDirectory = new File(newDownloadDirectory, sanitize(altName));
+        File currentDownloadDirectory = calcDownloadDirectory(post);
+        try {
+            directoryAccess.lock();
+            Files.move(currentDownloadDirectory.toPath(), newDownloadDirectory.toPath(), StandardCopyOption.ATOMIC_MOVE);
+            post.setDownloadDirectory(newDownloadDirectory.getAbsolutePath().replace(settingsService.getSettings().getDownloadPath(), ""));
+            dataService.updateDownloadDirectory(post.getDownloadDirectory(), post.getId());
 
-            int attempts = 0;
-            while (currentDesFolder.exists() && attempts <= MAX_ATTEMPTS) {
-                attempts++;
-                if (!currentDesFolder.delete()) {
-                    log.warn(String.format("Failed to remove %s", currentDesFolder.toString()));
-                }
-                try {
-                    Thread.sleep(5_000);
-                } catch (InterruptedException ignored) {
-                }
-            }
-            if (attempts > MAX_ATTEMPTS) {
-                log.error(String.format("Failed to rename post %s", postId));
-            }
-        });
+            post.setTitle(altName);
+            dataService.updatePostTitle(post.getTitle(), post.getId());
+        } catch (IOException e) {
+            throw new RenameException(String.format("Failed to move files from %s to %s", currentDownloadDirectory.toString(), newDownloadDirectory.toString()), e);
+        } finally {
+            directoryAccess.unlock();
+        }
     }
 
-    private File makeDirs(@NonNull final File sourceFolder) {
+    private File makeDir(@NonNull final File sourceFolder) {
         int counter = 1;
         File folder = sourceFolder;
 

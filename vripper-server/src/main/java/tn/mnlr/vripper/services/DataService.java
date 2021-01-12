@@ -1,7 +1,5 @@
 package tn.mnlr.vripper.services;
 
-import io.reactivex.Observable;
-import io.reactivex.processors.PublishProcessor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,33 +30,6 @@ public class DataService {
     private final IMetadataRepository metadataRepository;
     private final SettingsService settingsService;
 
-    private final PublishProcessor<Long> liveGrabQueue = PublishProcessor.create();
-    private final PublishProcessor<Long> liveImageUpdates = PublishProcessor.create();
-    private final PublishProcessor<Long> livePostsState = PublishProcessor.create();
-
-    private final PublishProcessor<String> postRemove = PublishProcessor.create();
-    private final PublishProcessor<String> queueRemove = PublishProcessor.create();
-
-    public Observable<Long> liveQueue() {
-        return liveGrabQueue.toObservable();
-    }
-
-    public Observable<Long> livePost() {
-        return livePostsState.toObservable();
-    }
-
-    public Observable<Long> liveImage() {
-        return liveImageUpdates.toObservable();
-    }
-
-    public Observable<String> queueRemove() {
-        return queueRemove.toObservable();
-    }
-
-    public Observable<String> postRemove() {
-        return postRemove.toObservable();
-    }
-
     @Autowired
     public DataService(IPostRepository postRepository, IImageRepository imageRepository, IQueuedRepository queuedRepository, IMetadataRepository metadataRepository, SettingsService settingsService) {
         this.postRepository = postRepository;
@@ -70,17 +41,14 @@ public class DataService {
 
     private void save(Post post) {
         postRepository.save(post);
-        livePostsState.onNext(post.getId());
     }
 
     private void save(Queued queued) {
         queuedRepository.save(queued);
-        liveGrabQueue.onNext(queued.getId());
     }
 
     private void save(Image image) {
         imageRepository.save(image);
-        liveImageUpdates.onNext(image.getId());
     }
 
     public boolean exists(String postId) {
@@ -110,7 +78,6 @@ public class DataService {
     }
 
     private void updatePostDone(int done, Long id) {
-        livePostsState.onNext(id);
         postRepository.updateDone(done, id);
     }
 
@@ -136,7 +103,6 @@ public class DataService {
         imageRepository.deleteAllByPostId(postId);
         metadataRepository.deleteByPostId(postId);
         postRepository.deleteByPostId(postId);
-        postRemove.onNext(postId);
     }
 
     public void newQueueLink(@NonNull final Queued queued) {
@@ -145,7 +111,6 @@ public class DataService {
 
     public void removeQueueLink(@NonNull final String threadId) {
         queuedRepository.deleteByThreadId(threadId);
-        queueRemove.onNext(threadId);
     }
 
     public List<String> clearCompleted() {
@@ -197,7 +162,7 @@ public class DataService {
         return queuedRepository.findAll();
     }
 
-    public Optional<Post> findPostById(Long aLong) {
+    public Optional<Post> findById(Long aLong) {
         return postRepository.findById(aLong);
     }
 
@@ -212,7 +177,6 @@ public class DataService {
     public void setMetadata(Post post, Metadata metadata) {
         metadata.setPostIdRef(post.getId());
         metadataRepository.save(metadata);
-        livePostsState.onNext(post.getId());
     }
 
     public Optional<Metadata> findMetadataByPostId(String postId) {
@@ -221,36 +185,29 @@ public class DataService {
 
     public void updateImageStatus(Status status, Long id) {
         imageRepository.updateStatus(status, id);
-        liveImageUpdates.onNext(id);
     }
 
     public void updateImageCurrent(long current, Long id) {
         imageRepository.updateCurrent(current, id);
-        liveImageUpdates.onNext(id);
     }
 
     public void updateImageTotal(long total, Long id) {
         imageRepository.updateTotal(total, id);
-        liveImageUpdates.onNext(id);
     }
 
     public void updatePostStatus(Status status, Long id) {
         postRepository.updateStatus(status, id);
-        livePostsState.onNext(id);
     }
 
-    public void updatePostFolderName(String postFolderName, Long id) {
+    public void updateDownloadDirectory(String postFolderName, Long id) {
         postRepository.updateFolderName(postFolderName, id);
-        livePostsState.onNext(id);
     }
 
     public void updatePostTitle(String title, Long id) {
         postRepository.updateTitle(title, id);
-        livePostsState.onNext(id);
     }
 
     public void updatePostThanked(boolean thanked, Long id) {
         postRepository.updateThanked(thanked, id);
-        livePostsState.onNext(id);
     }
 }

@@ -127,11 +127,11 @@ public class PostRestEndpoint {
         Optional<Post> _post = dataService.findPostByPostId(postId);
         if (_post.isPresent()) {
             Post post = _post.get();
-            if (post.getPostFolderName() == null) {
+            if (post.getDownloadDirectory() == null) {
                 log.error("Download has not been started yet for this post");
                 throw new NotFoundException("Download has not been started yet for this post");
             } else {
-                return new DownloadPath(pathService.getDownloadDestinationFolder(post).getPath());
+                return new DownloadPath(pathService.calcDownloadDirectory(post).getPath());
             }
         } else {
             log.error(String.format("Unable to find post with postId = %s", postId));
@@ -185,12 +185,14 @@ public class PostRestEndpoint {
     }
 
     private void renamePosts(@RequestBody @NonNull List<AltPostName> postToRename) {
-        for (AltPostName altPostName : postToRename) {
-            try {
-                pathService.rename(altPostName.getPostId(), altPostName.getAltName());
-            } catch (Exception e) {
-                log.error(String.format("Failed to rename post with postId = %s", altPostName.getPostId()), e);
-                throw new ServerErrorException(e.getMessage());
+        synchronized (LOCK) {
+            for (AltPostName altPostName : postToRename) {
+                try {
+                    pathService.rename(altPostName.getPostId(), altPostName.getAltName());
+                } catch (Exception e) {
+                    log.error(String.format("Failed to rename post with postId = %s", altPostName.getPostId()), e);
+                    throw new ServerErrorException(e.getMessage());
+                }
             }
         }
     }
@@ -238,19 +240,23 @@ public class PostRestEndpoint {
     @GetMapping("/grab/{threadId}")
     @ResponseStatus(value = HttpStatus.OK)
     public List<MultiPostItem> grab(@PathVariable("threadId") @NonNull String threadId) {
-        Queued queued = dataService.findQueuedByThreadId(threadId).orElseThrow(() -> new NotFoundException(String.format("Unable to find links for threadId = %s", threadId)));
-        try {
-            return postService.getCache().get(queued);
-        } catch (ExecutionException e) {
-            log.error(String.format("Failed to get links for threadId = %s", threadId), e);
-            throw new ServerErrorException(String.format("Failed to get links for threadId = %s", threadId));
+        synchronized (LOCK) {
+            Queued queued = dataService.findQueuedByThreadId(threadId).orElseThrow(() -> new NotFoundException(String.format("Unable to find links for threadId = %s", threadId)));
+            try {
+                return postService.getCache().get(queued);
+            } catch (ExecutionException e) {
+                log.error(String.format("Failed to get links for threadId = %s", threadId), e);
+                throw new ServerErrorException(String.format("Failed to get links for threadId = %s", threadId));
+            }
         }
     }
 
     @PostMapping("/grab/remove")
     @ResponseStatus(value = HttpStatus.OK)
     public ThreadId grabRemove(@RequestBody @NonNull ThreadId threadId) {
-        postService.remove(threadId.getThreadId());
-        return threadId;
+        synchronized (LOCK) {
+            postService.remove(threadId.getThreadId());
+            return threadId;
+        }
     }
 }

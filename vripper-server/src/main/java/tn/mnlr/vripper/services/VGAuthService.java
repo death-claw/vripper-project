@@ -1,6 +1,5 @@
 package tn.mnlr.vripper.services;
 
-import io.reactivex.processors.PublishProcessor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.NameValuePair;
@@ -15,10 +14,15 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
 import tn.mnlr.vripper.exception.VripperException;
 import tn.mnlr.vripper.jpa.domain.Post;
+import tn.mnlr.vripper.listener.EmitHandler;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +35,8 @@ public class VGAuthService {
     private final ThreadPoolService threadPoolService;
     private final DataService dataService;
 
+    private final Disposable disposable;
+
     @Getter
     private final HttpClientContext context = HttpClientContext.create();
 
@@ -40,8 +46,7 @@ public class VGAuthService {
     @Getter
     private String loggedUser = "";
 
-    @Getter
-    private final PublishProcessor<String> loggedInUser = PublishProcessor.create();
+    private final Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
 
     @Autowired
     public VGAuthService(ConnectionService cm, SettingsService settingsService, ThreadPoolService threadPoolService, DataService dataService) {
@@ -49,19 +54,26 @@ public class VGAuthService {
         this.settingsService = settingsService;
         this.threadPoolService = threadPoolService;
         this.dataService = dataService;
+        disposable = settingsService.getSettingsFlux().subscribe(settings -> this.authenticate());
     }
 
     @PostConstruct
     private void init() {
         context.setCookieStore(new BasicCookieStore());
-        try {
-            authenticate();
-        } catch (VripperException e) {
-            log.error("Cannot authenticate user with ViperGirls", e);
-        }
+        authenticate();
     }
 
-    public void authenticate() throws VripperException {
+    @PreDestroy
+    private void destroy() {
+        sink.emitComplete(EmitHandler.RETRY);
+        disposable.dispose();
+    }
+
+    public Flux<String> getLoggedInUser() {
+        return sink.asFlux();
+    }
+
+    public void authenticate() {
 
         log.info("Authenticating using ViperGirls credentials");
         authenticated = false;
@@ -70,7 +82,7 @@ public class VGAuthService {
             log.debug("Authentication option is disabled");
             context.getCookieStore().clear();
             loggedUser = "";
-            loggedInUser.onNext(loggedUser);
+            sink.emitNext(loggedUser, EmitHandler.RETRY);
             return;
         }
 
@@ -81,7 +93,7 @@ public class VGAuthService {
             log.error("Cannot authenticate with ViperGirls credentials, username or password is empty");
             context.getCookieStore().clear();
             loggedUser = "";
-            loggedInUser.onNext(loggedUser);
+            sink.emitNext(loggedUser, EmitHandler.RETRY);
             return;
         }
 
@@ -97,8 +109,9 @@ public class VGAuthService {
         } catch (Exception e) {
             context.getCookieStore().clear();
             loggedUser = "";
-            loggedInUser.onNext(loggedUser);
-            throw new VripperException(e);
+            sink.emitNext(loggedUser, EmitHandler.RETRY);
+            log.error("Failed to authenticate user with vipergirls.to", e);
+            return;
         }
 
         postAuth.addHeader("Referer", "https://vipergirls.to/");
@@ -115,22 +128,20 @@ public class VGAuthService {
             log.debug(String.format("Authentication with ViperGirls response body:%n%s", responseBody));
             EntityUtils.consumeQuietly(response.getEntity());
             if (context.getCookieStore().getCookies().stream().map(Cookie::getName).noneMatch(e -> e.equals("vg_userid"))) {
-                throw new VripperException("Failed to authenticate user with ViperRipper");
+                log.error("Failed to authenticate user with vipergirls.to, missing vg_userid cookie");
+                return;
             }
         } catch (Exception e) {
             context.getCookieStore().clear();
             loggedUser = "";
-            loggedInUser.onNext(loggedUser);
-            if (e instanceof VripperException) {
-                throw (VripperException) e;
-            } else {
-                throw new VripperException(e);
-            }
+            sink.emitNext(loggedUser, EmitHandler.RETRY);
+            log.error("Failed to authenticate user with vipergirls.to", e);
+            return;
         }
         authenticated = true;
         loggedUser = username;
         log.info(String.format("Authenticated: %s", username));
-        loggedInUser.onNext(loggedUser);
+        sink.emitNext(loggedUser, EmitHandler.RETRY);
     }
 
     public void leaveThanks(Post post) {

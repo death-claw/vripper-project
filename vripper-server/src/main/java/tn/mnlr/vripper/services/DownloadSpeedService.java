@@ -1,24 +1,30 @@
 package tn.mnlr.vripper.services;
 
-import io.reactivex.processors.PublishProcessor;
 import lombok.Getter;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
+import tn.mnlr.vripper.listener.EmitHandler;
 
+import javax.annotation.PreDestroy;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 @EnableScheduling
 public class DownloadSpeedService {
 
-    private AtomicLong read = new AtomicLong(0);
+    private final AtomicLong read = new AtomicLong(0);
 
     @Getter
     private long currentValue;
 
-    @Getter
-    private final PublishProcessor<Long> readBytesPerSecond = PublishProcessor.create();
+    private final Sinks.Many<Long> sink = Sinks.many().multicast().onBackpressureBuffer();
+
+    public Flux<Long> getReadBytesPerSecond() {
+        return sink.asFlux();
+    }
 
     private boolean allowWrite = false;
 
@@ -34,8 +40,13 @@ public class DownloadSpeedService {
         long newValue = read.getAndSet(0);
         if (newValue != currentValue) {
             currentValue = newValue;
-            readBytesPerSecond.onNext(currentValue);
+            sink.emitNext(currentValue, EmitHandler.RETRY);
         }
         allowWrite = true;
+    }
+
+    @PreDestroy
+    private void destroy() {
+        sink.emitComplete(EmitHandler.RETRY);
     }
 }

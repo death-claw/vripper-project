@@ -97,6 +97,30 @@
                 type="number"
               />
             </mat-form-field>
+            <mat-form-field>
+              <input
+                formControlName="connectionTimeout"
+                matInput
+                min="1"
+                max="300"
+                name="connectionTimeout"
+                placeholder="Connection timeout"
+                required
+                type="number"
+              />
+            </mat-form-field>
+            <mat-form-field>
+              <input
+                formControlName="maxAttempts"
+                matInput
+                min="1"
+                max="10"
+                name="maxAttempts"
+                placeholder="Maximum attempts"
+                required
+                type="number"
+              />
+            </mat-form-field>
           </form>
         </mat-tab>
         <mat-tab label="ViperGirls">

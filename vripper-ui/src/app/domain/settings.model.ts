@@ -10,4 +10,6 @@ export interface Settings {
   desktopClipboard: boolean;
   viewPhotos: boolean;
   resolveTitle: boolean;
+  connectionTimeout: number;
+  maxAttempts: number;
 }

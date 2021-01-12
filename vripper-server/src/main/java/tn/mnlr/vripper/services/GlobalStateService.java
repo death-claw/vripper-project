@@ -1,14 +1,18 @@
 package tn.mnlr.vripper.services;
 
-import io.reactivex.processors.PublishProcessor;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
 import tn.mnlr.vripper.download.DownloadService;
 import tn.mnlr.vripper.download.PendingQueue;
+import tn.mnlr.vripper.listener.EmitHandler;
 import tn.mnlr.vripper.services.domain.GlobalState;
+
+import javax.annotation.PreDestroy;
 
 @Service
 @EnableScheduling
@@ -21,8 +25,11 @@ public class GlobalStateService {
     @Getter
     private GlobalState currentState;
 
-    @Getter
-    private final PublishProcessor<GlobalState> liveGlobalState = PublishProcessor.create();
+    private final Sinks.Many<GlobalState> sink = Sinks.many().multicast().onBackpressureBuffer();
+
+    public Flux<GlobalState> getGlobalState() {
+        return sink.asFlux();
+    }
 
     @Autowired
     public GlobalStateService(PendingQueue pendingQueue, DownloadService downloadService, DataService dataService) {
@@ -39,7 +46,12 @@ public class GlobalStateService {
                 dataService.countErrorImages());
         if (!newGlobalState.equals(currentState)) {
             currentState = newGlobalState;
-            liveGlobalState.onNext(currentState);
+            sink.emitNext(currentState, EmitHandler.RETRY);
         }
+    }
+
+    @PreDestroy
+    private void destroy() {
+        sink.emitComplete(EmitHandler.RETRY);
     }
 }

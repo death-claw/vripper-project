@@ -97,7 +97,7 @@ public class MetadataService {
     private Metadata fetchMetadata(Key key) {
         HttpGet httpGet = cm.buildHttpGet(key.getUrl(), null);
         Metadata metadata = new Metadata();
-        Failsafe.with(VripperApplication.retryPolicy)
+        Failsafe.with(cm.getRetryPolicy())
                 .onFailure(e -> {
                     if (e.getFailure() instanceof InterruptedException || e.getFailure().getCause() instanceof InterruptedException) {
                         log.debug("Fetching interrupted");

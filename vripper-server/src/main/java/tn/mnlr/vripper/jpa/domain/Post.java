@@ -44,7 +44,7 @@ public class Post {
     private String securityToken;
 
     @JsonIgnore
-    private String postFolderName;
+    private String downloadDirectory;
 
     private boolean thanked;
 

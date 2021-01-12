@@ -40,7 +40,9 @@ export class SettingsComponent implements OnInit {
 
   connectionSettingsForm = new FormGroup({
     maxThreads: new FormControl(''),
-    maxTotalThreads: new FormControl('')
+    maxTotalThreads: new FormControl(''),
+    connectionTimeout: new FormControl(''),
+    maxAttempts: new FormControl('')
   });
 
   desktopSettingsForm = new FormGroup({

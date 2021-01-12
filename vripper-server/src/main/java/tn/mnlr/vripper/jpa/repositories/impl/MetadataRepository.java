@@ -1,8 +1,11 @@
 package tn.mnlr.vripper.jpa.repositories.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import tn.mnlr.vripper.event.MetadataUpdateEvent;
 import tn.mnlr.vripper.jpa.domain.Metadata;
 import tn.mnlr.vripper.jpa.repositories.IMetadataRepository;
 
@@ -11,10 +14,11 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
-public class MetadataRepository implements IMetadataRepository {
+public class MetadataRepository implements IMetadataRepository, ApplicationEventPublisherAware {
 
     private final JdbcTemplate jdbcTemplate;
     private final AtomicLong counter = new AtomicLong(0);
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Autowired
     public MetadataRepository(JdbcTemplate jdbcTemplate) {
@@ -44,6 +48,7 @@ public class MetadataRepository implements IMetadataRepository {
                 metadata.getPostIdRef()
         );
         metadata.setId(id);
+        applicationEventPublisher.publishEvent(new MetadataUpdateEvent(MetadataRepository.class, id, metadata.getPostIdRef()));
         return metadata;
     }
 
@@ -81,5 +86,10 @@ public class MetadataRepository implements IMetadataRepository {
                 "DELETE FROM METADATA AS metadata WHERE metadata.ID = (SELECT inner_metadata.ID FROM POST AS post INNER JOIN METADATA inner_metadata ON post.ID = inner_metadata.POST_ID_REF WHERE post.POST_ID = ?)",
                 postId
         );
+    }
+
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 }

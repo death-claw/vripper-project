@@ -1,8 +1,12 @@
 package tn.mnlr.vripper.jpa.repositories.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import tn.mnlr.vripper.event.PostRemoveEvent;
+import tn.mnlr.vripper.event.PostUpdateEvent;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.enums.Status;
 import tn.mnlr.vripper.jpa.repositories.IPostRepository;
@@ -12,10 +16,11 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
-public class PostRepository implements IPostRepository {
+public class PostRepository implements IPostRepository, ApplicationEventPublisherAware {
 
     private final JdbcTemplate jdbcTemplate;
     private final AtomicLong counter = new AtomicLong(0);
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Autowired
     public PostRepository(JdbcTemplate jdbcTemplate) {
@@ -44,7 +49,7 @@ public class PostRepository implements IPostRepository {
                 post.getDone(),
                 post.getForum(),
                 String.join(";", post.getHosts()),
-                post.getPostFolderName(),
+                post.getDownloadDirectory(),
                 post.getPostId(),
                 String.join(";", post.getPreviews()),
                 post.getSecurityToken(),
@@ -57,24 +62,16 @@ public class PostRepository implements IPostRepository {
                 post.getUrl()
         );
         post.setId(id);
-        return null;
-    }
-
-    @Override
-    public int delete(Long id) {
-        return jdbcTemplate.update(
-                "DELETE FROM POST AS post WHERE post.ID = ?",
-                id
-        );
+        applicationEventPublisher.publishEvent(new PostUpdateEvent(PostRepository.class, id));
+        return post;
     }
 
     @Override
     public Optional<Post> findByPostId(String postId) {
         List<Post> posts = jdbcTemplate.query(
                 "SELECT metadata.*,post.* FROM METADATA metadata FULL JOIN POST post ON metadata.POST_ID_REF = post.ID WHERE POST_ID = ?",
-                new Object[]{postId},
-                new PostRowMapper()
-        );
+                new PostRowMapper(),
+                postId);
         if (posts.isEmpty()) {
             return Optional.empty();
         } else {
@@ -94,9 +91,8 @@ public class PostRepository implements IPostRepository {
     public Optional<Post> findById(Long id) {
         List<Post> posts = jdbcTemplate.query(
                 "SELECT metadata.*,post.* FROM METADATA metadata FULL JOIN POST post ON metadata.POST_ID_REF = post.ID WHERE post.ID = ?",
-                new Object[]{id},
-                new PostRowMapper()
-        );
+                new PostRowMapper(),
+                id);
         if (posts.isEmpty()) {
             return Optional.empty();
         } else {
@@ -116,9 +112,8 @@ public class PostRepository implements IPostRepository {
     public boolean existByPostId(String postId) {
         Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM POST AS post WHERE post.POST_ID = ?",
-                new Object[]{postId},
-                Integer.class
-        );
+                Integer.class,
+                postId);
         if (count == null) {
             return false;
         } else {
@@ -135,49 +130,66 @@ public class PostRepository implements IPostRepository {
 
     @Override
     public int deleteByPostId(String postId) {
-        return jdbcTemplate.update(
+        int mutationCount = jdbcTemplate.update(
                 "DELETE FROM POST AS post WHERE post.POST_ID = ?",
                 postId
         );
+        applicationEventPublisher.publishEvent(new PostRemoveEvent(PostRepository.class, postId));
+        return mutationCount;
     }
 
     @Override
     public int updateStatus(Status status, Long id) {
-        return jdbcTemplate.update(
+        int mutationCount = jdbcTemplate.update(
                 "UPDATE POST AS post SET post.STATUS = ? WHERE post.ID = ?",
                 status.name(), id
         );
+        applicationEventPublisher.publishEvent(new PostUpdateEvent(PostRepository.class, id));
+        return mutationCount;
     }
 
     @Override
     public int updateDone(int done, Long id) {
-        return jdbcTemplate.update(
+        int mutationCount = jdbcTemplate.update(
                 "UPDATE POST AS post SET post.DONE = ? WHERE post.ID = ?",
                 done, id
         );
+        applicationEventPublisher.publishEvent(new PostUpdateEvent(PostRepository.class, id));
+        return mutationCount;
     }
 
     @Override
     public int updateFolderName(String postFolderName, Long id) {
-        return jdbcTemplate.update(
+        int mutationCount = jdbcTemplate.update(
                 "UPDATE POST AS post SET post.POST_FOLDER_NAME = ? WHERE post.ID = ?",
                 postFolderName, id
         );
+        applicationEventPublisher.publishEvent(new PostUpdateEvent(PostRepository.class, id));
+        return mutationCount;
     }
 
     @Override
     public int updateTitle(String title, Long id) {
-        return jdbcTemplate.update(
+        int mutationCount = jdbcTemplate.update(
                 "UPDATE POST AS post SET post.TITLE = ? WHERE post.ID = ?",
                 title, id
         );
+        applicationEventPublisher.publishEvent(new PostUpdateEvent(PostRepository.class, id));
+        return mutationCount;
     }
 
     @Override
     public int updateThanked(boolean thanked, Long id) {
-        return jdbcTemplate.update(
+        int mutationCount = jdbcTemplate.update(
                 "UPDATE POST AS post SET post.THANKED = ? WHERE post.ID = ?",
                 thanked, id
         );
+        applicationEventPublisher.publishEvent(new PostUpdateEvent(PostRepository.class, id));
+        return mutationCount;
+    }
+
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 }

@@ -11,8 +11,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
 import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.exception.ValidationException;
+import tn.mnlr.vripper.listener.EmitHandler;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -25,7 +28,6 @@ import java.nio.file.Paths;
 import static java.nio.file.StandardOpenOption.*;
 
 @Service
-@Getter
 @Setter
 @Slf4j
 public class SettingsService {
@@ -33,6 +35,9 @@ public class SettingsService {
     private final Path configPath;
     private final ObjectMapper om = new ObjectMapper();
 
+    private Sinks.Many<Settings> sink = Sinks.many().multicast().onBackpressureBuffer();
+
+    @Getter
     private Settings settings = new Settings();
 
     public SettingsService(@Value("${base.dir}") String baseDir, @Value("${base.dir.name}") String baseDirName) {
@@ -43,6 +48,11 @@ public class SettingsService {
     @PostConstruct
     private void init() {
         restore();
+        sink.emitNext(settings, EmitHandler.RETRY);
+    }
+
+    Flux<Settings> getSettingsFlux() {
+        return sink.asFlux();
     }
 
     public void newSettings(Settings settings) {
@@ -60,6 +70,7 @@ public class SettingsService {
         this.settings = settings;
 
         save();
+        sink.emitNext(settings, EmitHandler.RETRY);
     }
 
     public void restore() {
@@ -140,17 +151,30 @@ public class SettingsService {
             settings.setLeaveThanksOnStart(false);
         }
 
+        if (settings.getConnectionTimeout() == null) {
+            settings.setConnectionTimeout(30);
+        }
+
+        if (settings.getMaxAttempts() == null) {
+            settings.setMaxAttempts(5);
+        }
+
         save();
     }
 
-    @PreDestroy
+
     public void save() {
         try {
-
             Files.write(configPath, om.writeValueAsBytes(settings), CREATE, WRITE, TRUNCATE_EXISTING, SYNC);
         } catch (IOException e) {
             log.error("Failed to store user settings", e);
         }
+    }
+
+    @PreDestroy
+    private void destroy() {
+        save();
+        sink.emitComplete(EmitHandler.RETRY);
     }
 
     public void check(Settings settings) throws ValidationException {
@@ -173,6 +197,14 @@ public class SettingsService {
 
         if (settings.getMaxThreads() < 1 || settings.getMaxThreads() > 4) {
             throw new ValidationException(String.format("Invalid max concurrent download settings, values must be in [%d,%d]", 1, 4));
+        }
+
+        if(settings.getConnectionTimeout() < 1 || settings.getConnectionTimeout() > 300) {
+            throw new ValidationException(String.format("Invalid connection timeout settings, values must be in [%d,%d]", 1, 300));
+        }
+
+        if(settings.getMaxAttempts() < 1 || settings.getMaxAttempts() > 10) {
+            throw new ValidationException(String.format("Invalid maximum attempts settings, values must be in [%d,%d]", 1, 10));
         }
     }
 
@@ -250,5 +282,11 @@ public class SettingsService {
 
         @JsonProperty("leaveThanksOnStart")
         private Boolean leaveThanksOnStart;
+
+        @JsonProperty("connectionTimeout")
+        private Integer connectionTimeout;
+
+        @JsonProperty("maxAttempts")
+        private Integer maxAttempts;
     }
 }

@@ -30,7 +30,7 @@ public class PostRowMapper implements RowMapper<Post> {
         post.setHosts(Set.of(rs.getString("HOSTS").split(DELIMITER)));
         post.setForum(rs.getString("FORUM"));
         post.setSecurityToken(rs.getString("SECURITY_TOKEN"));
-        post.setPostFolderName(rs.getString("POST_FOLDER_NAME"));
+        post.setDownloadDirectory(rs.getString("POST_FOLDER_NAME"));
         post.setThanked(rs.getBoolean("THANKED"));
         String previews;
         if ((previews = rs.getString("PREVIEWS")) != null) {

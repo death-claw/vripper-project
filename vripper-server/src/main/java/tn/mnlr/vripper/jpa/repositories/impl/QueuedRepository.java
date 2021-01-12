@@ -1,8 +1,12 @@
 package tn.mnlr.vripper.jpa.repositories.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import tn.mnlr.vripper.event.QueuedRemoveEvent;
+import tn.mnlr.vripper.event.QueuedUpdateEvent;
 import tn.mnlr.vripper.jpa.domain.Queued;
 import tn.mnlr.vripper.jpa.repositories.IQueuedRepository;
 
@@ -11,10 +15,11 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
-public class QueuedRepository implements IQueuedRepository {
+public class QueuedRepository implements IQueuedRepository, ApplicationEventPublisherAware {
 
     private final JdbcTemplate jdbcTemplate;
     private final AtomicLong counter = new AtomicLong(0);
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Autowired
     public QueuedRepository(JdbcTemplate jdbcTemplate) {
@@ -46,6 +51,7 @@ public class QueuedRepository implements IQueuedRepository {
                 queued.getThreadId()
         );
         queued.setId(id);
+        applicationEventPublisher.publishEvent(new QueuedUpdateEvent(QueuedRepository.class, id));
         return queued;
     }
 
@@ -87,9 +93,16 @@ public class QueuedRepository implements IQueuedRepository {
 
     @Override
     public int deleteByThreadId(String threadId) {
-        return jdbcTemplate.update(
+        int mutationCount = jdbcTemplate.update(
                 "DELETE FROM QUEUED AS queued WHERE THREAD_ID = ?",
                 threadId
         );
+        applicationEventPublisher.publishEvent(new QueuedRemoveEvent(QueuedRepository.class, threadId));
+        return mutationCount;
+    }
+
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 }

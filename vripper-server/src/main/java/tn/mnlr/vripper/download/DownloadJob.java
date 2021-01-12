@@ -23,11 +23,11 @@ import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
-import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 public class DownloadJob implements CheckedRunnable {
@@ -47,7 +47,7 @@ public class DownloadJob implements CheckedRunnable {
         }
     }
 
-    private static final ReentrantLock LOCK = new ReentrantLock();
+    private static final Object LOCK = new Object();
     private static final int READ_BUFFER_SIZE = 8192;
 
     private final DataService dataService;
@@ -93,16 +93,21 @@ public class DownloadJob implements CheckedRunnable {
             dataService.updateImageStatus(image.getStatus(), image.getId());
             dataService.updateImageCurrent(image.getCurrent(), image.getId());
 
-            try {
-                LOCK.lock();
+            synchronized (LOCK) {
                 if (!post.getStatus().equals(Status.DOWNLOADING) && !post.getStatus().equals(Status.PARTIAL)) {
                     post.setStatus(Status.DOWNLOADING);
                     dataService.updatePostStatus(post.getStatus(), post.getId());
                 }
-            } finally {
-                LOCK.unlock();
-            }
 
+                // The post may be updated and the download directory might be set by another thread
+                Post updatedPost = dataService.findById(post.getId()).orElseThrow();
+                if (updatedPost.getDownloadDirectory() == null) {
+                    pathService.createDefaultPostFolder(updatedPost);
+                }
+                if (settingsService.getSettings().getLeaveThanksOnStart()) {
+                    authService.leaveThanks(updatedPost);
+                }
+            }
 
             if (stopped) {
                 return;
@@ -139,22 +144,7 @@ public class DownloadJob implements CheckedRunnable {
                 if (stopped) {
                     return;
                 }
-                File destinationFolder, outputFile;
-                try {
-                    LOCK.lock();
-                    Post updatedPost = dataService.findPostById(post.getId()).orElseThrow();
-                    if (updatedPost.getPostFolderName() == null) {
-                        pathService.createDefaultPostFolder(updatedPost);
-                    }
-                    destinationFolder = pathService.getDownloadDestinationFolder(updatedPost);
-                    if (settingsService.getSettings().getLeaveThanksOnStart()) {
-                        authService.leaveThanks(updatedPost);
-                    }
-                    outputFile = new File(destinationFolder.getPath() + File.separator + String.format("%03d_", image.getIndex()) + nameAndUrl.getName() + ".tmp");
-                    outputFile.getParentFile().mkdirs();
-                } finally {
-                    LOCK.unlock();
-                }
+                File outputFile = Files.createTempFile("vripper", "tmp").toFile();
                 try (InputStream downloadStream = response.getEntity().getContent(); FileOutputStream fos = new FileOutputStream(outputFile)) {
 
                     if (stopped) {
@@ -181,7 +171,7 @@ public class DownloadJob implements CheckedRunnable {
                         return;
                     }
                 }
-                checkImageTypeAndRename(dataService.findPostById(post.getId()).orElseThrow(), outputFile, nameAndUrl.getName(), image.getIndex());
+                checkImageTypeAndRename(dataService.findById(post.getId()).orElseThrow(), outputFile, nameAndUrl.getName(), image.getIndex());
             }
         } catch (Exception e) {
             if (stopped) {
@@ -208,7 +198,7 @@ public class DownloadJob implements CheckedRunnable {
                 throw new HostException("Image file is not recognized!");
             }
             ImageReader reader = it.next();
-            if (reader.getFormatName().toUpperCase().equals("JPEG")) {
+            if (reader.getFormatName().equalsIgnoreCase("JPEG")) {
                 String imageNameLC = imageName.toLowerCase();
                 if (!imageNameLC.endsWith("_jpg") && !imageNameLC.endsWith("_jpeg")) {
                     imageName += ".jpg";
@@ -223,7 +213,7 @@ public class DownloadJob implements CheckedRunnable {
                         imageName = imageName.substring(0, imageName.length() - toReplace.length()) + ".jpg";
                     }
                 }
-            } else if (reader.getFormatName().toUpperCase().equals("PNG")) {
+            } else if (reader.getFormatName().equalsIgnoreCase("PNG")) {
                 String imageNameLC = imageName.toLowerCase();
                 if (!imageNameLC.endsWith("_png")) {
                     imageName += ".png";
@@ -241,14 +231,19 @@ public class DownloadJob implements CheckedRunnable {
             throw new HostException("Failed to guess image format", e);
         }
         try {
-            File downloadDestinationFolder = pathService.getDownloadDestinationFolder(post);
+            pathService.getDirectoryAccess().lock();
+            File downloadDestinationFolder = pathService.calcDownloadDirectory(post);
             File outImage = new File(downloadDestinationFolder, (settingsService.getSettings().getForceOrder() ? String.format("%03d_", index) : "") + imageName);
-            if (outImage.exists() && outImage.delete()) {
-                log.debug(String.format("%s is deleted", outImage.toString()));
-            }
-            Files.move(outputFile.toPath(), outImage.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(outputFile.toPath(), outImage.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (Exception e) {
             throw new HostException("Failed to rename the image", e);
+        } finally {
+            pathService.getDirectoryAccess().unlock();
+            try {
+                Files.delete(outputFile.toPath());
+            } catch (IOException e) {
+                log.warn(String.format("Failed to delete temporary file %s", outputFile.getAbsolutePath()));
+            }
         }
     }
 

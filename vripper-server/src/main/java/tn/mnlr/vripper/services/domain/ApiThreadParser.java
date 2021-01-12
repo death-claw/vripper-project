@@ -8,7 +8,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EntityUtils;
 import tn.mnlr.vripper.SpringContext;
-import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.jpa.domain.Queued;
@@ -52,7 +51,7 @@ public class ApiThreadParser {
         ApiThreadHandler apiThreadHandler = new ApiThreadHandler(queued);
         AtomicReference<Throwable> thr = new AtomicReference<>();
         log.debug(String.format("Requesting %s", httpGet));
-        List<MultiPostItem> posts = Failsafe.with(VripperApplication.retryPolicy)
+        List<MultiPostItem> posts = Failsafe.with(cm.getRetryPolicy())
                 .onFailure(e -> thr.set(e.getFailure()))
                 .get(() -> {
                     HttpClient connection = cm.getClient().build();
