@@ -10,9 +10,9 @@ export class LinkCollectorService {
 
   get count(): Observable<number> {
     return this._count$.asObservable();
-    }
+  }
 
-    setCount(count: number) {
-        this._count$.next(count);
-    }
+  setCount(count: number) {
+    this._count$.next(count);
+  }
 }

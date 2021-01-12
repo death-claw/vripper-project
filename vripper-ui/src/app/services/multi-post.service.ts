@@ -4,7 +4,7 @@ import {MultiPostModel} from '../domain/multi-post.model';
 import {MatDialog} from '@angular/material/dialog';
 import {HttpClient} from '@angular/common/http';
 import {ServerService} from './server-service';
-import { GridApi } from 'ag-grid-community';
+import {GridApi} from 'ag-grid-community';
 
 interface ThreadId {
   threadId: string;
@@ -18,6 +18,15 @@ export class MultiPostService {
   constructor(private dialog: MatDialog,
               private httpClient: HttpClient,
               private serverService: ServerService) {
+  }
+
+  private static removeFromGrid(api: GridApi, data: ThreadId) {
+    const removeTx = [];
+    const nodeToDelete = api.getRowNode(data.threadId);
+    if (nodeToDelete != null) {
+      removeTx.push(nodeToDelete.data);
+    }
+    api.applyTransaction({remove: removeTx});
   }
 
   selectItems(multiPostModel: MultiPostModel) {
@@ -36,15 +45,6 @@ export class MultiPostService {
         MultiPostService.removeFromGrid(api, data);
       }
     );
-  }
-
-  private static removeFromGrid(api: GridApi, data: ThreadId) {
-    const removeTx = [];
-    const nodeToDelete = api.getRowNode(data.threadId);
-    if (nodeToDelete != null) {
-      removeTx.push(nodeToDelete.data);
-    }
-    api.applyTransaction({remove: removeTx});
   }
 
 }

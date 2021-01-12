@@ -1,6 +1,6 @@
 export class WSMessage {
 
-    constructor(public destination: string, public payload?: string) {
-    }
+  constructor(public destination: string, public payload?: string) {
+  }
 
 }

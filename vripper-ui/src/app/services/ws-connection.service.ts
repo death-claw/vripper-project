@@ -9,7 +9,7 @@ import {Post} from '../domain/post-state.model';
 import {LoggedUser} from '../domain/logged-user.model';
 import {DownloadSpeed} from '../domain/download-speed.model';
 import {GlobalState} from '../domain/global-state.model';
-import {map, share, throttleTime} from 'rxjs/operators';
+import {map, share} from 'rxjs/operators';
 import {RxStomp, RxStompConfig, RxStompState} from '@stomp/rx-stomp';
 import {ElectronService} from 'ngx-electron';
 
@@ -33,6 +33,38 @@ export class WsConnectionService {
 
   constructor(private serverService: ServerService, private electronService: ElectronService) {
     this.init();
+  }
+
+  public get state(): Observable<RxStompState> {
+    return this.connectionState$.asObservable();
+  }
+
+  get globalState$(): Observable<GlobalState> {
+    return this.globalState;
+  }
+
+  get speed$(): Observable<DownloadSpeed> {
+    return this.speed;
+  }
+
+  get user$(): Observable<LoggedUser> {
+    return this.user;
+  }
+
+  get posts$(): Observable<Post[]> {
+    return this.posts;
+  }
+
+  get postsRemove$(): Observable<string[]> {
+    return this.postsRemove;
+  }
+
+  get queuedRemove$(): Observable<string[]> {
+    return this.queuedRemove;
+  }
+
+  get multiPosts$(): Observable<MultiPostModel[]> {
+    return this.multiPostModels;
   }
 
   init() {
@@ -72,10 +104,6 @@ export class WsConnectionService {
     this.rxStomp = new RxStomp();
     this.rxStomp.configure(stompConfig);
     this.rxStomp.activate();
-  }
-
-  public get state(): Observable<RxStompState> {
-    return this.connectionState$.asObservable();
   }
 
   disconnect() {
@@ -162,30 +190,6 @@ export class WsConnectionService {
     );
   }
 
-  get globalState$(): Observable<GlobalState> {
-    return this.globalState;
-  }
-
-  get speed$(): Observable<DownloadSpeed> {
-    return this.speed;
-  }
-
-  get user$(): Observable<LoggedUser> {
-    return this.user;
-  }
-
-  get posts$(): Observable<Post[]> {
-    return this.posts;
-  }
-
-  get postsRemove$(): Observable<string[]> {
-    return this.postsRemove;
-  }
-
-  get queuedRemove$(): Observable<string[]> {
-    return this.queuedRemove;
-  }
-
   postDetails$(postId: string): Observable<Photo[]> {
     if (this.postDetails != null && this.postIdDetails === postId) {
       return this.postDetails;
@@ -210,10 +214,6 @@ export class WsConnectionService {
       share()
     );
     return this.postDetails;
-  }
-
-  get multiPosts$(): Observable<MultiPostModel[]> {
-    return this.multiPostModels;
   }
 
   send(wsMessage: WSMessage) {

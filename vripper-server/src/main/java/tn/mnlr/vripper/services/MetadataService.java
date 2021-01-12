@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
-import tn.mnlr.vripper.VripperApplication;
 import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.jpa.domain.Metadata;
@@ -34,40 +33,12 @@ import java.util.stream.Collectors;
 @Service
 public class MetadataService {
 
-    @Getter
-    static class Key {
-        private final String postId;
-        private final String threadId;
-        private final String url;
-
-        Key(String postId, String threadId, String url) {
-            this.postId = postId;
-            this.threadId = threadId;
-            this.url = url;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Key key = (Key) o;
-            return Objects.equals(postId, key.postId);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(postId);
-        }
-    }
-
     private static final List<String> dictionary = Arrays.asList("download", "link", "rapidgator", "filefactory", "filefox");
-
     private final LoadingCache<Key, Metadata> cache;
     private final ConnectionService cm;
     private final VGAuthService VGAuthService;
     private final HtmlProcessorService htmlProcessorService;
     private final XpathService xpathService;
-
     @Autowired
     public MetadataService(ConnectionService cm, VGAuthService VGAuthService, HtmlProcessorService htmlProcessorService, XpathService xpathService) {
         this.cm = cm;
@@ -160,6 +131,32 @@ public class MetadataService {
             if (!text.isBlank() && dictionary.stream().noneMatch(e -> text.toLowerCase().contains(e.toLowerCase()))) {
                 altTitle.add(text);
             }
+        }
+    }
+
+    @Getter
+    static class Key {
+        private final String postId;
+        private final String threadId;
+        private final String url;
+
+        Key(String postId, String threadId, String url) {
+            this.postId = postId;
+            this.threadId = threadId;
+            this.url = url;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Key key = (Key) o;
+            return Objects.equals(postId, key.postId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(postId);
         }
     }
 }

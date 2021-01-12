@@ -6,7 +6,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import tn.mnlr.vripper.exception.ValidationException;
 import tn.mnlr.vripper.services.SettingsService;
-import tn.mnlr.vripper.services.VGAuthService;
 import tn.mnlr.vripper.web.restendpoints.exceptions.BadRequestException;
 
 @RestController

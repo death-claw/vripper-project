@@ -5,11 +5,11 @@
 }
 
 @font-face {
-    font-family: 'Material Icons';
-    font-style: normal;
-    font-weight: 400;
-    src: url(assets/material-icons.woff2) format('woff2');
-  }
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  src: url(assets/material-icons.woff2) format('woff2');
+}
 
 .material-icons {
   font-family: 'Material Icons', sans-serif;
@@ -94,6 +94,7 @@ body a {
   &:hover {
     text-decoration: underline;
   }
+
   color: rgba(0, 0, 0, 0.87);
   text-decoration: none;
 }
@@ -105,6 +106,7 @@ body .ag-cell {
 body .mat-list-base .mat-list-item {
   height: 35px;
   font-size: 14px;
+
   .mat-icon {
     font-size: 20px;
   }

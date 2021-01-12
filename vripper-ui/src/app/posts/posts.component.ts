@@ -19,6 +19,10 @@ import {PostsService} from '../services/posts.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PostsComponent implements OnDestroy {
+  dialogOpen: Subject<boolean> = new Subject();
+  gridOptions: GridOptions;
+  dataSource: PostsDataSource;
+
   constructor(
     private wsConnection: WsConnectionService,
     private zone: NgZone,
@@ -109,10 +113,6 @@ export class PostsComponent implements OnDestroy {
       onBodyScroll: () => this.contextMenuService.closePostContextMenu()
     };
   }
-
-  dialogOpen: Subject<boolean> = new Subject();
-  gridOptions: GridOptions;
-  dataSource: PostsDataSource;
 
   ngOnDestroy(): void {
     this.dataSource.disconnect();

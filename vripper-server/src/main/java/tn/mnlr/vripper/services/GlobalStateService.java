@@ -21,21 +21,19 @@ public class GlobalStateService {
     private final PendingQueue pendingQueue;
     private final DownloadService downloadService;
     private final DataService dataService;
-
+    private final Sinks.Many<GlobalState> sink = Sinks.many().multicast().onBackpressureBuffer();
     @Getter
     private GlobalState currentState;
-
-    private final Sinks.Many<GlobalState> sink = Sinks.many().multicast().onBackpressureBuffer();
-
-    public Flux<GlobalState> getGlobalState() {
-        return sink.asFlux();
-    }
 
     @Autowired
     public GlobalStateService(PendingQueue pendingQueue, DownloadService downloadService, DataService dataService) {
         this.pendingQueue = pendingQueue;
         this.downloadService = downloadService;
         this.dataService = dataService;
+    }
+
+    public Flux<GlobalState> getGlobalState() {
+        return sink.asFlux();
     }
 
     @Scheduled(fixedDelay = 3000)

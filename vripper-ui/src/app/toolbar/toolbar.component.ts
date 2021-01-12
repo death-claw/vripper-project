@@ -25,6 +25,12 @@ import {PostsService} from '../services/posts.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ToolbarComponent implements OnInit, OnDestroy {
+  user$: Subject<LoggedUser> = new BehaviorSubject({user: ''});
+  disableSelection$: Subject<boolean> = new BehaviorSubject(true);
+  isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
+  selected: RowNode[] = [];
+  subscriptions: Subscription[] = [];
+
   constructor(
     private serverService: ServerService,
     private appService: AppService,
@@ -38,12 +44,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     private postsDataService: PostsService
   ) {
   }
-
-  user$: Subject<LoggedUser> = new BehaviorSubject({user: ''});
-  disableSelection$: Subject<boolean> = new BehaviorSubject(true);
-  isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
-  selected: RowNode[] = [];
-  subscriptions: Subscription[] = [];
 
   openSettings(): void {
     const dialogRef = this.dialog.open(SettingsComponent, {
@@ -106,7 +106,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     const toStart = [];
     this.selected.forEach(e => toStart.push(e.data.postId));
     this.httpClient.post(this.serverService.baseUrl + '/post/restart', toStart).subscribe(
-      () => {},
+      () => {
+      },
       error => {
         this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000
@@ -119,7 +120,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     const toStop = [];
     this.selected.forEach(e => toStop.push(e.data.postId));
     this.httpClient.post(this.serverService.baseUrl + '/post/stop', toStop).subscribe(
-      () => {},
+      () => {
+      },
       error => {
         this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000
@@ -132,7 +134,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     const toRename = [];
     this.selected.forEach(e => toRename.push(e.data.postId));
     this.httpClient.post<PostId[]>(this.serverService.baseUrl + '/post/rename/first', toRename).subscribe(
-      () => {},
+      () => {
+      },
       error => {
         this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000
@@ -144,7 +147,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   clear() {
     this.ngZone.run(() => {
       this.httpClient.post<RemoveAllResponse>(this.serverService.baseUrl + '/post/clear/all', {}).subscribe(
-        data => {},
+        data => {
+        },
         error => {
           this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
             duration: 5000
@@ -157,7 +161,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   stopAll() {
     this.ngZone.run(() => {
       this.httpClient.post(this.serverService.baseUrl + '/post/stop/all', {}).subscribe(
-        () => {},
+        () => {
+        },
         error => {
           this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
             duration: 5000

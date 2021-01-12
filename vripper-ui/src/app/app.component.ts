@@ -14,6 +14,10 @@ import {RxStompState} from '@stomp/rx-stomp';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppComponent implements OnDestroy, AfterViewInit {
+  electron: Subject<boolean>;
+  loaded: Subject<boolean> = new BehaviorSubject(false);
+  private subscriptions: Subscription[] = [];
+
   constructor(
     private dialog: MatDialog,
     public ws: WsConnectionService,
@@ -25,11 +29,6 @@ export class AppComponent implements OnDestroy, AfterViewInit {
   ) {
     this.electron = new BehaviorSubject(electronService.isElectronApp);
   }
-
-  private subscriptions: Subscription[] = [];
-  electron: Subject<boolean>;
-
-  loaded: Subject<boolean> = new BehaviorSubject(false);
 
   ngAfterViewInit() {
     this.appService.renderer = this.renderer;

@@ -1,3 +1,4 @@
 export class DownloadSpeed {
-    constructor(public speed: string) {}
+  constructor(public speed: string) {
+  }
 }

@@ -10,7 +10,7 @@ export class UrlRendererNative implements ICellRendererComp {
   private url: string;
 
   destroy(): void {
-    if(this.link) {
+    if (this.link) {
       this.link.removeEventListener('click', this.goTo.bind(this));
     }
   }

@@ -58,7 +58,8 @@ export class PostContextMenuComponent {
   restart() {
     this.contextMenuService.closePostContextMenu();
     this.httpClient.post(this.serverService.baseUrl + '/post/restart', [this.post.postId]).subscribe(
-      () => {},
+      () => {
+      },
       error => {
         this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000
@@ -140,7 +141,8 @@ export class PostContextMenuComponent {
   stop() {
     this.contextMenuService.closePostContextMenu();
     this.httpClient.post(this.serverService.baseUrl + '/post/stop', [this.post.postId]).subscribe(
-      () => {},
+      () => {
+      },
       error => {
         this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000

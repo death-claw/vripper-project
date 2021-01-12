@@ -124,7 +124,8 @@ export class MultiPostItemsComponent {
         })
       )
       .subscribe(
-        () => {},
+        () => {
+        },
         error => {
           this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
             duration: 5000

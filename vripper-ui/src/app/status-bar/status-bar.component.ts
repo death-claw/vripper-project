@@ -12,13 +12,13 @@ import {GlobalState} from '../domain/global-state.model';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class StatusBarComponent implements OnInit, OnDestroy {
-  constructor(private ws: WsConnectionService, private ngZone: NgZone, private selectionService: SelectionService) {
-  }
-
   downloadSpeed$: Subject<DownloadSpeed> = new BehaviorSubject(new DownloadSpeed('0 B'));
   globalState$: Subject<GlobalState> = new BehaviorSubject(new GlobalState(0, 0, 0));
   selected$: Subject<number> = new BehaviorSubject(0);
   subscriptions: Subscription[] = [];
+
+  constructor(private ws: WsConnectionService, private ngZone: NgZone, private selectionService: SelectionService) {
+  }
 
   ngOnInit() {
     this.subscriptions.push(this.ws.speed$.subscribe(e => this.ngZone.run(() => this.downloadSpeed$.next(e))));

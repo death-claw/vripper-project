@@ -14,6 +14,8 @@ import {Title} from '@angular/platform-browser';
   providedIn: 'root'
 })
 export class AppService {
+  isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
+
   constructor(
     private httpClient: HttpClient,
     private serverService: ServerService,
@@ -25,22 +27,22 @@ export class AppService {
   }
 
   private _darkTheme = false;
-  private _settings: Settings;
-  private _renderer: Renderer2;
-
-  get settings(): Settings {
-    return { ...this._settings };
-  }
 
   get darkTheme(): boolean {
     return this._darkTheme;
   }
 
+  private _settings: Settings;
+
+  get settings(): Settings {
+    return {...this._settings};
+  }
+
+  private _renderer: Renderer2;
+
   set renderer(renderer: Renderer2) {
     this._renderer = renderer;
   }
-
-  isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
 
   updateTheme(darkTheme: boolean) {
     this._darkTheme = darkTheme;

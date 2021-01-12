@@ -1,22 +1,22 @@
 import {ComponentRef, Injectable} from '@angular/core';
-import {ComponentPortal} from "@angular/cdk/portal";
-import {PostContextMenuComponent} from "../posts/context-menu/post-context-menu.component";
-import {Overlay, OverlayPositionBuilder, OverlayRef} from "@angular/cdk/overlay";
-import {fromEvent, Subscription} from "rxjs";
-import {Post} from "../domain/post-state.model";
-import {filter, take} from "rxjs/operators";
+import {ComponentPortal} from '@angular/cdk/portal';
+import {PostContextMenuComponent} from '../posts/context-menu/post-context-menu.component';
+import {Overlay, OverlayPositionBuilder, OverlayRef} from '@angular/cdk/overlay';
+import {fromEvent, Subscription} from 'rxjs';
+import {Post} from '../domain/post-state.model';
+import {filter, take} from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PostContextMenuService {
 
+  postContextMenuPortal = new ComponentPortal(PostContextMenuComponent);
+  postContext: Subscription;
+  private postContextMenuOverlayRef: OverlayRef;
+
   constructor(private overlayPositionBuilder: OverlayPositionBuilder, private overlay: Overlay) {
   }
-
-  postContextMenuPortal = new ComponentPortal(PostContextMenuComponent);
-  private postContextMenuOverlayRef: OverlayRef;
-  postContext: Subscription;
 
   openPostContextMenu(mouseEvent: MouseEvent, post: Post) {
     mouseEvent.preventDefault();

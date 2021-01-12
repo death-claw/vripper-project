@@ -32,41 +32,20 @@ import java.util.*;
 @Slf4j
 public class DownloadJob implements CheckedRunnable {
 
-    public enum ContextAttributes {
-        OPEN_CONNECTION("OPEN_CONNECTION");
-
-        private final String value;
-
-        ContextAttributes(String value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return value;
-        }
-    }
-
     private static final Object LOCK = new Object();
     private static final int READ_BUFFER_SIZE = 8192;
-
     private final DataService dataService;
     private final PathService pathService;
     private final ConnectionService cm;
     private final VGAuthService authService;
     private final DownloadSpeedService downloadSpeedService;
     private final SettingsService settingsService;
-
     private final HttpClientContext context;
-
     @Getter
     private final Image image;
-
     @Getter
     private final Post post;
-
     private boolean stopped = false;
-
     @Getter
     private boolean finished = false;
 
@@ -279,5 +258,20 @@ public class DownloadJob implements CheckedRunnable {
             }
         }
         this.stopped = true;
+    }
+
+    public enum ContextAttributes {
+        OPEN_CONNECTION("OPEN_CONNECTION");
+
+        private final String value;
+
+        ContextAttributes(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
     }
 }

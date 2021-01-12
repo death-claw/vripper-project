@@ -19,6 +19,11 @@ export interface AlternativeTitleDialog {
 })
 export class AlternativeTitleComponent implements OnInit {
 
+  form = new FormGroup({
+    altNameSelect: new FormControl(''),
+    altNameInput: new FormControl('', Validators.required)
+  });
+
   constructor(
     public dialogRef: MatDialogRef<AlternativeTitleComponent>,
     @Inject(MAT_DIALOG_DATA) public data: AlternativeTitleDialog,
@@ -33,11 +38,6 @@ export class AlternativeTitleComponent implements OnInit {
       this.form.get('altNameInput').setValue(this.data.post.title);
     }
   }
-
-  form = new FormGroup({
-    altNameSelect: new FormControl(''),
-    altNameInput: new FormControl('', Validators.required)
-  });
 
   rename() {
     this.httpClient.post<RenamePostModel>(this.serverService.baseUrl + '/post/rename', [{

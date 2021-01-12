@@ -29,7 +29,7 @@ public class MetadataRunnable implements Runnable {
     @Override
     public void run() {
         try {
-            if(Thread.interrupted()) {
+            if (Thread.interrupted()) {
                 log.debug(String.format("Metadata fetching for postId=%s, threadId=%s interrupted", post.getPostId(), post.getThreadId()));
                 return;
             }

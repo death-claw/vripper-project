@@ -31,31 +31,6 @@ public class HostService {
         this.htmlProcessorService = htmlProcessorService;
     }
 
-    @Getter
-    public static class Response {
-
-        private final Document document;
-        private final Header[] headers;
-
-        protected Response(Document document, Header[] headers) {
-            this.document = document;
-            this.headers = headers;
-        }
-    }
-
-    @Getter
-    public static class NameUrl {
-
-        private String name;
-        private String url;
-
-        public NameUrl(String name, String url) {
-            this.name = name;
-            this.url = url;
-        }
-    }
-
-
     public Response getResponse(final String url, final HttpClientContext context) throws HostException {
         String basePage;
 
@@ -101,5 +76,29 @@ public class HostService {
         String imageTitle = imgUrl.substring(imgUrl.lastIndexOf('/') + 1);
         log.debug(String.format("Extracting name from url %s: %s", imgUrl, imageTitle));
         return imgUrl;
+    }
+
+    @Getter
+    public static class Response {
+
+        private final Document document;
+        private final Header[] headers;
+
+        protected Response(Document document, Header[] headers) {
+            this.document = document;
+            this.headers = headers;
+        }
+    }
+
+    @Getter
+    public static class NameUrl {
+
+        private final String name;
+        private final String url;
+
+        public NameUrl(String name, String url) {
+            this.name = name;
+            this.url = url;
+        }
     }
 }

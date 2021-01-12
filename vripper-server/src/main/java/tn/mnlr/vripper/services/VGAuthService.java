@@ -39,14 +39,11 @@ public class VGAuthService {
 
     @Getter
     private final HttpClientContext context = HttpClientContext.create();
-
+    private final Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
     @Getter
     private boolean authenticated = false;
-
     @Getter
     private String loggedUser = "";
-
-    private final Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
 
     @Autowired
     public VGAuthService(ConnectionService cm, SettingsService settingsService, ThreadPoolService threadPoolService, DataService dataService) {

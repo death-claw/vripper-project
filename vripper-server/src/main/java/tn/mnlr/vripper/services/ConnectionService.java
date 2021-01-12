@@ -46,11 +46,11 @@ public class ConnectionService {
         maxAttempts = settingsService.getSettings().getMaxAttempts();
         Flux<SettingsService.Settings> settingsFlux = settingsService.getSettingsFlux();
         disposable = settingsFlux.subscribe(settings -> {
-            if(connectionTimeout != settings.getConnectionTimeout()) {
+            if (connectionTimeout != settings.getConnectionTimeout()) {
                 connectionTimeout = settings.getConnectionTimeout();
                 buildRequestConfig();
             }
-            if(maxAttempts != settings.getMaxAttempts()) {
+            if (maxAttempts != settings.getMaxAttempts()) {
                 maxAttempts = settings.getMaxAttempts();
                 buildRetryPolicy();
             }

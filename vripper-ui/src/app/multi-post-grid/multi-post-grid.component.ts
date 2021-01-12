@@ -1,6 +1,6 @@
 import {LinkCollectorService} from '../services/link-collector.service';
 import {MultiPostGridDataSource} from './multi-post-grid-data.source';
-import {ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, NgZone, OnDestroy} from '@angular/core';
 import {GridOptions} from 'ag-grid-community';
 import {WsConnectionService} from '../services/ws-connection.service';
 import {CollectorActionsRendererNative} from '../grid-custom-cells/collector-actions-renderer.native';
@@ -32,7 +32,7 @@ export class MultiPostGridComponent implements OnDestroy {
           sort: 'asc',
           cellRenderer: 'urlCellRenderer',
           cellRendererParams: {
-              electronService: this.electronService
+            electronService: this.electronService
           },
           flex: 1
         }, {

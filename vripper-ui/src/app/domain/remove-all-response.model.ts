@@ -1,4 +1,4 @@
 export interface RemoveAllResponse {
-    removed: number;
-    postIds: string[];
+  removed: number;
+  postIds: string[];
 }

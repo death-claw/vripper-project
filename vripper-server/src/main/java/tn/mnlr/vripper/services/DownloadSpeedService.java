@@ -16,17 +16,14 @@ import java.util.concurrent.atomic.AtomicLong;
 public class DownloadSpeedService {
 
     private final AtomicLong read = new AtomicLong(0);
-
+    private final Sinks.Many<Long> sink = Sinks.many().multicast().onBackpressureBuffer();
     @Getter
     private long currentValue;
-
-    private final Sinks.Many<Long> sink = Sinks.many().multicast().onBackpressureBuffer();
+    private boolean allowWrite = false;
 
     public Flux<Long> getReadBytesPerSecond() {
         return sink.asFlux();
     }
-
-    private boolean allowWrite = false;
 
     public void increase(long read) {
         if (allowWrite) {

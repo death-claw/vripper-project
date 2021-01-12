@@ -8,7 +8,10 @@ import org.springframework.stereotype.Controller;
 import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.Queued;
-import tn.mnlr.vripper.services.*;
+import tn.mnlr.vripper.services.DataService;
+import tn.mnlr.vripper.services.DownloadSpeedService;
+import tn.mnlr.vripper.services.GlobalStateService;
+import tn.mnlr.vripper.services.VGAuthService;
 import tn.mnlr.vripper.services.domain.DownloadSpeed;
 import tn.mnlr.vripper.services.domain.GlobalState;
 
@@ -31,16 +34,6 @@ public class DataController {
         this.globalStateService = globalStateService;
         this.downloadSpeedService = downloadSpeedService;
         this.dataService = dataService;
-    }
-
-    @Getter
-    public static class LoggedUser {
-
-        private final String user;
-
-        LoggedUser(String user) {
-            this.user = user;
-        }
     }
 
     @SubscribeMapping("/user")
@@ -71,5 +64,15 @@ public class DataController {
     @SubscribeMapping("/queued")
     public Collection<Queued> queued() {
         return StreamSupport.stream(dataService.findAllQueued().spliterator(), false).collect(Collectors.toList());
+    }
+
+    @Getter
+    public static class LoggedUser {
+
+        private final String user;
+
+        LoggedUser(String user) {
+            this.user = user;
+        }
     }
 }

@@ -10,13 +10,12 @@ import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.jpa.domain.Metadata;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.Queued;
-import tn.mnlr.vripper.services.ThreadPoolService;
 import tn.mnlr.vripper.services.DataService;
 import tn.mnlr.vripper.services.PathService;
-import tn.mnlr.vripper.services.domain.MultiPostItem;
 import tn.mnlr.vripper.services.PostService;
+import tn.mnlr.vripper.services.ThreadPoolService;
+import tn.mnlr.vripper.services.domain.MultiPostItem;
 import tn.mnlr.vripper.web.restendpoints.domain.*;
-import tn.mnlr.vripper.web.restendpoints.domain.PostId;
 import tn.mnlr.vripper.web.restendpoints.exceptions.BadRequestException;
 import tn.mnlr.vripper.web.restendpoints.exceptions.NotFoundException;
 import tn.mnlr.vripper.web.restendpoints.exceptions.ServerErrorException;
@@ -36,14 +35,12 @@ import java.util.stream.Collectors;
 public class PostRestEndpoint {
 
     private static final Pattern VG_URL_PATTERN = Pattern.compile("https://vipergirls\\.to/threads/(\\d+)((.*p=)(\\d+))?");
-
+    private static final Object LOCK = new Object();
     private final DataService dataService;
     private final PathService pathService;
     private final DownloadService downloadService;
     private final PostService postService;
     private final ThreadPoolService threadPoolService;
-
-    private static final Object LOCK = new Object();
 
     @Autowired
     public PostRestEndpoint(DataService dataService, PathService pathService, DownloadService downloadService, PostService postService, ThreadPoolService threadPoolService) {

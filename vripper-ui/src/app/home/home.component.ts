@@ -14,6 +14,8 @@ import {HttpClient} from '@angular/common/http';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomeComponent implements OnInit, OnDestroy {
+  clipboardSub: Subscription;
+
   constructor(
     private clipboardService: ClipboardService,
     public dialog: MatDialog,
@@ -22,15 +24,14 @@ export class HomeComponent implements OnInit, OnDestroy {
     private _snackBar: MatSnackBar,
     private ngZone: NgZone,
     public linkCollectorService: LinkCollectorService
-  ) {}
-
-  clipboardSub: Subscription;
+  ) {
+  }
 
   ngOnInit() {
     this.clipboardSub = this.clipboardService.links.subscribe(e => {
       this.ngZone.run(() => {
         this.httpClient
-          .post<{ threadId: string; postId: string }>(this.serverService.baseUrl + '/post', { url: e })
+          .post<{ threadId: string; postId: string }>(this.serverService.baseUrl + '/post', {url: e})
           .subscribe(
             response => {
               this._snackBar.open('Clipboard scan complete', null, {

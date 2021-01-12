@@ -17,6 +17,9 @@ import {ElectronService} from 'ngx-electron';
 })
 export class PhotosComponent implements OnInit, OnDestroy {
 
+  gridOptions: GridOptions;
+  dataSource: PhotosDatasource;
+
   constructor(
     public dialogRef: MatDialogRef<PhotosComponent>,
     @Inject(MAT_DIALOG_DATA) public dialogData: Post,
@@ -78,9 +81,6 @@ export class PhotosComponent implements OnInit, OnDestroy {
     };
 
   }
-
-  gridOptions: GridOptions;
-  dataSource: PhotosDatasource;
 
   ngOnInit() {
   }

@@ -4,6 +4,9 @@ import {WsConnectionService} from '../services/ws-connection.service';
 import {NgZone} from '@angular/core';
 
 export class PhotosDatasource {
+  subscriptions: Subscription[] = [];
+  postDetailsSub: Subscription;
+
   constructor(
     private ws: WsConnectionService,
     private gridOptions: GridOptions,
@@ -11,9 +14,6 @@ export class PhotosDatasource {
     private zone: NgZone
   ) {
   }
-
-  subscriptions: Subscription[] = [];
-  postDetailsSub: Subscription;
 
   connect() {
     this.postDetailsSub = this.ws.postDetails$(this.postId).subscribe(e => {

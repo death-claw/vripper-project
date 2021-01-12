@@ -10,6 +10,6 @@ public class HostException extends Exception {
     }
 
     public HostException(String message, Throwable e) {
-        super(message,e);
+        super(message, e);
     }
 }

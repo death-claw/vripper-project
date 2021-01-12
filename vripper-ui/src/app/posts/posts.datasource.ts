@@ -5,10 +5,10 @@ import {GridOptions, RowNode} from 'ag-grid-community';
 import {NgZone} from '@angular/core';
 
 export class PostsDataSource {
+  subscriptions: Subscription[] = [];
+
   constructor(private ws: WsConnectionService, private gridOptions: GridOptions, private zone: NgZone) {
   }
-
-  subscriptions: Subscription[] = [];
 
   connect() {
     this.subscriptions.push(this.ws.posts$.subscribe((e: Post[]) => {

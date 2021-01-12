@@ -1,3 +1,3 @@
 export interface RemoveResponse {
-    postId: string;
+  postId: string;
 }

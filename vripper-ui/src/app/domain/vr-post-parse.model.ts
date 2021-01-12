@@ -8,5 +8,6 @@ export class MultiPostItem {
     public url: string,
     public previews: string[],
     public hosts: string
-  ) {}
+  ) {
+  }
 }

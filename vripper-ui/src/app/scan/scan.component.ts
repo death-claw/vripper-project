@@ -13,6 +13,9 @@ import {BehaviorSubject, Subject} from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ScanComponent implements OnInit, AfterViewInit {
+  input: string;
+  loading: Subject<boolean> = new BehaviorSubject(false);
+
   constructor(
     private ngZone: NgZone,
     private httpClient: HttpClient,
@@ -20,10 +23,8 @@ export class ScanComponent implements OnInit, AfterViewInit {
     private _snackBar: MatSnackBar,
     public dialogRef: MatDialogRef<ScanComponent>,
     @Inject(MAT_DIALOG_DATA) public data: DialogData
-  ) {}
-
-  input: string;
-  loading: Subject<boolean> = new BehaviorSubject(false);
+  ) {
+  }
 
   submit() {
     this.ngZone.run(() => {
@@ -42,22 +43,24 @@ export class ScanComponent implements OnInit, AfterViewInit {
   processUrl(url: string) {
     this.loading.next(true);
     this.httpClient
-      .post<{ threadId: string; postId: string }>(this.serverService.baseUrl + '/post', { url: url })
+      .post<{ threadId: string; postId: string }>(this.serverService.baseUrl + '/post', {url: url})
       .pipe(
         finalize(() => {
           this.close();
           this.loading.next(false);
         })
       )
-      .subscribe(response => {},
-      error => {
-        this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
-          duration: 5000
+      .subscribe(response => {
+        },
+        error => {
+          this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
+            duration: 5000
+          });
         });
-      });
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+  }
 
   ngAfterViewInit(): void {
     this.ngZone.run(() => {

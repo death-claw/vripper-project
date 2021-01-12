@@ -18,7 +18,12 @@ export class ClipboardService {
     private electronService: ElectronService,
     private serverService: ServerService,
     private httpClient: HttpClient
-  ) {}
+  ) {
+  }
+
+  get links(): Observable<string> {
+    return this.links$.asObservable();
+  }
 
   init(settings?: Settings) {
     if (!settings) {
@@ -63,9 +68,5 @@ export class ClipboardService {
 
   private textHasDiff(a, b) {
     return a && b !== a;
-  }
-
-  get links(): Observable<string> {
-    return this.links$.asObservable();
   }
 }

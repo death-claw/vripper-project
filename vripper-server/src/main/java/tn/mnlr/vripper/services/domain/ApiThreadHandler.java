@@ -16,6 +16,8 @@ public class ApiThreadHandler extends DefaultHandler {
     private final Queued queued;
     private final Collection<Host> supportedHosts;
     private final Map<Host, AtomicInteger> hostMap = new HashMap<>();
+    @Getter
+    private final List<MultiPostItem> posts = new ArrayList<>();
     private List<String> previews = new ArrayList<>();
     private String threadTitle;
     private String postId;
@@ -23,9 +25,6 @@ public class ApiThreadHandler extends DefaultHandler {
     private int imageCount;
     private int postCounter;
     private int previewCounter = 0;
-
-    @Getter
-    private final List<MultiPostItem> posts = new ArrayList<>();
 
     public ApiThreadHandler(Queued queued) {
         this.queued = queued;
@@ -63,7 +62,7 @@ public class ApiThreadHandler extends DefaultHandler {
 
     @Override
     public void endElement(String uri, String localName, String qName) {
-        if ("post".equals(qName.toLowerCase())) {
+        if ("post".equalsIgnoreCase(qName)) {
             if (imageCount != 0) {
                 posts.add(new MultiPostItem(
                         queued.getThreadId(),

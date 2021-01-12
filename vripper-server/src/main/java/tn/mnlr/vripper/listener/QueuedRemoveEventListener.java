@@ -13,7 +13,7 @@ import javax.annotation.PreDestroy;
 @Slf4j
 public class QueuedRemoveEventListener implements ApplicationListener<QueuedRemoveEvent>, DataEventListener<QueuedRemoveEvent> {
 
-    private Sinks.Many<QueuedRemoveEvent> sink = Sinks.many().multicast().onBackpressureBuffer();
+    private final Sinks.Many<QueuedRemoveEvent> sink = Sinks.many().multicast().onBackpressureBuffer();
 
     @Override
     public void onApplicationEvent(QueuedRemoveEvent event) {

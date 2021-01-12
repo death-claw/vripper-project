@@ -5,17 +5,17 @@ import {ComponentPortal} from '@angular/cdk/portal';
 
 @Directive({selector: '[appPreview]'})
 export class AppPreviewDirective implements OnInit, OnDestroy {
-  private overlayRef: OverlayRef;
   tooltipPortal = new ComponentPortal(AppPreviewComponent);
-
   @Input() appPreview: string[];
+  private overlayRef: OverlayRef;
 
   constructor(
     private overlayPositionBuilder: OverlayPositionBuilder,
     private elementRef: ElementRef,
     private overlay: Overlay,
     private ngZone: NgZone
-  ) {}
+  ) {
+  }
 
   ngOnInit() {
     const positionStrategy = this.overlayPositionBuilder
@@ -36,7 +36,7 @@ export class AppPreviewDirective implements OnInit, OnDestroy {
           overlayY: 'bottom'
         }
       ]);
-    this.overlayRef = this.overlay.create({ positionStrategy, scrollStrategy: this.overlay.scrollStrategies.close() });
+    this.overlayRef = this.overlay.create({positionStrategy, scrollStrategy: this.overlay.scrollStrategies.close()});
   }
 
   ngOnDestroy() {

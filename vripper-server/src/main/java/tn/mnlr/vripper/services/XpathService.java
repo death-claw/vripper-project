@@ -12,7 +12,7 @@ import javax.xml.xpath.XPathFactory;
 @Service
 public class XpathService {
 
-    private XPath xpath = XPathFactory.newInstance().newXPath();
+    private final XPath xpath = XPathFactory.newInstance().newXPath();
 
     public Node getAsNode(Node source, String xpathExpression) throws XpathException {
         try {

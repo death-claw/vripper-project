@@ -1,6 +1,9 @@
 package tn.mnlr.vripper.web.restendpoints.domain;
 
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter

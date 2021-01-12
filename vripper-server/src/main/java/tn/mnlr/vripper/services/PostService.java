@@ -141,7 +141,7 @@ public class PostService {
             }
             log.debug(String.format("threadId %s, postId %s is added automatically for download", queued.getThreadId(), queued.getPostId()));
         } else {
-            if(dataService.findQueuedByThreadId(queued.getThreadId()).isEmpty()) {
+            if (dataService.findQueuedByThreadId(queued.getThreadId()).isEmpty()) {
                 dataService.newQueueLink(queued);
             } else {
                 log.info(String.format("Thread with id = %s is already loaded", queued.getThreadId()));

@@ -199,11 +199,11 @@ public class SettingsService {
             throw new ValidationException(String.format("Invalid max concurrent download settings, values must be in [%d,%d]", 1, 4));
         }
 
-        if(settings.getConnectionTimeout() < 1 || settings.getConnectionTimeout() > 300) {
+        if (settings.getConnectionTimeout() < 1 || settings.getConnectionTimeout() > 300) {
             throw new ValidationException(String.format("Invalid connection timeout settings, values must be in [%d,%d]", 1, 300));
         }
 
-        if(settings.getMaxAttempts() < 1 || settings.getMaxAttempts() > 10) {
+        if (settings.getMaxAttempts() < 1 || settings.getMaxAttempts() > 10) {
             throw new ValidationException(String.format("Invalid maximum attempts settings, values must be in [%d,%d]", 1, 10));
         }
     }

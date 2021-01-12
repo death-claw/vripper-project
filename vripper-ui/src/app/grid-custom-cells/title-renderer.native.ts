@@ -6,30 +6,28 @@ import {AppPreviewComponent} from '../preview-tooltip/preview-tooltip.component'
 import {ComponentRef, NgZone} from '@angular/core';
 
 export class TitleRendererNative implements ICellRendererComp {
+  tooltipPortal = new ComponentPortal(AppPreviewComponent);
+  appPreview: string[];
   private gui: HTMLElement;
   private text: HTMLSpanElement;
   private gridApi: GridApi;
   private node: RowNode;
   private contextMenuService: PostContextMenuService;
   private icon: HTMLSpanElement;
-
   private overlayPositionBuilder: OverlayPositionBuilder;
   private overlay: Overlay;
   private zone: NgZone;
-
   private overlayRef: OverlayRef;
-  tooltipPortal = new ComponentPortal(AppPreviewComponent);
-  appPreview: string[];
 
   destroy(): void {
-    if(this.gui) {
+    if (this.gui) {
       this.gui.removeEventListener('contextmenu', this.context.bind(this));
     }
-    if(this.overlayRef) {
+    if (this.overlayRef) {
       this.overlayRef.dispose();
     }
 
-    if(this.icon) {
+    if (this.icon) {
       this.icon.removeEventListener('mouseenter', this.mouseenter.bind(this));
       this.icon.removeEventListener('mouseleave', this.mouseout.bind(this));
     }
@@ -86,7 +84,7 @@ export class TitleRendererNative implements ICellRendererComp {
           overlayY: 'bottom'
         }
       ]);
-    this.overlayRef = this.overlay.create({ positionStrategy, scrollStrategy: this.overlay.scrollStrategies.close() });
+    this.overlayRef = this.overlay.create({positionStrategy, scrollStrategy: this.overlay.scrollStrategies.close()});
 
     this.icon.addEventListener('mouseenter', this.mouseenter.bind(this));
     this.icon.addEventListener('mouseleave', this.mouseout.bind(this));

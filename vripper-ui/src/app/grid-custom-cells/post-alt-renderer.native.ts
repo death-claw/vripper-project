@@ -10,7 +10,7 @@ export class PostAltRendererNative implements ICellRendererComp {
   private contextMenuService: PostContextMenuService;
 
   destroy(): void {
-    if(this.gui) {
+    if (this.gui) {
       this.gui.removeEventListener('contextmenu', this.context.bind(this));
     }
   }

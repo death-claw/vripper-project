@@ -5,5 +5,6 @@ export class Photo {
     public progress: number,
     public status: string,
     public index: number
-  ) {}
+  ) {
+  }
 }

@@ -6,8 +6,8 @@ import org.springframework.stereotype.Service;
 import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.jpa.domain.Post;
-import tn.mnlr.vripper.services.SettingsService;
 import tn.mnlr.vripper.services.DataService;
+import tn.mnlr.vripper.services.SettingsService;
 
 import javax.annotation.PostConstruct;
 import java.util.*;

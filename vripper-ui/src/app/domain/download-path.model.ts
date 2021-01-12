@@ -1,3 +1,3 @@
 export interface DownloadPath {
-    path: string;
+  path: string;
 }

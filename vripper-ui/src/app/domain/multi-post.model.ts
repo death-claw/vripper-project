@@ -7,5 +7,6 @@ export class MultiPostModel {
     public removed: boolean,
     public total: number,
     public loading: boolean
-  ) {}
+  ) {
+  }
 }

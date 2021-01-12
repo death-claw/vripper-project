@@ -7,7 +7,6 @@ import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.jpa.domain.Post;
-import tn.mnlr.vripper.services.domain.ApiPost;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -96,7 +95,7 @@ class ApiPostHandler extends DefaultHandler {
 
     @Override
     public void endElement(String uri, String localName, String qName) {
-        if ("post".equals(qName.toLowerCase())) {
+        if ("post".equalsIgnoreCase(qName)) {
             parsedPost.setTotal(images.size());
             if (!previews.isEmpty()) {
                 parsedPost.setPreviews(previews);

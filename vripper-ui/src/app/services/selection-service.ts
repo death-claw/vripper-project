@@ -11,9 +11,9 @@ export class SelectionService {
 
   get selected$(): Observable<RowNode[]> {
     return this._selected$.asObservable();
-    }
+  }
 
-    public onSelectionChanged(selected: RowNode[]) {
-        this._selected$.next(selected);
-    }
+  public onSelectionChanged(selected: RowNode[]) {
+    this._selected$.next(selected);
+  }
 }

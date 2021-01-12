@@ -11,5 +11,6 @@ export interface DialogConfirmation {
   templateUrl: 'confirmation-dialog.html'
 })
 export class ConfirmDialogComponent {
-  constructor(public dialogRef: MatDialogRef<ConfirmDialogComponent>, @Inject(MAT_DIALOG_DATA) public data: DialogConfirmation) {}
+  constructor(public dialogRef: MatDialogRef<ConfirmDialogComponent>, @Inject(MAT_DIALOG_DATA) public data: DialogConfirmation) {
+  }
 }
