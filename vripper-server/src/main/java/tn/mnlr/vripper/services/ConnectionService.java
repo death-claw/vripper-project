@@ -75,6 +75,8 @@ public class ConnectionService {
 
     private void buildConnectionPool() {
         pcm = new PoolingHttpClientConnectionManager();
+        pcm.setMaxTotal(Integer.MAX_VALUE);
+        pcm.setDefaultMaxPerRoute(Integer.MAX_VALUE);
     }
 
     private void buildRequestConfig() {
