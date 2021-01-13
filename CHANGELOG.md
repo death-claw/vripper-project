@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.2.2] - 2021-01-13
+### Changed
+- Set total download to max value
+
 ## [3.2.1] - 2021-01-12
 ### Added
 - Add settings for connection timeout
