@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.2.3] - 2021-01-13
+### Changed
+- Finished posts are not cleared from the UI
+
 ## [3.2.2] - 2021-01-13
 ### Changed
 - Set total download to max value
