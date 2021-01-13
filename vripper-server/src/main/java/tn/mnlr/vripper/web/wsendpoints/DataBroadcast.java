@@ -5,10 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.Disposable;
-import tn.mnlr.vripper.event.ImageUpdateEvent;
-import tn.mnlr.vripper.event.MetadataUpdateEvent;
-import tn.mnlr.vripper.event.PostUpdateEvent;
-import tn.mnlr.vripper.event.QueuedUpdateEvent;
+import tn.mnlr.vripper.event.*;
 import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.listener.*;
 import tn.mnlr.vripper.services.DataService;
@@ -113,6 +110,7 @@ public class DataBroadcast {
         );
 
         disposables.add(queuedRemoveEventListener.getDataFlux()
+                .map(QueuedRemoveEvent::getThreadId)
                 .buffer(Duration.of(500, ChronoUnit.MILLIS))
                 .map(HashSet::new)
                 .filter(e -> !e.isEmpty())
@@ -120,6 +118,7 @@ public class DataBroadcast {
         );
 
         disposables.add(postRemoveEventListener.getDataFlux()
+                .map(PostRemoveEvent::getPostId)
                 .buffer(Duration.of(500, ChronoUnit.MILLIS))
                 .map(HashSet::new)
                 .filter(e -> !e.isEmpty())
