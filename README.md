@@ -20,5 +20,3 @@ To build the desktop app:
     mvn clean install -Pelectron -DskipTests
 
 Maven will automatically handle front end compilation. However, for development, you will need to install a recent version of nodejs on your system.
-
-[![Donate with PayPal](https://raw.githubusercontent.com/stefan-niedermann/paypal-donate-button/master/paypal-donate-button.png)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=SC7M5LNWZ528Q)
