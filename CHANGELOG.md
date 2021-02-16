@@ -1,11 +1,23 @@
 # Changelog
 
-## [3.2.3] - 2021-01-13
+## [3.3.0] - 2021-02-16
+
 ### Changed
+
+- Add support for proxies
+- Add a Event Logs
+- Fix bugs with the database
+
+## [3.2.3] - 2021-01-13
+
+### Changed
+
 - Finished posts are not cleared from the UI
 
 ## [3.2.2] - 2021-01-13
+
 ### Changed
+
 - Set total download to max value
 
 ## [3.2.1] - 2021-01-12
