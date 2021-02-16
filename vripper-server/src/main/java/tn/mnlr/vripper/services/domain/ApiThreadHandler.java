@@ -6,6 +6,7 @@ import org.xml.sax.helpers.DefaultHandler;
 import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.jpa.domain.Queued;
+import tn.mnlr.vripper.services.SettingsService;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,6 +16,7 @@ public class ApiThreadHandler extends DefaultHandler {
 
     private final Queued queued;
     private final Collection<Host> supportedHosts;
+    private final SettingsService settingsService;
     private final Map<Host, AtomicInteger> hostMap = new HashMap<>();
     @Getter
     private final List<MultiPostItem> posts = new ArrayList<>();
@@ -28,7 +30,8 @@ public class ApiThreadHandler extends DefaultHandler {
 
     public ApiThreadHandler(Queued queued) {
         this.queued = queued;
-        this.supportedHosts = SpringContext.getBeansOfType(Host.class).values();
+        supportedHosts = SpringContext.getBeansOfType(Host.class).values();
+        settingsService = SpringContext.getBean(SettingsService.class);
     }
 
     @Override
@@ -70,7 +73,7 @@ public class ApiThreadHandler extends DefaultHandler {
                         postCounter,
                         postTitle,
                         imageCount,
-                        String.format("https://vipergirls.to/threads/?p=%s&viewfull=1#post%s", postId, postId),
+                        String.format("%s/threads/?p=%s&viewfull=1#post%s", settingsService.getSettings().getVProxy(), postId, postId),
                         previews,
                         hostMap.entrySet().stream().filter(v -> v.getValue().get() > 0).map(e -> e.getKey().getHost() + " (" + e.getValue().get() + ")").collect(Collectors.joining(", "))
                 ));

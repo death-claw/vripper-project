@@ -19,34 +19,34 @@ public class PostRowMapper implements RowMapper<Post> {
 
         Post post = new Post();
         post.setId(rs.getLong("post.ID"));
-        post.setStatus(Status.valueOf(rs.getString("STATUS")));
-        post.setPostId(rs.getString("POST_ID"));
-        post.setThreadTitle(rs.getString("THREAD_TITLE"));
-        post.setThreadId(rs.getString("THREAD_ID"));
-        post.setTitle(rs.getString("TITLE"));
-        post.setUrl(rs.getString("URL"));
-        post.setDone(rs.getInt("DONE"));
-        post.setTotal(rs.getInt("TOTAL"));
-        post.setHosts(Set.of(rs.getString("HOSTS").split(DELIMITER)));
-        post.setForum(rs.getString("FORUM"));
-        post.setSecurityToken(rs.getString("SECURITY_TOKEN"));
-        post.setDownloadDirectory(rs.getString("POST_FOLDER_NAME"));
-        post.setThanked(rs.getBoolean("THANKED"));
+        post.setStatus(Status.valueOf(rs.getString("post.STATUS")));
+        post.setPostId(rs.getString("post.POST_ID"));
+        post.setThreadTitle(rs.getString("post.THREAD_TITLE"));
+        post.setThreadId(rs.getString("post.THREAD_ID"));
+        post.setTitle(rs.getString("post.TITLE"));
+        post.setUrl(rs.getString("post.URL"));
+        post.setDone(rs.getInt("post.DONE"));
+        post.setTotal(rs.getInt("post.TOTAL"));
+        post.setHosts(Set.of(rs.getString("post.HOSTS").split(DELIMITER)));
+        post.setForum(rs.getString("post.FORUM"));
+        post.setSecurityToken(rs.getString("post.SECURITY_TOKEN"));
+        post.setDownloadDirectory(rs.getString("post.POST_FOLDER_NAME"));
+        post.setThanked(rs.getBoolean("post.THANKED"));
         String previews;
-        if ((previews = rs.getString("PREVIEWS")) != null) {
+        if ((previews = rs.getString("post.PREVIEWS")) != null) {
             post.setPreviews(Set.of(previews.split(DELIMITER)));
         }
 
-        Long metadataId = rs.getLong("metadata.ID");
+        Long metadataId = rs.getLong("metadata.POST_ID_REF");
         if (!rs.wasNull()) {
             Metadata metadata = new Metadata();
-            metadata.setId(metadataId);
-            metadata.setPostIdRef(rs.getLong("POST_ID_REF"));
-            String resolvedNames = rs.getString("RESOLVED_NAMES");
+            metadata.setPostIdRef(metadataId);
+            metadata.setPostId(rs.getString("metadata.POST_ID"));
+            String resolvedNames = rs.getString("metadata.RESOLVED_NAMES");
             if (resolvedNames != null && !resolvedNames.isBlank()) {
                 metadata.setResolvedNames(List.of(resolvedNames.split("%sep%")));
             }
-            metadata.setPostedBy(rs.getString("POSTED_BY"));
+            metadata.setPostedBy(rs.getString("metadata.POSTED_BY"));
             post.setMetadata(metadata);
         }
 

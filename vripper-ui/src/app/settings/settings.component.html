@@ -134,6 +134,13 @@
         </mat-tab>
         <mat-tab label="ViperGirls">
           <form [formGroup]="viperGirlsSettingsForm" autocomplete="off" fxLayout="column">
+            <mat-form-field>
+              <mat-label>Select a proxy</mat-label>
+              <mat-select formControlName="vProxy" name="vProxy">
+                <mat-option *ngFor="let mirror of mirrors | async" [value]="mirror">{{mirror}}</mat-option>
+              </mat-select>
+            </mat-form-field>
+
             <mat-slide-toggle color="primary" formControlName="vLogin" name="vLogin">
               Enable ViperGirls Authentication
             </mat-slide-toggle>
@@ -169,6 +176,28 @@
             </section>
           </form>
         </mat-tab>
+        <mat-tab label="Event Log">
+          <form [formGroup]="eventLogSettingsForm" autocomplete="off" fxLayout="column">
+            <section class="full-width" fxLayout="row" fxLayoutAlign="space-between center" fxLayoutGap="5px">
+              <mat-form-field fxFlex="grow">
+                <input
+                  formControlName="maxEventLog"
+                  matInput
+                  max="10000"
+                  min="100"
+                  name="maxEventLog"
+                  placeholder="Maximum records"
+                  required
+                  type="number"
+                />
+              </mat-form-field>
+              <mat-icon
+                matTooltip="Oldest records will be removed once the maximum amount is reached"
+                svgIcon="help-circle-outline">
+              </mat-icon>
+            </section>
+          </form>
+        </mat-tab>
         <mat-tab *ngIf="electronService.isElectronApp" label="Desktop Integration">
           <form [formGroup]="desktopSettingsForm" autocomplete="off">
             <section class="input">
@@ -188,11 +217,12 @@
     <button
       (click)="onSubmit()"
       [disabled]="
-        (desktopSettingsForm.pristine && connectionSettingsForm.pristine && downloadSettingsForm.pristine && viperGirlsSettingsForm.pristine) ||
+        (desktopSettingsForm.pristine && connectionSettingsForm.pristine && downloadSettingsForm.pristine && viperGirlsSettingsForm.pristine && eventLogSettingsForm.pristine) ||
         viperGirlsSettingsForm.invalid ||
         downloadSettingsForm.invalid ||
         connectionSettingsForm.invalid ||
         desktopSettingsForm.invalid ||
+        eventLogSettingsForm.invalid ||
         loading
       "
       color="primary"

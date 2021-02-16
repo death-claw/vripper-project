@@ -3,7 +3,6 @@ import {ChangeDetectionStrategy, Component, NgZone, OnDestroy} from '@angular/co
 import {PostsDataSource} from './posts.datasource';
 import {WsConnectionService} from '../services/ws-connection.service';
 import {GridOptions} from 'ag-grid-community';
-import {Subject} from 'rxjs';
 import {PostContextMenuService} from '../services/post-context-menu.service';
 import {PostProgressRendererNative} from '../grid-custom-cells/post-progress-renderer.native';
 import {PostStatusRendererNative} from '../grid-custom-cells/post-status-renderer.native';
@@ -19,7 +18,6 @@ import {PostsService} from '../services/posts.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PostsComponent implements OnDestroy {
-  dialogOpen: Subject<boolean> = new Subject();
   gridOptions: GridOptions;
   dataSource: PostsDataSource;
 
@@ -30,7 +28,8 @@ export class PostsComponent implements OnDestroy {
     private postsDataService: PostsService,
     private contextMenuService: PostContextMenuService,
     private overlayPositionBuilder: OverlayPositionBuilder,
-    private overlay: Overlay
+    private overlay: Overlay,
+    private postsService: PostsService
   ) {
     this.gridOptions = <GridOptions>{
       columnDefs: [
@@ -110,11 +109,15 @@ export class PostsComponent implements OnDestroy {
         this.dataSource.connect();
       },
       onSelectionChanged: () => this.selectionService.onSelectionChanged(this.gridOptions.api.getSelectedNodes()),
-      onBodyScroll: () => this.contextMenuService.closePostContextMenu()
+      onBodyScroll: () => this.contextMenuService.closePostContextMenu(),
+      onRowDataUpdated: () => this.postsService.setCount(this.gridOptions.api.getDisplayedRowCount()),
+      onRowDataChanged: () => this.postsService.setCount(this.gridOptions.api.getDisplayedRowCount()),
     };
   }
 
   ngOnDestroy(): void {
-    this.dataSource.disconnect();
+    if (this.dataSource) {
+      this.dataSource.disconnect();
+    }
   }
 }

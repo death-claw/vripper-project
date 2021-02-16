@@ -2,6 +2,7 @@ package tn.mnlr.vripper.services;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
@@ -10,6 +11,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
@@ -19,11 +21,17 @@ import tn.mnlr.vripper.listener.EmitHandler;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static java.nio.file.StandardOpenOption.*;
 
@@ -33,26 +41,65 @@ import static java.nio.file.StandardOpenOption.*;
 public class SettingsService {
 
     private final Path configPath;
+    private final Path customProxiesPath;
     private final ObjectMapper om = new ObjectMapper();
+
+    private final Set<String> proxies = new HashSet<>();
 
     private Sinks.Many<Settings> sink = Sinks.many().multicast().onBackpressureBuffer();
 
     @Getter
     private Settings settings = new Settings();
+    @Value("classpath:proxies.json")
+    private Resource defaultProxies;
 
     public SettingsService(@Value("${base.dir}") String baseDir, @Value("${base.dir.name}") String baseDirName) {
         this.configPath = Paths.get(baseDir, baseDirName, "config.json");
+        this.customProxiesPath = Paths.get(baseDir, baseDirName, "proxies.json");
         om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     @PostConstruct
     private void init() {
+        loadViperProxies();
         restore();
         sink.emitNext(settings, EmitHandler.RETRY);
     }
 
+    private void loadViperProxies() {
+        try (InputStream defaultProxiesIs = defaultProxies.getInputStream()) {
+            List<String> defaultProxies = om.readValue(defaultProxiesIs, new TypeReference<>() {
+            });
+            List<String> customProxies = new ArrayList<>();
+            if (customProxiesPath.toFile().exists() && customProxiesPath.toFile().isFile()) {
+                customProxies = om.readValue(customProxiesPath.toFile(), new TypeReference<>() {
+                });
+            } else {
+                if (!customProxiesPath.toFile().createNewFile()) {
+                    log.warn("Unable to create " + customProxiesPath.toFile().getAbsolutePath());
+                } else {
+                    try (FileWriter fw = new FileWriter(customProxiesPath.toFile())) {
+                        fw.append("[]").append(System.lineSeparator());
+                        fw.flush();
+                    } catch (IOException e) {
+                        log.warn("Unable to create " + customProxiesPath.toFile().getAbsolutePath(), e);
+                    }
+                }
+            }
+            proxies.addAll(customProxies);
+            proxies.addAll(defaultProxies);
+        } catch (IOException e) {
+            log.error("Failed to load vipergirls proxies list", e);
+        }
+        proxies.add("https://vipergirls.to");
+    }
+
     Flux<Settings> getSettingsFlux() {
         return sink.asFlux();
+    }
+
+    public List<String> getProxies() {
+        return new ArrayList<>(proxies);
     }
 
     public void newSettings(Settings settings) {
@@ -75,7 +122,9 @@ public class SettingsService {
 
     public void restore() {
         try {
-            settings = om.readValue(configPath.toFile(), Settings.class);
+            if (configPath.toFile().exists()) {
+                settings = om.readValue(configPath.toFile(), Settings.class);
+            }
         } catch (IOException e) {
             log.error("Failed restore user settings", e);
             settings = new Settings();
@@ -153,6 +202,14 @@ public class SettingsService {
             settings.setMaxAttempts(5);
         }
 
+        if (settings.getVProxy() == null || !proxies.contains(settings.getVProxy())) {
+            settings.setVProxy("https://vipergirls.to");
+        }
+
+        if (settings.getMaxEventLog() == null) {
+            settings.setMaxEventLog(1000);
+        }
+
         try {
             check(this.settings);
         } catch (ValidationException e) {
@@ -206,6 +263,10 @@ public class SettingsService {
 
         if (settings.getMaxAttempts() < 1 || settings.getMaxAttempts() > 10) {
             throw new ValidationException(String.format("Invalid maximum attempts settings, values must be in [%d,%d]", 1, 10));
+        }
+
+        if (settings.getMaxEventLog() < 100 || settings.getMaxEventLog() > 10_000) {
+            throw new ValidationException(String.format("Invalid maximum event log record settings, values must be in [%d,%d]", 100, 10_000));
         }
     }
 
@@ -289,5 +350,12 @@ public class SettingsService {
 
         @JsonProperty("maxAttempts")
         private Integer maxAttempts;
+
+        @JsonProperty("vProxy")
+        private String vProxy;
+
+        @JsonProperty("maxEventLog")
+        private Integer maxEventLog;
+
     }
 }

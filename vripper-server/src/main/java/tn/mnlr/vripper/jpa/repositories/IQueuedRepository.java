@@ -15,4 +15,6 @@ public interface IQueuedRepository extends IRepository {
     Optional<Queued> findById(Long id);
 
     int deleteByThreadId(String threadId);
+
+    void deleteAll();
 }

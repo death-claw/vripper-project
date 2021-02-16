@@ -12,4 +12,6 @@ export interface Settings {
   resolveTitle: boolean;
   connectionTimeout: number;
   maxAttempts: number;
+  vProxy: string;
+  maxEventLog: number;
 }

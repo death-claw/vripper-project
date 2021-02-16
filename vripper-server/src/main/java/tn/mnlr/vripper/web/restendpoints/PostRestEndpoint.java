@@ -6,15 +6,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import tn.mnlr.vripper.download.DownloadService;
-import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.jpa.domain.Metadata;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.Queued;
-import tn.mnlr.vripper.services.DataService;
-import tn.mnlr.vripper.services.PathService;
-import tn.mnlr.vripper.services.PostService;
-import tn.mnlr.vripper.services.ThreadPoolService;
+import tn.mnlr.vripper.services.*;
 import tn.mnlr.vripper.services.domain.MultiPostItem;
+import tn.mnlr.vripper.services.domain.tasks.AddPostRunnable;
+import tn.mnlr.vripper.services.domain.tasks.LinkScanRunnable;
 import tn.mnlr.vripper.web.restendpoints.domain.*;
 import tn.mnlr.vripper.web.restendpoints.exceptions.BadRequestException;
 import tn.mnlr.vripper.web.restendpoints.exceptions.NotFoundException;
@@ -24,9 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -34,21 +29,22 @@ import java.util.stream.Collectors;
 @CrossOrigin(value = "*")
 public class PostRestEndpoint {
 
-    private static final Pattern VG_URL_PATTERN = Pattern.compile("https://vipergirls\\.to/threads/(\\d+)((.*p=)(\\d+))?");
     private static final Object LOCK = new Object();
     private final DataService dataService;
     private final PathService pathService;
     private final DownloadService downloadService;
     private final PostService postService;
     private final ThreadPoolService threadPoolService;
+    private final SettingsService settingsService;
 
     @Autowired
-    public PostRestEndpoint(DataService dataService, PathService pathService, DownloadService downloadService, PostService postService, ThreadPoolService threadPoolService) {
+    public PostRestEndpoint(DataService dataService, PathService pathService, DownloadService downloadService, PostService postService, ThreadPoolService threadPoolService, SettingsService settingsService) {
         this.dataService = dataService;
         this.pathService = pathService;
         this.downloadService = downloadService;
         this.postService = postService;
         this.threadPoolService = threadPoolService;
+        this.settingsService = settingsService;
     }
 
     @PostMapping("/post")
@@ -60,30 +56,7 @@ public class PostRestEndpoint {
                 throw new BadRequestException("Cannot process empty requests");
             }
             List<String> urlList = Arrays.stream(_url.getUrl().split("\\r?\\n")).map(String::trim).filter(e -> !e.isEmpty()).collect(Collectors.toList());
-            ArrayList<Queued> queuedList = new ArrayList<>();
-            for (String url : urlList) {
-                log.debug(String.format("Starting to process thread: %s", url));
-                if (!url.startsWith("https://vipergirls.to")) {
-                    log.error(String.format("Unsupported link %s", url));
-                    continue;
-                }
-
-                String threadId, postId;
-                Matcher m = VG_URL_PATTERN.matcher(url);
-                if (m.find()) {
-                    threadId = m.group(1);
-                    postId = m.group(4);
-                } else {
-                    throw new BadRequestException(String.format("Cannot retrieve thread id from URL %s", url));
-                }
-                queuedList.add(new Queued(url, threadId, postId));
-            }
-            try {
-                postService.processMultiPost(queuedList);
-            } catch (Exception e) {
-                log.error("Failed to parse links", e);
-                throw new ServerErrorException(e.getMessage());
-            }
+            threadPoolService.getGeneralExecutor().submit(new LinkScanRunnable(urlList));
         }
     }
 
@@ -100,14 +73,7 @@ public class PostRestEndpoint {
     public void addPost(@RequestBody List<PostToAdd> posts) {
         synchronized (LOCK) {
             for (PostToAdd post : posts) {
-                threadPoolService.getGeneralExecutor().submit(() -> {
-                    try {
-                        postService.addPost(post.getPostId(), post.getThreadId());
-                    } catch (PostParseException e) {
-                        log.error(String.format("Failed to add post %s", post.getPostId()), e);
-                        throw new ServerErrorException(String.format("Failed to add post %s", post.getPostId()));
-                    }
-                });
+                threadPoolService.getGeneralExecutor().submit(new AddPostRunnable(post.getPostId(), post.getThreadId()));
             }
         }
     }
@@ -239,11 +205,12 @@ public class PostRestEndpoint {
     public List<MultiPostItem> grab(@PathVariable("threadId") @NonNull String threadId) {
         synchronized (LOCK) {
             Queued queued = dataService.findQueuedByThreadId(threadId).orElseThrow(() -> new NotFoundException(String.format("Unable to find links for threadId = %s", threadId)));
-            try {
-                return postService.getCache().get(queued);
-            } catch (ExecutionException e) {
-                log.error(String.format("Failed to get links for threadId = %s", threadId), e);
+            List<MultiPostItem> multiPostItems = postService.get(queued);
+            if (multiPostItems == null) {
+                log.error(String.format("Failed to get links for threadId = %s", threadId));
                 throw new ServerErrorException(String.format("Failed to get links for threadId = %s", threadId));
+            } else {
+                return multiPostItems;
             }
         }
     }
@@ -254,6 +221,14 @@ public class PostRestEndpoint {
         synchronized (LOCK) {
             postService.remove(threadId.getThreadId());
             return threadId;
+        }
+    }
+
+    @GetMapping("/grab/clear")
+    @ResponseStatus(value = HttpStatus.OK)
+    public void grabClear() {
+        synchronized (LOCK) {
+            dataService.clearQueueLinks();
         }
     }
 }

@@ -68,6 +68,9 @@ public class ImxHost extends Host {
         try {
             log.debug(String.format("Looking for xpath expression %s in %s", CONTINUE_BUTTON_XPATH, url));
             contDiv = xpathService.getAsNode(doc, CONTINUE_BUTTON_XPATH);
+            if (contDiv == null) {
+                throw new HostException(CONTINUE_BUTTON_XPATH + " cannot be found");
+            }
             Node node = contDiv.getAttributes().getNamedItem("value");
             if (node != null) {
                 value = node.getTextContent();

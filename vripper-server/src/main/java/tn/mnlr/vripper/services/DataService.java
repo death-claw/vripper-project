@@ -5,15 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tn.mnlr.vripper.jpa.domain.Image;
-import tn.mnlr.vripper.jpa.domain.Metadata;
-import tn.mnlr.vripper.jpa.domain.Post;
-import tn.mnlr.vripper.jpa.domain.Queued;
+import tn.mnlr.vripper.jpa.domain.*;
 import tn.mnlr.vripper.jpa.domain.enums.Status;
 import tn.mnlr.vripper.jpa.repositories.IImageRepository;
 import tn.mnlr.vripper.jpa.repositories.IMetadataRepository;
 import tn.mnlr.vripper.jpa.repositories.IPostRepository;
 import tn.mnlr.vripper.jpa.repositories.IQueuedRepository;
+import tn.mnlr.vripper.jpa.repositories.impl.EventRepository;
 
 import java.util.Collection;
 import java.util.List;
@@ -29,14 +27,16 @@ public class DataService {
     private final IQueuedRepository queuedRepository;
     private final IMetadataRepository metadataRepository;
     private final SettingsService settingsService;
+    private final EventRepository eventRepository;
 
     @Autowired
-    public DataService(IPostRepository postRepository, IImageRepository imageRepository, IQueuedRepository queuedRepository, IMetadataRepository metadataRepository, SettingsService settingsService) {
+    public DataService(IPostRepository postRepository, IImageRepository imageRepository, IQueuedRepository queuedRepository, IMetadataRepository metadataRepository, SettingsService settingsService, EventRepository eventRepository) {
         this.postRepository = postRepository;
         this.imageRepository = imageRepository;
         this.queuedRepository = queuedRepository;
         this.metadataRepository = metadataRepository;
         this.settingsService = settingsService;
+        this.eventRepository = eventRepository;
     }
 
     private void save(Post post) {
@@ -142,7 +142,7 @@ public class DataService {
         return imageRepository.findByPostId(postId);
     }
 
-    public Iterable<Post> findAllPosts() {
+    public List<Post> findAllPosts() {
         return postRepository.findAll();
     }
 
@@ -158,7 +158,7 @@ public class DataService {
         return queuedRepository.findByThreadId(threadId);
     }
 
-    public Iterable<Queued> findAllQueued() {
+    public List<Queued> findAllQueued() {
         return queuedRepository.findAll();
     }
 
@@ -174,9 +174,11 @@ public class DataService {
         return queuedRepository.findById(aLong);
     }
 
-    public void setMetadata(Post post, Metadata metadata) {
-        metadata.setPostIdRef(post.getId());
-        metadataRepository.save(metadata);
+    public synchronized void setMetadata(Post post, Metadata metadata) {
+        if (metadataRepository.findByPostId(post.getPostId()).isEmpty()) {
+            metadata.setPostIdRef(post.getId());
+            metadataRepository.save(metadata);
+        }
     }
 
     public Optional<Metadata> findMetadataByPostId(String postId) {
@@ -209,5 +211,17 @@ public class DataService {
 
     public void updatePostThanked(boolean thanked, Long id) {
         postRepository.updateThanked(thanked, id);
+    }
+
+    public Optional<Event> findEventById(Long id) {
+        return eventRepository.findById(id);
+    }
+
+    public List<Event> findAllEvents() {
+        return eventRepository.findAll();
+    }
+
+    public void clearQueueLinks() {
+        queuedRepository.deleteAll();
     }
 }

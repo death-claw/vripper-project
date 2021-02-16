@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import tn.mnlr.vripper.event.PostRemoveEvent;
 import tn.mnlr.vripper.event.PostUpdateEvent;
@@ -13,13 +14,11 @@ import tn.mnlr.vripper.jpa.repositories.IPostRepository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class PostRepository implements IPostRepository, ApplicationEventPublisherAware {
 
     private final JdbcTemplate jdbcTemplate;
-    private final AtomicLong counter = new AtomicLong(0);
     private ApplicationEventPublisher applicationEventPublisher;
 
     @Autowired
@@ -28,21 +27,15 @@ public class PostRepository implements IPostRepository, ApplicationEventPublishe
 
     }
 
-    @Override
-    public void init() {
-        Long maxId = jdbcTemplate.queryForObject(
-                "SELECT MAX(ID) FROM POST",
-                Long.class
-        );
-        if (maxId == null) {
-            maxId = 0L;
-        }
-        counter.set(maxId);
+    private synchronized Long nextId() {
+        return jdbcTemplate.queryForObject(
+                "CALL NEXT VALUE FOR SEQ_POST",
+                Long.class);
     }
 
     @Override
     public Post save(Post post) {
-        long id = counter.incrementAndGet();
+        long id = nextId();
         jdbcTemplate.update(
                 "INSERT INTO POST (ID, DONE, FORUM, HOSTS, POST_FOLDER_NAME, POST_ID, PREVIEWS, SECURITY_TOKEN, STATUS, THANKED, THREAD_ID, THREAD_TITLE, TITLE, TOTAL, URL) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 id,
@@ -69,7 +62,7 @@ public class PostRepository implements IPostRepository, ApplicationEventPublishe
     @Override
     public Optional<Post> findByPostId(String postId) {
         List<Post> posts = jdbcTemplate.query(
-                "SELECT metadata.*,post.* FROM METADATA metadata FULL JOIN POST post ON metadata.POST_ID_REF = post.ID WHERE POST_ID = ?",
+                "SELECT metadata.*,post.* FROM METADATA metadata FULL JOIN POST post ON metadata.POST_ID_REF = post.ID WHERE post.POST_ID = ?",
                 new PostRowMapper(),
                 postId);
         if (posts.isEmpty()) {
@@ -82,7 +75,7 @@ public class PostRepository implements IPostRepository, ApplicationEventPublishe
     @Override
     public List<String> findCompleted() {
         return jdbcTemplate.query(
-                "SELECT POST_ID FROM POST WHERE status = 'COMPLETE' AND done >= total",
+                "SELECT POST_ID FROM POST AS post WHERE status = 'COMPLETE' AND done >= total",
                 ((rs, rowNum) -> rs.getString("POST_ID"))
         );
     }
@@ -189,7 +182,7 @@ public class PostRepository implements IPostRepository, ApplicationEventPublishe
     }
 
     @Override
-    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+    public void setApplicationEventPublisher(@NonNull ApplicationEventPublisher applicationEventPublisher) {
         this.applicationEventPublisher = applicationEventPublisher;
     }
 }

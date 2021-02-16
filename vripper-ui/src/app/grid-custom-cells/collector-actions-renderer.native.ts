@@ -32,14 +32,14 @@ export class CollectorActionsRendererNative implements ICellRendererComp {
     this.selectButton = document.createElement('button');
     this.selectButton.classList.add('mat-icon-button', 'mat-button-base', 'cell-icon');
     this.selectButton.setAttribute('style', 'width: auto; height: 24px; display: flex; align-items: center');
-    this.selectButton.innerHTML = `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="currentColor" d="M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M20,16H8V4H20V16M16,20V22H4A2,2 0 0,1 2,20V7H4V20H16M18.53,8.06L17.47,7L12.59,11.88L10.47,9.76L9.41,10.82L12.59,14L18.53,8.06Z" /></svg><span>Select</span>`;
+    this.selectButton.innerHTML = `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="currentColor" d="M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M20,16H8V4H20V16M16,20V22H4A2,2 0 0,1 2,20V7H4V20H16M18.53,8.06L17.47,7L12.59,11.88L10.47,9.76L9.41,10.82L12.59,14L18.53,8.06Z" /></svg><span style="margin-left: 5px">Select</span>`;
     this.selectSpan.append(this.selectButton);
 
     this.deleteSpan = document.createElement('span');
     this.deleteButton = document.createElement('button');
     this.deleteButton.classList.add('mat-icon-button', 'mat-button-base', 'cell-icon');
     this.deleteButton.setAttribute('style', 'width: auto; height: 24px; display: flex; align-items: center');
-    this.deleteButton.innerHTML = `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" /></svg><span>Remove</span>`;
+    this.deleteButton.innerHTML = `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" /></svg><span style="margin-left: 5px">Remove</span>`;
     this.deleteSpan.append(this.deleteButton);
 
     this.gui.append(this.selectSpan, this.deleteSpan);

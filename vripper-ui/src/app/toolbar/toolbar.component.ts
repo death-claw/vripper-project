@@ -17,6 +17,9 @@ import {RowNode} from 'ag-grid-community';
 import {RemoveResponse} from '../domain/remove-response.model';
 import {PostId} from '../domain/post-id.model';
 import {PostsService} from '../services/posts.service';
+import {HomeTabsService} from '../services/home-tabs.service';
+import {LinkCollectorService} from '../services/link-collector.service';
+import {EventLogService} from '../services/event-log.service';
 
 @Component({
   selector: 'app-toolbar',
@@ -30,6 +33,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
   selected: RowNode[] = [];
   subscriptions: Subscription[] = [];
+  tabIndex: number;
+  searchModel: string;
 
   constructor(
     private serverService: ServerService,
@@ -41,8 +46,15 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     private breakpointObserver: BreakpointObserver,
     private ws: WsConnectionService,
     private selectionService: SelectionService,
-    private postsDataService: PostsService
+    private postsDataService: PostsService,
+    public homeTabsService: HomeTabsService,
+    public linkCollectorService: LinkCollectorService,
+    public eventLogService: EventLogService,
   ) {
+    this.homeTabsService.index.subscribe(e => {
+      this.tabIndex = e;
+      this.search(this.searchModel);
+    });
   }
 
   openSettings(): void {
@@ -71,7 +83,17 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   }
 
   search(event) {
-    this.postsDataService.search(event);
+    switch (this.tabIndex) {
+      case 0:
+        this.postsDataService.search(event);
+        break;
+      case 1:
+        this.linkCollectorService.search(event);
+        break;
+      case 2:
+        this.eventLogService.search(event);
+        break;
+    }
   }
 
   remove() {
@@ -148,6 +170,36 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     this.ngZone.run(() => {
       this.httpClient.post<RemoveAllResponse>(this.serverService.baseUrl + '/post/clear/all', {}).subscribe(
         data => {
+        },
+        error => {
+          this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
+            duration: 5000
+          });
+        }
+      );
+    });
+  }
+
+  clearLinkCollector() {
+    this.ngZone.run(() => {
+      this.httpClient.get<void>(this.serverService.baseUrl + '/grab/clear', {}).subscribe(
+        () => {
+          this.linkCollectorService.clear();
+        },
+        error => {
+          this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
+            duration: 5000
+          });
+        }
+      );
+    });
+  }
+
+  clearEventLogs() {
+    this.ngZone.run(() => {
+      this.httpClient.get<void>(this.serverService.baseUrl + '/events/clear', {}).subscribe(
+        () => {
+          this.eventLogService.clear();
         },
         error => {
           this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {

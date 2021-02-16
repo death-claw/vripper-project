@@ -27,6 +27,8 @@ import {AlternativeTitleComponent} from './posts/alternative-title/alternative-t
 import {NgxElectronModule} from 'ngx-electron';
 import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
+import {EventLogComponent} from './event-log/event-log.component';
+import {EventLogMessageDialogComponent} from './event-log/message-dialog/event-log-message-dialog.component';
 
 @NgModule({
   declarations: [
@@ -45,6 +47,8 @@ import {DomSanitizer} from '@angular/platform-browser';
     MultiPostGridComponent,
     PostContextMenuComponent,
     AlternativeTitleComponent,
+    EventLogComponent,
+    EventLogMessageDialogComponent
   ],
   imports: [
     BrowserAnimationsModule,

@@ -7,6 +7,7 @@ import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.jpa.domain.Post;
+import tn.mnlr.vripper.services.SettingsService;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -25,7 +26,6 @@ class ApiPostHandler extends DefaultHandler {
     private final Set<Image> images = new HashSet<>();
     private Set<String> previews = new HashSet<>();
     private String threadTitle;
-    private String postTitle;
     private String forum;
     private String userHash;
     private int index = 0;
@@ -35,8 +35,9 @@ class ApiPostHandler extends DefaultHandler {
     ApiPostHandler(String threadId, String postId) {
         this.threadId = threadId;
         this.postId = postId;
-        this.postUrl = String.format("https://vipergirls.to/threads/%s/?p=%s&viewfull=1#post%s", this.threadId, this.postId, this.postId);
-        this.supportedHosts = SpringContext.getBeansOfType(Host.class).values();
+        supportedHosts = SpringContext.getBeansOfType(Host.class).values();
+        SettingsService settingsService = SpringContext.getBean(SettingsService.class);
+        postUrl = String.format("%s/threads/%s/?p=%s&viewfull=1#post%s", settingsService.getSettings().getVProxy(), this.threadId, this.postId, this.postId);
     }
 
 
@@ -62,7 +63,7 @@ class ApiPostHandler extends DefaultHandler {
                 threadTitle = attributes.getValue("title").trim();
                 break;
             case "post":
-                postTitle = Optional.ofNullable(attributes.getValue("title")).map(e -> e.trim().isEmpty() ? null : e.trim()).orElse(threadTitle);
+                String postTitle = Optional.ofNullable(attributes.getValue("title")).map(e -> e.trim().isEmpty() ? null : e.trim()).orElse(threadTitle);
                 parsedPost = new Post(
                         postTitle,
                         postUrl,

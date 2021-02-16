@@ -8,6 +8,8 @@ import tn.mnlr.vripper.exception.ValidationException;
 import tn.mnlr.vripper.services.SettingsService;
 import tn.mnlr.vripper.web.restendpoints.exceptions.BadRequestException;
 
+import java.util.List;
+
 @RestController
 @Slf4j
 @CrossOrigin(value = "*")
@@ -35,7 +37,7 @@ public class SettingsRestEndpoint {
 
     @PostMapping("/settings")
     @ResponseStatus(value = HttpStatus.OK)
-    public SettingsService.Settings postSettings(@RequestBody SettingsService.Settings settings) throws Exception {
+    public SettingsService.Settings postSettings(@RequestBody SettingsService.Settings settings) {
 
         try {
             this.settingsService.check(settings);
@@ -53,5 +55,11 @@ public class SettingsRestEndpoint {
     public SettingsService.Settings getAppSettingsService() {
 
         return settingsService.getSettings();
+    }
+
+    @GetMapping("/settings/proxies")
+    @ResponseStatus(value = HttpStatus.OK)
+    public List<String> mirrors() {
+        return settingsService.getProxies();
     }
 }

@@ -67,14 +67,18 @@ export class MultiPostGridComponent implements OnDestroy {
       overlayNoRowsTemplate: '<span></span>',
       getRowNodeId: data => data['threadId'],
       onGridReady: () => {
+        this.linkCollectorService.setGridApi(this.gridOptions.api);
         this.dataSource = new MultiPostGridDataSource(this.wsConnection, this.gridOptions, this.zone);
         this.dataSource.connect();
       },
       onRowDataUpdated: () => this.linkCollectorService.setCount(this.gridOptions.api.getDisplayedRowCount()),
+      onRowDataChanged: () => this.linkCollectorService.setCount(this.gridOptions.api.getDisplayedRowCount()),
     };
   }
 
   ngOnDestroy(): void {
-    this.dataSource.disconnect();
+    if (this.dataSource) {
+      this.dataSource.disconnect();
+    }
   }
 }

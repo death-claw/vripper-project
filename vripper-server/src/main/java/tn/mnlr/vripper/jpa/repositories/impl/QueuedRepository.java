@@ -12,13 +12,11 @@ import tn.mnlr.vripper.jpa.repositories.IQueuedRepository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class QueuedRepository implements IQueuedRepository, ApplicationEventPublisherAware {
 
     private final JdbcTemplate jdbcTemplate;
-    private final AtomicLong counter = new AtomicLong(0);
     private ApplicationEventPublisher applicationEventPublisher;
 
     @Autowired
@@ -26,21 +24,15 @@ public class QueuedRepository implements IQueuedRepository, ApplicationEventPubl
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    @Override
-    public void init() {
-        Long maxId = jdbcTemplate.queryForObject(
-                "SELECT MAX(ID) FROM QUEUED",
-                Long.class
-        );
-        if (maxId == null) {
-            maxId = 0L;
-        }
-        counter.set(maxId);
+    private synchronized Long nextId() {
+        return jdbcTemplate.queryForObject(
+                "CALL NEXT VALUE FOR SEQ_QUEUED",
+                Long.class);
     }
 
     @Override
     public Queued save(Queued queued) {
-        long id = counter.incrementAndGet();
+        long id = nextId();
         jdbcTemplate.update(
                 "INSERT INTO QUEUED (ID, TOTAL, LINK, LOADING, POST_ID, THREAD_ID) values (?,?,?,?,?,?)",
                 id,
@@ -99,6 +91,11 @@ public class QueuedRepository implements IQueuedRepository, ApplicationEventPubl
         );
         applicationEventPublisher.publishEvent(new QueuedRemoveEvent(QueuedRepository.class, threadId));
         return mutationCount;
+    }
+
+    @Override
+    public void deleteAll() {
+        jdbcTemplate.update("DELETE FROM QUEUED");
     }
 
     @Override

@@ -8,8 +8,6 @@ public interface IMetadataRepository extends IRepository {
 
     Metadata save(Metadata metadata);
 
-    Optional<Metadata> findById(Long id);
-
     Optional<Metadata> findByPostId(String postId);
 
     int deleteByPostId(String postId);

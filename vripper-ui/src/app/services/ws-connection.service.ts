@@ -12,6 +12,7 @@ import {GlobalState} from '../domain/global-state.model';
 import {map, share} from 'rxjs/operators';
 import {RxStomp, RxStompConfig, RxStompState} from '@stomp/rx-stomp';
 import {ElectronService} from 'ngx-electron';
+import {EventLog} from '../domain/event.model';
 
 @Injectable({
   providedIn: 'root'
@@ -22,10 +23,12 @@ export class WsConnectionService {
   private speed: Observable<DownloadSpeed>;
   private user: Observable<LoggedUser>;
   private posts: Observable<Array<Post>>;
+  private events: Observable<Array<EventLog>>;
   private postDetails: Observable<Array<Photo>>;
   private multiPostModels: Observable<Array<MultiPostModel>>;
   private queuedRemove: Observable<Array<string>>;
   private postsRemove: Observable<Array<string>>;
+  private eventsRemove: Observable<Array<number>>;
   private postIdDetails: string;
 
   private connectionState$: Subject<RxStompState> = new BehaviorSubject(RxStompState.CLOSED);
@@ -57,6 +60,14 @@ export class WsConnectionService {
 
   get postsRemove$(): Observable<string[]> {
     return this.postsRemove;
+  }
+
+  get events$(): Observable<EventLog[]> {
+    return this.events;
+  }
+
+  get eventsRemove$(): Observable<number[]> {
+    return this.eventsRemove;
   }
 
   get queuedRemove$(): Observable<string[]> {
@@ -121,6 +132,13 @@ export class WsConnectionService {
       share()
     );
 
+    this.eventsRemove = this.rxStomp.watch('/topic/events/deleted').pipe(
+      map(e => {
+        return JSON.parse(e.body);
+      }),
+      share()
+    );
+
     this.queuedRemove = this.rxStomp.watch('/topic/queued/deleted').pipe(
       map(e => {
         return JSON.parse(e.body);
@@ -172,6 +190,25 @@ export class WsConnectionService {
           );
         });
         return posts;
+      }),
+      share()
+    );
+
+    this.events = this.rxStomp.watch('/topic/events').pipe(
+      map(e => {
+        const events: Array<EventLog> = [];
+        (<Array<any>>JSON.parse(e.body)).forEach(element => {
+          events.push(
+            new EventLog(
+              element.id,
+              element.type,
+              element.status,
+              element.time,
+              element.message
+            )
+          );
+        });
+        return events;
       }),
       share()
     );

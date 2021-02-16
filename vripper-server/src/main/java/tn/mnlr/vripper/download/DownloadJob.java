@@ -45,7 +45,7 @@ public class DownloadJob implements CheckedRunnable {
     private final Image image;
     @Getter
     private final Post post;
-    private boolean stopped = false;
+    private volatile boolean stopped = false;
     @Getter
     private boolean finished = false;
 

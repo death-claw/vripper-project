@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.simp.annotation.SubscribeMapping;
 import org.springframework.stereotype.Controller;
+import tn.mnlr.vripper.jpa.domain.Event;
 import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.Queued;
@@ -17,8 +18,6 @@ import tn.mnlr.vripper.services.domain.GlobalState;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 @Controller
 public class DataController {
@@ -53,7 +52,7 @@ public class DataController {
 
     @SubscribeMapping("/posts")
     public Collection<Post> posts() {
-        return StreamSupport.stream(dataService.findAllPosts().spliterator(), false).collect(Collectors.toList());
+        return dataService.findAllPosts();
     }
 
     @SubscribeMapping("/images/{postId}")
@@ -63,7 +62,12 @@ public class DataController {
 
     @SubscribeMapping("/queued")
     public Collection<Queued> queued() {
-        return StreamSupport.stream(dataService.findAllQueued().spliterator(), false).collect(Collectors.toList());
+        return dataService.findAllQueued();
+    }
+
+    @SubscribeMapping("/events")
+    public Collection<Event> events() {
+        return dataService.findAllEvents();
     }
 
     @Getter

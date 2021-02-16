@@ -47,6 +47,7 @@ export class MultiPostGridDataSource {
   }
 
   disconnect() {
+    console.log('Disconnecting from link collector datasource');
     this.subscriptions.forEach(e => e.unsubscribe());
   }
 }

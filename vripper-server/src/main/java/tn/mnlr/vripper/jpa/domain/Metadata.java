@@ -1,6 +1,5 @@
 package tn.mnlr.vripper.jpa.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -13,12 +12,11 @@ import java.util.List;
 @NoArgsConstructor
 public class Metadata {
 
-    @JsonIgnore
-    private Long id;
+    private Long postIdRef;
 
-    private List<String> resolvedNames = Collections.emptyList();
+    private String PostId;
 
     private String postedBy;
 
-    private Long postIdRef;
+    private List<String> resolvedNames = Collections.emptyList();
 }

@@ -8,6 +8,7 @@ import {MatSnackBar} from '@angular/material/snack-bar';
 import {ServerService} from '../services/server-service';
 import {ElectronService} from 'ngx-electron';
 import {Settings} from '../domain/settings.model';
+import {EMPTY, Observable} from 'rxjs';
 import OpenDialogReturnValue = Electron.OpenDialogReturnValue;
 
 @Component({
@@ -20,12 +21,15 @@ export class SettingsComponent implements OnInit {
   loading = false;
   darkTheme = false;
 
+  mirrors: Observable<string[]> = EMPTY;
+
   viperGirlsSettingsForm = new FormGroup({
     vLogin: new FormControl(false),
     vUsername: new FormControl(''),
     vPassword: new FormControl(''),
     vThanks: new FormControl(false),
-    leaveThanksOnStart: new FormControl(false)
+    leaveThanksOnStart: new FormControl(false),
+    vProxy: new FormControl('')
   });
 
   downloadSettingsForm = new FormGroup({
@@ -49,6 +53,10 @@ export class SettingsComponent implements OnInit {
     desktopClipboard: new FormControl(false)
   });
 
+  eventLogSettingsForm = new FormGroup({
+    maxEventLog: new FormControl('')
+  });
+
   constructor(
     private httpClient: HttpClient,
     private _snackBar: MatSnackBar,
@@ -70,12 +78,14 @@ export class SettingsComponent implements OnInit {
 
   ngOnInit() {
     this.darkTheme = this.appService.darkTheme;
+    this.mirrors = this.httpClient.get<string[]>(this.serverService.baseUrl + '/settings/proxies');
     this.httpClient.get<Settings>(this.serverService.baseUrl + '/settings')
       .subscribe(data => {
         this.viperGirlsSettingsForm.reset(data);
         this.downloadSettingsForm.reset(data);
         this.connectionSettingsForm.reset(data);
         this.desktopSettingsForm.reset(data);
+        this.eventLogSettingsForm.reset(data);
       }, error => {
         this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', null, {
           duration: 5000
@@ -107,7 +117,8 @@ export class SettingsComponent implements OnInit {
         ...this.downloadSettingsForm.value,
         ...this.connectionSettingsForm.value,
         darkTheme: this.darkTheme,
-        ...this.desktopSettingsForm.value
+        ...this.desktopSettingsForm.value,
+        ...this.eventLogSettingsForm.value
       })
       .pipe(finalize(() => (this.loading = false)))
       .subscribe(
@@ -119,6 +130,7 @@ export class SettingsComponent implements OnInit {
           this.downloadSettingsForm.reset(data);
           this.connectionSettingsForm.reset(data);
           this.desktopSettingsForm.reset(data);
+          this.eventLogSettingsForm.reset(data);
           this.clipboardService.init(data);
           this.updateSettings(data);
         },

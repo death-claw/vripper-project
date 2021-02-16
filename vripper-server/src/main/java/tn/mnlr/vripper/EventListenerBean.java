@@ -27,10 +27,7 @@ public class EventListenerBean {
 
     @EventListener
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        repositorySet.forEach(IRepository::init);
         dataService.setDownloadingToStopped();
         init = true;
     }
-
-
 }

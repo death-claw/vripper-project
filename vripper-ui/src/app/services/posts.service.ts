@@ -1,11 +1,22 @@
 import {Injectable} from '@angular/core';
 import {GridApi} from 'ag-grid-community';
+import {BehaviorSubject, Observable, Subject} from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PostsService {
   private api: GridApi;
+
+  private _count$: Subject<number> = new BehaviorSubject(0);
+
+  get count(): Observable<number> {
+    return this._count$.asObservable();
+  }
+
+  setCount(count: number) {
+    this._count$.next(count);
+  }
 
   public setGridApi(api: GridApi) {
     this.api = api;
@@ -23,6 +34,8 @@ export class PostsService {
   }
 
   search(event) {
-    this.api.setQuickFilter(event);
+    if (this.api) {
+      this.api.setQuickFilter(event);
+    }
   }
 }

@@ -12,6 +12,7 @@ import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.jpa.domain.Queued;
 import tn.mnlr.vripper.services.ConnectionService;
+import tn.mnlr.vripper.services.SettingsService;
 import tn.mnlr.vripper.services.VGAuthService;
 
 import javax.xml.parsers.SAXParserFactory;
@@ -23,17 +24,17 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 public class ApiThreadParser {
 
-    private static final String VR_API = "https://vipergirls.to/vr.php";
-
     private static final SAXParserFactory factory = SAXParserFactory.newInstance();
     private final Queued queued;
     private final ConnectionService cm;
     private final VGAuthService VGAuthService;
+    private final SettingsService settingsService;
 
     public ApiThreadParser(Queued queued) {
         this.queued = queued;
-        this.cm = SpringContext.getBean(ConnectionService.class);
-        this.VGAuthService = SpringContext.getBean(VGAuthService.class);
+        cm = SpringContext.getBean(ConnectionService.class);
+        VGAuthService = SpringContext.getBean(VGAuthService.class);
+        settingsService = SpringContext.getBean(SettingsService.class);
     }
 
     public List<MultiPostItem> parse() throws PostParseException {
@@ -41,7 +42,7 @@ public class ApiThreadParser {
         log.debug(String.format("Parsing thread %s", queued));
         HttpGet httpGet;
         try {
-            URIBuilder uriBuilder = new URIBuilder(VR_API);
+            URIBuilder uriBuilder = new URIBuilder(settingsService.getSettings().getVProxy() + "/vr.php");
             uriBuilder.setParameter("t", queued.getThreadId());
             httpGet = cm.buildHttpGet(uriBuilder.build(), null);
         } catch (URISyntaxException e) {

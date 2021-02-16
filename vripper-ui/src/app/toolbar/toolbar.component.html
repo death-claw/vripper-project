@@ -4,37 +4,50 @@
       <button (click)="scan()" class="add-button" color="primary" mat-icon-button matTooltip="Add links">
         <mat-icon>add</mat-icon>
       </button>
-      <button (click)="remove()" [disabled]="disableSelection$ | async" mat-icon-button
-              matTooltip="Remove selected">
-        <mat-icon>delete</mat-icon>
-      </button>
-      <button (click)="restart()" [disabled]="disableSelection$ | async" mat-icon-button
-              matTooltip="Start selected">
-        <mat-icon>play_arrow</mat-icon>
-      </button>
-      <button (click)="stop()" [disabled]="disableSelection$ | async" mat-icon-button
-              matTooltip="Stop selected">
-        <mat-icon>pause</mat-icon>
-      </button>
-      <button (click)="rename()" [disabled]="disableSelection$ | async"
-              mat-icon-button
-              matTooltip="Rename selected to first alternative title">
-        <mat-icon>edit</mat-icon>
-      </button>
-      <div class="or-spacer-vertical left">
-        <div class="mask"></div>
-      </div>
-      <button (click)="clear()" mat-icon-button matTooltip="Clear completed">
-        <mat-icon>clear_all</mat-icon>
-      </button>
-      <button (click)="stopAll()" mat-icon-button matTooltip="Stop All">
-        <mat-icon>stop</mat-icon>
-      </button>
+      <ng-container *ngIf="(homeTabsService.index | async) === 0" id="download-actions">
+        <button (click)="remove()" [disabled]="disableSelection$ | async" mat-icon-button
+                matTooltip="Remove selected">
+          <mat-icon>delete</mat-icon>
+        </button>
+        <button (click)="restart()" [disabled]="disableSelection$ | async" mat-icon-button
+                matTooltip="Start selected">
+          <mat-icon>play_arrow</mat-icon>
+        </button>
+        <button (click)="stop()" [disabled]="disableSelection$ | async" mat-icon-button
+                matTooltip="Stop selected">
+          <mat-icon>pause</mat-icon>
+        </button>
+        <button (click)="rename()" [disabled]="disableSelection$ | async"
+                mat-icon-button
+                matTooltip="Rename selected to first alternative title">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <div class="or-spacer-vertical left">
+          <div class="mask"></div>
+        </div>
+        <button (click)="clear()" mat-icon-button matTooltip="Clear completed">
+          <mat-icon>clear_all</mat-icon>
+        </button>
+        <button (click)="stopAll()" mat-icon-button matTooltip="Stop All">
+          <mat-icon>stop</mat-icon>
+        </button>
+      </ng-container>
+      <ng-container *ngIf="(homeTabsService.index | async) === 1" id="link-collector-actions">
+        <button (click)="clearLinkCollector()" mat-icon-button matTooltip="Remove all">
+          <mat-icon>clear_all</mat-icon>
+        </button>
+      </ng-container>
+      <ng-container *ngIf="(homeTabsService.index | async) === 2" id="event-logs-actions">
+        <button (click)="clearEventLogs()" mat-icon-button matTooltip="Clear all">
+          <mat-icon>clear_all</mat-icon>
+        </button>
+      </ng-container>
     </div>
     <div fxFlex="grow" fxHide.lt-md id="global-search">
       <form autocomplete="off">
         <mat-form-field class="search-field">
-          <input (ngModelChange)="search($event)" matInput name="search" ngModel placeholder="Search"/>
+          <input (ngModelChange)="search($event)" [(ngModel)]="searchModel" matInput name="search" ngModel
+                 placeholder="Search"/>
           <mat-icon matSuffix>search</mat-icon>
         </mat-form-field>
       </form>

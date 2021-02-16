@@ -20,6 +20,7 @@ import reactor.core.publisher.Sinks;
 import tn.mnlr.vripper.exception.VripperException;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.listener.EmitHandler;
+import tn.mnlr.vripper.services.domain.tasks.LeaveThanksRunnable;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -33,7 +34,6 @@ public class VGAuthService {
     private final ConnectionService cm;
     private final SettingsService settingsService;
     private final ThreadPoolService threadPoolService;
-    private final DataService dataService;
 
     private final Disposable disposable;
 
@@ -46,11 +46,10 @@ public class VGAuthService {
     private String loggedUser = "";
 
     @Autowired
-    public VGAuthService(ConnectionService cm, SettingsService settingsService, ThreadPoolService threadPoolService, DataService dataService) {
+    public VGAuthService(ConnectionService cm, SettingsService settingsService, ThreadPoolService threadPoolService) {
         this.cm = cm;
         this.settingsService = settingsService;
         this.threadPoolService = threadPoolService;
-        this.dataService = dataService;
         disposable = settingsService.getSettingsFlux().subscribe(settings -> this.authenticate());
     }
 
@@ -94,7 +93,7 @@ public class VGAuthService {
             return;
         }
 
-        HttpPost postAuth = cm.buildHttpPost("https://vipergirls.to/login.php?do=login", null);
+        HttpPost postAuth = cm.buildHttpPost(settingsService.getSettings().getVProxy() + "/login.php?do=login", null);
         List<NameValuePair> params = new ArrayList<>();
         params.add(new BasicNameValuePair("vb_login_username", username));
 
@@ -107,12 +106,12 @@ public class VGAuthService {
             context.getCookieStore().clear();
             loggedUser = "";
             sink.emitNext(loggedUser, EmitHandler.RETRY);
-            log.error("Failed to authenticate user with vipergirls.to", e);
+            log.error("Failed to authenticate user with " + settingsService.getSettings().getVProxy(), e);
             return;
         }
 
-        postAuth.addHeader("Referer", "https://vipergirls.to/");
-        postAuth.addHeader("Host", "vipergirls.to");
+        postAuth.addHeader("Referer", settingsService.getSettings().getVProxy());
+        postAuth.addHeader("Host", settingsService.getSettings().getVProxy().replace("https://", "").replace("http://", ""));
 
         CloseableHttpClient client = cm.getClient().build();
 
@@ -125,14 +124,14 @@ public class VGAuthService {
             log.debug(String.format("Authentication with ViperGirls response body:%n%s", responseBody));
             EntityUtils.consumeQuietly(response.getEntity());
             if (context.getCookieStore().getCookies().stream().map(Cookie::getName).noneMatch(e -> e.equals("vg_userid"))) {
-                log.error("Failed to authenticate user with vipergirls.to, missing vg_userid cookie");
+                log.error(String.format("Failed to authenticate user with %s, missing vg_userid cookie", settingsService.getSettings().getVProxy()));
                 return;
             }
         } catch (Exception e) {
             context.getCookieStore().clear();
             loggedUser = "";
             sink.emitNext(loggedUser, EmitHandler.RETRY);
-            log.error("Failed to authenticate user with vipergirls.to", e);
+            log.error("Failed to authenticate user with " + settingsService.getSettings().getVProxy(), e);
             return;
         }
         authenticated = true;
@@ -142,62 +141,6 @@ public class VGAuthService {
     }
 
     public void leaveThanks(Post post) {
-        if (!settingsService.getSettings().getVLogin()) {
-            log.debug("Authentication with ViperGirls option is disabled");
-            return;
-        }
-        if (!settingsService.getSettings().getVThanks()) {
-            log.debug("Leave thanks option is disabled");
-            return;
-        }
-        if (!authenticated) {
-            log.error("You are not authenticated");
-            return;
-        }
-        if (post.isThanked()) {
-            log.debug("Already left a thanks");
-            return;
-        }
-        threadPoolService.getGeneralExecutor().submit(() -> {
-            try {
-                postThanks(post);
-            } catch (Exception e) {
-                log.error(String.format("Failed to leave a thanks for url %s, post id %s", post.getUrl(), post.getPostId()), e);
-            }
-        });
-    }
-
-    private void postThanks(Post post) throws VripperException {
-
-        HttpPost postThanks = cm.buildHttpPost("https://vipergirls.to/post_thanks.php", null);
-        List<NameValuePair> params = new ArrayList<>();
-        params.add(new BasicNameValuePair("do", "post_thanks_add"));
-        params.add(new BasicNameValuePair("using_ajax", "1"));
-        params.add(new BasicNameValuePair("p", post.getPostId()));
-        params.add(new BasicNameValuePair("securitytoken", post.getSecurityToken()));
-        try {
-            postThanks.setEntity(new UrlEncodedFormEntity(params));
-        } catch (Exception e) {
-            throw new VripperException(e);
-        }
-
-        postThanks.addHeader("Referer", "https://vipergirls.to/");
-        postThanks.addHeader("Host", "vipergirls.to");
-
-        CloseableHttpClient client = cm.getClient().build();
-
-        try (CloseableHttpResponse response = client.execute(postThanks, context)) {
-            if (response.getStatusLine().getStatusCode() / 100 == 2) {
-                post.setThanked(true);
-                dataService.updatePostThanked(post.isThanked(), post.getId());
-            }
-            EntityUtils.consumeQuietly(response.getEntity());
-        } catch (Exception e) {
-            throw new VripperException(e);
-        }
-
-        if (!post.isThanked()) {
-            throw new VripperException("Failed to leave");
-        }
+        threadPoolService.getGeneralExecutor().submit(new LeaveThanksRunnable(post, authenticated, context));
     }
 }
