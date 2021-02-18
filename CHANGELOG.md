@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.3.1] - 2021-02-18
+
+### Added
+
+- Add about menu
+
+### Changed
+
+- Fix README.md
+
 ## [3.3.0] - 2021-02-16
 
 ### Changed
