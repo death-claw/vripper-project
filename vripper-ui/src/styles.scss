@@ -32,12 +32,14 @@
 @import 'src/app/status-bar/status-bar.component.scss-theme';
 @import 'app/app.component.scss-theme.scss';
 @import 'src/app/toolbar/toolbar.component.scss-theme';
+@import 'src/app/about/about-component.component-scss-theme';
 @import 'grid-theme.scss';
 
 @mixin custom-components-theme($theme, $dark: false) {
   @include status-bar-component-theme($theme);
   @include app-component-theme($theme);
   @include toolbar-theme($theme, $dark);
+  @include about-component-theme($theme)
 }
 
 .dark-theme {

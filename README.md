@@ -1,4 +1,4 @@
-# Viper Ripper!
+# VRipper!
 
 This is my spin for a cross platform gallery ripper app for [vipergirls](https://vipergirls.to) website.
 The purpose of this project is to build a robust and clean application to conveniently download photo galleries using modern web technologies, Java + Spring boot for the back end and angular + electron for the front end.
@@ -15,8 +15,16 @@ Most people will be interested only on the desktop app, however if you have a na
 To build the server app:
 
     mvn clean install -DskipTests
+
 To build the desktop app:
 
     mvn clean install -Pelectron -DskipTests
 
-Maven will automatically handle front end compilation. However, for development, you will need to install a recent version of nodejs on your system.
+Maven will automatically handle front end compilation. However, for development, you will need to install a recent
+version of nodejs on your system.
+
+If you feel generous and want to support me, you can donate some coins, and I would be very grateful 🙏
+
+I accept Bitcoin (BTC) for donations, following is my address
+
+    bc1q9jzzw3st49r9vmxgtylq4vrd67cl7zfclf3lsq

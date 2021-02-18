@@ -29,6 +29,7 @@ import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {EventLogComponent} from './event-log/event-log.component';
 import {EventLogMessageDialogComponent} from './event-log/message-dialog/event-log-message-dialog.component';
+import {AboutComponent} from './about/about-component';
 
 @NgModule({
   declarations: [
@@ -48,7 +49,8 @@ import {EventLogMessageDialogComponent} from './event-log/message-dialog/event-l
     PostContextMenuComponent,
     AlternativeTitleComponent,
     EventLogComponent,
-    EventLogMessageDialogComponent
+    EventLogMessageDialogComponent,
+    AboutComponent
   ],
   imports: [
     BrowserAnimationsModule,

@@ -20,6 +20,7 @@ import {PostsService} from '../services/posts.service';
 import {HomeTabsService} from '../services/home-tabs.service';
 import {LinkCollectorService} from '../services/link-collector.service';
 import {EventLogService} from '../services/event-log.service';
+import {AboutComponent} from '../about/about-component';
 
 @Component({
   selector: 'app-toolbar',
@@ -236,5 +237,26 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscriptions.forEach(e => e.unsubscribe());
+  }
+
+  openAbout(): void {
+    const dialogRef = this.dialog.open(AboutComponent, {
+      width: '70%',
+      height: '70%',
+      maxWidth: '100vw',
+      maxHeight: '100vh'
+    });
+
+    const smallDialogSubscription = this.isExtraSmall.subscribe(result => {
+      if (result.matches) {
+        dialogRef.updateSize('100%', '100%');
+      } else {
+        dialogRef.updateSize('70%', '70%');
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      smallDialogSubscription.unsubscribe();
+    });
   }
 }
