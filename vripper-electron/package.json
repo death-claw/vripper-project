@@ -1,6 +1,6 @@
 {
   "name": "vripper-electron",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "description": "A ripper for vipergirls.to built using web technolgies",
   "main": "main.js",
   "author": "death-claw <53543762+death-claw@users.noreply.github.com>",
