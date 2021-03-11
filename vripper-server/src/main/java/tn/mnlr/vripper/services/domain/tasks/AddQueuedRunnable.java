@@ -69,15 +69,11 @@ public class AddQueuedRunnable implements Runnable {
             }
             eventRepository.update(event);
         } catch (Exception e) {
-            try {
-                String error = String.format("Error when adding multi-post link %s", queued.getLink());
-                log.error(error, e);
-                event.setMessage(error + "\n" + Utils.throwableToString(e));
-                event.setStatus(ERROR);
-                eventRepository.update(event);
-            } catch (Exception exp) {
-                log.error(exp.getMessage(), exp);
-            }
+            String error = String.format("Error when adding multi-post link %s", queued.getLink());
+            log.error(error, e);
+            event.setMessage(error + "\n" + Utils.throwableToString(e));
+            event.setStatus(ERROR);
+            eventRepository.update(event);
         }
     }
 }

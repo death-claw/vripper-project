@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
+import tn.mnlr.vripper.Utils;
 import tn.mnlr.vripper.jpa.domain.Event;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.Queued;
@@ -18,7 +19,6 @@ import tn.mnlr.vripper.services.domain.tasks.AddQueuedRunnable;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static tn.mnlr.vripper.jpa.domain.Event.Status.DONE;
@@ -44,8 +44,7 @@ public class PostService {
         CacheLoader<Queued, List<MultiPostItem>> loader = new CacheLoader<>() {
             @Override
             public List<MultiPostItem> load(@NonNull Queued multiPostItem) throws Exception {
-                ApiThreadParser apiThreadParser = new ApiThreadParser(multiPostItem);
-                return apiThreadParser.parse();
+                return new ApiThreadParser(multiPostItem).parse();
             }
         };
 
@@ -79,11 +78,11 @@ public class PostService {
                 event.setStatus(DONE);
                 event.setMessage("Loaded " + multiPostItems.size() + " posts from " + queued.getLink());
                 eventRepository.update(event);
-            } catch (ExecutionException e) {
+            } catch (Exception e) {
                 String error = String.format("Failed to parse link %s", queued.getLink());
                 log.error(error, e);
                 event.setStatus(Event.Status.ERROR);
-                event.setMessage(error + ": " + e.getMessage());
+                event.setMessage(error + "\n" + Utils.throwableToString(e));
                 eventRepository.update(event);
                 return null;
             }

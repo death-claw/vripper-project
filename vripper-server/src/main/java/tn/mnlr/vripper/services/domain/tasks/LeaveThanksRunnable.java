@@ -109,15 +109,11 @@ public class LeaveThanksRunnable implements Runnable {
             event.setStatus(Event.Status.DONE);
             eventRepository.update(event);
         } catch (Exception e) {
-            try {
-                String error = String.format("Failed to leave a thanks for %s", post.getUrl());
-                log.error(error, e);
-                event.setMessage(error + "\n" + Utils.throwableToString(e));
-                event.setStatus(Event.Status.ERROR);
-                eventRepository.update(event);
-            } catch (Exception exp) {
-                log.error(exp.getMessage(), exp);
-            }
+            String error = String.format("Failed to leave a thanks for %s", post.getUrl());
+            log.error(error, e);
+            event.setMessage(error + "\n" + Utils.throwableToString(e));
+            event.setStatus(Event.Status.ERROR);
+            eventRepository.update(event);
         }
     }
 }

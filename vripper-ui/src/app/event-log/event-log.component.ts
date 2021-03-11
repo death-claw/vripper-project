@@ -34,21 +34,19 @@ export class EventLogComponent implements OnDestroy {
           valueGetter: (params => {
             switch (params.data.type) {
               case 'POST':
-                return 'New gallery';
-              case 'QUEUED':
-                return 'New multi-post link';
+                return '🖼️ New gallery';
               case 'THANKS':
-                return 'Leave thanks';
+                return '👍 Sending a like ';
               case 'SCAN':
-                return 'Links scan';
+                return '🔍 Links scan';
               case 'METADATA':
-                return 'Fetching metadata';
               case 'METADATA_CACHE_MISS':
-                return 'Loading post metadata';
+                return '🗄️ Loading post metadata';
+              case 'QUEUED':
               case 'QUEUED_CACHE_MISS':
-                return 'Loading multi-post links';
+                return '📋 Loading multi-post link';
               case 'DOWNLOAD':
-                return 'Download';
+                return '📥 Download';
               default:
                 return params.data.type;
             }

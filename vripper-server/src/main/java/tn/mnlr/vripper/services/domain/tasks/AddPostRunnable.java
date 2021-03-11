@@ -125,15 +125,11 @@ public class AddPostRunnable implements Runnable {
             event.setStatus(Event.Status.DONE);
             eventRepository.update(event);
         } catch (Exception e) {
-            try {
-                String error = String.format("Error when adding gallery %s", link);
-                log.error(error, e);
-                event.setMessage(error + "\n" + Utils.throwableToString(e));
-                event.setStatus(ERROR);
-                eventRepository.update(event);
-            } catch (Exception exp) {
-                log.error(exp.getMessage(), exp);
-            }
+            String error = String.format("Error when adding gallery %s", link);
+            log.error(error, e);
+            event.setMessage(error + "\n" + Utils.throwableToString(e));
+            event.setStatus(ERROR);
+            eventRepository.update(event);
         }
     }
 }

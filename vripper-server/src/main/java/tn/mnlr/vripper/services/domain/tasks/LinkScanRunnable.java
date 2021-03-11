@@ -84,15 +84,11 @@ public class LinkScanRunnable implements Runnable {
                 }
                 eventRepository.update(event);
             } catch (Exception e) {
-                try {
-                    String error = "Error when scanning links";
-                    log.error(error, e);
-                    event.setMessage(error + "\n" + Utils.throwableToString(e));
-                    event.setStatus(ERROR);
-                    eventRepository.update(event);
-                } catch (Exception exp) {
-                    log.error(exp.getMessage(), exp);
-                }
+                String error = "Error when scanning links";
+                log.error(error, e);
+                event.setMessage(error + "\n" + Utils.throwableToString(e));
+                event.setStatus(ERROR);
+                eventRepository.update(event);
             }
         }
     }

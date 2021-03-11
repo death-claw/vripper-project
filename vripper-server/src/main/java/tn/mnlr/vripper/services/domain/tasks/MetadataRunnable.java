@@ -68,15 +68,11 @@ public class MetadataRunnable implements Runnable {
             event.setStatus(Event.Status.DONE);
             eventRepository.update(event);
         } catch (Exception e) {
-            try {
-                String message = String.format("Failed to fetch metadata for %s", post.getUrl());
-                log.error(message, e);
-                event.setMessage(message + "\n" + Utils.throwableToString(e));
-                event.setStatus(ERROR);
-                eventRepository.update(event);
-            } catch (Exception exp) {
-                log.error(exp.getMessage(), exp);
-            }
+            String message = String.format("Failed to fetch metadata for %s", post.getUrl());
+            log.error(message, e);
+            event.setMessage(message + "\n" + Utils.throwableToString(e));
+            event.setStatus(ERROR);
+            eventRepository.update(event);
         }
     }
 }

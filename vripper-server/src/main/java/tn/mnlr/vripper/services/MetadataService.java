@@ -15,6 +15,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import tn.mnlr.vripper.Utils;
 import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.jpa.domain.Event;
@@ -26,7 +27,6 @@ import tn.mnlr.vripper.services.domain.tasks.MetadataRunnable;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -76,11 +76,11 @@ public class MetadataService {
                 cachedMetadata = cache.get(key);
                 event.setStatus(Event.Status.DONE);
                 eventRepository.update(event);
-            } catch (ExecutionException e) {
+            } catch (Exception e) {
                 String error = "Failed to load metadata for " + post.getUrl();
                 log.error(error, e);
                 event.setStatus(Event.Status.ERROR);
-                event.setMessage(error + ": " + e.getMessage());
+                event.setMessage(error + "\n" + Utils.throwableToString(e));
                 eventRepository.update(event);
                 return null;
             }
