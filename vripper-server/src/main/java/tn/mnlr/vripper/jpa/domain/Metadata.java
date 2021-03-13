@@ -14,9 +14,18 @@ public class Metadata {
 
     private Long postIdRef;
 
-    private String PostId;
+    private String postId;
 
     private String postedBy;
 
     private List<String> resolvedNames = Collections.emptyList();
+
+    public static Metadata from(Metadata metadata) {
+        Metadata copy = new Metadata();
+        copy.postIdRef = metadata.postIdRef;
+        copy.postId = metadata.postId;
+        copy.postedBy = metadata.postedBy;
+        copy.resolvedNames = List.copyOf(metadata.resolvedNames);
+        return copy;
+    }
 }

@@ -1,14 +1,14 @@
 import {finalize} from 'rxjs/operators';
 import {AppService} from '../services/app.service';
 import {ClipboardService} from '../services/clipboard.service';
-import {ChangeDetectionStrategy, Component, NgZone, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {FormControl, FormGroup} from '@angular/forms';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {ServerService} from '../services/server-service';
 import {ElectronService} from 'ngx-electron';
 import {Settings} from '../domain/settings.model';
-import {EMPTY, Observable} from 'rxjs';
+import {EMPTY, Observable, Subscription} from 'rxjs';
 import OpenDialogReturnValue = Electron.OpenDialogReturnValue;
 
 @Component({
@@ -17,11 +17,13 @@ import OpenDialogReturnValue = Electron.OpenDialogReturnValue;
   styleUrls: ['./settings.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class SettingsComponent implements OnInit {
+export class SettingsComponent implements OnInit, OnDestroy {
   loading = false;
   darkTheme = false;
 
   mirrors: Observable<string[]> = EMPTY;
+
+  subscriptions: Subscription[] = [];
 
   viperGirlsSettingsForm = new FormGroup({
     vLogin: new FormControl(false),
@@ -66,6 +68,15 @@ export class SettingsComponent implements OnInit {
     private appService: AppService,
     private zone: NgZone
   ) {
+    this.subscriptions.push(this.viperGirlsSettingsForm.get('vThanks').valueChanges.subscribe(c => {
+      const formControl: FormControl = this.viperGirlsSettingsForm.get('leaveThanksOnStart') as FormControl;
+      if (!c) {
+        formControl.setValue(false);
+        formControl.disable();
+      } else {
+        formControl.enable();
+      }
+    }));
   }
 
   updateTheme() {
@@ -91,6 +102,10 @@ export class SettingsComponent implements OnInit {
           duration: 5000
         });
       });
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.forEach(s => s.unsubscribe());
   }
 
   browse() {

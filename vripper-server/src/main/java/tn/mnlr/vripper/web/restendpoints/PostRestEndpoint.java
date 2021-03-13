@@ -9,8 +9,12 @@ import tn.mnlr.vripper.download.DownloadService;
 import tn.mnlr.vripper.jpa.domain.Metadata;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.Queued;
-import tn.mnlr.vripper.services.*;
+import tn.mnlr.vripper.services.DataService;
+import tn.mnlr.vripper.services.PathService;
+import tn.mnlr.vripper.services.PostService;
+import tn.mnlr.vripper.services.ThreadPoolService;
 import tn.mnlr.vripper.services.domain.MultiPostItem;
+import tn.mnlr.vripper.services.domain.MultiPostScanResult;
 import tn.mnlr.vripper.services.domain.tasks.AddPostRunnable;
 import tn.mnlr.vripper.services.domain.tasks.LinkScanRunnable;
 import tn.mnlr.vripper.web.restendpoints.domain.*;
@@ -35,16 +39,14 @@ public class PostRestEndpoint {
     private final DownloadService downloadService;
     private final PostService postService;
     private final ThreadPoolService threadPoolService;
-    private final SettingsService settingsService;
 
     @Autowired
-    public PostRestEndpoint(DataService dataService, PathService pathService, DownloadService downloadService, PostService postService, ThreadPoolService threadPoolService, SettingsService settingsService) {
+    public PostRestEndpoint(DataService dataService, PathService pathService, DownloadService downloadService, PostService postService, ThreadPoolService threadPoolService) {
         this.dataService = dataService;
         this.pathService = pathService;
         this.downloadService = downloadService;
         this.postService = postService;
         this.threadPoolService = threadPoolService;
-        this.settingsService = settingsService;
     }
 
     @PostMapping("/post")
@@ -204,13 +206,17 @@ public class PostRestEndpoint {
     @ResponseStatus(value = HttpStatus.OK)
     public List<MultiPostItem> grab(@PathVariable("threadId") @NonNull String threadId) {
         synchronized (LOCK) {
-            Queued queued = dataService.findQueuedByThreadId(threadId).orElseThrow(() -> new NotFoundException(String.format("Unable to find links for threadId = %s", threadId)));
-            List<MultiPostItem> multiPostItems = postService.get(queued);
-            if (multiPostItems == null) {
-                log.error(String.format("Failed to get links for threadId = %s", threadId));
-                throw new ServerErrorException(String.format("Failed to get links for threadId = %s", threadId));
-            } else {
-                return multiPostItems;
+            try {
+                Queued queued = dataService.findQueuedByThreadId(threadId).orElseThrow(() -> new NotFoundException(String.format("Unable to find links for threadId = %s", threadId)));
+                MultiPostScanResult multiPostScanResult = postService.get(queued);
+                if (multiPostScanResult == null) {
+                    log.error(String.format("Failed to get links for threadId = %s", threadId));
+                    throw new ServerErrorException(String.format("Failed to get links for threadId = %s", threadId));
+                } else {
+                    return multiPostScanResult.getPosts();
+                }
+            } catch (Exception e) {
+                throw new ServerErrorException(String.format("Failed to get links for threadId = %s, %s", threadId, e.getMessage()));
             }
         }
     }

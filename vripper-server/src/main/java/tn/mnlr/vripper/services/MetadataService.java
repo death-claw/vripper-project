@@ -10,23 +10,19 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
-import tn.mnlr.vripper.Utils;
 import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.PostParseException;
-import tn.mnlr.vripper.jpa.domain.Event;
 import tn.mnlr.vripper.jpa.domain.Metadata;
 import tn.mnlr.vripper.jpa.domain.Post;
-import tn.mnlr.vripper.jpa.repositories.IEventRepository;
 import tn.mnlr.vripper.services.domain.tasks.MetadataRunnable;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -43,16 +39,13 @@ public class MetadataService {
     private final XpathService xpathService;
     private final Map<String, MetadataRunnable> fetchingMetadata = new ConcurrentHashMap<>();
     private final ThreadPoolService threadPoolService;
-    private final IEventRepository eventRepository;
 
-    @Autowired
-    public MetadataService(ConnectionService cm, VGAuthService VGAuthService, HtmlProcessorService htmlProcessorService, XpathService xpathService, ThreadPoolService threadPoolService, IEventRepository eventRepository) {
+    public MetadataService(ConnectionService cm, VGAuthService VGAuthService, HtmlProcessorService htmlProcessorService, XpathService xpathService, ThreadPoolService threadPoolService) {
         this.cm = cm;
         this.VGAuthService = VGAuthService;
         this.htmlProcessorService = htmlProcessorService;
         this.xpathService = xpathService;
         this.threadPoolService = threadPoolService;
-        this.eventRepository = eventRepository;
 
         CacheLoader<Key, Metadata> loader = new CacheLoader<>() {
             @Override
@@ -65,30 +58,9 @@ public class MetadataService {
                 .build(loader);
     }
 
-    public Metadata get(Post post) {
-        Metadata metadata = new Metadata();
+    public Metadata get(Post post) throws ExecutionException {
         Key key = new Key(post.getPostId(), post.getThreadId(), post.getUrl());
-        Metadata cachedMetadata = cache.getIfPresent(key);
-        if (cachedMetadata == null) {
-            Event event = new Event(Event.Type.METADATA_CACHE_MISS, Event.Status.PROCESSING, LocalDateTime.now(), "Loading metadata for " + post.getUrl());
-            eventRepository.save(event);
-            try {
-                cachedMetadata = cache.get(key);
-                event.setStatus(Event.Status.DONE);
-                eventRepository.update(event);
-            } catch (Exception e) {
-                String error = "Failed to load metadata for " + post.getUrl();
-                log.error(error, e);
-                event.setStatus(Event.Status.ERROR);
-                event.setMessage(error + "\n" + Utils.throwableToString(e));
-                eventRepository.update(event);
-                return null;
-            }
-        }
-        metadata.setPostedBy(cachedMetadata.getPostedBy());
-        metadata.setPostId(cachedMetadata.getPostId());
-        metadata.setResolvedNames(List.copyOf(cachedMetadata.getResolvedNames()));
-        return metadata;
+        return Metadata.from(cache.get(key));
     }
 
     public void startFetchingMetadata(Post post) {

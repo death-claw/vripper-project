@@ -7,22 +7,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
-import tn.mnlr.vripper.Utils;
-import tn.mnlr.vripper.jpa.domain.Event;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.Queued;
-import tn.mnlr.vripper.jpa.repositories.IEventRepository;
-import tn.mnlr.vripper.services.domain.ApiThreadParser;
-import tn.mnlr.vripper.services.domain.MultiPostItem;
+import tn.mnlr.vripper.services.domain.MultiPostScanParser;
+import tn.mnlr.vripper.services.domain.MultiPostScanResult;
 import tn.mnlr.vripper.services.domain.tasks.AddPostRunnable;
 import tn.mnlr.vripper.services.domain.tasks.AddQueuedRunnable;
 
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import static tn.mnlr.vripper.jpa.domain.Event.Status.DONE;
-import static tn.mnlr.vripper.jpa.domain.Event.Status.PROCESSING;
 
 @Service
 @Slf4j
@@ -31,20 +25,18 @@ public class PostService {
     private final DataService dataService;
     private final ThreadPoolService threadPoolService;
     private final MetadataService metadataService;
-    private final IEventRepository eventRepository;
-    private final LoadingCache<Queued, List<MultiPostItem>> cache;
+    private final LoadingCache<Queued, MultiPostScanResult> cache;
 
     @Autowired
-    public PostService(DataService dataService, ThreadPoolService threadPoolService, MetadataService metadataService, IEventRepository eventRepository) {
+    public PostService(DataService dataService, ThreadPoolService threadPoolService, MetadataService metadataService) {
         this.dataService = dataService;
         this.threadPoolService = threadPoolService;
         this.metadataService = metadataService;
-        this.eventRepository = eventRepository;
 
-        CacheLoader<Queued, List<MultiPostItem>> loader = new CacheLoader<>() {
+        CacheLoader<Queued, MultiPostScanResult> loader = new CacheLoader<>() {
             @Override
-            public List<MultiPostItem> load(@NonNull Queued multiPostItem) throws Exception {
-                return new ApiThreadParser(multiPostItem).parse();
+            public MultiPostScanResult load(@NonNull Queued multiPostItem) throws Exception {
+                return new MultiPostScanParser(multiPostItem).parse();
             }
         };
 
@@ -67,27 +59,8 @@ public class PostService {
         }
     }
 
-    public List<MultiPostItem> get(Queued queued) {
-        List<MultiPostItem> multiPostItems;
-        multiPostItems = cache.getIfPresent(queued);
-        if (multiPostItems == null) {
-            Event event = new Event(Event.Type.QUEUED_CACHE_MISS, PROCESSING, LocalDateTime.now(), "Loading posts from " + queued.getLink());
-            eventRepository.save(event);
-            try {
-                multiPostItems = cache.get(queued);
-                event.setStatus(DONE);
-                event.setMessage("Loaded " + multiPostItems.size() + " posts from " + queued.getLink());
-                eventRepository.update(event);
-            } catch (Exception e) {
-                String error = String.format("Failed to parse link %s", queued.getLink());
-                log.error(error, e);
-                event.setStatus(Event.Status.ERROR);
-                event.setMessage(error + "\n" + Utils.throwableToString(e));
-                eventRepository.update(event);
-                return null;
-            }
-        }
-        return multiPostItems;
+    public MultiPostScanResult get(Queued queued) throws ExecutionException {
+        return cache.get(queued);
     }
 
     public void remove(String threadId) {

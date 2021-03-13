@@ -34,7 +34,7 @@ public class LinkScanRunnable implements Runnable {
         settingsService = SpringContext.getBean(SettingsService.class);
         postService = SpringContext.getBean(PostService.class);
         eventRepository = SpringContext.getBean(EventRepository.class);
-        event = new Event(Event.Type.SCAN, Event.Status.PENDING, LocalDateTime.now(), "Links scan:\n\t" + String.join("\n\t", urlList));
+        event = new Event(Event.Type.SCAN, Event.Status.PENDING, LocalDateTime.now(), "Links to scan:\n\t" + String.join("\n\t", urlList));
         eventRepository.save(event);
     }
 

@@ -14,8 +14,8 @@ import tn.mnlr.vripper.services.DataService;
 import tn.mnlr.vripper.services.MetadataService;
 import tn.mnlr.vripper.services.SettingsService;
 import tn.mnlr.vripper.services.VGAuthService;
-import tn.mnlr.vripper.services.domain.ApiPost;
-import tn.mnlr.vripper.services.domain.ApiPostParser;
+import tn.mnlr.vripper.services.domain.PostScanParser;
+import tn.mnlr.vripper.services.domain.PostScanResult;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -65,11 +65,11 @@ public class AddPostRunnable implements Runnable {
                 return;
             }
 
-            ApiPostParser apiPostParser = new ApiPostParser(threadId, postId);
+            PostScanParser postScanParser = new PostScanParser(threadId, postId);
 
-            ApiPost apiPost;
+            PostScanResult postScanResult;
             try {
-                apiPost = apiPostParser.parse();
+                postScanResult = postScanParser.parse();
             } catch (PostParseException e) {
                 String error = String.format("parsing failed for gallery %s", link);
                 log.error(error, e);
@@ -78,7 +78,7 @@ public class AddPostRunnable implements Runnable {
                 eventRepository.update(event);
                 return;
             }
-            if (apiPost.getPost().isEmpty()) {
+            if (postScanResult.getPost().isEmpty()) {
                 String error = String.format("Gallery %s contains no galleries", link);
                 log.error(error);
                 event.setMessage(error);
@@ -86,7 +86,7 @@ public class AddPostRunnable implements Runnable {
                 eventRepository.update(event);
                 return;
             }
-            if (apiPost.getImages().isEmpty()) {
+            if (postScanResult.getImages().isEmpty()) {
                 String error = String.format("Gallery %s contains no images to download", link);
                 log.error(error);
                 event.setMessage(error);
@@ -95,8 +95,8 @@ public class AddPostRunnable implements Runnable {
                 return;
             }
 
-            Post post = apiPost.getPost().get();
-            Set<Image> images = apiPost.getImages();
+            Post post = postScanResult.getPost().get();
+            Set<Image> images = postScanResult.getImages();
 
             dataService.newPost(post, images);
 

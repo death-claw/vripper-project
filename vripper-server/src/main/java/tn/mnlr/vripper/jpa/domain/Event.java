@@ -40,6 +40,8 @@ public class Event {
         METADATA,
         SCAN,
         DOWNLOAD,
+
+        // Below are deprecated events
         METADATA_CACHE_MISS,
         QUEUED_CACHE_MISS
     }

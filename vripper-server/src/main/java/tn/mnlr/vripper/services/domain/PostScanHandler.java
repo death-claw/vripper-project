@@ -16,7 +16,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
-class ApiPostHandler extends DefaultHandler {
+class PostScanHandler extends DefaultHandler {
 
     private final Collection<Host> supportedHosts;
 
@@ -32,7 +32,7 @@ class ApiPostHandler extends DefaultHandler {
 
     private Post parsedPost;
 
-    ApiPostHandler(String threadId, String postId) {
+    PostScanHandler(String threadId, String postId) {
         this.threadId = threadId;
         this.postId = postId;
         supportedHosts = SpringContext.getBeansOfType(Host.class).values();
@@ -41,8 +41,8 @@ class ApiPostHandler extends DefaultHandler {
     }
 
 
-    public ApiPost getParsedPost() {
-        return new ApiPost(parsedPost, images);
+    public PostScanResult getParsedPost() {
+        return new PostScanResult(parsedPost, images);
     }
 
     @Override

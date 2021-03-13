@@ -1,6 +1,5 @@
 package tn.mnlr.vripper.services.domain;
 
-import lombok.Getter;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 import tn.mnlr.vripper.SpringContext;
@@ -12,14 +11,14 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-public class ApiThreadHandler extends DefaultHandler {
+public class MultiPostScanHandler extends DefaultHandler {
 
     private final Queued queued;
     private final Collection<Host> supportedHosts;
     private final SettingsService settingsService;
     private final Map<Host, AtomicInteger> hostMap = new HashMap<>();
-    @Getter
     private final List<MultiPostItem> posts = new ArrayList<>();
+    private String error;
     private List<String> previews = new ArrayList<>();
     private String threadTitle;
     private String postId;
@@ -28,10 +27,14 @@ public class ApiThreadHandler extends DefaultHandler {
     private int postCounter;
     private int previewCounter = 0;
 
-    public ApiThreadHandler(Queued queued) {
+    public MultiPostScanHandler(Queued queued) {
         this.queued = queued;
         supportedHosts = SpringContext.getBeansOfType(Host.class).values();
         settingsService = SpringContext.getBean(SettingsService.class);
+    }
+
+    public MultiPostScanResult getScanResult() {
+        return new MultiPostScanResult(posts, error);
     }
 
     @Override
@@ -42,6 +45,9 @@ public class ApiThreadHandler extends DefaultHandler {
     public void startElement(String uri, String localName, String qName, Attributes attributes) {
 
         switch (qName.toLowerCase()) {
+            case "error":
+                error = attributes.getValue("details");
+                break;
             case "thread":
                 threadTitle = attributes.getValue("title").trim();
                 break;

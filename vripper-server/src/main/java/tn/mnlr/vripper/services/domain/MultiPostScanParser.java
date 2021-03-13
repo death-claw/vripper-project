@@ -10,58 +10,48 @@ import org.apache.http.util.EntityUtils;
 import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.PostParseException;
+import tn.mnlr.vripper.jpa.domain.Queued;
 import tn.mnlr.vripper.services.ConnectionService;
 import tn.mnlr.vripper.services.SettingsService;
 import tn.mnlr.vripper.services.VGAuthService;
 
 import javax.xml.parsers.SAXParserFactory;
+import java.io.BufferedInputStream;
 import java.net.URISyntaxException;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
-public class ApiPostParser {
+public class MultiPostScanParser {
 
     private static final SAXParserFactory factory = SAXParserFactory.newInstance();
-
-    private final String threadId;
-    private final String postId;
+    private final Queued queued;
     private final ConnectionService cm;
     private final VGAuthService VGAuthService;
     private final SettingsService settingsService;
 
-    public ApiPostParser(String threadId, String postId) {
-        this.threadId = threadId;
-        this.postId = postId;
+    public MultiPostScanParser(Queued queued) {
+        this.queued = queued;
         cm = SpringContext.getBean(ConnectionService.class);
         VGAuthService = SpringContext.getBean(VGAuthService.class);
         settingsService = SpringContext.getBean(SettingsService.class);
     }
 
-    public ApiPost parse() throws PostParseException {
+    public MultiPostScanResult parse() throws PostParseException {
 
-        log.debug(String.format("Parsing post %s", postId));
+        log.debug(String.format("Parsing thread %s", queued));
         HttpGet httpGet;
         try {
             URIBuilder uriBuilder = new URIBuilder(settingsService.getSettings().getVProxy() + "/vr.php");
-            uriBuilder.setParameter("p", postId);
+            uriBuilder.setParameter("t", queued.getThreadId());
             httpGet = cm.buildHttpGet(uriBuilder.build(), null);
         } catch (URISyntaxException e) {
             throw new PostParseException(e);
         }
 
+        MultiPostScanHandler multiPostScanHandler = new MultiPostScanHandler(queued);
         AtomicReference<Throwable> thr = new AtomicReference<>();
-        ApiPostHandler apiPostHandler = new ApiPostHandler(threadId, postId);
         log.debug(String.format("Requesting %s", httpGet));
-        ApiPost post = getPost(httpGet, apiPostHandler, thr);
-        if (thr.get() != null) {
-            log.error(String.format("parsing failed for thread %s, post %s", threadId, postId), thr.get());
-            throw new PostParseException(thr.get());
-        }
-        return post;
-    }
-
-    private ApiPost getPost(HttpGet httpGet, ApiPostHandler apiPostHandler, AtomicReference<Throwable> thr) {
-        return Failsafe.with(cm.getRetryPolicy())
+        MultiPostScanResult multiPostScanResult = Failsafe.with(cm.getRetryPolicy())
                 .onFailure(e -> thr.set(e.getFailure()))
                 .get(() -> {
                     HttpClient connection = cm.getClient().build();
@@ -70,10 +60,21 @@ public class ApiPostParser {
                             throw new DownloadException(String.format("Unexpected response code '%d' for %s", response.getStatusLine().getStatusCode(), httpGet));
                         }
 
-                        factory.newSAXParser().parse(response.getEntity().getContent(), apiPostHandler);
-                        EntityUtils.consumeQuietly(response.getEntity());
-                        return apiPostHandler.getParsedPost();
+                        try {
+//                            System.out.println(EntityUtils.toString(response.getEntity()));
+                            factory.newSAXParser().parse(new BufferedInputStream(response.getEntity().getContent()), multiPostScanHandler);
+                            return multiPostScanHandler.getScanResult();
+                        } catch (Exception e) {
+                            throw new PostParseException(String.format("Failed to parse thread %s", queued), e);
+                        } finally {
+                            EntityUtils.consumeQuietly(response.getEntity());
+                        }
                     }
                 });
+        if (thr.get() != null) {
+            log.error(String.format("parsing failed for thread %s", queued), thr.get());
+            throw new PostParseException(thr.get());
+        }
+        return multiPostScanResult;
     }
 }

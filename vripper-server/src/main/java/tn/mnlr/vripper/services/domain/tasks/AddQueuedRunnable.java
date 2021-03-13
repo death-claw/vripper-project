@@ -9,10 +9,9 @@ import tn.mnlr.vripper.jpa.repositories.IEventRepository;
 import tn.mnlr.vripper.services.DataService;
 import tn.mnlr.vripper.services.PostService;
 import tn.mnlr.vripper.services.ThreadPoolService;
-import tn.mnlr.vripper.services.domain.MultiPostItem;
+import tn.mnlr.vripper.services.domain.MultiPostScanResult;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import static tn.mnlr.vripper.jpa.domain.Event.Status.ERROR;
 import static tn.mnlr.vripper.jpa.domain.Event.Status.PROCESSING;
@@ -42,18 +41,30 @@ public class AddQueuedRunnable implements Runnable {
         try {
             event.setStatus(PROCESSING);
             eventRepository.update(event);
-            List<MultiPostItem> multiPostItems = postService.get(queued);
-            if (multiPostItems == null) {
+            MultiPostScanResult multiPostScanResult = postService.get(queued);
+            if (multiPostScanResult == null) {
                 String message = String.format("Fetching multi-post link %s failed", queued.getLink());
                 event.setStatus(ERROR);
                 event.setMessage(message);
                 eventRepository.update(event);
                 return;
+            } else if (multiPostScanResult.getError() != null) {
+                String message = "Nothing found for " + queued.getLink() + "\n" + multiPostScanResult.getError();
+                event.setStatus(ERROR);
+                event.setMessage(message);
+                eventRepository.update(event);
+                return;
+            } else if (multiPostScanResult.getPosts().isEmpty()) {
+                String message = "Nothing found for " + queued.getLink();
+                event.setStatus(ERROR);
+                event.setMessage(message);
+                eventRepository.update(event);
+                return;
             }
-            queued.setTotal(multiPostItems.size());
+            queued.setTotal(multiPostScanResult.getPosts().size());
             queued.done();
-            if (multiPostItems.size() == 1) {
-                threadPoolService.getGeneralExecutor().submit(new AddPostRunnable(multiPostItems.get(0).getPostId(), multiPostItems.get(0).getThreadId()));
+            if (multiPostScanResult.getPosts().size() == 1) {
+                threadPoolService.getGeneralExecutor().submit(new AddPostRunnable(multiPostScanResult.getPosts().get(0).getPostId(), multiPostScanResult.getPosts().get(0).getThreadId()));
                 event.setStatus(Event.Status.DONE);
                 event.setMessage(String.format("Link %s is added to download queue", queued.getLink()));
             } else {

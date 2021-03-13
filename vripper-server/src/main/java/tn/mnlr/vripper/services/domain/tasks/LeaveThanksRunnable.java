@@ -53,25 +53,25 @@ public class LeaveThanksRunnable implements Runnable {
             event.setStatus(Event.Status.PROCESSING);
             eventRepository.update(event);
             if (!settingsService.getSettings().getVLogin()) {
-                event.setMessage(String.format("Will not leave a thanks for %s\nAuthentication with ViperGirls option is disabled", post.getUrl()));
+                event.setMessage(String.format("Will not send a like for %s\nAuthentication with ViperGirls option is disabled", post.getUrl()));
                 event.setStatus(Event.Status.DONE);
                 eventRepository.update(event);
                 return;
             }
             if (!settingsService.getSettings().getVThanks()) {
-                event.setMessage(String.format("Will not leave a thanks for %s\nLeave thanks option is disabled", post.getUrl()));
+                event.setMessage(String.format("Will not send a like for %s\nLeave thanks option is disabled", post.getUrl()));
                 event.setStatus(Event.Status.DONE);
                 eventRepository.update(event);
                 return;
             }
             if (!authenticated) {
-                event.setMessage(String.format("Will not leave a thanks for %s\nYou are not authenticated", post.getUrl()));
+                event.setMessage(String.format("Will not send a like for %s\nYou are not authenticated", post.getUrl()));
                 event.setStatus(Event.Status.ERROR);
                 eventRepository.update(event);
                 return;
             }
             if (post.isThanked()) {
-                event.setMessage(String.format("Will not leave a thanks for %s\nAlready left a thanks", post.getUrl()));
+                event.setMessage(String.format("Will not send a like for %s\nAlready left a thanks", post.getUrl()));
                 event.setStatus(Event.Status.DONE);
                 eventRepository.update(event);
                 return;

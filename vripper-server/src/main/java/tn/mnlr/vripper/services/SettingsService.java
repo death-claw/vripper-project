@@ -268,6 +268,10 @@ public class SettingsService {
         if (settings.getMaxEventLog() < 100 || settings.getMaxEventLog() > 10_000) {
             throw new ValidationException(String.format("Invalid maximum event log record settings, values must be in [%d,%d]", 100, 10_000));
         }
+
+        if (!settings.getVThanks() && settings.getLeaveThanksOnStart()) {
+            throw new ValidationException("Invalid value, leave thanks must be checked");
+        }
     }
 
     public Theme getTheme() {
