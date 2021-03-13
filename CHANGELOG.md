@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.3.3] - 2021-03-13
+
+### Changed
+
+- Remove unnecessary event logs
+
+## [3.3.2] - 2021-03-11
+
+### Changed
+
+- Fix a bug with event logs
+- Change event names and add some icons
+
 ## [3.3.1] - 2021-02-18
 
 ### Added
