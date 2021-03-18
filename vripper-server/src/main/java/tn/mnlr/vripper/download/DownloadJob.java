@@ -83,7 +83,7 @@ public class DownloadJob implements CheckedRunnable {
                 if (updatedPost.getDownloadDirectory() == null) {
                     pathService.createDefaultPostFolder(updatedPost);
                 }
-                if (settingsService.getSettings().getLeaveThanksOnStart()) {
+                if (settingsService.getSettings().getLeaveThanksOnStart() != null && settingsService.getSettings().getLeaveThanksOnStart()) {
                     authService.leaveThanks(updatedPost);
                 }
             }
