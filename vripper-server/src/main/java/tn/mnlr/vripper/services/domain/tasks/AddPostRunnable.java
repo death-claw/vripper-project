@@ -46,7 +46,7 @@ public class AddPostRunnable implements Runnable {
         this.pendingQueue = SpringContext.getBean(PendingQueue.class);
         this.VGAuthService = SpringContext.getBean(VGAuthService.class);
         this.eventRepository = SpringContext.getBean(IEventRepository.class);
-        link = settingsService.getSettings().getVProxy() + String.format("/%s?%s", threadId, (postId != null ? "p=" + postId : ""));
+        link = settingsService.getSettings().getVProxy() + String.format("/threads/%s?%s", threadId, (postId != null ? "p=" + postId : ""));
         event = new Event(Event.Type.POST, Event.Status.PENDING, LocalDateTime.now(), String.format("Processing %s", link));
         eventRepository.save(event);
     }
