@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.3.5] - 2021-03-18
+
+### Changed
+
+- Bug fixe
+
 ## [3.3.4] - 2021-03-18
 
 ### Changed
