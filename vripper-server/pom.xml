@@ -100,6 +100,12 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
                     <classifier>${buildClassifier}</classifier>
+                    <archive>
+                        <manifestEntries>
+                            <Build-Time>${maven.build.timestamp}</Build-Time>
+                            <Built-By>${user.name}</Built-By>
+                        </manifestEntries>
+                    </archive>
                 </configuration>
             </plugin>
             <plugin>
@@ -116,54 +122,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>pl.project13.maven</groupId>
-                <artifactId>git-commit-id-plugin</artifactId>
-                <version>3.0.0</version>
-                <executions>
-                    <execution>
-                        <id>get-the-git-infos</id>
-                        <goals>
-                            <goal>revision</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>validate-the-git-infos</id>
-                        <goals>
-                            <goal>validateRevision</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <dotGitDirectory>${project.parent.basedir}/.git</dotGitDirectory>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.1.0</version>
-                <configuration>
-                    <archive>
-                        <manifestEntries>
-                            <Build-Time>${maven.build.timestamp}</Build-Time>
-                            <Built-By>${user.name}</Built-By>
-                        </manifestEntries>
-                        <manifestSections>
-                            <manifestSection>
-                                <name>Versions</name>
-                                <manifestEntries>
-                                    <Implementation-Version>${git.build.version}</Implementation-Version>
-                                    <Implementation-SCM-Revision>${git.commit.id}</Implementation-SCM-Revision>
-                                    <Implementation-SCM-Branch>${git.branch}</Implementation-SCM-Branch>
-                                    <Implementation-SCM-Time>${git.build.time}</Implementation-SCM-Time>
-                                    <Implementation-SCM-Dirty>${git.dirty}</Implementation-SCM-Dirty>
-                                    <Implementation-SCM-Tags>${git.tags}</Implementation-SCM-Tags>
-                                </manifestEntries>
-                            </manifestSection>
-                        </manifestSections>
-                    </archive>
-                </configuration>
             </plugin>
         </plugins>
     </build>

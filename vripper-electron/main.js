@@ -130,6 +130,7 @@ if (!gotTheLock) {
             "-Xms256m",
             "-Dvripper.server.port=" + port,
             "-Dbase.dir=" + baseDir,
+            "-Djava.net.preferIPv4Stack=true",
             "-jar",
             jarPath
         ], {
