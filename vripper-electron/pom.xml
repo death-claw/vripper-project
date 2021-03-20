@@ -22,9 +22,6 @@
     <profiles>
         <profile>
             <id>electron</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <properties>
                 <buildClassifier>electron</buildClassifier>
             </properties>
