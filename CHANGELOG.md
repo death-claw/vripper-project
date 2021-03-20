@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.3.6] - 2021-03-20
+
+### Changed
+
+- Optimize build size
+
 ## [3.3.5] - 2021-03-18
 
 ### Changed
