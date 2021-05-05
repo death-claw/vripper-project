@@ -22,61 +22,65 @@ import java.util.List;
 @Controller
 public class DataController {
 
-    private final VGAuthService VGAuthService;
-    private final GlobalStateService globalStateService;
-    private final DownloadSpeedService downloadSpeedService;
-    private final DataService dataService;
+  private final VGAuthService VGAuthService;
+  private final GlobalStateService globalStateService;
+  private final DownloadSpeedService downloadSpeedService;
+  private final DataService dataService;
 
-    @Autowired
-    public DataController(VGAuthService VGAuthService, GlobalStateService globalStateService, DownloadSpeedService downloadSpeedService, DataService dataService) {
-        this.VGAuthService = VGAuthService;
-        this.globalStateService = globalStateService;
-        this.downloadSpeedService = downloadSpeedService;
-        this.dataService = dataService;
+  @Autowired
+  public DataController(
+      VGAuthService VGAuthService,
+      GlobalStateService globalStateService,
+      DownloadSpeedService downloadSpeedService,
+      DataService dataService) {
+    this.VGAuthService = VGAuthService;
+    this.globalStateService = globalStateService;
+    this.downloadSpeedService = downloadSpeedService;
+    this.dataService = dataService;
+  }
+
+  @SubscribeMapping("/user")
+  public LoggedUser user() {
+    return new LoggedUser(VGAuthService.getLoggedUser());
+  }
+
+  @SubscribeMapping("/download-state")
+  public GlobalState downloadState() {
+    return globalStateService.getCurrentState();
+  }
+
+  @SubscribeMapping("/speed")
+  public DownloadSpeed speed() {
+    return new DownloadSpeed(downloadSpeedService.getCurrentValue());
+  }
+
+  @SubscribeMapping("/posts")
+  public Collection<Post> posts() {
+    return dataService.findAllPosts();
+  }
+
+  @SubscribeMapping("/images/{postId}")
+  public List<Image> postsDetails(@DestinationVariable("postId") String postId) {
+    return dataService.findImagesByPostId(postId);
+  }
+
+  @SubscribeMapping("/queued")
+  public Collection<Queued> queued() {
+    return dataService.findAllQueued();
+  }
+
+  @SubscribeMapping("/events")
+  public Collection<Event> events() {
+    return dataService.findAllEvents();
+  }
+
+  @Getter
+  public static class LoggedUser {
+
+    private final String user;
+
+    LoggedUser(String user) {
+      this.user = user;
     }
-
-    @SubscribeMapping("/user")
-    public LoggedUser user() {
-        return new LoggedUser(VGAuthService.getLoggedUser());
-    }
-
-    @SubscribeMapping("/download-state")
-    public GlobalState downloadState() {
-        return globalStateService.getCurrentState();
-    }
-
-    @SubscribeMapping("/speed")
-    public DownloadSpeed speed() {
-        return new DownloadSpeed(downloadSpeedService.getCurrentValue());
-    }
-
-    @SubscribeMapping("/posts")
-    public Collection<Post> posts() {
-        return dataService.findAllPosts();
-    }
-
-    @SubscribeMapping("/images/{postId}")
-    public List<Image> postsDetails(@DestinationVariable("postId") String postId) {
-        return dataService.findImagesByPostId(postId);
-    }
-
-    @SubscribeMapping("/queued")
-    public Collection<Queued> queued() {
-        return dataService.findAllQueued();
-    }
-
-    @SubscribeMapping("/events")
-    public Collection<Event> events() {
-        return dataService.findAllEvents();
-    }
-
-    @Getter
-    public static class LoggedUser {
-
-        private final String user;
-
-        LoggedUser(String user) {
-            this.user = user;
-        }
-    }
+  }
 }

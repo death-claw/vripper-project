@@ -21,95 +21,96 @@ import java.util.function.Predicate;
 @Slf4j
 public class PendingQueue {
 
-    private final DataService dataService;
-    private final SettingsService settingsService;
-    private final List<Host> hosts;
+  private final DataService dataService;
+  private final SettingsService settingsService;
+  private final List<Host> hosts;
 
-    private final ConcurrentHashMap<Host, BlockingDeque<DownloadJob>> pendingQ = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, AtomicInteger> toBeExecuted = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<Host, BlockingDeque<DownloadJob>> pendingQ =
+      new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, AtomicInteger> toBeExecuted = new ConcurrentHashMap<>();
 
-    @Autowired
-    public PendingQueue(DataService dataService, SettingsService settingsService, List<Host> hosts) {
-        this.dataService = dataService;
-        this.settingsService = settingsService;
-        this.hosts = hosts;
+  @Autowired
+  public PendingQueue(DataService dataService, SettingsService settingsService, List<Host> hosts) {
+    this.dataService = dataService;
+    this.settingsService = settingsService;
+    this.hosts = hosts;
+  }
+
+  @PostConstruct
+  private void init() {
+    hosts.forEach(host -> pendingQ.put(host, new LinkedBlockingDeque<>()));
+  }
+
+  public void put(Post post, Image image) throws InterruptedException {
+    log.debug(String.format("Enqueuing a job for %s", image.getUrl()));
+    image.init();
+    dataService.updateImageStatus(image.getStatus(), image.getId());
+    dataService.updateImageCurrent(image.getCurrent(), image.getId());
+    DownloadJob downloadJob = new DownloadJob(post, image);
+    pendingQ.get(downloadJob.getImage().getHost()).putLast(downloadJob);
+    checkKey(post.getPostId());
+    toBeExecuted.get(post.getPostId()).incrementAndGet();
+  }
+
+  private synchronized void checkKey(String postId) {
+    if (!toBeExecuted.containsKey(postId)) {
+      toBeExecuted.put(postId, new AtomicInteger(0));
     }
+  }
 
-    @PostConstruct
-    private void init() {
-        hosts.forEach(host -> pendingQ.put(host, new LinkedBlockingDeque<>()));
+  public void remove(final DownloadJob downloadJob) {
+    pendingQ.get(downloadJob.getImage().getHost()).remove(downloadJob);
+  }
+
+  public List<DownloadJob> peek() {
+    List<DownloadJob> downloadJobs = new ArrayList<>();
+    if (hosts.size() == 0) {
+      return downloadJobs;
     }
-
-    public void put(Post post, Image image) throws InterruptedException {
-        log.debug(String.format("Enqueuing a job for %s", image.getUrl()));
-        image.init();
-        dataService.updateImageStatus(image.getStatus(), image.getId());
-        dataService.updateImageCurrent(image.getCurrent(), image.getId());
-        DownloadJob downloadJob = new DownloadJob(post, image);
-        pendingQ.get(downloadJob.getImage().getHost()).putLast(downloadJob);
-        checkKey(post.getPostId());
-        toBeExecuted.get(post.getPostId()).incrementAndGet();
-    }
-
-    private synchronized void checkKey(String postId) {
-        if (!toBeExecuted.containsKey(postId)) {
-            toBeExecuted.put(postId, new AtomicInteger(0));
+    for (Host host : hosts) {
+      Iterator<DownloadJob> it = pendingQ.get(host).iterator();
+      for (int i = 0; i < settingsService.getSettings().getMaxThreads(); i++) {
+        DownloadJob downloadJob = it.hasNext() ? it.next() : null;
+        if (downloadJob != null) {
+          downloadJobs.add(downloadJob);
         }
+      }
     }
+    return downloadJobs;
+  }
 
-    public void remove(final DownloadJob downloadJob) {
-        pendingQ.get(downloadJob.getImage().getHost()).remove(downloadJob);
+  public void enqueue(Post post, Set<Image> images) throws InterruptedException {
+    for (Image image : images) {
+      put(post, image);
     }
+  }
 
-    public List<DownloadJob> peek() {
-        List<DownloadJob> downloadJobs = new ArrayList<>();
-        if (hosts.size() == 0) {
-            return downloadJobs;
-        }
-        for (Host host : hosts) {
-            Iterator<DownloadJob> it = pendingQ.get(host).iterator();
-            for (int i = 0; i < settingsService.getSettings().getMaxThreads(); i++) {
-                DownloadJob downloadJob = it.hasNext() ? it.next() : null;
-                if (downloadJob != null) {
-                    downloadJobs.add(downloadJob);
-                }
-            }
-        }
-        return downloadJobs;
-    }
+  public int size() {
+    return toBeExecuted.values().stream().mapToInt(AtomicInteger::get).sum();
+  }
 
-    public void enqueue(Post post, Set<Image> images) throws InterruptedException {
-        for (Image image : images) {
-            put(post, image);
-        }
+  public void stop(Post post) {
+    Predicate<DownloadJob> predicate = next -> next.getImage().getPostId().equals(post.getPostId());
+    for (Map.Entry<Host, BlockingDeque<DownloadJob>> entry : pendingQ.entrySet()) {
+      entry.getValue().stream().filter(predicate).forEach(e -> decrement(post.getPostId()));
+      entry.getValue().removeIf(predicate);
+      decrement(post.getPostId());
     }
+  }
 
-    public int size() {
-        return toBeExecuted.values().stream().mapToInt(AtomicInteger::get).sum();
-    }
+  public boolean isPending(String postId) {
+    return toBeExecuted.containsKey(postId);
+  }
 
-    public void stop(Post post) {
-        Predicate<DownloadJob> predicate = next -> next.getImage().getPostId().equals(post.getPostId());
-        for (Map.Entry<Host, BlockingDeque<DownloadJob>> entry : pendingQ.entrySet()) {
-            entry.getValue().stream().filter(predicate).forEach(e -> decrement(post.getPostId()));
-            entry.getValue().removeIf(predicate);
-            decrement(post.getPostId());
-        }
+  public synchronized int decrement(String postId) {
+    AtomicInteger counter = toBeExecuted.get(postId);
+    if (counter == null) {
+      return 0;
     }
-
-    public boolean isPending(String postId) {
-        return toBeExecuted.containsKey(postId);
+    int count = counter.decrementAndGet();
+    if (count == 0) {
+      toBeExecuted.remove(postId);
     }
-
-    public synchronized int decrement(String postId) {
-        AtomicInteger counter = toBeExecuted.get(postId);
-        if (counter == null) {
-            return 0;
-        }
-        int count = counter.decrementAndGet();
-        if (count == 0) {
-            toBeExecuted.remove(postId);
-        }
-        return count;
-    }
+    return count;
+  }
 }

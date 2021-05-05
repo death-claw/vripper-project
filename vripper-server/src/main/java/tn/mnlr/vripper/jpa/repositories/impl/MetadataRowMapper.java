@@ -9,16 +9,16 @@ import java.util.List;
 
 public class MetadataRowMapper implements RowMapper<Metadata> {
 
-    @Override
-    public Metadata mapRow(ResultSet rs, int rowNum) throws SQLException {
-        Metadata metadata = new Metadata();
-        metadata.setPostIdRef(rs.getLong("POST_ID_REF"));
-        metadata.setPostId(rs.getString("POST_ID"));
-        metadata.setPostedBy(rs.getString("POSTED_BY"));
-        String resolvedNames = rs.getString("RESOLVED_NAMES");
-        if (resolvedNames != null && !resolvedNames.isBlank()) {
-            metadata.setResolvedNames(List.of(resolvedNames.split("%sep%")));
-        }
-        return metadata;
+  @Override
+  public Metadata mapRow(ResultSet rs, int rowNum) throws SQLException {
+    Metadata metadata = new Metadata();
+    metadata.setPostIdRef(rs.getLong("POST_ID_REF"));
+    metadata.setPostId(rs.getString("POST_ID"));
+    metadata.setPostedBy(rs.getString("POSTED_BY"));
+    String resolvedNames = rs.getString("RESOLVED_NAMES");
+    if (resolvedNames != null && !resolvedNames.isBlank()) {
+      metadata.setResolvedNames(List.of(resolvedNames.split("%sep%")));
     }
+    return metadata;
+  }
 }

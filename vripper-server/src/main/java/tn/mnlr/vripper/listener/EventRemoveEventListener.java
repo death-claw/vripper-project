@@ -11,22 +11,23 @@ import javax.annotation.PreDestroy;
 
 @Component
 @Slf4j
-public class EventRemoveEventListener implements ApplicationListener<EventRemoveEvent>, DataEventListener<EventRemoveEvent> {
+public class EventRemoveEventListener
+    implements ApplicationListener<EventRemoveEvent>, DataEventListener<EventRemoveEvent> {
 
-    private final Sinks.Many<EventRemoveEvent> sink = Sinks.many().multicast().onBackpressureBuffer();
+  private final Sinks.Many<EventRemoveEvent> sink = Sinks.many().multicast().onBackpressureBuffer();
 
-    @Override
-    public void onApplicationEvent(EventRemoveEvent event) {
-        sink.emitNext(event, EmitHandler.RETRY);
-    }
+  @Override
+  public void onApplicationEvent(EventRemoveEvent event) {
+    sink.emitNext(event, EmitHandler.RETRY);
+  }
 
-    @Override
-    public Flux<EventRemoveEvent> getDataFlux() {
-        return sink.asFlux();
-    }
+  @Override
+  public Flux<EventRemoveEvent> getDataFlux() {
+    return sink.asFlux();
+  }
 
-    @PreDestroy
-    private void destroy() {
-        sink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
-    }
+  @PreDestroy
+  private void destroy() {
+    sink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
+  }
 }

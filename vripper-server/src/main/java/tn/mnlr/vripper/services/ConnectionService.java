@@ -31,104 +31,119 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class ConnectionService {
 
-    private final Disposable disposable;
-    private PoolingHttpClientConnectionManager pcm;
-    private RequestConfig rc;
+  private final Disposable disposable;
+  private PoolingHttpClientConnectionManager pcm;
+  private RequestConfig rc;
 
-    @Getter
-    private RetryPolicy<Object> retryPolicy;
+  @Getter private RetryPolicy<Object> retryPolicy;
 
-    private int connectionTimeout;
-    private int maxAttempts;
+  private int connectionTimeout;
+  private int maxAttempts;
 
-    public ConnectionService(SettingsService settingsService) {
-        connectionTimeout = settingsService.getSettings().getConnectionTimeout();
-        maxAttempts = settingsService.getSettings().getMaxAttempts();
-        Flux<SettingsService.Settings> settingsFlux = settingsService.getSettingsFlux();
-        disposable = settingsFlux.subscribe(settings -> {
-            if (connectionTimeout != settings.getConnectionTimeout()) {
+  public ConnectionService(SettingsService settingsService) {
+    connectionTimeout = settingsService.getSettings().getConnectionTimeout();
+    maxAttempts = settingsService.getSettings().getMaxAttempts();
+    Flux<SettingsService.Settings> settingsFlux = settingsService.getSettingsFlux();
+    disposable =
+        settingsFlux.subscribe(
+            settings -> {
+              if (connectionTimeout != settings.getConnectionTimeout()) {
                 connectionTimeout = settings.getConnectionTimeout();
                 buildRequestConfig();
-            }
-            if (maxAttempts != settings.getMaxAttempts()) {
+              }
+              if (maxAttempts != settings.getMaxAttempts()) {
                 maxAttempts = settings.getMaxAttempts();
                 buildRetryPolicy();
-            }
-        });
+              }
+            });
 
-        buildRequestConfig();
-        buildRetryPolicy();
-        buildConnectionPool();
-    }
+    buildRequestConfig();
+    buildRetryPolicy();
+    buildConnectionPool();
+  }
 
-    @PreDestroy
-    private void destroy() {
-        disposable.dispose();
-    }
+  @PreDestroy
+  private void destroy() {
+    disposable.dispose();
+  }
 
-    private void buildRetryPolicy() {
-        retryPolicy = new RetryPolicy<>()
-                .withDelay(2, 5, ChronoUnit.SECONDS)
-                .withMaxAttempts(maxAttempts)
-                .onFailedAttempt(e -> log.warn(String.format("#%d tries failed", e.getAttemptCount()), e.getLastFailure()));
-    }
+  private void buildRetryPolicy() {
+    retryPolicy =
+        new RetryPolicy<>()
+            .withDelay(2, 5, ChronoUnit.SECONDS)
+            .withMaxAttempts(maxAttempts)
+            .onFailedAttempt(
+                e ->
+                    log.warn(
+                        String.format("#%d tries failed", e.getAttemptCount()),
+                        e.getLastFailure()));
+  }
 
-    private void buildConnectionPool() {
-        pcm = new PoolingHttpClientConnectionManager();
-        pcm.setMaxTotal(Integer.MAX_VALUE);
-        pcm.setDefaultMaxPerRoute(Integer.MAX_VALUE);
-    }
+  private void buildConnectionPool() {
+    pcm = new PoolingHttpClientConnectionManager();
+    pcm.setMaxTotal(Integer.MAX_VALUE);
+    pcm.setDefaultMaxPerRoute(Integer.MAX_VALUE);
+  }
 
-    private void buildRequestConfig() {
-        rc = RequestConfig.custom()
-                .setConnectionRequestTimeout(connectionTimeout * 1000)
-                .setConnectTimeout(connectionTimeout * 1000)
-                .setSocketTimeout(connectionTimeout * 1000)
-                .setCookieSpec(CookieSpecs.STANDARD)
-                .build();
-    }
+  private void buildRequestConfig() {
+    rc =
+        RequestConfig.custom()
+            .setConnectionRequestTimeout(connectionTimeout * 1000)
+            .setConnectTimeout(connectionTimeout * 1000)
+            .setSocketTimeout(connectionTimeout * 1000)
+            .setCookieSpec(CookieSpecs.STANDARD)
+            .build();
+  }
 
-    @Scheduled(fixedDelay = 5_000)
-    private void idleConnectionMonitoring() {
-        pcm.closeExpiredConnections();
-        pcm.closeIdleConnections(30, TimeUnit.SECONDS);
-    }
+  @Scheduled(fixedDelay = 5_000)
+  private void idleConnectionMonitoring() {
+    pcm.closeExpiredConnections();
+    pcm.closeIdleConnections(30, TimeUnit.SECONDS);
+  }
 
-    public HttpClientBuilder getClient() {
-        return HttpClients.custom()
-                .setConnectionManager(pcm)
-                .setRedirectStrategy(new LaxRedirectStrategy())
-                .disableAutomaticRetries()
-                .setDefaultRequestConfig(rc);
-    }
+  public HttpClientBuilder getClient() {
+    return HttpClients.custom()
+        .setConnectionManager(pcm)
+        .setRedirectStrategy(new LaxRedirectStrategy())
+        .disableAutomaticRetries()
+        .setDefaultRequestConfig(rc);
+  }
 
-    public HttpGet buildHttpGet(String url, final HttpClientContext context) {
-        HttpGet httpGet = new HttpGet(url.replace(" ", "+"));
-        httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
-        addToContext(context, httpGet);
-        return httpGet;
-    }
+  public HttpGet buildHttpGet(String url, final HttpClientContext context) {
+    HttpGet httpGet = new HttpGet(url.replace(" ", "+"));
+    httpGet.addHeader(
+        "User-Agent",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
+    addToContext(context, httpGet);
+    return httpGet;
+  }
 
-    public HttpPost buildHttpPost(String url, final HttpClientContext context) {
-        HttpPost httpPost = new HttpPost(url.replace(" ", "+"));
-        httpPost.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
-        addToContext(context, httpPost);
-        return httpPost;
-    }
+  public HttpPost buildHttpPost(String url, final HttpClientContext context) {
+    HttpPost httpPost = new HttpPost(url.replace(" ", "+"));
+    httpPost.addHeader(
+        "User-Agent",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
+    addToContext(context, httpPost);
+    return httpPost;
+  }
 
-    public HttpGet buildHttpGet(URI uri, final HttpClientContext context) {
-        HttpGet httpGet = new HttpGet(uri);
-        httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
-        addToContext(context, httpGet);
-        return httpGet;
-    }
+  public HttpGet buildHttpGet(URI uri, final HttpClientContext context) {
+    HttpGet httpGet = new HttpGet(uri);
+    httpGet.addHeader(
+        "User-Agent",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
+    addToContext(context, httpGet);
+    return httpGet;
+  }
 
-    public void addToContext(HttpClientContext context, AbstractExecutionAwareRequest request) {
-        if (context != null) {
-            List<AbstractExecutionAwareRequest> requests = (List<AbstractExecutionAwareRequest>) context.getAttribute(DownloadJob.ContextAttributes.OPEN_CONNECTION.toString());
-            if (requests != null) {
-                requests.add(request);
-            }
-        }
+  public void addToContext(HttpClientContext context, AbstractExecutionAwareRequest request) {
+    if (context != null) {
+      List<AbstractExecutionAwareRequest> requests =
+          (List<AbstractExecutionAwareRequest>)
+              context.getAttribute(DownloadJob.ContextAttributes.OPEN_CONNECTION.toString());
+      if (requests != null) {
+        requests.add(request);
+      }
     }
+  }
 }

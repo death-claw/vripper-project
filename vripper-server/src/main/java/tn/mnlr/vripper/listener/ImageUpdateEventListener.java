@@ -11,22 +11,23 @@ import javax.annotation.PreDestroy;
 
 @Component
 @Slf4j
-public class ImageUpdateEventListener implements ApplicationListener<ImageUpdateEvent>, DataEventListener<ImageUpdateEvent> {
+public class ImageUpdateEventListener
+    implements ApplicationListener<ImageUpdateEvent>, DataEventListener<ImageUpdateEvent> {
 
-    private final Sinks.Many<ImageUpdateEvent> sink = Sinks.many().multicast().onBackpressureBuffer();
+  private final Sinks.Many<ImageUpdateEvent> sink = Sinks.many().multicast().onBackpressureBuffer();
 
-    @Override
-    public void onApplicationEvent(ImageUpdateEvent event) {
-        sink.emitNext(event, EmitHandler.RETRY);
-    }
+  @Override
+  public void onApplicationEvent(ImageUpdateEvent event) {
+    sink.emitNext(event, EmitHandler.RETRY);
+  }
 
-    @Override
-    public Flux<ImageUpdateEvent> getDataFlux() {
-        return sink.asFlux();
-    }
+  @Override
+  public Flux<ImageUpdateEvent> getDataFlux() {
+    return sink.asFlux();
+  }
 
-    @PreDestroy
-    private void destroy() {
-        sink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
-    }
+  @PreDestroy
+  private void destroy() {
+    sink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
+  }
 }

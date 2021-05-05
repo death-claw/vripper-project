@@ -22,48 +22,52 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class PostService {
 
-    private final DataService dataService;
-    private final ThreadPoolService threadPoolService;
-    private final MetadataService metadataService;
-    private final LoadingCache<Queued, MultiPostScanResult> cache;
+  private final DataService dataService;
+  private final ThreadPoolService threadPoolService;
+  private final MetadataService metadataService;
+  private final LoadingCache<Queued, MultiPostScanResult> cache;
 
-    @Autowired
-    public PostService(DataService dataService, ThreadPoolService threadPoolService, MetadataService metadataService) {
-        this.dataService = dataService;
-        this.threadPoolService = threadPoolService;
-        this.metadataService = metadataService;
+  @Autowired
+  public PostService(
+      DataService dataService,
+      ThreadPoolService threadPoolService,
+      MetadataService metadataService) {
+    this.dataService = dataService;
+    this.threadPoolService = threadPoolService;
+    this.metadataService = metadataService;
 
-        CacheLoader<Queued, MultiPostScanResult> loader = new CacheLoader<>() {
-            @Override
-            public MultiPostScanResult load(@NonNull Queued multiPostItem) throws Exception {
-                return new MultiPostScanParser(multiPostItem).parse();
-            }
+    CacheLoader<Queued, MultiPostScanResult> loader =
+        new CacheLoader<>() {
+          @Override
+          public MultiPostScanResult load(@NonNull Queued multiPostItem) throws Exception {
+            return new MultiPostScanParser(multiPostItem).parse();
+          }
         };
 
-        cache = CacheBuilder.newBuilder()
-                .expireAfterWrite(30, TimeUnit.MINUTES)
-                .build(loader);
-    }
+    cache = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build(loader);
+  }
 
-    public void stopFetchingMetadata(Post post) {
-        metadataService.stopFetchingMetadata(post);
-    }
+  public void stopFetchingMetadata(Post post) {
+    metadataService.stopFetchingMetadata(post);
+  }
 
-    public void processMultiPost(List<Queued> queuedList) {
-        for (Queued queued : queuedList) {
-            if (queued.getPostId() != null) {
-                threadPoolService.getGeneralExecutor().submit(new AddPostRunnable(queued.getPostId(), queued.getThreadId()));
-            } else {
-                threadPoolService.getGeneralExecutor().submit(new AddQueuedRunnable(queued));
-            }
-        }
+  public void processMultiPost(List<Queued> queuedList) {
+    for (Queued queued : queuedList) {
+      if (queued.getPostId() != null) {
+        threadPoolService
+            .getGeneralExecutor()
+            .submit(new AddPostRunnable(queued.getPostId(), queued.getThreadId()));
+      } else {
+        threadPoolService.getGeneralExecutor().submit(new AddQueuedRunnable(queued));
+      }
     }
+  }
 
-    public MultiPostScanResult get(Queued queued) throws ExecutionException {
-        return cache.get(queued);
-    }
+  public MultiPostScanResult get(Queued queued) throws ExecutionException {
+    return cache.get(queued);
+  }
 
-    public void remove(String threadId) {
-        dataService.removeQueueLink(threadId);
-    }
+  public void remove(String threadId) {
+    dataService.removeQueueLink(threadId);
+  }
 }

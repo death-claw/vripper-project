@@ -10,9 +10,9 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 public class PostId {
-    private String postId;
+  private String postId;
 
-    public PostId(String postId) {
-        this.postId = postId;
-    }
+  public PostId(String postId) {
+    this.postId = postId;
+  }
 }

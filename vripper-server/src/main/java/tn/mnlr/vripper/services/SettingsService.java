@@ -40,326 +40,336 @@ import static java.nio.file.StandardOpenOption.*;
 @Slf4j
 public class SettingsService {
 
-    private final Path configPath;
-    private final Path customProxiesPath;
-    private final ObjectMapper om = new ObjectMapper();
+  private final Path configPath;
+  private final Path customProxiesPath;
+  private final ObjectMapper om = new ObjectMapper();
 
-    private final Set<String> proxies = new HashSet<>();
+  private final Set<String> proxies = new HashSet<>();
 
-    private Sinks.Many<Settings> sink = Sinks.many().multicast().onBackpressureBuffer();
+  private Sinks.Many<Settings> sink = Sinks.many().multicast().onBackpressureBuffer();
 
-    @Getter
-    private Settings settings = new Settings();
-    @Value("classpath:proxies.json")
-    private Resource defaultProxies;
+  @Getter private Settings settings = new Settings();
 
-    public SettingsService(@Value("${base.dir}") String baseDir, @Value("${base.dir.name}") String baseDirName) {
-        this.configPath = Paths.get(baseDir, baseDirName, "config.json");
-        this.customProxiesPath = Paths.get(baseDir, baseDirName, "proxies.json");
-        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    }
+  @Value("classpath:proxies.json")
+  private Resource defaultProxies;
 
-    @PostConstruct
-    private void init() {
-        loadViperProxies();
-        restore();
-        sink.emitNext(settings, EmitHandler.RETRY);
-    }
+  public SettingsService(
+      @Value("${base.dir}") String baseDir, @Value("${base.dir.name}") String baseDirName) {
+    this.configPath = Paths.get(baseDir, baseDirName, "config.json");
+    this.customProxiesPath = Paths.get(baseDir, baseDirName, "proxies.json");
+    om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+  }
 
-    private void loadViperProxies() {
-        try (InputStream defaultProxiesIs = defaultProxies.getInputStream()) {
-            List<String> defaultProxies = om.readValue(defaultProxiesIs, new TypeReference<>() {
-            });
-            List<String> customProxies = new ArrayList<>();
-            if (customProxiesPath.toFile().exists() && customProxiesPath.toFile().isFile()) {
-                customProxies = om.readValue(customProxiesPath.toFile(), new TypeReference<>() {
-                });
-            } else {
-                if (!customProxiesPath.toFile().createNewFile()) {
-                    log.warn("Unable to create " + customProxiesPath.toFile().getAbsolutePath());
-                } else {
-                    try (FileWriter fw = new FileWriter(customProxiesPath.toFile())) {
-                        fw.append("[]").append(System.lineSeparator());
-                        fw.flush();
-                    } catch (IOException e) {
-                        log.warn("Unable to create " + customProxiesPath.toFile().getAbsolutePath(), e);
-                    }
-                }
-            }
-            proxies.addAll(customProxies);
-            proxies.addAll(defaultProxies);
-        } catch (IOException e) {
-            log.error("Failed to load vipergirls proxies list", e);
-        }
-        proxies.add("https://vipergirls.to");
-    }
+  @PostConstruct
+  private void init() {
+    loadViperProxies();
+    restore();
+    sink.emitNext(settings, EmitHandler.RETRY);
+  }
 
-    Flux<Settings> getSettingsFlux() {
-        return sink.asFlux();
-    }
-
-    public List<String> getProxies() {
-        return new ArrayList<>(proxies);
-    }
-
-    public void newSettings(Settings settings) {
-
-        if (settings.getVLogin() != null && settings.getVLogin()) {
-            if (!this.settings.getVPassword().equals(settings.getVPassword())) {
-                settings.setVPassword(DigestUtils.md5Hex(settings.getVPassword()));
-            }
+  private void loadViperProxies() {
+    try (InputStream defaultProxiesIs = defaultProxies.getInputStream()) {
+      List<String> defaultProxies = om.readValue(defaultProxiesIs, new TypeReference<>() {});
+      List<String> customProxies = new ArrayList<>();
+      if (customProxiesPath.toFile().exists() && customProxiesPath.toFile().isFile()) {
+        customProxies = om.readValue(customProxiesPath.toFile(), new TypeReference<>() {});
+      } else {
+        if (!customProxiesPath.toFile().createNewFile()) {
+          log.warn("Unable to create " + customProxiesPath.toFile().getAbsolutePath());
         } else {
-            settings.setVUsername("");
-            settings.setVPassword("");
-            settings.setVThanks(false);
-            settings.setVLogin(false);
+          try (FileWriter fw = new FileWriter(customProxiesPath.toFile())) {
+            fw.append("[]").append(System.lineSeparator());
+            fw.flush();
+          } catch (IOException e) {
+            log.warn("Unable to create " + customProxiesPath.toFile().getAbsolutePath(), e);
+          }
         }
-        this.settings = settings;
+      }
+      proxies.addAll(customProxies);
+      proxies.addAll(defaultProxies);
+    } catch (IOException e) {
+      log.error("Failed to load vipergirls proxies list", e);
+    }
+    proxies.add("https://vipergirls.to");
+  }
 
-        save();
-        sink.emitNext(settings, EmitHandler.RETRY);
+  Flux<Settings> getSettingsFlux() {
+    return sink.asFlux();
+  }
+
+  public List<String> getProxies() {
+    return new ArrayList<>(proxies);
+  }
+
+  public void newSettings(Settings settings) {
+
+    if (settings.getVLogin() != null && settings.getVLogin()) {
+      if (!this.settings.getVPassword().equals(settings.getVPassword())) {
+        settings.setVPassword(DigestUtils.md5Hex(settings.getVPassword()));
+      }
+    } else {
+      settings.setVUsername("");
+      settings.setVPassword("");
+      settings.setVThanks(false);
+      settings.setVLogin(false);
+    }
+    this.settings = settings;
+
+    save();
+    sink.emitNext(settings, EmitHandler.RETRY);
+  }
+
+  public void restore() {
+    try {
+      if (configPath.toFile().exists()) {
+        settings = om.readValue(configPath.toFile(), Settings.class);
+      }
+    } catch (IOException e) {
+      log.error("Failed restore user settings", e);
+      settings = new Settings();
     }
 
-    public void restore() {
-        try {
-            if (configPath.toFile().exists()) {
-                settings = om.readValue(configPath.toFile(), Settings.class);
-            }
-        } catch (IOException e) {
-            log.error("Failed restore user settings", e);
-            settings = new Settings();
-        }
-
-        if (settings.getDownloadPath() == null) {
-            settings.setDownloadPath(System.getProperty("user.home"));
-        }
-
-        if (settings.getMaxThreads() == null) {
-            settings.setMaxThreads(4);
-        }
-
-        if (settings.getMaxTotalThreads() == null) {
-            settings.setMaxTotalThreads(0);
-        }
-
-        if (settings.getAutoStart() == null) {
-            settings.setAutoStart(true);
-        }
-
-        if (settings.getVLogin() == null) {
-            settings.setVLogin(false);
-        }
-
-        if (settings.getVUsername() == null) {
-            settings.setVUsername("");
-        }
-
-        if (settings.getVPassword() == null) {
-            settings.setVPassword("");
-        }
-
-        if (settings.getVThanks() == null) {
-            settings.setVThanks(false);
-        }
-
-        if (settings.getDesktopClipboard() == null) {
-            settings.setDesktopClipboard(false);
-        }
-
-        if (settings.getForceOrder() == null) {
-            settings.setForceOrder(false);
-        }
-
-        if (settings.getSubLocation() == null) {
-            settings.setSubLocation(false);
-        }
-
-        if (settings.getThreadSubLocation() == null) {
-            settings.setThreadSubLocation(false);
-        }
-
-        if (settings.getClearCompleted() == null) {
-            settings.setClearCompleted(false);
-        }
-
-        if (settings.getDarkTheme() == null) {
-            settings.setDarkTheme(false);
-        }
-
-        if (settings.getAppendPostId() == null) {
-            settings.setAppendPostId(true);
-        }
-
-        if (settings.getLeaveThanksOnStart() == null) {
-            settings.setLeaveThanksOnStart(false);
-        }
-
-        if (settings.getConnectionTimeout() == null) {
-            settings.setConnectionTimeout(30);
-        }
-
-        if (settings.getMaxAttempts() == null) {
-            settings.setMaxAttempts(5);
-        }
-
-        if (settings.getVProxy() == null || !proxies.contains(settings.getVProxy())) {
-            settings.setVProxy("https://vipergirls.to");
-        }
-
-        if (settings.getMaxEventLog() == null) {
-            settings.setMaxEventLog(1000);
-        }
-
-        try {
-            check(this.settings);
-        } catch (ValidationException e) {
-            log.error(String.format("Your settings are invalid, either remove %s, or fix it", configPath.toString()), e);
-            SpringContext.close();
-        }
-
-        save();
+    if (settings.getDownloadPath() == null) {
+      settings.setDownloadPath(System.getProperty("user.home"));
     }
 
-
-    public void save() {
-        try {
-            Files.write(configPath, om.writeValueAsBytes(settings), CREATE, WRITE, TRUNCATE_EXISTING, SYNC);
-        } catch (IOException e) {
-            log.error("Failed to store user settings", e);
-        }
+    if (settings.getMaxThreads() == null) {
+      settings.setMaxThreads(4);
     }
 
-    @PreDestroy
-    private void destroy() {
-        save();
-        sink.emitComplete(EmitHandler.RETRY);
+    if (settings.getMaxTotalThreads() == null) {
+      settings.setMaxTotalThreads(0);
     }
 
-    public void check(Settings settings) throws ValidationException {
-
-        Path path;
-        try {
-            path = Paths.get(settings.getDownloadPath());
-        } catch (InvalidPathException e) {
-            throw new ValidationException(String.format("%s is invalid", settings.getDownloadPath()));
-        }
-        if (!Files.exists(path)) {
-            throw new ValidationException(String.format("%s does not exist", settings.getDownloadPath()));
-        } else if (!Files.isDirectory(path)) {
-            throw new ValidationException(String.format("%s is not a directory", settings.getDownloadPath()));
-        }
-
-        if (settings.getMaxTotalThreads() < 0 || settings.getMaxTotalThreads() > 12) {
-            throw new ValidationException(String.format("Invalid max global concurrent download settings, values must be in [%d,%d]", 0, 12));
-        }
-
-        if (settings.getMaxThreads() < 1 || settings.getMaxThreads() > 4) {
-            throw new ValidationException(String.format("Invalid max concurrent download settings, values must be in [%d,%d]", 1, 4));
-        }
-
-        if (settings.getConnectionTimeout() < 1 || settings.getConnectionTimeout() > 300) {
-            throw new ValidationException(String.format("Invalid connection timeout settings, values must be in [%d,%d]", 1, 300));
-        }
-
-        if (settings.getMaxAttempts() < 1 || settings.getMaxAttempts() > 10) {
-            throw new ValidationException(String.format("Invalid maximum attempts settings, values must be in [%d,%d]", 1, 10));
-        }
-
-        if (settings.getMaxEventLog() < 100 || settings.getMaxEventLog() > 10_000) {
-            throw new ValidationException(String.format("Invalid maximum event log record settings, values must be in [%d,%d]", 100, 10_000));
-        }
-
-        if (!settings.getVThanks() && settings.getLeaveThanksOnStart() != null && settings.getLeaveThanksOnStart()) {
-            throw new ValidationException("Invalid value, leave thanks must be checked");
-        }
+    if (settings.getAutoStart() == null) {
+      settings.setAutoStart(true);
     }
 
-    public Theme getTheme() {
-        return new Theme(this.settings.getDarkTheme());
+    if (settings.getVLogin() == null) {
+      settings.setVLogin(false);
     }
 
-    public void setTheme(Theme theme) {
-        this.settings.setDarkTheme(theme.darkTheme);
-        save();
+    if (settings.getVUsername() == null) {
+      settings.setVUsername("");
     }
 
-    @Getter
-    @NoArgsConstructor
-    public static class Theme {
-
-        @JsonProperty("darkTheme")
-        private boolean darkTheme;
-
-        Theme(boolean darkTheme) {
-            this.darkTheme = darkTheme;
-        }
+    if (settings.getVPassword() == null) {
+      settings.setVPassword("");
     }
 
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class Settings {
-
-        @JsonProperty("downloadPath")
-        private String downloadPath;
-
-        @JsonProperty("maxThreads")
-        private Integer maxThreads;
-
-        @JsonProperty("maxTotalThreads")
-        private Integer maxTotalThreads;
-
-        @JsonProperty("autoStart")
-        private Boolean autoStart;
-
-        @JsonProperty("vLogin")
-        private Boolean vLogin;
-
-        @JsonProperty("vUsername")
-        private String vUsername;
-
-        @JsonProperty("vPassword")
-        private String vPassword;
-
-        @JsonProperty("vThanks")
-        private Boolean vThanks;
-
-        @JsonProperty("desktopClipboard")
-        private Boolean desktopClipboard;
-
-        @JsonProperty("forceOrder")
-        private Boolean forceOrder;
-
-        @JsonProperty("subLocation")
-        private Boolean subLocation;
-
-        @JsonProperty("threadSubLocation")
-        private Boolean threadSubLocation;
-
-        @JsonProperty("clearCompleted")
-        private Boolean clearCompleted;
-
-        @JsonProperty("darkTheme")
-        private Boolean darkTheme;
-
-        @JsonProperty("appendPostId")
-        private Boolean appendPostId;
-
-        @JsonProperty("leaveThanksOnStart")
-        private Boolean leaveThanksOnStart;
-
-        @JsonProperty("connectionTimeout")
-        private Integer connectionTimeout;
-
-        @JsonProperty("maxAttempts")
-        private Integer maxAttempts;
-
-        @JsonProperty("vProxy")
-        private String vProxy;
-
-        @JsonProperty("maxEventLog")
-        private Integer maxEventLog;
-
+    if (settings.getVThanks() == null) {
+      settings.setVThanks(false);
     }
+
+    if (settings.getDesktopClipboard() == null) {
+      settings.setDesktopClipboard(false);
+    }
+
+    if (settings.getForceOrder() == null) {
+      settings.setForceOrder(false);
+    }
+
+    if (settings.getSubLocation() == null) {
+      settings.setSubLocation(false);
+    }
+
+    if (settings.getThreadSubLocation() == null) {
+      settings.setThreadSubLocation(false);
+    }
+
+    if (settings.getClearCompleted() == null) {
+      settings.setClearCompleted(false);
+    }
+
+    if (settings.getDarkTheme() == null) {
+      settings.setDarkTheme(false);
+    }
+
+    if (settings.getAppendPostId() == null) {
+      settings.setAppendPostId(true);
+    }
+
+    if (settings.getLeaveThanksOnStart() == null) {
+      settings.setLeaveThanksOnStart(false);
+    }
+
+    if (settings.getConnectionTimeout() == null) {
+      settings.setConnectionTimeout(30);
+    }
+
+    if (settings.getMaxAttempts() == null) {
+      settings.setMaxAttempts(5);
+    }
+
+    if (settings.getVProxy() == null || !proxies.contains(settings.getVProxy())) {
+      settings.setVProxy("https://vipergirls.to");
+    }
+
+    if (settings.getMaxEventLog() == null) {
+      settings.setMaxEventLog(1000);
+    }
+
+    try {
+      check(this.settings);
+    } catch (ValidationException e) {
+      log.error(
+          String.format("Your settings are invalid, either remove %s, or fix it", configPath), e);
+      SpringContext.close();
+    }
+
+    save();
+  }
+
+  public void save() {
+    try {
+      Files.write(
+          configPath, om.writeValueAsBytes(settings), CREATE, WRITE, TRUNCATE_EXISTING, SYNC);
+    } catch (IOException e) {
+      log.error("Failed to store user settings", e);
+    }
+  }
+
+  @PreDestroy
+  private void destroy() {
+    save();
+    sink.emitComplete(EmitHandler.RETRY);
+  }
+
+  public void check(Settings settings) throws ValidationException {
+
+    Path path;
+    try {
+      path = Paths.get(settings.getDownloadPath());
+    } catch (InvalidPathException e) {
+      throw new ValidationException(String.format("%s is invalid", settings.getDownloadPath()));
+    }
+    if (!Files.exists(path)) {
+      throw new ValidationException(String.format("%s does not exist", settings.getDownloadPath()));
+    } else if (!Files.isDirectory(path)) {
+      throw new ValidationException(
+          String.format("%s is not a directory", settings.getDownloadPath()));
+    }
+
+    if (settings.getMaxTotalThreads() < 0 || settings.getMaxTotalThreads() > 12) {
+      throw new ValidationException(
+          String.format(
+              "Invalid max global concurrent download settings, values must be in [%d,%d]", 0, 12));
+    }
+
+    if (settings.getMaxThreads() < 1 || settings.getMaxThreads() > 4) {
+      throw new ValidationException(
+          String.format(
+              "Invalid max concurrent download settings, values must be in [%d,%d]", 1, 4));
+    }
+
+    if (settings.getConnectionTimeout() < 1 || settings.getConnectionTimeout() > 300) {
+      throw new ValidationException(
+          String.format("Invalid connection timeout settings, values must be in [%d,%d]", 1, 300));
+    }
+
+    if (settings.getMaxAttempts() < 1 || settings.getMaxAttempts() > 10) {
+      throw new ValidationException(
+          String.format("Invalid maximum attempts settings, values must be in [%d,%d]", 1, 10));
+    }
+
+    if (settings.getMaxEventLog() < 100 || settings.getMaxEventLog() > 10_000) {
+      throw new ValidationException(
+          String.format(
+              "Invalid maximum event log record settings, values must be in [%d,%d]", 100, 10_000));
+    }
+
+    if (!settings.getVThanks()
+        && settings.getLeaveThanksOnStart() != null
+        && settings.getLeaveThanksOnStart()) {
+      throw new ValidationException("Invalid value, leave thanks must be checked");
+    }
+  }
+
+  public Theme getTheme() {
+    return new Theme(this.settings.getDarkTheme());
+  }
+
+  public void setTheme(Theme theme) {
+    this.settings.setDarkTheme(theme.darkTheme);
+    save();
+  }
+
+  @Getter
+  @NoArgsConstructor
+  public static class Theme {
+
+    @JsonProperty("darkTheme")
+    private boolean darkTheme;
+
+    Theme(boolean darkTheme) {
+      this.darkTheme = darkTheme;
+    }
+  }
+
+  @Getter
+  @Setter
+  @NoArgsConstructor
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public static class Settings {
+
+    @JsonProperty("downloadPath")
+    private String downloadPath;
+
+    @JsonProperty("maxThreads")
+    private Integer maxThreads;
+
+    @JsonProperty("maxTotalThreads")
+    private Integer maxTotalThreads;
+
+    @JsonProperty("autoStart")
+    private Boolean autoStart;
+
+    @JsonProperty("vLogin")
+    private Boolean vLogin;
+
+    @JsonProperty("vUsername")
+    private String vUsername;
+
+    @JsonProperty("vPassword")
+    private String vPassword;
+
+    @JsonProperty("vThanks")
+    private Boolean vThanks;
+
+    @JsonProperty("desktopClipboard")
+    private Boolean desktopClipboard;
+
+    @JsonProperty("forceOrder")
+    private Boolean forceOrder;
+
+    @JsonProperty("subLocation")
+    private Boolean subLocation;
+
+    @JsonProperty("threadSubLocation")
+    private Boolean threadSubLocation;
+
+    @JsonProperty("clearCompleted")
+    private Boolean clearCompleted;
+
+    @JsonProperty("darkTheme")
+    private Boolean darkTheme;
+
+    @JsonProperty("appendPostId")
+    private Boolean appendPostId;
+
+    @JsonProperty("leaveThanksOnStart")
+    private Boolean leaveThanksOnStart;
+
+    @JsonProperty("connectionTimeout")
+    private Integer connectionTimeout;
+
+    @JsonProperty("maxAttempts")
+    private Integer maxAttempts;
+
+    @JsonProperty("vProxy")
+    private String vProxy;
+
+    @JsonProperty("maxEventLog")
+    private Integer maxEventLog;
+  }
 }

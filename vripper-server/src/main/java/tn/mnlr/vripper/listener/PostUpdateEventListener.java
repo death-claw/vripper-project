@@ -11,22 +11,23 @@ import javax.annotation.PreDestroy;
 
 @Component
 @Slf4j
-public class PostUpdateEventListener implements ApplicationListener<PostUpdateEvent>, DataEventListener<PostUpdateEvent> {
+public class PostUpdateEventListener
+    implements ApplicationListener<PostUpdateEvent>, DataEventListener<PostUpdateEvent> {
 
-    private final Sinks.Many<PostUpdateEvent> sink = Sinks.many().multicast().onBackpressureBuffer();
+  private final Sinks.Many<PostUpdateEvent> sink = Sinks.many().multicast().onBackpressureBuffer();
 
-    @Override
-    public void onApplicationEvent(PostUpdateEvent event) {
-        sink.emitNext(event, EmitHandler.RETRY);
-    }
+  @Override
+  public void onApplicationEvent(PostUpdateEvent event) {
+    sink.emitNext(event, EmitHandler.RETRY);
+  }
 
-    @Override
-    public Flux<PostUpdateEvent> getDataFlux() {
-        return sink.asFlux();
-    }
+  @Override
+  public Flux<PostUpdateEvent> getDataFlux() {
+    return sink.asFlux();
+  }
 
-    @PreDestroy
-    private void destroy() {
-        sink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
-    }
+  @PreDestroy
+  private void destroy() {
+    sink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
+  }
 }

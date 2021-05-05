@@ -31,147 +31,181 @@ import java.util.stream.Collectors;
 @Service
 public class MetadataService {
 
-    private static final List<String> dictionary = Arrays.asList("download", "link", "rapidgator", "filefactory", "filefox");
-    private final LoadingCache<Key, Metadata> cache;
-    private final ConnectionService cm;
-    private final VGAuthService VGAuthService;
-    private final HtmlProcessorService htmlProcessorService;
-    private final XpathService xpathService;
-    private final Map<String, MetadataRunnable> fetchingMetadata = new ConcurrentHashMap<>();
-    private final ThreadPoolService threadPoolService;
+  private static final List<String> dictionary =
+      Arrays.asList("download", "link", "rapidgator", "filefactory", "filefox");
+  private final LoadingCache<Key, Metadata> cache;
+  private final ConnectionService cm;
+  private final VGAuthService VGAuthService;
+  private final HtmlProcessorService htmlProcessorService;
+  private final XpathService xpathService;
+  private final Map<String, MetadataRunnable> fetchingMetadata = new ConcurrentHashMap<>();
+  private final ThreadPoolService threadPoolService;
 
-    public MetadataService(ConnectionService cm, VGAuthService VGAuthService, HtmlProcessorService htmlProcessorService, XpathService xpathService, ThreadPoolService threadPoolService) {
-        this.cm = cm;
-        this.VGAuthService = VGAuthService;
-        this.htmlProcessorService = htmlProcessorService;
-        this.xpathService = xpathService;
-        this.threadPoolService = threadPoolService;
+  public MetadataService(
+      ConnectionService cm,
+      VGAuthService VGAuthService,
+      HtmlProcessorService htmlProcessorService,
+      XpathService xpathService,
+      ThreadPoolService threadPoolService) {
+    this.cm = cm;
+    this.VGAuthService = VGAuthService;
+    this.htmlProcessorService = htmlProcessorService;
+    this.xpathService = xpathService;
+    this.threadPoolService = threadPoolService;
 
-        CacheLoader<Key, Metadata> loader = new CacheLoader<>() {
-            @Override
-            public Metadata load(@NonNull Key key) {
-                return fetchMetadata(key);
-            }
+    CacheLoader<Key, Metadata> loader =
+        new CacheLoader<>() {
+          @Override
+          public Metadata load(@NonNull Key key) {
+            return fetchMetadata(key);
+          }
         };
-        cache = CacheBuilder.newBuilder()
-                .expireAfterWrite(30, TimeUnit.MINUTES)
-                .build(loader);
-    }
+    cache = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build(loader);
+  }
 
-    public Metadata get(Post post) throws ExecutionException {
-        Key key = new Key(post.getPostId(), post.getThreadId(), post.getUrl());
-        return Metadata.from(cache.get(key));
-    }
+  public Metadata get(Post post) throws ExecutionException {
+    Key key = new Key(post.getPostId(), post.getThreadId(), post.getUrl());
+    return Metadata.from(cache.get(key));
+  }
 
-    public void startFetchingMetadata(Post post) {
-        MetadataRunnable runnable = new MetadataRunnable(post);
-        threadPoolService.getGeneralExecutor().submit(runnable);
-        fetchingMetadata.put(post.getPostId(), runnable);
-    }
+  public void startFetchingMetadata(Post post) {
+    MetadataRunnable runnable = new MetadataRunnable(post);
+    threadPoolService.getGeneralExecutor().submit(runnable);
+    fetchingMetadata.put(post.getPostId(), runnable);
+  }
 
-    public void stopFetchingMetadata(Post post) {
-        this.fetchingMetadata.forEach((k, v) -> {
-            if (k.equals(post.getPostId())) {
-                v.setInterrupted(true);
-            }
+  public void stopFetchingMetadata(Post post) {
+    this.fetchingMetadata.forEach(
+        (k, v) -> {
+          if (k.equals(post.getPostId())) {
+            v.setInterrupted(true);
+          }
         });
-        fetchingMetadata.remove(post.getPostId());
-    }
+    fetchingMetadata.remove(post.getPostId());
+  }
 
-    private Metadata fetchMetadata(Key key) {
-        HttpGet httpGet = cm.buildHttpGet(key.getUrl(), null);
-        Metadata metadata = new Metadata();
-        Failsafe.with(cm.getRetryPolicy())
-                .onFailure(e -> {
-                    if (e.getFailure() instanceof InterruptedException || e.getFailure().getCause() instanceof InterruptedException) {
-                        log.debug("Fetching interrupted");
-                        return;
-                    }
-                    log.error(String.format("Error occurred when getting post metadata, postId %s", key.getPostId()), e.getFailure());
-                })
-                .run(() -> {
-                    HttpClient connection = cm.getClient().build();
-                    try (CloseableHttpResponse response = (CloseableHttpResponse) connection.execute(httpGet, VGAuthService.getContext())) {
-                        if (response.getStatusLine().getStatusCode() / 100 != 2) {
-                            throw new DownloadException(String.format("Unexpected response code '%d' for %s", response.getStatusLine().getStatusCode(), httpGet));
-                        }
-                        try {
-                            if (Thread.interrupted()) {
-                                return;
-                            }
-                            Document document = htmlProcessorService.clean(EntityUtils.toString(response.getEntity()));
-                            Node postNode = xpathService.getAsNode(document, String.format("//li[@id='post_%s']/div[contains(@class, 'postdetails')]", key.getPostId()));
-                            String postedBy = xpathService.getAsNode(postNode, "./div[contains(@class, 'userinfo')]//a[contains(@class, 'username')]//font").getTextContent().trim();
-                            metadata.setPostedBy(postedBy);
-
-                            Node node = xpathService.getAsNode(document, String.format("//div[@id='post_message_%s']", key.getPostId()));
-                            metadata.setResolvedNames(findTitleInContent(node));
-
-                            metadata.setPostId(key.getPostId());
-                        } catch (Exception e) {
-                            throw new PostParseException(String.format("Failed to parse thread %s, post %s", key.getThreadId(), key.getPostId()), e);
-                        } finally {
-                            EntityUtils.consumeQuietly(response.getEntity());
-                        }
-                    }
-                });
-        return metadata;
-    }
-
-    private List<String> findTitleInContent(Node node) {
-        List<String> altTitle = new ArrayList<>();
-        findTitle(node, altTitle, new AtomicBoolean(true));
-        return altTitle.stream().distinct().collect(Collectors.toList());
-    }
-
-    private void findTitle(Node node, List<String> altTitle, AtomicBoolean keepGoing) {
-        if (!keepGoing.get()) {
-            return;
-        }
-        if (node.getNodeName().equals("a") || node.getNodeName().equals("img")) {
-            keepGoing.set(false);
-            return;
-        }
-        if (node.getNodeType() == Node.ELEMENT_NODE) {
-            for (int i = 0; i < node.getChildNodes().getLength(); i++) {
-                Node item = node.getChildNodes().item(i);
-                findTitle(item, altTitle, keepGoing);
-                if (!keepGoing.get()) {
-                    return;
+  private Metadata fetchMetadata(Key key) {
+    HttpGet httpGet = cm.buildHttpGet(key.getUrl(), null);
+    Metadata metadata = new Metadata();
+    Failsafe.with(cm.getRetryPolicy())
+        .onFailure(
+            e -> {
+              if (e.getFailure() instanceof InterruptedException
+                  || e.getFailure().getCause() instanceof InterruptedException) {
+                log.debug("Fetching interrupted");
+                return;
+              }
+              log.error(
+                  String.format(
+                      "Error occurred when getting post metadata, postId %s", key.getPostId()),
+                  e.getFailure());
+            })
+        .run(
+            () -> {
+              HttpClient connection = cm.getClient().build();
+              try (CloseableHttpResponse response =
+                  (CloseableHttpResponse) connection.execute(httpGet, VGAuthService.getContext())) {
+                if (response.getStatusLine().getStatusCode() / 100 != 2) {
+                  throw new DownloadException(
+                      String.format(
+                          "Unexpected response code '%d' for %s",
+                          response.getStatusLine().getStatusCode(), httpGet));
                 }
-            }
+                try {
+                  if (Thread.interrupted()) {
+                    return;
+                  }
+                  Document document =
+                      htmlProcessorService.clean(EntityUtils.toString(response.getEntity()));
+                  Node postNode =
+                      xpathService.getAsNode(
+                          document,
+                          String.format(
+                              "//li[@id='post_%s']/div[contains(@class, 'postdetails')]",
+                              key.getPostId()));
+                  String postedBy =
+                      xpathService
+                          .getAsNode(
+                              postNode,
+                              "./div[contains(@class, 'userinfo')]//a[contains(@class, 'username')]//font")
+                          .getTextContent()
+                          .trim();
+                  metadata.setPostedBy(postedBy);
 
-        } else if (node.getNodeType() == Node.TEXT_NODE) {
-            String text = node.getTextContent().trim();
-            if (!text.isBlank() && dictionary.stream().noneMatch(e -> text.toLowerCase().contains(e.toLowerCase()))) {
-                altTitle.add(text);
-            }
+                  Node node =
+                      xpathService.getAsNode(
+                          document, String.format("//div[@id='post_message_%s']", key.getPostId()));
+                  metadata.setResolvedNames(findTitleInContent(node));
+
+                  metadata.setPostId(key.getPostId());
+                } catch (Exception e) {
+                  throw new PostParseException(
+                      String.format(
+                          "Failed to parse thread %s, post %s", key.getThreadId(), key.getPostId()),
+                      e);
+                } finally {
+                  EntityUtils.consumeQuietly(response.getEntity());
+                }
+              }
+            });
+    return metadata;
+  }
+
+  private List<String> findTitleInContent(Node node) {
+    List<String> altTitle = new ArrayList<>();
+    findTitle(node, altTitle, new AtomicBoolean(true));
+    return altTitle.stream().distinct().collect(Collectors.toList());
+  }
+
+  private void findTitle(Node node, List<String> altTitle, AtomicBoolean keepGoing) {
+    if (!keepGoing.get()) {
+      return;
+    }
+    if (node.getNodeName().equals("a") || node.getNodeName().equals("img")) {
+      keepGoing.set(false);
+      return;
+    }
+    if (node.getNodeType() == Node.ELEMENT_NODE) {
+      for (int i = 0; i < node.getChildNodes().getLength(); i++) {
+        Node item = node.getChildNodes().item(i);
+        findTitle(item, altTitle, keepGoing);
+        if (!keepGoing.get()) {
+          return;
         }
+      }
+
+    } else if (node.getNodeType() == Node.TEXT_NODE) {
+      String text = node.getTextContent().trim();
+      if (!text.isBlank()
+          && dictionary.stream().noneMatch(e -> text.toLowerCase().contains(e.toLowerCase()))) {
+        altTitle.add(text);
+      }
+    }
+  }
+
+  @Getter
+  static class Key {
+    private final String postId;
+    private final String threadId;
+    private final String url;
+
+    Key(String postId, String threadId, String url) {
+      this.postId = postId;
+      this.threadId = threadId;
+      this.url = url;
     }
 
-    @Getter
-    static class Key {
-        private final String postId;
-        private final String threadId;
-        private final String url;
-
-        Key(String postId, String threadId, String url) {
-            this.postId = postId;
-            this.threadId = threadId;
-            this.url = url;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Key key = (Key) o;
-            return Objects.equals(postId, key.postId);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(postId);
-        }
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      Key key = (Key) o;
+      return Objects.equals(postId, key.postId);
     }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(postId);
+    }
+  }
 }

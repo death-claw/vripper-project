@@ -15,50 +15,50 @@ import tn.mnlr.vripper.services.XpathService;
 @Slf4j
 public class ImgboxHost extends Host {
 
-    private static final String host = "imgbox.com";
-    private static final String IMG_XPATH = "//img[@id='img']";
+  private static final String host = "imgbox.com";
+  private static final String IMG_XPATH = "//img[@id='img']";
 
-    private final HostService hostService;
-    private final XpathService xpathService;
+  private final HostService hostService;
+  private final XpathService xpathService;
 
+  @Autowired
+  public ImgboxHost(HostService hostService, XpathService xpathService) {
+    this.hostService = hostService;
+    this.xpathService = xpathService;
+  }
 
-    @Autowired
-    public ImgboxHost(HostService hostService, XpathService xpathService) {
-        this.hostService = hostService;
-        this.xpathService = xpathService;
+  @Override
+  public String getHost() {
+    return host;
+  }
+
+  @Override
+  public String getLookup() {
+    return host;
+  }
+
+  @Override
+  public HostService.NameUrl getNameAndUrl(final String url, final HttpClientContext context)
+      throws HostException {
+
+    Document doc = hostService.getResponse(url, context).getDocument();
+
+    Node imgNode;
+    try {
+      log.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url));
+      imgNode = xpathService.getAsNode(doc, IMG_XPATH);
+    } catch (XpathException e) {
+      throw new HostException(e);
     }
 
-    @Override
-    public String getHost() {
-        return host;
+    try {
+      log.debug(String.format("Resolving name and image url for %s", url));
+      String imgTitle = imgNode.getAttributes().getNamedItem("title").getTextContent().trim();
+      String imgUrl = imgNode.getAttributes().getNamedItem("src").getTextContent().trim();
+
+      return new HostService.NameUrl(imgTitle, imgUrl);
+    } catch (Exception e) {
+      throw new HostException("Unexpected error occurred", e);
     }
-
-    @Override
-    public String getLookup() {
-        return host;
-    }
-
-    @Override
-    public HostService.NameUrl getNameAndUrl(final String url, final HttpClientContext context) throws HostException {
-
-        Document doc = hostService.getResponse(url, context).getDocument();
-
-        Node imgNode;
-        try {
-            log.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url));
-            imgNode = xpathService.getAsNode(doc, IMG_XPATH);
-        } catch (XpathException e) {
-            throw new HostException(e);
-        }
-
-        try {
-            log.debug(String.format("Resolving name and image url for %s", url));
-            String imgTitle = imgNode.getAttributes().getNamedItem("title").getTextContent().trim();
-            String imgUrl = imgNode.getAttributes().getNamedItem("src").getTextContent().trim();
-
-            return new HostService.NameUrl(imgTitle, imgUrl);
-        } catch (Exception e) {
-            throw new HostException("Unexpected error occurred", e);
-        }
-    }
+  }
 }

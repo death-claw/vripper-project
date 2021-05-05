@@ -10,6 +10,6 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 public class PostToAdd {
-    private String threadId;
-    private String postId;
+  private String threadId;
+  private String postId;
 }

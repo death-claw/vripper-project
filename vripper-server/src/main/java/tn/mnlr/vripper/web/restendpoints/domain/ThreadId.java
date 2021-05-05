@@ -10,5 +10,5 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 public class ThreadId {
-    private String threadId;
+  private String threadId;
 }

@@ -6,9 +6,9 @@ import java.util.Optional;
 
 public interface IMetadataRepository extends IRepository {
 
-    Metadata save(Metadata metadata);
+  Metadata save(Metadata metadata);
 
-    Optional<Metadata> findByPostId(String postId);
+  Optional<Metadata> findByPostId(String postId);
 
-    int deleteByPostId(String postId);
+  int deleteByPostId(String postId);
 }

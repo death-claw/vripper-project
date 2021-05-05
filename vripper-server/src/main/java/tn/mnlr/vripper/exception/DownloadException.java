@@ -2,11 +2,11 @@ package tn.mnlr.vripper.exception;
 
 public class DownloadException extends Exception {
 
-    public DownloadException(String message) {
-        super(message);
-    }
+  public DownloadException(String message) {
+    super(message);
+  }
 
-    public DownloadException(Throwable e) {
-        super(e);
-    }
+  public DownloadException(Throwable e) {
+    super(e);
+  }
 }

@@ -10,33 +10,34 @@ import java.util.Objects;
 
 @Service
 @Slf4j
-abstract public class Host {
+public abstract class Host {
 
-    abstract public String getHost();
+  public abstract String getHost();
 
-    abstract public String getLookup();
+  public abstract String getLookup();
 
-    public boolean isSupported(String url) {
-        return url.contains(getLookup());
-    }
+  public boolean isSupported(String url) {
+    return url.contains(getLookup());
+  }
 
-    public abstract HostService.NameUrl getNameAndUrl(final String url, final HttpClientContext context) throws HostException;
+  public abstract HostService.NameUrl getNameAndUrl(
+      final String url, final HttpClientContext context) throws HostException;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Host host = (Host) o;
-        return Objects.equals(getHost(), host.getHost());
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Host host = (Host) o;
+    return Objects.equals(getHost(), host.getHost());
+  }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(getHost());
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(getHost());
+  }
 
-    @Override
-    public String toString() {
-        return getHost();
-    }
+  @Override
+  public String toString() {
+    return getHost();
+  }
 }

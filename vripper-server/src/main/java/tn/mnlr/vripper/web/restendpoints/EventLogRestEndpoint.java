@@ -13,15 +13,15 @@ import tn.mnlr.vripper.jpa.repositories.IEventRepository;
 @CrossOrigin(value = "*")
 public class EventLogRestEndpoint {
 
-    private final IEventRepository eventRepository;
+  private final IEventRepository eventRepository;
 
-    public EventLogRestEndpoint(IEventRepository eventRepository) {
-        this.eventRepository = eventRepository;
-    }
+  public EventLogRestEndpoint(IEventRepository eventRepository) {
+    this.eventRepository = eventRepository;
+  }
 
-    @GetMapping("/events/clear")
-    @ResponseStatus(value = HttpStatus.OK)
-    public void clear() {
-        eventRepository.deleteAll();
-    }
+  @GetMapping("/events/clear")
+  @ResponseStatus(value = HttpStatus.OK)
+  public void clear() {
+    eventRepository.deleteAll();
+  }
 }

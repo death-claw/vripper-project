@@ -15,35 +15,34 @@ import java.util.concurrent.atomic.AtomicLong;
 @EnableScheduling
 public class DownloadSpeedService {
 
-    private final AtomicLong read = new AtomicLong(0);
-    private final Sinks.Many<Long> sink = Sinks.many().multicast().onBackpressureBuffer();
-    @Getter
-    private long currentValue;
-    private boolean allowWrite = false;
+  private final AtomicLong read = new AtomicLong(0);
+  private final Sinks.Many<Long> sink = Sinks.many().multicast().onBackpressureBuffer();
+  @Getter private long currentValue;
+  private boolean allowWrite = false;
 
-    public Flux<Long> getReadBytesPerSecond() {
-        return sink.asFlux();
-    }
+  public Flux<Long> getReadBytesPerSecond() {
+    return sink.asFlux();
+  }
 
-    public void increase(long read) {
-        if (allowWrite) {
-            this.read.addAndGet(read);
-        }
+  public void increase(long read) {
+    if (allowWrite) {
+      this.read.addAndGet(read);
     }
+  }
 
-    @Scheduled(fixedDelay = 1000)
-    private void calc() {
-        allowWrite = false;
-        long newValue = read.getAndSet(0);
-        if (newValue != currentValue) {
-            currentValue = newValue;
-            sink.emitNext(currentValue, EmitHandler.RETRY);
-        }
-        allowWrite = true;
+  @Scheduled(fixedDelay = 1000)
+  private void calc() {
+    allowWrite = false;
+    long newValue = read.getAndSet(0);
+    if (newValue != currentValue) {
+      currentValue = newValue;
+      sink.emitNext(currentValue, EmitHandler.RETRY);
     }
+    allowWrite = true;
+  }
 
-    @PreDestroy
-    private void destroy() {
-        sink.emitComplete(EmitHandler.RETRY);
-    }
+  @PreDestroy
+  private void destroy() {
+    sink.emitComplete(EmitHandler.RETRY);
+  }
 }

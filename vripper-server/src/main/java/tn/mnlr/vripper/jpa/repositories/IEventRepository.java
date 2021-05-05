@@ -7,15 +7,15 @@ import java.util.Optional;
 
 public interface IEventRepository extends IRepository {
 
-    Event save(Event event);
+  Event save(Event event);
 
-    Event update(Event event);
+  Event update(Event event);
 
-    List<Event> findAll();
+  List<Event> findAll();
 
-    Optional<Event> findById(Long id);
+  Optional<Event> findById(Long id);
 
-    void delete(Long id);
+  void delete(Long id);
 
-    void deleteAll();
+  void deleteAll();
 }

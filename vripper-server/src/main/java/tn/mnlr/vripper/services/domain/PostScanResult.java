@@ -9,17 +9,16 @@ import java.util.Set;
 
 public class PostScanResult {
 
-    private final Post post;
+  private final Post post;
 
-    @Getter
-    private final Set<Image> images;
+  @Getter private final Set<Image> images;
 
-    public PostScanResult(Post post, Set<Image> images) {
-        this.post = post;
-        this.images = images;
-    }
+  public PostScanResult(Post post, Set<Image> images) {
+    this.post = post;
+    this.images = images;
+  }
 
-    public Optional<Post> getPost() {
-        return Optional.ofNullable(post);
-    }
+  public Optional<Post> getPost() {
+    return Optional.ofNullable(post);
+  }
 }

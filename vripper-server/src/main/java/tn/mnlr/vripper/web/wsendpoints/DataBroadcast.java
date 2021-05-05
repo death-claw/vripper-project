@@ -28,125 +28,205 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DataBroadcast {
 
-    private final SimpMessagingTemplate template;
-    private final VGAuthService VGAuthService;
-    private final GlobalStateService globalStateService;
-    private final DownloadSpeedService downloadSpeedService;
-    private final DataService dataService;
+  private final SimpMessagingTemplate template;
+  private final VGAuthService VGAuthService;
+  private final GlobalStateService globalStateService;
+  private final DownloadSpeedService downloadSpeedService;
+  private final DataService dataService;
 
-    private final PostUpdateEventListener postUpdateEventListener;
-    private final MetadataUpdateEventListener metadataUpdateEventListener;
-    private final ImageUpdateEventListener imageUpdateEventListener;
-    private final QueuedUpdateEventListener queuedUpdateEventListener;
-    private final EventUpdateEventListener eventUpdateEventListener;
+  private final PostUpdateEventListener postUpdateEventListener;
+  private final MetadataUpdateEventListener metadataUpdateEventListener;
+  private final ImageUpdateEventListener imageUpdateEventListener;
+  private final QueuedUpdateEventListener queuedUpdateEventListener;
+  private final EventUpdateEventListener eventUpdateEventListener;
 
-    private final QueuedRemoveEventListener queuedRemoveEventListener;
-    private final PostRemoveEventListener postRemoveEventListener;
-    private final EventRemoveEventListener eventRemoveEventListener;
+  private final QueuedRemoveEventListener queuedRemoveEventListener;
+  private final PostRemoveEventListener postRemoveEventListener;
+  private final EventRemoveEventListener eventRemoveEventListener;
 
-    private final List<Disposable> disposables = new ArrayList<>();
+  private final List<Disposable> disposables = new ArrayList<>();
 
-    @Autowired
-    public DataBroadcast(SimpMessagingTemplate template, VGAuthService VGAuthService, GlobalStateService globalStateService, DownloadSpeedService downloadSpeedService, DataService dataService, PostUpdateEventListener postUpdateEventListener, MetadataUpdateEventListener metadataUpdateEventListener, ImageUpdateEventListener imageUpdateEventListener, QueuedUpdateEventListener queuedUpdateEventListener, EventUpdateEventListener eventUpdateEventListener, QueuedRemoveEventListener queuedRemoveEventListener, PostRemoveEventListener postRemoveEventListener, EventRemoveEventListener eventRemoveEventListener) {
-        this.template = template;
-        this.VGAuthService = VGAuthService;
-        this.globalStateService = globalStateService;
-        this.downloadSpeedService = downloadSpeedService;
-        this.dataService = dataService;
-        this.postUpdateEventListener = postUpdateEventListener;
-        this.metadataUpdateEventListener = metadataUpdateEventListener;
-        this.imageUpdateEventListener = imageUpdateEventListener;
-        this.queuedUpdateEventListener = queuedUpdateEventListener;
-        this.eventUpdateEventListener = eventUpdateEventListener;
-        this.queuedRemoveEventListener = queuedRemoveEventListener;
-        this.postRemoveEventListener = postRemoveEventListener;
-        this.eventRemoveEventListener = eventRemoveEventListener;
-    }
+  @Autowired
+  public DataBroadcast(
+      SimpMessagingTemplate template,
+      VGAuthService VGAuthService,
+      GlobalStateService globalStateService,
+      DownloadSpeedService downloadSpeedService,
+      DataService dataService,
+      PostUpdateEventListener postUpdateEventListener,
+      MetadataUpdateEventListener metadataUpdateEventListener,
+      ImageUpdateEventListener imageUpdateEventListener,
+      QueuedUpdateEventListener queuedUpdateEventListener,
+      EventUpdateEventListener eventUpdateEventListener,
+      QueuedRemoveEventListener queuedRemoveEventListener,
+      PostRemoveEventListener postRemoveEventListener,
+      EventRemoveEventListener eventRemoveEventListener) {
+    this.template = template;
+    this.VGAuthService = VGAuthService;
+    this.globalStateService = globalStateService;
+    this.downloadSpeedService = downloadSpeedService;
+    this.dataService = dataService;
+    this.postUpdateEventListener = postUpdateEventListener;
+    this.metadataUpdateEventListener = metadataUpdateEventListener;
+    this.imageUpdateEventListener = imageUpdateEventListener;
+    this.queuedUpdateEventListener = queuedUpdateEventListener;
+    this.eventUpdateEventListener = eventUpdateEventListener;
+    this.queuedRemoveEventListener = queuedRemoveEventListener;
+    this.postRemoveEventListener = postRemoveEventListener;
+    this.eventRemoveEventListener = eventRemoveEventListener;
+  }
 
-    @PostConstruct
-    private void run() {
-        disposables.add(VGAuthService.getLoggedInUser()
-                .map(DataController.LoggedUser::new)
-                .subscribe(user -> template.convertAndSend("/topic/user", user), e -> log.error("Failed to send data to client", e)));
+  @PostConstruct
+  private void run() {
+    disposables.add(
+        VGAuthService.getLoggedInUser()
+            .map(DataController.LoggedUser::new)
+            .subscribe(
+                user -> template.convertAndSend("/topic/user", user),
+                e -> log.error("Failed to send data to client", e)));
 
-        disposables.add(globalStateService.getGlobalState()
-                .subscribe(state -> template.convertAndSend("/topic/download-state", state), e -> log.error("Failed to send data to client", e)));
+    disposables.add(
+        globalStateService
+            .getGlobalState()
+            .subscribe(
+                state -> template.convertAndSend("/topic/download-state", state),
+                e -> log.error("Failed to send data to client", e)));
 
-        disposables.add(downloadSpeedService.getReadBytesPerSecond()
-                .map(DownloadSpeed::new)
-                .subscribe(speed -> template.convertAndSend("/topic/speed", speed), e -> log.error("Failed to send data to client", e)));
+    disposables.add(
+        downloadSpeedService
+            .getReadBytesPerSecond()
+            .map(DownloadSpeed::new)
+            .subscribe(
+                speed -> template.convertAndSend("/topic/speed", speed),
+                e -> log.error("Failed to send data to client", e)));
 
-        disposables.add(postUpdateEventListener.getDataFlux()
-                .map(PostUpdateEvent::getId)
-                .buffer(Duration.of(500, ChronoUnit.MILLIS))
-                .map(HashSet::new)
-                .filter(e -> !e.isEmpty())
-                .subscribe(ids -> template.convertAndSend("/topic/posts", ids.stream().map(dataService::findById).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList())), e -> log.error("Failed to send data to client", e)));
+    disposables.add(
+        postUpdateEventListener
+            .getDataFlux()
+            .map(PostUpdateEvent::getId)
+            .buffer(Duration.of(500, ChronoUnit.MILLIS))
+            .map(HashSet::new)
+            .filter(e -> !e.isEmpty())
+            .subscribe(
+                ids ->
+                    template.convertAndSend(
+                        "/topic/posts",
+                        ids.stream()
+                            .map(dataService::findById)
+                            .filter(Optional::isPresent)
+                            .map(Optional::get)
+                            .collect(Collectors.toList())),
+                e -> log.error("Failed to send data to client", e)));
 
-        disposables.add(metadataUpdateEventListener.getDataFlux()
-                .map(MetadataUpdateEvent::getPostIdRef)
-                .buffer(Duration.of(500, ChronoUnit.MILLIS))
-                .map(HashSet::new)
-                .filter(e -> !e.isEmpty())
-                .subscribe(ids -> template.convertAndSend("/topic/posts", ids.stream().map(dataService::findById).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList())), e -> log.error("Failed to send data to client", e)));
+    disposables.add(
+        metadataUpdateEventListener
+            .getDataFlux()
+            .map(MetadataUpdateEvent::getPostIdRef)
+            .buffer(Duration.of(500, ChronoUnit.MILLIS))
+            .map(HashSet::new)
+            .filter(e -> !e.isEmpty())
+            .subscribe(
+                ids ->
+                    template.convertAndSend(
+                        "/topic/posts",
+                        ids.stream()
+                            .map(dataService::findById)
+                            .filter(Optional::isPresent)
+                            .map(Optional::get)
+                            .collect(Collectors.toList())),
+                e -> log.error("Failed to send data to client", e)));
 
-        disposables.add(eventUpdateEventListener.getDataFlux()
-                .map(EventUpdateEvent::getId)
-                .buffer(Duration.of(500, ChronoUnit.MILLIS))
-                .map(HashSet::new)
-                .filter(e -> !e.isEmpty())
-                .subscribe(ids -> template.convertAndSend("/topic/events", ids.stream().map(dataService::findEventById).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList())), e -> log.error("Failed to send data to client", e)));
+    disposables.add(
+        eventUpdateEventListener
+            .getDataFlux()
+            .map(EventUpdateEvent::getId)
+            .buffer(Duration.of(500, ChronoUnit.MILLIS))
+            .map(HashSet::new)
+            .filter(e -> !e.isEmpty())
+            .subscribe(
+                ids ->
+                    template.convertAndSend(
+                        "/topic/events",
+                        ids.stream()
+                            .map(dataService::findEventById)
+                            .filter(Optional::isPresent)
+                            .map(Optional::get)
+                            .collect(Collectors.toList())),
+                e -> log.error("Failed to send data to client", e)));
 
-        disposables.add(imageUpdateEventListener.getDataFlux()
-                .map(ImageUpdateEvent::getId)
-                .buffer(Duration.of(500, ChronoUnit.MILLIS))
-                .map(HashSet::new)
-                .filter(e -> !e.isEmpty())
-                .subscribe(id -> id
-                                .stream()
-                                .map(dataService::findImageById)
-                                .filter(Optional::isPresent)
-                                .map(Optional::get)
-                                .collect(Collectors.groupingBy(Image::getPostId))
-                                .forEach((postId, images) -> template.convertAndSend("/topic/images/" + postId, images)),
-                        e -> log.error("Failed to send data to client", e))
-        );
+    disposables.add(
+        imageUpdateEventListener
+            .getDataFlux()
+            .map(ImageUpdateEvent::getId)
+            .buffer(Duration.of(500, ChronoUnit.MILLIS))
+            .map(HashSet::new)
+            .filter(e -> !e.isEmpty())
+            .subscribe(
+                id ->
+                    id.stream()
+                        .map(dataService::findImageById)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .collect(Collectors.groupingBy(Image::getPostId))
+                        .forEach(
+                            (postId, images) ->
+                                template.convertAndSend("/topic/images/" + postId, images)),
+                e -> log.error("Failed to send data to client", e)));
 
-        disposables.add(queuedUpdateEventListener.getDataFlux()
-                .map(QueuedUpdateEvent::getId)
-                .buffer(Duration.of(500, ChronoUnit.MILLIS))
-                .map(HashSet::new)
-                .filter(e -> !e.isEmpty())
-                .subscribe(ids -> template.convertAndSend("/topic/queued", ids.stream().map(dataService::findQueuedById).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList())), e -> log.error("Failed to send data to client", e))
-        );
+    disposables.add(
+        queuedUpdateEventListener
+            .getDataFlux()
+            .map(QueuedUpdateEvent::getId)
+            .buffer(Duration.of(500, ChronoUnit.MILLIS))
+            .map(HashSet::new)
+            .filter(e -> !e.isEmpty())
+            .subscribe(
+                ids ->
+                    template.convertAndSend(
+                        "/topic/queued",
+                        ids.stream()
+                            .map(dataService::findQueuedById)
+                            .filter(Optional::isPresent)
+                            .map(Optional::get)
+                            .collect(Collectors.toList())),
+                e -> log.error("Failed to send data to client", e)));
 
-        disposables.add(queuedRemoveEventListener.getDataFlux()
-                .map(QueuedRemoveEvent::getThreadId)
-                .buffer(Duration.of(500, ChronoUnit.MILLIS))
-                .map(HashSet::new)
-                .filter(e -> !e.isEmpty())
-                .subscribe(threadIds -> template.convertAndSend("/topic/queued/deleted", threadIds), e -> log.error("Failed to send data to client", e))
-        );
+    disposables.add(
+        queuedRemoveEventListener
+            .getDataFlux()
+            .map(QueuedRemoveEvent::getThreadId)
+            .buffer(Duration.of(500, ChronoUnit.MILLIS))
+            .map(HashSet::new)
+            .filter(e -> !e.isEmpty())
+            .subscribe(
+                threadIds -> template.convertAndSend("/topic/queued/deleted", threadIds),
+                e -> log.error("Failed to send data to client", e)));
 
-        disposables.add(postRemoveEventListener.getDataFlux()
-                .map(PostRemoveEvent::getPostId)
-                .buffer(Duration.of(500, ChronoUnit.MILLIS))
-                .map(HashSet::new)
-                .filter(e -> !e.isEmpty())
-                .subscribe(postIds -> template.convertAndSend("/topic/posts/deleted", postIds), e -> log.error("Failed to send data to client", e))
-        );
+    disposables.add(
+        postRemoveEventListener
+            .getDataFlux()
+            .map(PostRemoveEvent::getPostId)
+            .buffer(Duration.of(500, ChronoUnit.MILLIS))
+            .map(HashSet::new)
+            .filter(e -> !e.isEmpty())
+            .subscribe(
+                postIds -> template.convertAndSend("/topic/posts/deleted", postIds),
+                e -> log.error("Failed to send data to client", e)));
 
-        disposables.add(eventRemoveEventListener.getDataFlux()
-                .map(EventRemoveEvent::getId)
-                .buffer(Duration.of(500, ChronoUnit.MILLIS))
-                .map(HashSet::new)
-                .filter(e -> !e.isEmpty())
-                .subscribe(postIds -> template.convertAndSend("/topic/events/deleted", postIds), e -> log.error("Failed to send data to client", e))
-        );
-    }
+    disposables.add(
+        eventRemoveEventListener
+            .getDataFlux()
+            .map(EventRemoveEvent::getId)
+            .buffer(Duration.of(500, ChronoUnit.MILLIS))
+            .map(HashSet::new)
+            .filter(e -> !e.isEmpty())
+            .subscribe(
+                postIds -> template.convertAndSend("/topic/events/deleted", postIds),
+                e -> log.error("Failed to send data to client", e)));
+  }
 
-    @PreDestroy
-    private void destroy() {
-        disposables.forEach(Disposable::dispose);
-    }
+  @PreDestroy
+  private void destroy() {
+    disposables.forEach(Disposable::dispose);
+  }
 }

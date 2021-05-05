@@ -11,22 +11,24 @@ import javax.annotation.PreDestroy;
 
 @Component
 @Slf4j
-public class MetadataUpdateEventListener implements ApplicationListener<MetadataUpdateEvent>, DataEventListener<MetadataUpdateEvent> {
+public class MetadataUpdateEventListener
+    implements ApplicationListener<MetadataUpdateEvent>, DataEventListener<MetadataUpdateEvent> {
 
-    private final Sinks.Many<MetadataUpdateEvent> sink = Sinks.many().multicast().onBackpressureBuffer();
+  private final Sinks.Many<MetadataUpdateEvent> sink =
+      Sinks.many().multicast().onBackpressureBuffer();
 
-    @Override
-    public void onApplicationEvent(MetadataUpdateEvent event) {
-        sink.emitNext(event, (signalType, emitResult) -> true);
-    }
+  @Override
+  public void onApplicationEvent(MetadataUpdateEvent event) {
+    sink.emitNext(event, (signalType, emitResult) -> true);
+  }
 
-    @Override
-    public Flux<MetadataUpdateEvent> getDataFlux() {
-        return sink.asFlux();
-    }
+  @Override
+  public Flux<MetadataUpdateEvent> getDataFlux() {
+    return sink.asFlux();
+  }
 
-    @PreDestroy
-    private void destroy() {
-        sink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
-    }
+  @PreDestroy
+  private void destroy() {
+    sink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
+  }
 }

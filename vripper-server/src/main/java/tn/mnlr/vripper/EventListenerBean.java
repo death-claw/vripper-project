@@ -13,21 +13,20 @@ import java.util.Set;
 @Component
 public class EventListenerBean {
 
-    @Getter
-    private static boolean init = false;
+  @Getter private static boolean init = false;
 
-    private final DataService dataService;
-    private final Set<IRepository> repositorySet;
+  private final DataService dataService;
+  private final Set<IRepository> repositorySet;
 
-    @Autowired
-    public EventListenerBean(DataService dataService, Set<IRepository> repositorySet) {
-        this.dataService = dataService;
-        this.repositorySet = repositorySet;
-    }
+  @Autowired
+  public EventListenerBean(DataService dataService, Set<IRepository> repositorySet) {
+    this.dataService = dataService;
+    this.repositorySet = repositorySet;
+  }
 
-    @EventListener
-    public void onApplicationEvent(ContextRefreshedEvent event) {
-        dataService.setDownloadingToStopped();
-        init = true;
-    }
+  @EventListener
+  public void onApplicationEvent(ContextRefreshedEvent event) {
+    dataService.setDownloadingToStopped();
+    init = true;
+  }
 }

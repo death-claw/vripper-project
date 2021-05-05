@@ -10,6 +10,6 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 public class AltPostName {
-    private String postId;
-    private String altName;
+  private String postId;
+  private String altName;
 }

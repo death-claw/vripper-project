@@ -11,12 +11,12 @@ import tn.mnlr.vripper.exception.HtmlProcessorException;
 @Service
 public class HtmlProcessorService {
 
-    public Document clean(String htmlContent) throws HtmlProcessorException {
-        try {
-            TagNode clean = new HtmlCleaner().clean(htmlContent);
-            return new DomSerializer(new CleanerProperties()).createDOM(clean);
-        } catch (Exception e) {
-            throw new HtmlProcessorException(e);
-        }
+  public Document clean(String htmlContent) throws HtmlProcessorException {
+    try {
+      TagNode clean = new HtmlCleaner().clean(htmlContent);
+      return new DomSerializer(new CleanerProperties()).createDOM(clean);
+    } catch (Exception e) {
+      throw new HtmlProcessorException(e);
     }
+  }
 }

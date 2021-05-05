@@ -6,10 +6,10 @@ import org.springframework.context.ApplicationEvent;
 @Getter
 public class QueuedUpdateEvent extends ApplicationEvent {
 
-    private final Long id;
+  private final Long id;
 
-    public QueuedUpdateEvent(Object source, Long id) {
-        super(source);
-        this.id = id;
-    }
+  public QueuedUpdateEvent(Object source, Long id) {
+    super(source);
+    this.id = id;
+  }
 }

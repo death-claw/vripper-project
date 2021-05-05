@@ -11,22 +11,24 @@ import javax.annotation.PreDestroy;
 
 @Component
 @Slf4j
-public class QueuedUpdateEventListener implements ApplicationListener<QueuedUpdateEvent>, DataEventListener<QueuedUpdateEvent> {
+public class QueuedUpdateEventListener
+    implements ApplicationListener<QueuedUpdateEvent>, DataEventListener<QueuedUpdateEvent> {
 
-    private final Sinks.Many<QueuedUpdateEvent> sink = Sinks.many().multicast().onBackpressureBuffer();
+  private final Sinks.Many<QueuedUpdateEvent> sink =
+      Sinks.many().multicast().onBackpressureBuffer();
 
-    @Override
-    public void onApplicationEvent(QueuedUpdateEvent event) {
-        sink.emitNext(event, (signalType, emitResult) -> true);
-    }
+  @Override
+  public void onApplicationEvent(QueuedUpdateEvent event) {
+    sink.emitNext(event, (signalType, emitResult) -> true);
+  }
 
-    @Override
-    public Flux<QueuedUpdateEvent> getDataFlux() {
-        return sink.asFlux();
-    }
+  @Override
+  public Flux<QueuedUpdateEvent> getDataFlux() {
+    return sink.asFlux();
+  }
 
-    @PreDestroy
-    private void destroy() {
-        sink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
-    }
+  @PreDestroy
+  private void destroy() {
+    sink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
+  }
 }

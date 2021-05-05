@@ -10,9 +10,9 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 public class RemoveResult {
-    private String postId;
+  private String postId;
 
-    public RemoveResult(String postId) {
-        this.postId = postId;
-    }
+  public RemoveResult(String postId) {
+    this.postId = postId;
+  }
 }

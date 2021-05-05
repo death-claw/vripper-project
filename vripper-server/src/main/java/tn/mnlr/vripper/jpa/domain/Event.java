@@ -19,48 +19,55 @@ import java.time.format.DateTimeFormatter;
 @NoArgsConstructor
 public class Event {
 
-    private Long id;
-    private Type type;
-    private Status status;
-    @JsonSerialize(using = DateTimeSerializer.class)
-    private LocalDateTime time;
-    private String message;
+  private Long id;
+  private Type type;
+  private Status status;
 
-    public Event(Type type, Status status, LocalDateTime time, String message) {
-        this.type = type;
-        this.status = status;
-        this.time = time;
-        this.message = message;
-    }
+  @JsonSerialize(using = DateTimeSerializer.class)
+  private LocalDateTime time;
 
-    public enum Type {
-        POST,
-        QUEUED,
-        THANKS,
-        METADATA,
-        SCAN,
-        DOWNLOAD,
+  private String message;
 
-        // Below are deprecated events
-        METADATA_CACHE_MISS,
-        QUEUED_CACHE_MISS
-    }
+  public Event(Type type, Status status, LocalDateTime time, String message) {
+    this.type = type;
+    this.status = status;
+    this.time = time;
+    this.message = message;
+  }
 
-    public enum Status {
-        PENDING, PROCESSING, DONE, ERROR
-    }
+  public enum Type {
+    POST,
+    QUEUED,
+    THANKS,
+    METADATA,
+    SCAN,
+    DOWNLOAD,
+
+    // Below are deprecated events
+    METADATA_CACHE_MISS,
+    QUEUED_CACHE_MISS
+  }
+
+  public enum Status {
+    PENDING,
+    PROCESSING,
+    DONE,
+    ERROR
+  }
 }
 
 class DateTimeSerializer extends StdSerializer<LocalDateTime> {
 
-    private final static DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss.SSS");
+  private static final DateTimeFormatter DATE_TIME_FORMATTER =
+      DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss.SSS");
 
-    protected DateTimeSerializer() {
-        super(LocalDateTime.class);
-    }
+  protected DateTimeSerializer() {
+    super(LocalDateTime.class);
+  }
 
-    @Override
-    public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-        gen.writeString(value.format(DATE_TIME_FORMATTER));
-    }
+  @Override
+  public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider provider)
+      throws IOException {
+    gen.writeString(value.format(DATE_TIME_FORMATTER));
+  }
 }

@@ -10,9 +10,9 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 public class DownloadPath {
-    private String path;
+  private String path;
 
-    public DownloadPath(String path) {
-        this.path = path;
-    }
+  public DownloadPath(String path) {
+    this.path = path;
+  }
 }

@@ -6,10 +6,10 @@ import org.springframework.context.ApplicationEvent;
 @Getter
 public class MetadataUpdateEvent extends ApplicationEvent {
 
-    private final Long postIdRef;
+  private final Long postIdRef;
 
-    public MetadataUpdateEvent(Object source, Long postIdRef) {
-        super(source);
-        this.postIdRef = postIdRef;
-    }
+  public MetadataUpdateEvent(Object source, Long postIdRef) {
+    super(source);
+    this.postIdRef = postIdRef;
+  }
 }

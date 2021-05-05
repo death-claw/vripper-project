@@ -15,56 +15,57 @@ import tn.mnlr.vripper.services.XpathService;
 @Slf4j
 public class ImageZillaHost extends Host {
 
-    private static final String host = "imagezilla.net";
-    private static final String lookup = "imagezilla.net/show";
-    private static final String IMG_XPATH = "//img[@id='photo']";
+  private static final String host = "imagezilla.net";
+  private static final String lookup = "imagezilla.net/show";
+  private static final String IMG_XPATH = "//img[@id='photo']";
 
-    private final HostService hostService;
-    private final XpathService xpathService;
+  private final HostService hostService;
+  private final XpathService xpathService;
 
-    @Autowired
-    public ImageZillaHost(HostService hostService, XpathService xpathService) {
-        this.hostService = hostService;
-        this.xpathService = xpathService;
+  @Autowired
+  public ImageZillaHost(HostService hostService, XpathService xpathService) {
+    this.hostService = hostService;
+    this.xpathService = xpathService;
+  }
+
+  @Override
+  public String getHost() {
+    return host;
+  }
+
+  @Override
+  public String getLookup() {
+    return lookup;
+  }
+
+  @Override
+  public HostService.NameUrl getNameAndUrl(final String url, final HttpClientContext context)
+      throws HostException {
+
+    Document doc = hostService.getResponse(url, context).getDocument();
+
+    String title;
+    try {
+      log.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url));
+      Node titleNode = xpathService.getAsNode(doc, IMG_XPATH).getAttributes().getNamedItem("title");
+      log.debug(String.format("Resolving name for %s", url));
+      if (titleNode != null) {
+        title = titleNode.getTextContent().trim();
+      } else {
+        title = null;
+      }
+    } catch (XpathException e) {
+      throw new HostException(e);
     }
 
-    @Override
-    public String getHost() {
-        return host;
+    if (title == null || title.isEmpty()) {
+      title = hostService.getDefaultImageName(url);
     }
 
-    @Override
-    public String getLookup() {
-        return lookup;
+    try {
+      return new HostService.NameUrl(title, url.replace("show", "images"));
+    } catch (Exception e) {
+      throw new HostException("Unexpected error occurred", e);
     }
-
-    @Override
-    public HostService.NameUrl getNameAndUrl(final String url, final HttpClientContext context) throws HostException {
-
-        Document doc = hostService.getResponse(url, context).getDocument();
-
-        String title;
-        try {
-            log.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url));
-            Node titleNode = xpathService.getAsNode(doc, IMG_XPATH).getAttributes().getNamedItem("title");
-            log.debug(String.format("Resolving name for %s", url));
-            if (titleNode != null) {
-                title = titleNode.getTextContent().trim();
-            } else {
-                title = null;
-            }
-        } catch (XpathException e) {
-            throw new HostException(e);
-        }
-
-        if (title == null || title.isEmpty()) {
-            title = hostService.getDefaultImageName(url);
-        }
-
-        try {
-            return new HostService.NameUrl(title, url.replace("show", "images"));
-        } catch (Exception e) {
-            throw new HostException("Unexpected error occurred", e);
-        }
-    }
+  }
 }

@@ -22,83 +22,92 @@ import java.net.URISyntaxException;
 @Slf4j
 public class HostService {
 
-    private final ConnectionService cm;
-    private final HtmlProcessorService htmlProcessorService;
+  private final ConnectionService cm;
+  private final HtmlProcessorService htmlProcessorService;
 
-    @Autowired
-    public HostService(ConnectionService cm, HtmlProcessorService htmlProcessorService) {
-        this.cm = cm;
-        this.htmlProcessorService = htmlProcessorService;
+  @Autowired
+  public HostService(ConnectionService cm, HtmlProcessorService htmlProcessorService) {
+    this.cm = cm;
+    this.htmlProcessorService = htmlProcessorService;
+  }
+
+  public Response getResponse(final String url, final HttpClientContext context)
+      throws HostException {
+    String basePage;
+
+    HttpClient client = cm.getClient().build();
+    HttpGet httpGet = cm.buildHttpGet(url, context);
+    Header[] headers;
+    log.debug(String.format("Requesting %s", url));
+    try (CloseableHttpResponse response =
+        (CloseableHttpResponse) client.execute(httpGet, context)) {
+      if (response.getStatusLine().getStatusCode() / 100 != 2) {
+        throw new HostException(
+            String.format(
+                "Unexpected response code: %d", response.getStatusLine().getStatusCode()));
+      }
+      headers = response.getAllHeaders();
+      basePage = EntityUtils.toString(response.getEntity());
+      log.debug(String.format("%s response: %n%s", url, basePage));
+      EntityUtils.consumeQuietly(response.getEntity());
+    } catch (IOException e) {
+      throw new HostException(e);
     }
 
-    public Response getResponse(final String url, final HttpClientContext context) throws HostException {
-        String basePage;
+    try {
+      log.debug(String.format("Cleaning %s response", url));
+      return new Response(htmlProcessorService.clean(basePage), headers);
+    } catch (HtmlProcessorException e) {
+      throw new HostException(e);
+    }
+  }
 
-        HttpClient client = cm.getClient().build();
-        HttpGet httpGet = cm.buildHttpGet(url, context);
-        Header[] headers;
-        log.debug(String.format("Requesting %s", url));
-        try (CloseableHttpResponse response = (CloseableHttpResponse) client.execute(httpGet, context)) {
-            if (response.getStatusLine().getStatusCode() / 100 != 2) {
-                throw new HostException(String.format("Unexpected response code: %d", response.getStatusLine().getStatusCode()));
-            }
-            headers = response.getAllHeaders();
-            basePage = EntityUtils.toString(response.getEntity());
-            log.debug(String.format("%s response: %n%s", url, basePage));
-            EntityUtils.consumeQuietly(response.getEntity());
-        } catch (IOException e) {
-            throw new HostException(e);
-        }
+  public String appendUri(String uri, String appendQuery) throws URISyntaxException {
+    URI oldUri = new URI(uri);
 
-        try {
-            log.debug(String.format("Cleaning %s response", url));
-            return new Response(htmlProcessorService.clean(basePage), headers);
-        } catch (HtmlProcessorException e) {
-            throw new HostException(e);
-        }
+    String newQuery = oldUri.getQuery();
+    if (newQuery == null) {
+      newQuery = appendQuery;
+    } else {
+      newQuery += "&" + appendQuery;
     }
 
-    public String appendUri(String uri, String appendQuery) throws URISyntaxException {
-        URI oldUri = new URI(uri);
+    return new URI(
+            oldUri.getScheme(),
+            oldUri.getAuthority(),
+            oldUri.getPath(),
+            newQuery,
+            oldUri.getFragment())
+        .toString();
+  }
 
-        String newQuery = oldUri.getQuery();
-        if (newQuery == null) {
-            newQuery = appendQuery;
-        } else {
-            newQuery += "&" + appendQuery;
-        }
+  public String getDefaultImageName(final String imgUrl) {
+    String imageTitle = imgUrl.substring(imgUrl.lastIndexOf('/') + 1);
+    log.debug(String.format("Extracting name from url %s: %s", imgUrl, imageTitle));
+    return imgUrl;
+  }
 
-        return new URI(oldUri.getScheme(), oldUri.getAuthority(),
-                oldUri.getPath(), newQuery, oldUri.getFragment()).toString();
+  @Getter
+  public static class Response {
+
+    private final Document document;
+    private final Header[] headers;
+
+    protected Response(Document document, Header[] headers) {
+      this.document = document;
+      this.headers = headers;
     }
+  }
 
-    public String getDefaultImageName(final String imgUrl) {
-        String imageTitle = imgUrl.substring(imgUrl.lastIndexOf('/') + 1);
-        log.debug(String.format("Extracting name from url %s: %s", imgUrl, imageTitle));
-        return imgUrl;
+  @Getter
+  public static class NameUrl {
+
+    private final String name;
+    private final String url;
+
+    public NameUrl(String name, String url) {
+      this.name = name;
+      this.url = url;
     }
-
-    @Getter
-    public static class Response {
-
-        private final Document document;
-        private final Header[] headers;
-
-        protected Response(Document document, Header[] headers) {
-            this.document = document;
-            this.headers = headers;
-        }
-    }
-
-    @Getter
-    public static class NameUrl {
-
-        private final String name;
-        private final String url;
-
-        public NameUrl(String name, String url) {
-            this.name = name;
-            this.url = url;
-        }
-    }
+  }
 }

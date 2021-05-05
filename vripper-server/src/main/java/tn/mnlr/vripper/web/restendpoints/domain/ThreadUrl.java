@@ -10,5 +10,5 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 public class ThreadUrl {
-    private String url;
+  private String url;
 }

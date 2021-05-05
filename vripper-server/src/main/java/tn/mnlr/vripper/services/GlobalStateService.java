@@ -18,38 +18,37 @@ import javax.annotation.PreDestroy;
 @EnableScheduling
 public class GlobalStateService {
 
-    private final PendingQueue pendingQueue;
-    private final DownloadService downloadService;
-    private final DataService dataService;
-    private final Sinks.Many<GlobalState> sink = Sinks.many().multicast().onBackpressureBuffer();
-    @Getter
-    private GlobalState currentState;
+  private final PendingQueue pendingQueue;
+  private final DownloadService downloadService;
+  private final DataService dataService;
+  private final Sinks.Many<GlobalState> sink = Sinks.many().multicast().onBackpressureBuffer();
+  @Getter private GlobalState currentState;
 
-    @Autowired
-    public GlobalStateService(PendingQueue pendingQueue, DownloadService downloadService, DataService dataService) {
-        this.pendingQueue = pendingQueue;
-        this.downloadService = downloadService;
-        this.dataService = dataService;
-    }
+  @Autowired
+  public GlobalStateService(
+      PendingQueue pendingQueue, DownloadService downloadService, DataService dataService) {
+    this.pendingQueue = pendingQueue;
+    this.downloadService = downloadService;
+    this.dataService = dataService;
+  }
 
-    public Flux<GlobalState> getGlobalState() {
-        return sink.asFlux();
-    }
+  public Flux<GlobalState> getGlobalState() {
+    return sink.asFlux();
+  }
 
-    @Scheduled(fixedDelay = 3000)
-    private void interval() {
-        GlobalState newGlobalState = new GlobalState(
-                downloadService.runningCount(),
-                pendingQueue.size(),
-                dataService.countErrorImages());
-        if (!newGlobalState.equals(currentState)) {
-            currentState = newGlobalState;
-            sink.emitNext(currentState, EmitHandler.RETRY);
-        }
+  @Scheduled(fixedDelay = 3000)
+  private void interval() {
+    GlobalState newGlobalState =
+        new GlobalState(
+            downloadService.runningCount(), pendingQueue.size(), dataService.countErrorImages());
+    if (!newGlobalState.equals(currentState)) {
+      currentState = newGlobalState;
+      sink.emitNext(currentState, EmitHandler.RETRY);
     }
+  }
 
-    @PreDestroy
-    private void destroy() {
-        sink.emitComplete(EmitHandler.RETRY);
-    }
+  @PreDestroy
+  private void destroy() {
+    sink.emitComplete(EmitHandler.RETRY);
+  }
 }

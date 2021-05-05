@@ -12,11 +12,11 @@ import java.util.List;
 @NoArgsConstructor
 @ToString
 public class RemoveAllResult {
-    private List<String> postIds;
-    private int removed;
+  private List<String> postIds;
+  private int removed;
 
-    public RemoveAllResult(List<String> postIds) {
-        this.removed = postIds.size();
-        this.postIds = postIds;
-    }
+  public RemoveAllResult(List<String> postIds) {
+    this.removed = postIds.size();
+    this.postIds = postIds;
+  }
 }
