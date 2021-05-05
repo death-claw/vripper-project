@@ -1,10 +1,11 @@
 # Changelog
 
-## [3.3.7] - 2021-05-05
+## [3.3.8] - 2021-05-05
 
 ### Changed
 
 - Fix imagebam host
+- Fix font path
 
 ## [3.3.6] - 2021-03-20
 
