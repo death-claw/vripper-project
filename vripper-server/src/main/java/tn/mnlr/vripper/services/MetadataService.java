@@ -1,8 +1,7 @@
 package tn.mnlr.vripper.services;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.Failsafe;
@@ -10,7 +9,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -52,15 +50,7 @@ public class MetadataService {
     this.htmlProcessorService = htmlProcessorService;
     this.xpathService = xpathService;
     this.threadPoolService = threadPoolService;
-
-    CacheLoader<Key, Metadata> loader =
-        new CacheLoader<>() {
-          @Override
-          public Metadata load(@NonNull Key key) {
-            return fetchMetadata(key);
-          }
-        };
-    cache = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build(loader);
+    cache = Caffeine.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build(this::fetchMetadata);
   }
 
   public Metadata get(Post post) throws ExecutionException {

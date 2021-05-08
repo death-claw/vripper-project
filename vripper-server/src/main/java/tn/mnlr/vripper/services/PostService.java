@@ -1,11 +1,9 @@
 package tn.mnlr.vripper.services;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.Queued;
@@ -35,16 +33,10 @@ public class PostService {
     this.dataService = dataService;
     this.threadPoolService = threadPoolService;
     this.metadataService = metadataService;
-
-    CacheLoader<Queued, MultiPostScanResult> loader =
-        new CacheLoader<>() {
-          @Override
-          public MultiPostScanResult load(@NonNull Queued multiPostItem) throws Exception {
-            return new MultiPostScanParser(multiPostItem).parse();
-          }
-        };
-
-    cache = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build(loader);
+    cache =
+        Caffeine.newBuilder()
+            .expireAfterWrite(5, TimeUnit.MINUTES)
+            .build(multiPostItem -> new MultiPostScanParser(multiPostItem).parse());
   }
 
   public void stopFetchingMetadata(Post post) {

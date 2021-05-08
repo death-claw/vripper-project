@@ -81,9 +81,9 @@
             <version>2.0.1</version>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>28.1-jre</version>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>3.0.2</version>
         </dependency>
         <dependency>
             <groupId>tn.mnlr</groupId>

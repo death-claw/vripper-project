@@ -49,8 +49,8 @@ public class QueuedRepository implements IQueuedRepository, ApplicationEventPubl
     List<Queued> queuedList =
         jdbcTemplate.query(
             "SELECT * FROM QUEUED AS queued WHERE queued.THREAD_ID = ?",
-            new Object[] {threadId},
-            new QueuedRowMapper());
+            new QueuedRowMapper(),
+            threadId);
     if (queuedList.isEmpty()) {
       return Optional.empty();
     } else {
@@ -67,9 +67,7 @@ public class QueuedRepository implements IQueuedRepository, ApplicationEventPubl
   public Optional<Queued> findById(Long id) {
     List<Queued> queuedList =
         jdbcTemplate.query(
-            "SELECT * FROM QUEUED AS queued WHERE queued.ID = ?",
-            new Object[] {id},
-            new QueuedRowMapper());
+            "SELECT * FROM QUEUED AS queued WHERE queued.ID = ?", new QueuedRowMapper(), id);
     if (queuedList.isEmpty()) {
       return Optional.empty();
     } else {
