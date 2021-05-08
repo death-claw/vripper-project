@@ -4,9 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.Failsafe;
 import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.Utils;
-import tn.mnlr.vripper.jpa.domain.Event;
+import tn.mnlr.vripper.jpa.domain.LogEvent;
 import tn.mnlr.vripper.jpa.domain.enums.Status;
-import tn.mnlr.vripper.jpa.repositories.IEventRepository;
+import tn.mnlr.vripper.jpa.repositories.ILogEventRepository;
 import tn.mnlr.vripper.services.ConnectionService;
 import tn.mnlr.vripper.services.DataService;
 
@@ -18,7 +18,7 @@ public class DownloadRunnable implements Runnable {
   private final DownloadService downloadService;
   private final DataService dataService;
   private final ConnectionService connectionService;
-  private final IEventRepository eventRepository;
+  private final ILogEventRepository eventRepository;
 
   private final DownloadJob downloadJob;
 
@@ -26,7 +26,7 @@ public class DownloadRunnable implements Runnable {
     downloadService = SpringContext.getBean(DownloadService.class);
     dataService = SpringContext.getBean(DataService.class);
     connectionService = SpringContext.getBean(ConnectionService.class);
-    eventRepository = SpringContext.getBean(IEventRepository.class);
+    eventRepository = SpringContext.getBean(ILogEventRepository.class);
 
     this.downloadJob = downloadJob;
   }
@@ -37,16 +37,16 @@ public class DownloadRunnable implements Runnable {
         .onFailure(
             e -> {
               try {
-                Event event =
-                    new Event(
-                        Event.Type.DOWNLOAD,
-                        Event.Status.ERROR,
+                LogEvent logEvent =
+                    new LogEvent(
+                        LogEvent.Type.DOWNLOAD,
+                        LogEvent.Status.ERROR,
                         LocalDateTime.now(),
                         String.format(
                             "Failed to download %s\n %s",
                             downloadJob.getImage().getUrl(),
                             Utils.throwableToString(e.getFailure())));
-                eventRepository.save(event);
+                eventRepository.save(logEvent);
               } catch (Exception exp) {
                 log.error("Failed to save event", exp);
               }

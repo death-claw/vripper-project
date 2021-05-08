@@ -6,16 +6,16 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.Utils;
-import tn.mnlr.vripper.jpa.domain.Event;
+import tn.mnlr.vripper.jpa.domain.LogEvent;
 import tn.mnlr.vripper.jpa.domain.Metadata;
 import tn.mnlr.vripper.jpa.domain.Post;
-import tn.mnlr.vripper.jpa.repositories.IEventRepository;
+import tn.mnlr.vripper.jpa.repositories.ILogEventRepository;
 import tn.mnlr.vripper.services.DataService;
 import tn.mnlr.vripper.services.MetadataService;
 
 import java.time.LocalDateTime;
 
-import static tn.mnlr.vripper.jpa.domain.Event.Status.ERROR;
+import static tn.mnlr.vripper.jpa.domain.LogEvent.Status.ERROR;
 
 @Slf4j
 public class MetadataRunnable implements Runnable {
@@ -24,9 +24,9 @@ public class MetadataRunnable implements Runnable {
 
   private final MetadataService metadataService;
   private final DataService dataService;
-  private final IEventRepository eventRepository;
+  private final ILogEventRepository eventRepository;
 
-  private final Event event;
+  private final LogEvent logEvent;
 
   @Setter private volatile boolean interrupted = false;
 
@@ -34,48 +34,48 @@ public class MetadataRunnable implements Runnable {
     this.post = post;
     metadataService = SpringContext.getBean(MetadataService.class);
     dataService = SpringContext.getBean(DataService.class);
-    eventRepository = SpringContext.getBean(IEventRepository.class);
-    event =
-        new Event(
-            Event.Type.METADATA,
-            Event.Status.PENDING,
+    eventRepository = SpringContext.getBean(ILogEventRepository.class);
+    logEvent =
+        new LogEvent(
+            LogEvent.Type.METADATA,
+            LogEvent.Status.PENDING,
             LocalDateTime.now(),
             "Fetching metadata for " + post.getUrl());
-    eventRepository.save(event);
+    eventRepository.save(logEvent);
   }
 
   @Override
   public void run() {
 
     try {
-      event.setStatus(Event.Status.PROCESSING);
-      eventRepository.update(event);
+      logEvent.setStatus(LogEvent.Status.PROCESSING);
+      eventRepository.update(logEvent);
       if (interrupted) {
         String message = String.format("Fetching metadata for %s interrupted", post.getUrl());
-        event.setStatus(Event.Status.DONE);
-        event.setMessage(message);
-        eventRepository.update(event);
+        logEvent.setStatus(LogEvent.Status.DONE);
+        logEvent.setMessage(message);
+        eventRepository.update(logEvent);
         return;
       }
 
       Metadata metadata = metadataService.get(post);
       if (metadata == null) {
         String message = String.format("Fetching metadata for %s failed", post.getUrl());
-        event.setStatus(ERROR);
-        event.setMessage(message);
-        eventRepository.update(event);
+        logEvent.setStatus(ERROR);
+        logEvent.setMessage(message);
+        eventRepository.update(logEvent);
         return;
       }
       dataService.setMetadata(post, metadata);
 
-      event.setStatus(Event.Status.DONE);
-      eventRepository.update(event);
+      logEvent.setStatus(LogEvent.Status.DONE);
+      eventRepository.update(logEvent);
     } catch (Exception e) {
       String message = String.format("Failed to fetch metadata for %s", post.getUrl());
       log.error(message, e);
-      event.setMessage(message + "\n" + Utils.throwableToString(e));
-      event.setStatus(ERROR);
-      eventRepository.update(event);
+      logEvent.setMessage(message + "\n" + Utils.throwableToString(e));
+      logEvent.setStatus(ERROR);
+      eventRepository.update(logEvent);
     }
   }
 }

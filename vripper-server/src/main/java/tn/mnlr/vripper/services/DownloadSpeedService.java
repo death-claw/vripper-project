@@ -4,11 +4,9 @@ import lombok.Getter;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Sinks;
-import tn.mnlr.vripper.listener.EmitHandler;
+import tn.mnlr.vripper.event.Event;
+import tn.mnlr.vripper.event.EventBus;
 
-import javax.annotation.PreDestroy;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
@@ -16,12 +14,12 @@ import java.util.concurrent.atomic.AtomicLong;
 public class DownloadSpeedService {
 
   private final AtomicLong read = new AtomicLong(0);
-  private final Sinks.Many<Long> sink = Sinks.many().multicast().onBackpressureBuffer();
+  private final EventBus eventBus;
   @Getter private long currentValue;
   private boolean allowWrite = false;
 
-  public Flux<Long> getReadBytesPerSecond() {
-    return sink.asFlux();
+  public DownloadSpeedService(EventBus eventBus) {
+    this.eventBus = eventBus;
   }
 
   public void increase(long read) {
@@ -36,13 +34,8 @@ public class DownloadSpeedService {
     long newValue = read.getAndSet(0);
     if (newValue != currentValue) {
       currentValue = newValue;
-      sink.emitNext(currentValue, EmitHandler.RETRY);
+      eventBus.publishEvent(Event.wrap(Event.Kind.BYTES_PER_SECOND, currentValue));
     }
     allowWrite = true;
-  }
-
-  @PreDestroy
-  private void destroy() {
-    sink.emitComplete(EmitHandler.RETRY);
   }
 }

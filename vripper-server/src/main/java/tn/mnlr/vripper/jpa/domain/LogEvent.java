@@ -17,7 +17,7 @@ import java.time.format.DateTimeFormatter;
 @Setter
 @ToString
 @NoArgsConstructor
-public class Event {
+public class LogEvent {
 
   private Long id;
   private Type type;
@@ -28,7 +28,7 @@ public class Event {
 
   private String message;
 
-  public Event(Type type, Status status, LocalDateTime time, String message) {
+  public LogEvent(Type type, Status status, LocalDateTime time, String message) {
     this.type = type;
     this.status = status;
     this.time = time;

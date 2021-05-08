@@ -5,11 +5,11 @@ import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.Utils;
 import tn.mnlr.vripper.download.PendingQueue;
 import tn.mnlr.vripper.exception.PostParseException;
-import tn.mnlr.vripper.jpa.domain.Event;
 import tn.mnlr.vripper.jpa.domain.Image;
+import tn.mnlr.vripper.jpa.domain.LogEvent;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.enums.Status;
-import tn.mnlr.vripper.jpa.repositories.IEventRepository;
+import tn.mnlr.vripper.jpa.repositories.ILogEventRepository;
 import tn.mnlr.vripper.services.DataService;
 import tn.mnlr.vripper.services.MetadataService;
 import tn.mnlr.vripper.services.SettingsService;
@@ -20,8 +20,8 @@ import tn.mnlr.vripper.services.domain.PostScanResult;
 import java.time.LocalDateTime;
 import java.util.Set;
 
-import static tn.mnlr.vripper.jpa.domain.Event.Status.ERROR;
-import static tn.mnlr.vripper.jpa.domain.Event.Status.PROCESSING;
+import static tn.mnlr.vripper.jpa.domain.LogEvent.Status.ERROR;
+import static tn.mnlr.vripper.jpa.domain.LogEvent.Status.PROCESSING;
 
 @Slf4j
 public class AddPostRunnable implements Runnable {
@@ -33,8 +33,8 @@ public class AddPostRunnable implements Runnable {
   private final SettingsService settingsService;
   private final PendingQueue pendingQueue;
   private final VGAuthService VGAuthService;
-  private final Event event;
-  private final IEventRepository eventRepository;
+  private final LogEvent logEvent;
+  private final ILogEventRepository eventRepository;
   private final String link;
 
   public AddPostRunnable(String postId, String threadId) {
@@ -45,30 +45,30 @@ public class AddPostRunnable implements Runnable {
     this.settingsService = SpringContext.getBean(SettingsService.class);
     this.pendingQueue = SpringContext.getBean(PendingQueue.class);
     this.VGAuthService = SpringContext.getBean(VGAuthService.class);
-    this.eventRepository = SpringContext.getBean(IEventRepository.class);
+    this.eventRepository = SpringContext.getBean(ILogEventRepository.class);
     link =
         settingsService.getSettings().getVProxy()
             + String.format("/threads/%s?%s", threadId, (postId != null ? "p=" + postId : ""));
-    event =
-        new Event(
-            Event.Type.POST,
-            Event.Status.PENDING,
+    logEvent =
+        new LogEvent(
+            LogEvent.Type.POST,
+            LogEvent.Status.PENDING,
             LocalDateTime.now(),
             String.format("Processing %s", link));
-    eventRepository.save(event);
+    eventRepository.save(logEvent);
   }
 
   @Override
   public void run() {
 
     try {
-      event.setStatus(PROCESSING);
-      eventRepository.update(event);
+      logEvent.setStatus(PROCESSING);
+      eventRepository.update(logEvent);
       if (dataService.exists(postId)) {
         log.warn(String.format("skipping %s, already loaded", postId));
-        event.setMessage(String.format("Gallery %s is already loaded", link));
-        event.setStatus(ERROR);
-        eventRepository.update(event);
+        logEvent.setMessage(String.format("Gallery %s is already loaded", link));
+        logEvent.setStatus(ERROR);
+        eventRepository.update(logEvent);
         return;
       }
 
@@ -80,25 +80,25 @@ public class AddPostRunnable implements Runnable {
       } catch (PostParseException e) {
         String error = String.format("parsing failed for gallery %s", link);
         log.error(error, e);
-        event.setMessage(error + "\n" + Utils.throwableToString(e));
-        event.setStatus(ERROR);
-        eventRepository.update(event);
+        logEvent.setMessage(error + "\n" + Utils.throwableToString(e));
+        logEvent.setStatus(ERROR);
+        eventRepository.update(logEvent);
         return;
       }
       if (postScanResult.getPost().isEmpty()) {
         String error = String.format("Gallery %s contains no galleries", link);
         log.error(error);
-        event.setMessage(error);
-        event.setStatus(ERROR);
-        eventRepository.update(event);
+        logEvent.setMessage(error);
+        logEvent.setStatus(ERROR);
+        eventRepository.update(logEvent);
         return;
       }
       if (postScanResult.getImages().isEmpty()) {
         String error = String.format("Gallery %s contains no images to download", link);
         log.error(error);
-        event.setMessage(error);
-        event.setStatus(ERROR);
-        eventRepository.update(event);
+        logEvent.setMessage(error);
+        logEvent.setStatus(ERROR);
+        eventRepository.update(logEvent);
         return;
       }
 
@@ -129,15 +129,16 @@ public class AddPostRunnable implements Runnable {
         VGAuthService.leaveThanks(post);
       }
       dataService.updatePostStatus(post.getStatus(), post.getId());
-      event.setMessage(String.format("Gallery %s is successfully added to download queue", link));
-      event.setStatus(Event.Status.DONE);
-      eventRepository.update(event);
+      logEvent.setMessage(
+          String.format("Gallery %s is successfully added to download queue", link));
+      logEvent.setStatus(LogEvent.Status.DONE);
+      eventRepository.update(logEvent);
     } catch (Exception e) {
       String error = String.format("Error when adding gallery %s", link);
       log.error(error, e);
-      event.setMessage(error + "\n" + Utils.throwableToString(e));
-      event.setStatus(ERROR);
-      eventRepository.update(event);
+      logEvent.setMessage(error + "\n" + Utils.throwableToString(e));
+      logEvent.setStatus(ERROR);
+      eventRepository.update(logEvent);
     }
   }
 }

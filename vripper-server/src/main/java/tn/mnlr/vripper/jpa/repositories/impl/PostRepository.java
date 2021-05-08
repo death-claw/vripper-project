@@ -1,29 +1,32 @@
 package tn.mnlr.vripper.jpa.repositories.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.lang.NonNull;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
-import tn.mnlr.vripper.event.PostRemoveEvent;
-import tn.mnlr.vripper.event.PostUpdateEvent;
+import tn.mnlr.vripper.event.Event;
+import tn.mnlr.vripper.event.EventBus;
+import tn.mnlr.vripper.jpa.domain.Metadata;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.enums.Status;
 import tn.mnlr.vripper.jpa.repositories.IPostRepository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
-public class PostRepository implements IPostRepository, ApplicationEventPublisherAware {
+public class PostRepository implements IPostRepository {
 
   private final JdbcTemplate jdbcTemplate;
-  private ApplicationEventPublisher applicationEventPublisher;
+  private final EventBus eventBus;
 
   @Autowired
-  public PostRepository(JdbcTemplate jdbcTemplate) {
+  public PostRepository(JdbcTemplate jdbcTemplate, EventBus eventBus) {
     this.jdbcTemplate = jdbcTemplate;
+    this.eventBus = eventBus;
   }
 
   private synchronized Long nextId() {
@@ -51,7 +54,7 @@ public class PostRepository implements IPostRepository, ApplicationEventPublishe
         post.getTotal(),
         post.getUrl());
     post.setId(id);
-    applicationEventPublisher.publishEvent(new PostUpdateEvent(PostRepository.class, id));
+    eventBus.publishEvent(Event.wrap(Event.Kind.POST_UPDATE, id));
     return post;
   }
 
@@ -119,7 +122,7 @@ public class PostRepository implements IPostRepository, ApplicationEventPublishe
   public int deleteByPostId(String postId) {
     int mutationCount =
         jdbcTemplate.update("DELETE FROM POST AS post WHERE post.POST_ID = ?", postId);
-    applicationEventPublisher.publishEvent(new PostRemoveEvent(PostRepository.class, postId));
+    eventBus.publishEvent(Event.wrap(Event.Kind.POST_REMOVE, postId));
     return mutationCount;
   }
 
@@ -128,7 +131,7 @@ public class PostRepository implements IPostRepository, ApplicationEventPublishe
     int mutationCount =
         jdbcTemplate.update(
             "UPDATE POST AS post SET post.STATUS = ? WHERE post.ID = ?", status.name(), id);
-    applicationEventPublisher.publishEvent(new PostUpdateEvent(PostRepository.class, id));
+    eventBus.publishEvent(Event.wrap(Event.Kind.POST_UPDATE, id));
     return mutationCount;
   }
 
@@ -136,7 +139,7 @@ public class PostRepository implements IPostRepository, ApplicationEventPublishe
   public int updateDone(int done, Long id) {
     int mutationCount =
         jdbcTemplate.update("UPDATE POST AS post SET post.DONE = ? WHERE post.ID = ?", done, id);
-    applicationEventPublisher.publishEvent(new PostUpdateEvent(PostRepository.class, id));
+    eventBus.publishEvent(Event.wrap(Event.Kind.POST_UPDATE, id));
     return mutationCount;
   }
 
@@ -147,7 +150,7 @@ public class PostRepository implements IPostRepository, ApplicationEventPublishe
             "UPDATE POST AS post SET post.POST_FOLDER_NAME = ? WHERE post.ID = ?",
             postFolderName,
             id);
-    applicationEventPublisher.publishEvent(new PostUpdateEvent(PostRepository.class, id));
+    eventBus.publishEvent(Event.wrap(Event.Kind.POST_UPDATE, id));
     return mutationCount;
   }
 
@@ -155,7 +158,7 @@ public class PostRepository implements IPostRepository, ApplicationEventPublishe
   public int updateTitle(String title, Long id) {
     int mutationCount =
         jdbcTemplate.update("UPDATE POST AS post SET post.TITLE = ? WHERE post.ID = ?", title, id);
-    applicationEventPublisher.publishEvent(new PostUpdateEvent(PostRepository.class, id));
+    eventBus.publishEvent(Event.wrap(Event.Kind.POST_UPDATE, id));
     return mutationCount;
   }
 
@@ -164,13 +167,51 @@ public class PostRepository implements IPostRepository, ApplicationEventPublishe
     int mutationCount =
         jdbcTemplate.update(
             "UPDATE POST AS post SET post.THANKED = ? WHERE post.ID = ?", thanked, id);
-    applicationEventPublisher.publishEvent(new PostUpdateEvent(PostRepository.class, id));
+    eventBus.publishEvent(Event.wrap(Event.Kind.POST_UPDATE, id));
     return mutationCount;
   }
+}
+
+class PostRowMapper implements RowMapper<Post> {
+
+  private static final String DELIMITER = ";";
 
   @Override
-  public void setApplicationEventPublisher(
-      @NonNull ApplicationEventPublisher applicationEventPublisher) {
-    this.applicationEventPublisher = applicationEventPublisher;
+  public Post mapRow(ResultSet rs, int rowNum) throws SQLException {
+
+    Post post = new Post();
+    post.setId(rs.getLong("post.ID"));
+    post.setStatus(Status.valueOf(rs.getString("post.STATUS")));
+    post.setPostId(rs.getString("post.POST_ID"));
+    post.setThreadTitle(rs.getString("post.THREAD_TITLE"));
+    post.setThreadId(rs.getString("post.THREAD_ID"));
+    post.setTitle(rs.getString("post.TITLE"));
+    post.setUrl(rs.getString("post.URL"));
+    post.setDone(rs.getInt("post.DONE"));
+    post.setTotal(rs.getInt("post.TOTAL"));
+    post.setHosts(Set.of(rs.getString("post.HOSTS").split(DELIMITER)));
+    post.setForum(rs.getString("post.FORUM"));
+    post.setSecurityToken(rs.getString("post.SECURITY_TOKEN"));
+    post.setDownloadDirectory(rs.getString("post.POST_FOLDER_NAME"));
+    post.setThanked(rs.getBoolean("post.THANKED"));
+    String previews;
+    if ((previews = rs.getString("post.PREVIEWS")) != null) {
+      post.setPreviews(Set.of(previews.split(DELIMITER)));
+    }
+
+    Long metadataId = rs.getLong("metadata.POST_ID_REF");
+    if (!rs.wasNull()) {
+      Metadata metadata = new Metadata();
+      metadata.setPostIdRef(metadataId);
+      metadata.setPostId(rs.getString("metadata.POST_ID"));
+      String resolvedNames = rs.getString("metadata.RESOLVED_NAMES");
+      if (resolvedNames != null && !resolvedNames.isBlank()) {
+        metadata.setResolvedNames(List.of(resolvedNames.split("%sep%")));
+      }
+      metadata.setPostedBy(rs.getString("metadata.POSTED_BY"));
+      post.setMetadata(metadata);
+    }
+
+    return post;
   }
 }

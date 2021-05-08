@@ -1,27 +1,29 @@
 package tn.mnlr.vripper.jpa.repositories.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
-import tn.mnlr.vripper.event.QueuedRemoveEvent;
-import tn.mnlr.vripper.event.QueuedUpdateEvent;
+import tn.mnlr.vripper.event.Event;
+import tn.mnlr.vripper.event.EventBus;
 import tn.mnlr.vripper.jpa.domain.Queued;
 import tn.mnlr.vripper.jpa.repositories.IQueuedRepository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
 @Service
-public class QueuedRepository implements IQueuedRepository, ApplicationEventPublisherAware {
+public class QueuedRepository implements IQueuedRepository {
 
   private final JdbcTemplate jdbcTemplate;
-  private ApplicationEventPublisher applicationEventPublisher;
+  private final EventBus eventBus;
 
   @Autowired
-  public QueuedRepository(JdbcTemplate jdbcTemplate) {
+  public QueuedRepository(JdbcTemplate jdbcTemplate, EventBus eventBus) {
     this.jdbcTemplate = jdbcTemplate;
+    this.eventBus = eventBus;
   }
 
   private synchronized Long nextId() {
@@ -40,7 +42,7 @@ public class QueuedRepository implements IQueuedRepository, ApplicationEventPubl
         queued.getPostId(),
         queued.getThreadId());
     queued.setId(id);
-    applicationEventPublisher.publishEvent(new QueuedUpdateEvent(QueuedRepository.class, id));
+    eventBus.publishEvent(Event.wrap(Event.Kind.QUEUED_UPDATE, id));
     return queued;
   }
 
@@ -79,7 +81,7 @@ public class QueuedRepository implements IQueuedRepository, ApplicationEventPubl
   public int deleteByThreadId(String threadId) {
     int mutationCount =
         jdbcTemplate.update("DELETE FROM QUEUED AS queued WHERE THREAD_ID = ?", threadId);
-    applicationEventPublisher.publishEvent(new QueuedRemoveEvent(QueuedRepository.class, threadId));
+    eventBus.publishEvent(Event.wrap(Event.Kind.QUEUED_REMOVE, threadId));
     return mutationCount;
   }
 
@@ -87,9 +89,19 @@ public class QueuedRepository implements IQueuedRepository, ApplicationEventPubl
   public void deleteAll() {
     jdbcTemplate.update("DELETE FROM QUEUED");
   }
+}
+
+class QueuedRowMapper implements RowMapper<Queued> {
 
   @Override
-  public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-    this.applicationEventPublisher = applicationEventPublisher;
+  public Queued mapRow(ResultSet rs, int rowNum) throws SQLException {
+    Queued queued = new Queued();
+    queued.setId(rs.getLong("ID"));
+    queued.setLink(rs.getString("LINK"));
+    queued.setThreadId(rs.getString("THREAD_ID"));
+    queued.setPostId(rs.getString("POST_ID"));
+    queued.setTotal(rs.getInt("TOTAL"));
+    queued.setLoading(rs.getBoolean("LOADING"));
+    return queued;
   }
 }

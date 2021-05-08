@@ -15,11 +15,10 @@ import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.Disposable;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Sinks;
+import tn.mnlr.vripper.event.Event;
+import tn.mnlr.vripper.event.EventBus;
 import tn.mnlr.vripper.exception.VripperException;
 import tn.mnlr.vripper.jpa.domain.Post;
-import tn.mnlr.vripper.listener.EmitHandler;
 import tn.mnlr.vripper.services.domain.tasks.LeaveThanksRunnable;
 
 import javax.annotation.PostConstruct;
@@ -38,17 +37,22 @@ public class VGAuthService {
   private final Disposable disposable;
 
   @Getter private final HttpClientContext context = HttpClientContext.create();
-  private final Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
   @Getter private boolean authenticated = false;
   @Getter private String loggedUser = "";
 
+  private final EventBus eventBus;
+
   @Autowired
   public VGAuthService(
-      ConnectionService cm, SettingsService settingsService, ThreadPoolService threadPoolService) {
+      ConnectionService cm,
+      SettingsService settingsService,
+      ThreadPoolService threadPoolService,
+      EventBus eventBus) {
     this.cm = cm;
     this.settingsService = settingsService;
     this.threadPoolService = threadPoolService;
     disposable = settingsService.getSettingsFlux().subscribe(settings -> this.authenticate());
+    this.eventBus = eventBus;
   }
 
   @PostConstruct
@@ -59,12 +63,7 @@ public class VGAuthService {
 
   @PreDestroy
   private void destroy() {
-    sink.emitComplete(EmitHandler.RETRY);
     disposable.dispose();
-  }
-
-  public Flux<String> getLoggedInUser() {
-    return sink.asFlux();
   }
 
   public void authenticate() {
@@ -76,7 +75,7 @@ public class VGAuthService {
       log.debug("Authentication option is disabled");
       context.getCookieStore().clear();
       loggedUser = "";
-      sink.emitNext(loggedUser, EmitHandler.RETRY);
+      eventBus.publishEvent(Event.wrap(Event.Kind.VG_USER, loggedUser));
       return;
     }
 
@@ -87,7 +86,7 @@ public class VGAuthService {
       log.error("Cannot authenticate with ViperGirls credentials, username or password is empty");
       context.getCookieStore().clear();
       loggedUser = "";
-      sink.emitNext(loggedUser, EmitHandler.RETRY);
+      eventBus.publishEvent(Event.wrap(Event.Kind.VG_USER, loggedUser));
       return;
     }
 
@@ -104,7 +103,7 @@ public class VGAuthService {
     } catch (Exception e) {
       context.getCookieStore().clear();
       loggedUser = "";
-      sink.emitNext(loggedUser, EmitHandler.RETRY);
+      eventBus.publishEvent(Event.wrap(Event.Kind.VG_USER, loggedUser));
       log.error("Failed to authenticate user with " + settingsService.getSettings().getVProxy(), e);
       return;
     }
@@ -138,14 +137,14 @@ public class VGAuthService {
     } catch (Exception e) {
       context.getCookieStore().clear();
       loggedUser = "";
-      sink.emitNext(loggedUser, EmitHandler.RETRY);
+      eventBus.publishEvent(Event.wrap(Event.Kind.VG_USER, loggedUser));
       log.error("Failed to authenticate user with " + settingsService.getSettings().getVProxy(), e);
       return;
     }
     authenticated = true;
     loggedUser = username;
     log.info(String.format("Authenticated: %s", username));
-    sink.emitNext(loggedUser, EmitHandler.RETRY);
+    eventBus.publishEvent(Event.wrap(Event.Kind.VG_USER, loggedUser));
   }
 
   public void leaveThanks(Post post) {

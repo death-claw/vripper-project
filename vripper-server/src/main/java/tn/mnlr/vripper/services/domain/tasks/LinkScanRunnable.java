@@ -4,9 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.Utils;
-import tn.mnlr.vripper.jpa.domain.Event;
+import tn.mnlr.vripper.jpa.domain.LogEvent;
 import tn.mnlr.vripper.jpa.domain.Queued;
-import tn.mnlr.vripper.jpa.repositories.impl.EventRepository;
+import tn.mnlr.vripper.jpa.repositories.impl.LogEventRepository;
 import tn.mnlr.vripper.services.PostService;
 import tn.mnlr.vripper.services.SettingsService;
 
@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static tn.mnlr.vripper.jpa.domain.Event.Status.ERROR;
+import static tn.mnlr.vripper.jpa.domain.LogEvent.Status.ERROR;
 
 @Slf4j
 public class LinkScanRunnable implements Runnable {
@@ -25,29 +25,29 @@ public class LinkScanRunnable implements Runnable {
   private final List<String> urlList;
   private final SettingsService settingsService;
   private final PostService postService;
-  private final EventRepository eventRepository;
-  private final Event event;
+  private final LogEventRepository eventRepository;
+  private final LogEvent logEvent;
 
   public LinkScanRunnable(@NonNull List<String> urlList) {
     this.urlList = urlList;
     settingsService = SpringContext.getBean(SettingsService.class);
     postService = SpringContext.getBean(PostService.class);
-    eventRepository = SpringContext.getBean(EventRepository.class);
-    event =
-        new Event(
-            Event.Type.SCAN,
-            Event.Status.PENDING,
+    eventRepository = SpringContext.getBean(LogEventRepository.class);
+    logEvent =
+        new LogEvent(
+            LogEvent.Type.SCAN,
+            LogEvent.Status.PENDING,
             LocalDateTime.now(),
             "Links to scan:\n\t" + String.join("\n\t", urlList));
-    eventRepository.save(event);
+    eventRepository.save(logEvent);
   }
 
   @Override
   public void run() {
     synchronized (LOCK) {
       try {
-        event.setStatus(Event.Status.PROCESSING);
-        eventRepository.update(event);
+        logEvent.setStatus(LogEvent.Status.PROCESSING);
+        eventRepository.update(logEvent);
         ArrayList<Queued> queuedList = new ArrayList<>();
         List<String> unsupported = new ArrayList<>();
         List<String> unrecognized = new ArrayList<>();
@@ -91,18 +91,18 @@ public class LinkScanRunnable implements Runnable {
 
         postService.processMultiPost(queuedList);
         if (!unsupported.isEmpty() || !unrecognized.isEmpty()) {
-          event.setStatus(Event.Status.ERROR);
-          event.setMessage("Some links failed to be scanned: \n" + errorMessage);
+          logEvent.setStatus(LogEvent.Status.ERROR);
+          logEvent.setMessage("Some links failed to be scanned: \n" + errorMessage);
         } else {
-          event.setStatus(Event.Status.DONE);
+          logEvent.setStatus(LogEvent.Status.DONE);
         }
-        eventRepository.update(event);
+        eventRepository.update(logEvent);
       } catch (Exception e) {
         String error = "Error when scanning links";
         log.error(error, e);
-        event.setMessage(error + "\n" + Utils.throwableToString(e));
-        event.setStatus(ERROR);
-        eventRepository.update(event);
+        logEvent.setMessage(error + "\n" + Utils.throwableToString(e));
+        logEvent.setStatus(ERROR);
+        eventRepository.update(logEvent);
       }
     }
   }

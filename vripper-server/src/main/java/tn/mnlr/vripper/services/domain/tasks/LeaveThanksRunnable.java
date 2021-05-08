@@ -11,9 +11,9 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.Utils;
-import tn.mnlr.vripper.jpa.domain.Event;
+import tn.mnlr.vripper.jpa.domain.LogEvent;
 import tn.mnlr.vripper.jpa.domain.Post;
-import tn.mnlr.vripper.jpa.repositories.IEventRepository;
+import tn.mnlr.vripper.jpa.repositories.ILogEventRepository;
 import tn.mnlr.vripper.services.ConnectionService;
 import tn.mnlr.vripper.services.DataService;
 import tn.mnlr.vripper.services.SettingsService;
@@ -30,10 +30,10 @@ public class LeaveThanksRunnable implements Runnable {
   private final DataService dataService;
   private final HttpClientContext context;
   private final SettingsService settingsService;
-  private final IEventRepository eventRepository;
+  private final ILogEventRepository eventRepository;
   private final boolean authenticated;
   private final Post post;
-  private final Event event;
+  private final LogEvent logEvent;
 
   public LeaveThanksRunnable(Post post, boolean authenticated, HttpClientContext context) {
     this.post = post;
@@ -41,51 +41,51 @@ public class LeaveThanksRunnable implements Runnable {
     this.context = context;
     cm = SpringContext.getBean(ConnectionService.class);
     dataService = SpringContext.getBean(DataService.class);
-    eventRepository = SpringContext.getBean(IEventRepository.class);
+    eventRepository = SpringContext.getBean(ILogEventRepository.class);
     settingsService = SpringContext.getBean(SettingsService.class);
-    event =
-        new Event(
-            Event.Type.THANKS,
-            Event.Status.PENDING,
+    logEvent =
+        new LogEvent(
+            LogEvent.Type.THANKS,
+            LogEvent.Status.PENDING,
             LocalDateTime.now(),
             String.format("Leaving thanks for %s", post.getUrl()));
-    eventRepository.save(event);
+    eventRepository.save(logEvent);
   }
 
   @Override
   public void run() {
     try {
-      event.setStatus(Event.Status.PROCESSING);
-      eventRepository.update(event);
+      logEvent.setStatus(LogEvent.Status.PROCESSING);
+      eventRepository.update(logEvent);
       if (!settingsService.getSettings().getVLogin()) {
-        event.setMessage(
+        logEvent.setMessage(
             String.format(
                 "Will not send a like for %s\nAuthentication with ViperGirls option is disabled",
                 post.getUrl()));
-        event.setStatus(Event.Status.DONE);
-        eventRepository.update(event);
+        logEvent.setStatus(LogEvent.Status.DONE);
+        eventRepository.update(logEvent);
         return;
       }
       if (!settingsService.getSettings().getVThanks()) {
-        event.setMessage(
+        logEvent.setMessage(
             String.format(
                 "Will not send a like for %s\nLeave thanks option is disabled", post.getUrl()));
-        event.setStatus(Event.Status.DONE);
-        eventRepository.update(event);
+        logEvent.setStatus(LogEvent.Status.DONE);
+        eventRepository.update(logEvent);
         return;
       }
       if (!authenticated) {
-        event.setMessage(
+        logEvent.setMessage(
             String.format("Will not send a like for %s\nYou are not authenticated", post.getUrl()));
-        event.setStatus(Event.Status.ERROR);
-        eventRepository.update(event);
+        logEvent.setStatus(LogEvent.Status.ERROR);
+        eventRepository.update(logEvent);
         return;
       }
       if (post.isThanked()) {
-        event.setMessage(
+        logEvent.setMessage(
             String.format("Will not send a like for %s\nAlready left a thanks", post.getUrl()));
-        event.setStatus(Event.Status.DONE);
-        eventRepository.update(event);
+        logEvent.setStatus(LogEvent.Status.DONE);
+        eventRepository.update(logEvent);
         return;
       }
 
@@ -101,9 +101,9 @@ public class LeaveThanksRunnable implements Runnable {
       } catch (UnsupportedEncodingException e) {
         String error = String.format("Request error for %s", post.getUrl());
         log.error(error, e);
-        event.setMessage(error + "\n" + Utils.throwableToString(e));
-        event.setStatus(Event.Status.ERROR);
-        eventRepository.update(event);
+        logEvent.setMessage(error + "\n" + Utils.throwableToString(e));
+        logEvent.setStatus(LogEvent.Status.ERROR);
+        eventRepository.update(logEvent);
         return;
       }
 
@@ -121,14 +121,14 @@ public class LeaveThanksRunnable implements Runnable {
         }
         EntityUtils.consumeQuietly(response.getEntity());
       }
-      event.setStatus(Event.Status.DONE);
-      eventRepository.update(event);
+      logEvent.setStatus(LogEvent.Status.DONE);
+      eventRepository.update(logEvent);
     } catch (Exception e) {
       String error = String.format("Failed to leave a thanks for %s", post.getUrl());
       log.error(error, e);
-      event.setMessage(error + "\n" + Utils.throwableToString(e));
-      event.setStatus(Event.Status.ERROR);
-      eventRepository.update(event);
+      logEvent.setMessage(error + "\n" + Utils.throwableToString(e));
+      logEvent.setStatus(LogEvent.Status.ERROR);
+      eventRepository.update(logEvent);
     }
   }
 }

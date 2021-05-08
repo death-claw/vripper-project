@@ -11,7 +11,7 @@ import tn.mnlr.vripper.jpa.repositories.IImageRepository;
 import tn.mnlr.vripper.jpa.repositories.IMetadataRepository;
 import tn.mnlr.vripper.jpa.repositories.IPostRepository;
 import tn.mnlr.vripper.jpa.repositories.IQueuedRepository;
-import tn.mnlr.vripper.jpa.repositories.impl.EventRepository;
+import tn.mnlr.vripper.jpa.repositories.impl.LogEventRepository;
 
 import java.util.Collection;
 import java.util.List;
@@ -27,7 +27,7 @@ public class DataService {
   private final IQueuedRepository queuedRepository;
   private final IMetadataRepository metadataRepository;
   private final SettingsService settingsService;
-  private final EventRepository eventRepository;
+  private final LogEventRepository eventRepository;
 
   @Autowired
   public DataService(
@@ -36,7 +36,7 @@ public class DataService {
       IQueuedRepository queuedRepository,
       IMetadataRepository metadataRepository,
       SettingsService settingsService,
-      EventRepository eventRepository) {
+      LogEventRepository eventRepository) {
     this.postRepository = postRepository;
     this.imageRepository = imageRepository;
     this.queuedRepository = queuedRepository;
@@ -219,11 +219,11 @@ public class DataService {
     postRepository.updateThanked(thanked, id);
   }
 
-  public Optional<Event> findEventById(Long id) {
+  public Optional<LogEvent> findEventById(Long id) {
     return eventRepository.findById(id);
   }
 
-  public List<Event> findAllEvents() {
+  public List<LogEvent> findAllEvents() {
     return eventRepository.findAll();
   }
 

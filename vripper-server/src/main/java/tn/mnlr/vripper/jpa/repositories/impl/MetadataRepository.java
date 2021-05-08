@@ -1,26 +1,29 @@
 package tn.mnlr.vripper.jpa.repositories.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
-import tn.mnlr.vripper.event.MetadataUpdateEvent;
+import tn.mnlr.vripper.event.Event;
+import tn.mnlr.vripper.event.EventBus;
 import tn.mnlr.vripper.jpa.domain.Metadata;
 import tn.mnlr.vripper.jpa.repositories.IMetadataRepository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
 @Service
-public class MetadataRepository implements IMetadataRepository, ApplicationEventPublisherAware {
+public class MetadataRepository implements IMetadataRepository {
 
   private final JdbcTemplate jdbcTemplate;
-  private ApplicationEventPublisher applicationEventPublisher;
+  private final EventBus eventBus;
 
   @Autowired
-  public MetadataRepository(JdbcTemplate jdbcTemplate) {
+  public MetadataRepository(JdbcTemplate jdbcTemplate, EventBus eventBus) {
     this.jdbcTemplate = jdbcTemplate;
+    this.eventBus = eventBus;
   }
 
   @Override
@@ -31,8 +34,7 @@ public class MetadataRepository implements IMetadataRepository, ApplicationEvent
         metadata.getPostId(),
         metadata.getPostedBy(),
         String.join("%sep%", metadata.getResolvedNames()));
-    applicationEventPublisher.publishEvent(
-        new MetadataUpdateEvent(MetadataRepository.class, metadata.getPostIdRef()));
+    eventBus.publishEvent(Event.wrap(Event.Kind.METADATA_UPDATE, metadata.getPostIdRef()));
     return metadata;
   }
 
@@ -55,9 +57,20 @@ public class MetadataRepository implements IMetadataRepository, ApplicationEvent
     return jdbcTemplate.update(
         "DELETE FROM METADATA AS metadata WHERE metadata.POST_ID = ?", postId);
   }
+}
+
+class MetadataRowMapper implements RowMapper<Metadata> {
 
   @Override
-  public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-    this.applicationEventPublisher = applicationEventPublisher;
+  public Metadata mapRow(ResultSet rs, int rowNum) throws SQLException {
+    Metadata metadata = new Metadata();
+    metadata.setPostIdRef(rs.getLong("POST_ID_REF"));
+    metadata.setPostId(rs.getString("POST_ID"));
+    metadata.setPostedBy(rs.getString("POSTED_BY"));
+    String resolvedNames = rs.getString("RESOLVED_NAMES");
+    if (resolvedNames != null && !resolvedNames.isBlank()) {
+      metadata.setResolvedNames(List.of(resolvedNames.split("%sep%")));
+    }
+    return metadata;
   }
 }

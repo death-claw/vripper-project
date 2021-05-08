@@ -6,16 +6,16 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import tn.mnlr.vripper.jpa.repositories.IEventRepository;
+import tn.mnlr.vripper.jpa.repositories.ILogEventRepository;
 
 @Slf4j
 @RestController
 @CrossOrigin(value = "*")
 public class EventLogRestEndpoint {
 
-  private final IEventRepository eventRepository;
+  private final ILogEventRepository eventRepository;
 
-  public EventLogRestEndpoint(IEventRepository eventRepository) {
+  public EventLogRestEndpoint(ILogEventRepository eventRepository) {
     this.eventRepository = eventRepository;
   }
 

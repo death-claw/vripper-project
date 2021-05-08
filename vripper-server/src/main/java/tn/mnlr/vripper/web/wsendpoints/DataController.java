@@ -5,8 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.simp.annotation.SubscribeMapping;
 import org.springframework.stereotype.Controller;
-import tn.mnlr.vripper.jpa.domain.Event;
 import tn.mnlr.vripper.jpa.domain.Image;
+import tn.mnlr.vripper.jpa.domain.LogEvent;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.Queued;
 import tn.mnlr.vripper.services.DataService;
@@ -70,7 +70,7 @@ public class DataController {
   }
 
   @SubscribeMapping("/events")
-  public Collection<Event> events() {
+  public Collection<LogEvent> events() {
     return dataService.findAllEvents();
   }
 

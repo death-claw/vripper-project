@@ -2,6 +2,8 @@ package tn.mnlr.vripper.services.domain;
 
 import lombok.Getter;
 
+import java.util.Objects;
+
 @Getter
 public class DownloadSpeed {
 
@@ -21,5 +23,18 @@ public class DownloadSpeed {
     int exp = (int) (Math.log(bytes) / Math.log(unit));
     String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
     return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    DownloadSpeed that = (DownloadSpeed) o;
+    return Objects.equals(speed, that.speed);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(speed);
   }
 }

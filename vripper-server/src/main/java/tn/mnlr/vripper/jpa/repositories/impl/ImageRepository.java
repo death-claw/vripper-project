@@ -1,28 +1,32 @@
 package tn.mnlr.vripper.jpa.repositories.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.lang.NonNull;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
-import tn.mnlr.vripper.event.ImageUpdateEvent;
+import tn.mnlr.vripper.SpringContext;
+import tn.mnlr.vripper.event.Event;
+import tn.mnlr.vripper.event.EventBus;
+import tn.mnlr.vripper.host.Host;
 import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.jpa.domain.enums.Status;
 import tn.mnlr.vripper.jpa.repositories.IImageRepository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
 @Service
-public class ImageRepository implements IImageRepository, ApplicationEventPublisherAware {
+public class ImageRepository implements IImageRepository {
 
   private final JdbcTemplate jdbcTemplate;
-  private ApplicationEventPublisher applicationEventPublisher;
+  private final EventBus eventBus;
 
   @Autowired
-  public ImageRepository(JdbcTemplate jdbcTemplate) {
+  public ImageRepository(JdbcTemplate jdbcTemplate, EventBus eventBus) {
     this.jdbcTemplate = jdbcTemplate;
+    this.eventBus = eventBus;
   }
 
   private synchronized Long nextId() {
@@ -44,7 +48,7 @@ public class ImageRepository implements IImageRepository, ApplicationEventPublis
         image.getUrl(),
         image.getPostIdRef());
     image.setId(id);
-    applicationEventPublisher.publishEvent(new ImageUpdateEvent(ImageRepository.class, id));
+    eventBus.publishEvent(Event.wrap(Event.Kind.IMAGE_UPDATE, id));
     return image;
   }
 
@@ -105,7 +109,7 @@ public class ImageRepository implements IImageRepository, ApplicationEventPublis
     int mutationCount =
         jdbcTemplate.update(
             "UPDATE IMAGE AS image SET image.STATUS = ? WHERE image.ID = ?", status.name(), id);
-    applicationEventPublisher.publishEvent(new ImageUpdateEvent(ImageRepository.class, id));
+    eventBus.publishEvent(Event.wrap(Event.Kind.IMAGE_UPDATE, id));
     return mutationCount;
   }
 
@@ -114,7 +118,7 @@ public class ImageRepository implements IImageRepository, ApplicationEventPublis
     int mutationCount =
         jdbcTemplate.update(
             "UPDATE IMAGE AS image SET image.CURRENT = ? WHERE image.ID = ?", current, id);
-    applicationEventPublisher.publishEvent(new ImageUpdateEvent(ImageRepository.class, id));
+    eventBus.publishEvent(Event.wrap(Event.Kind.IMAGE_UPDATE, id));
     return mutationCount;
   }
 
@@ -123,13 +127,30 @@ public class ImageRepository implements IImageRepository, ApplicationEventPublis
     int mutationCount =
         jdbcTemplate.update(
             "UPDATE IMAGE AS image SET image.TOTAL = ? WHERE image.ID = ?", total, id);
-    applicationEventPublisher.publishEvent(new ImageUpdateEvent(ImageRepository.class, id));
+    eventBus.publishEvent(Event.wrap(Event.Kind.IMAGE_UPDATE, id));
     return mutationCount;
   }
+}
+
+class ImageRowMapper implements RowMapper<Image> {
 
   @Override
-  public void setApplicationEventPublisher(
-      @NonNull ApplicationEventPublisher applicationEventPublisher) {
-    this.applicationEventPublisher = applicationEventPublisher;
+  public Image mapRow(ResultSet rs, int rowNum) throws SQLException {
+    Image image = new Image();
+    image.setId(rs.getLong("ID"));
+    String host = rs.getString("HOST");
+    image.setHost(
+        SpringContext.getBeansOfType(Host.class).values().stream()
+            .filter(e -> e.getHost().equals(host))
+            .findAny()
+            .orElse(null));
+    image.setUrl(rs.getString("URL"));
+    image.setIndex(rs.getInt("INDEX"));
+    image.setCurrent(rs.getLong("CURRENT"));
+    image.setTotal(rs.getLong("TOTAL"));
+    image.setStatus(Status.valueOf(rs.getString("STATUS")));
+    image.setPostId(rs.getString("POST_ID"));
+    image.setPostIdRef(rs.getLong("POST_ID_REF"));
+    return image;
   }
 }
