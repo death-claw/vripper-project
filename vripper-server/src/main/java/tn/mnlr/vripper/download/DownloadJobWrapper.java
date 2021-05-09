@@ -13,7 +13,7 @@ import tn.mnlr.vripper.services.DataService;
 import java.time.LocalDateTime;
 
 @Slf4j
-public class DownloadRunnable implements Runnable {
+public class DownloadJobWrapper implements Runnable {
 
   private final DownloadService downloadService;
   private final DataService dataService;
@@ -22,7 +22,7 @@ public class DownloadRunnable implements Runnable {
 
   private final DownloadJob downloadJob;
 
-  public DownloadRunnable(final DownloadJob downloadJob) {
+  public DownloadJobWrapper(final DownloadJob downloadJob) {
     downloadService = SpringContext.getBean(DownloadService.class);
     dataService = SpringContext.getBean(DataService.class);
     connectionService = SpringContext.getBean(ConnectionService.class);

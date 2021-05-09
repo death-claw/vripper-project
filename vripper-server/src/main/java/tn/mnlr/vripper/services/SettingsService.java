@@ -12,11 +12,10 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Sinks;
 import tn.mnlr.vripper.SpringContext;
+import tn.mnlr.vripper.event.Event;
+import tn.mnlr.vripper.event.EventBus;
 import tn.mnlr.vripper.exception.ValidationException;
-import tn.mnlr.vripper.listener.EmitHandler;
 import tn.mnlr.vripper.services.domain.Settings;
 
 import javax.annotation.PostConstruct;
@@ -46,7 +45,7 @@ public class SettingsService {
 
   private final Set<String> proxies = new HashSet<>();
 
-  private Sinks.Many<Settings> sink = Sinks.many().multicast().onBackpressureBuffer();
+  private final EventBus eventBus;
 
   @Getter private Settings settings = new Settings();
 
@@ -54,7 +53,10 @@ public class SettingsService {
   private Resource defaultProxies;
 
   public SettingsService(
-      @Value("${base.dir}") String baseDir, @Value("${base.dir.name}") String baseDirName) {
+      @Value("${base.dir}") String baseDir,
+      @Value("${base.dir.name}") String baseDirName,
+      EventBus eventBus) {
+    this.eventBus = eventBus;
     this.configPath = Paths.get(baseDir, baseDirName, "config.json");
     this.customProxiesPath = Paths.get(baseDir, baseDirName, "proxies.json");
     om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -64,7 +66,7 @@ public class SettingsService {
   private void init() {
     loadViperProxies();
     restore();
-    sink.emitNext(settings, EmitHandler.RETRY);
+    eventBus.publishEvent(Event.wrap(Event.Kind.SETTINGS_UPDATE, settings));
   }
 
   private void loadViperProxies() {
@@ -93,10 +95,6 @@ public class SettingsService {
     proxies.add("https://vipergirls.to");
   }
 
-  Flux<Settings> getSettingsFlux() {
-    return sink.asFlux();
-  }
-
   public List<String> getProxies() {
     return new ArrayList<>(proxies);
   }
@@ -116,7 +114,7 @@ public class SettingsService {
     this.settings = settings;
 
     save();
-    sink.emitNext(settings, EmitHandler.RETRY);
+    eventBus.publishEvent(Event.wrap(Event.Kind.SETTINGS_UPDATE, settings));
   }
 
   public void restore() {
@@ -232,7 +230,6 @@ public class SettingsService {
   @PreDestroy
   private void destroy() {
     save();
-    sink.emitComplete(EmitHandler.RETRY);
   }
 
   public void check(Settings settings) throws ValidationException {

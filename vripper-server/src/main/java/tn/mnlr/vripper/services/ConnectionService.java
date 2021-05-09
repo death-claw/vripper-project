@@ -17,8 +17,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.Disposable;
-import reactor.core.publisher.Flux;
 import tn.mnlr.vripper.download.DownloadJob;
+import tn.mnlr.vripper.event.Event;
+import tn.mnlr.vripper.event.EventBus;
 import tn.mnlr.vripper.services.domain.Settings;
 
 import javax.annotation.PreDestroy;
@@ -41,22 +42,25 @@ public class ConnectionService {
   private int connectionTimeout;
   private int maxAttempts;
 
-  public ConnectionService(SettingsService settingsService) {
+  public ConnectionService(EventBus eventBus, SettingsService settingsService) {
     connectionTimeout = settingsService.getSettings().getConnectionTimeout();
     maxAttempts = settingsService.getSettings().getMaxAttempts();
-    Flux<Settings> settingsFlux = settingsService.getSettingsFlux();
     disposable =
-        settingsFlux.subscribe(
-            settings -> {
-              if (connectionTimeout != settings.getConnectionTimeout()) {
-                connectionTimeout = settings.getConnectionTimeout();
-                buildRequestConfig();
-              }
-              if (maxAttempts != settings.getMaxAttempts()) {
-                maxAttempts = settings.getMaxAttempts();
-                buildRetryPolicy();
-              }
-            });
+        eventBus
+            .flux()
+            .filter(e -> e.getKind().equals(Event.Kind.SETTINGS_UPDATE))
+            .map(e -> ((Settings) e.getData()))
+            .subscribe(
+                settings -> {
+                  if (connectionTimeout != settings.getConnectionTimeout()) {
+                    connectionTimeout = settings.getConnectionTimeout();
+                    buildRequestConfig();
+                  }
+                  if (maxAttempts != settings.getMaxAttempts()) {
+                    maxAttempts = settings.getMaxAttempts();
+                    buildRetryPolicy();
+                  }
+                });
 
     buildRequestConfig();
     buildRetryPolicy();

@@ -28,6 +28,7 @@ public class Event<T> {
     LOG_EVENT_REMOVE,
     VG_USER,
     GLOBAL_STATE,
-    BYTES_PER_SECOND
+    BYTES_PER_SECOND,
+    SETTINGS_UPDATE
   }
 }

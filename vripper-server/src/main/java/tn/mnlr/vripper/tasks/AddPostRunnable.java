@@ -1,9 +1,9 @@
-package tn.mnlr.vripper.services.domain.tasks;
+package tn.mnlr.vripper.tasks;
 
 import lombok.extern.slf4j.Slf4j;
 import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.Utils;
-import tn.mnlr.vripper.download.PendingQueue;
+import tn.mnlr.vripper.download.DownloadService;
 import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.jpa.domain.LogEvent;
@@ -31,11 +31,11 @@ public class AddPostRunnable implements Runnable {
   private final DataService dataService;
   private final MetadataService metadataService;
   private final SettingsService settingsService;
-  private final PendingQueue pendingQueue;
   private final VGAuthService VGAuthService;
   private final LogEvent logEvent;
   private final ILogEventRepository eventRepository;
   private final String link;
+  private final DownloadService downloadService;
 
   public AddPostRunnable(String postId, String threadId) {
     this.postId = postId;
@@ -43,7 +43,7 @@ public class AddPostRunnable implements Runnable {
     this.dataService = SpringContext.getBean(DataService.class);
     this.metadataService = SpringContext.getBean(MetadataService.class);
     this.settingsService = SpringContext.getBean(SettingsService.class);
-    this.pendingQueue = SpringContext.getBean(PendingQueue.class);
+    this.downloadService = SpringContext.getBean(DownloadService.class);
     this.VGAuthService = SpringContext.getBean(VGAuthService.class);
     this.eventRepository = SpringContext.getBean(ILogEventRepository.class);
     link =
@@ -112,13 +112,7 @@ public class AddPostRunnable implements Runnable {
       if (settingsService.getSettings().getAutoStart()) {
         log.debug("Auto start downloads option is enabled");
         post.setStatus(Status.PENDING);
-        try {
-          pendingQueue.enqueue(post, images);
-        } catch (InterruptedException e) {
-          log.warn("Interruption was caught");
-          Thread.currentThread().interrupt();
-          return;
-        }
+        downloadService.enqueue(post, images);
         log.debug(String.format("Done enqueuing jobs for %s", post.getUrl()));
       } else {
         post.setStatus(Status.STOPPED);

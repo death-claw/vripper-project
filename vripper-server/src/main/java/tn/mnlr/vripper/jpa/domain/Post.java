@@ -7,6 +7,7 @@ import lombok.Setter;
 import lombok.ToString;
 import tn.mnlr.vripper.jpa.domain.enums.Status;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
@@ -49,6 +50,8 @@ public class Post {
 
   private Metadata metadata;
 
+  private LocalDateTime addedOn;
+
   public Post(
       String title,
       String url,
@@ -65,6 +68,7 @@ public class Post {
     this.threadTitle = threadTitle;
     this.securityToken = securityToken;
     status = Status.STOPPED;
+    addedOn = LocalDateTime.now();
   }
 
   @Override

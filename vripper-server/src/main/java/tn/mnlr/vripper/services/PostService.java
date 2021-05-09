@@ -5,13 +5,17 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.Disposable;
+import tn.mnlr.vripper.event.Event;
+import tn.mnlr.vripper.event.EventBus;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.Queued;
 import tn.mnlr.vripper.services.domain.MultiPostScanParser;
 import tn.mnlr.vripper.services.domain.MultiPostScanResult;
-import tn.mnlr.vripper.services.domain.tasks.AddPostRunnable;
-import tn.mnlr.vripper.services.domain.tasks.AddQueuedRunnable;
+import tn.mnlr.vripper.tasks.AddPostRunnable;
+import tn.mnlr.vripper.tasks.AddQueuedRunnable;
 
+import javax.annotation.PreDestroy;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -24,12 +28,14 @@ public class PostService {
   private final ThreadPoolService threadPoolService;
   private final MetadataService metadataService;
   private final LoadingCache<Queued, MultiPostScanResult> cache;
+  private final Disposable disposable;
 
   @Autowired
   public PostService(
       DataService dataService,
       ThreadPoolService threadPoolService,
-      MetadataService metadataService) {
+      MetadataService metadataService,
+      EventBus eventBus) {
     this.dataService = dataService;
     this.threadPoolService = threadPoolService;
     this.metadataService = metadataService;
@@ -37,6 +43,18 @@ public class PostService {
         Caffeine.newBuilder()
             .expireAfterWrite(5, TimeUnit.MINUTES)
             .build(multiPostItem -> new MultiPostScanParser(multiPostItem).parse());
+    disposable =
+        eventBus
+            .flux()
+            .filter(e -> e.getKind().equals(Event.Kind.SETTINGS_UPDATE))
+            .subscribe(e -> this.cache.invalidateAll());
+  }
+
+  @PreDestroy
+  private void destroy() {
+    if (disposable != null) {
+      disposable.dispose();
+    }
   }
 
   public void stopFetchingMetadata(Post post) {

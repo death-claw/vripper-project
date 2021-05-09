@@ -13,6 +13,7 @@ import tn.mnlr.vripper.jpa.repositories.IPostRepository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -37,7 +38,7 @@ public class PostRepository implements IPostRepository {
   public Post save(Post post) {
     long id = nextId();
     jdbcTemplate.update(
-        "INSERT INTO POST (ID, DONE, FORUM, HOSTS, POST_FOLDER_NAME, POST_ID, PREVIEWS, SECURITY_TOKEN, STATUS, THANKED, THREAD_ID, THREAD_TITLE, TITLE, TOTAL, URL) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO POST (ID, DONE, FORUM, HOSTS, POST_FOLDER_NAME, POST_ID, PREVIEWS, SECURITY_TOKEN, STATUS, THANKED, THREAD_ID, THREAD_TITLE, TITLE, TOTAL, URL, ADDED_ON) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         id,
         post.getDone(),
         post.getForum(),
@@ -52,7 +53,8 @@ public class PostRepository implements IPostRepository {
         post.getThreadTitle(),
         post.getTitle(),
         post.getTotal(),
-        post.getUrl());
+        post.getUrl(),
+        Timestamp.valueOf(post.getAddedOn()));
     post.setId(id);
     eventBus.publishEvent(Event.wrap(Event.Kind.POST_UPDATE, id));
     return post;
@@ -198,6 +200,7 @@ class PostRowMapper implements RowMapper<Post> {
     if ((previews = rs.getString("post.PREVIEWS")) != null) {
       post.setPreviews(Set.of(previews.split(DELIMITER)));
     }
+    post.setAddedOn(rs.getTimestamp("post.ADDED_ON").toLocalDateTime());
 
     Long metadataId = rs.getLong("metadata.POST_ID_REF");
     if (!rs.wasNull()) {

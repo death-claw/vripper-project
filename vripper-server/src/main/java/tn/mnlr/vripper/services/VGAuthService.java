@@ -19,7 +19,7 @@ import tn.mnlr.vripper.event.Event;
 import tn.mnlr.vripper.event.EventBus;
 import tn.mnlr.vripper.exception.VripperException;
 import tn.mnlr.vripper.jpa.domain.Post;
-import tn.mnlr.vripper.services.domain.tasks.LeaveThanksRunnable;
+import tn.mnlr.vripper.tasks.LeaveThanksRunnable;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -51,8 +51,12 @@ public class VGAuthService {
     this.cm = cm;
     this.settingsService = settingsService;
     this.threadPoolService = threadPoolService;
-    disposable = settingsService.getSettingsFlux().subscribe(settings -> this.authenticate());
     this.eventBus = eventBus;
+    disposable =
+        eventBus
+            .flux()
+            .filter(p -> p.getKind().equals(Event.Kind.SETTINGS_UPDATE))
+            .subscribe(e -> authenticate());
   }
 
   @PostConstruct

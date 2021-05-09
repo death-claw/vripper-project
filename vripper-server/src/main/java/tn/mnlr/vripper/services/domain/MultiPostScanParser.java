@@ -68,8 +68,6 @@ public class MultiPostScanParser {
                     }
 
                     try {
-                      //
-                      // System.out.println(EntityUtils.toString(response.getEntity()));
                       factory
                           .newSAXParser()
                           .parse(

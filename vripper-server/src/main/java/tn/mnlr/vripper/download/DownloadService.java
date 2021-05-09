@@ -11,10 +11,14 @@ import tn.mnlr.vripper.jpa.domain.enums.Status;
 import tn.mnlr.vripper.services.DataService;
 import tn.mnlr.vripper.services.PostService;
 import tn.mnlr.vripper.services.SettingsService;
+import tn.mnlr.vripper.services.domain.Settings;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
@@ -27,41 +31,38 @@ public class DownloadService {
 
   private final ConcurrentHashMap<Host, AtomicInteger> threadCount = new ConcurrentHashMap<>();
   private final ExecutorService executor = Executors.newFixedThreadPool(MAX_POOL_SIZE);
-  private final BlockingQueue<DownloadJob> executionQueue = new LinkedBlockingQueue<>();
-  private final List<DownloadJob> executing = Collections.synchronizedList(new ArrayList<>());
+  private final List<DownloadJob> running = Collections.synchronizedList(new ArrayList<>());
+  private final List<DownloadJob> pending = new ArrayList<>();
 
-  private final PendingQueue pendingQueue;
-  private final SettingsService settings;
+  private final SettingsService settingsService;
   private final DataService dataService;
   private final PostService postService;
 
+  private final List<Host> hosts;
+
   private boolean pauseQ = false;
-  private Thread executionThread;
   private Thread pollThread;
 
   @Autowired
   public DownloadService(
-      PendingQueue pendingQueue,
-      SettingsService settings,
+      SettingsService settingsService,
       DataService dataService,
-      PostService postService) {
-    this.pendingQueue = pendingQueue;
-    this.settings = settings;
+      PostService postService,
+      List<Host> hosts) {
+    this.settingsService = settingsService;
     this.dataService = dataService;
     this.postService = postService;
+    this.hosts = hosts;
   }
 
   @PostConstruct
   private void init() {
-    executionThread = new Thread(this::start, "Executor thread");
-    pollThread = new Thread(this::poll, "Polling thread");
+    pollThread = new Thread(this::start, "Polling thread");
     pollThread.start();
-    executionThread.start();
   }
 
   public void destroy() throws Exception {
     log.info("Shutting down ExecutionService");
-    executionThread.interrupt();
     pollThread.interrupt();
     executor.shutdown();
     dataService
@@ -76,7 +77,7 @@ public class DownloadService {
 
   private void stopRunning(@NonNull String postId) {
     List<DownloadJob> stopping = new ArrayList<>();
-    Iterator<DownloadJob> iterator = executing.iterator();
+    Iterator<DownloadJob> iterator = running.iterator();
     while (iterator.hasNext()) {
       DownloadJob downloadJob = iterator.next();
       if (postId.equals(downloadJob.getPost().getPostId())) {
@@ -125,18 +126,15 @@ public class DownloadService {
     post.setStatus(Status.PENDING);
     dataService.updatePostStatus(post.getStatus(), post.getId());
     log.debug(String.format("Restarting %d jobs for post id %s", images.size(), postId));
-    for (Image image : images) {
-      try {
-        pendingQueue.put(post, image);
-      } catch (InterruptedException e) {
-        log.warn("Thread was interrupted", e);
-        Thread.currentThread().interrupt();
-      }
-    }
+    enqueue(post, images);
   }
 
   private boolean isPending(String postId) {
-    return pendingQueue.isPending(postId);
+    return pending.stream().anyMatch(p -> p.getPost().getPostId().equals(postId));
+  }
+
+  private boolean isRunning(String postId) {
+    return running.stream().anyMatch(p -> p.getPost().getPostId().equals(postId));
   }
 
   private void stop(String postId) {
@@ -149,7 +147,7 @@ public class DownloadService {
       if (FINISHED.contains(post.getStatus())) {
         return;
       }
-      pendingQueue.stop(post);
+      pending.removeIf(p -> p.getPost().equals(post));
       stopRunning(postId);
       dataService.stopImagesByPostIdAndIsNotCompleted(postId);
       dataService.finishPost(post);
@@ -161,16 +159,12 @@ public class DownloadService {
 
   private boolean canRun(Host host) {
     boolean canRun;
-    AtomicInteger count = threadCount.get(host);
-    if (count == null) {
-      threadCount.put(host, new AtomicInteger(0));
-    }
+    int totalRunning = threadCount.values().stream().mapToInt(AtomicInteger::get).sum();
     canRun =
-        threadCount.get(host).get() < settings.getSettings().getMaxThreads()
-            && (settings.getSettings().getMaxTotalThreads() == 0
-                ? threadCount.values().stream().mapToInt(AtomicInteger::get).sum() < MAX_POOL_SIZE
-                : threadCount.values().stream().mapToInt(AtomicInteger::get).sum()
-                    < settings.getSettings().getMaxTotalThreads());
+        threadCount.get(host).get() < settingsService.getSettings().getMaxThreads()
+            && (settingsService.getSettings().getMaxTotalThreads() == 0
+                ? totalRunning < MAX_POOL_SIZE
+                : totalRunning < settingsService.getSettings().getMaxTotalThreads());
     if (canRun && !pauseQ) {
       threadCount.get(host).incrementAndGet();
       return true;
@@ -178,35 +172,74 @@ public class DownloadService {
     return false;
   }
 
-  private void poll() {
-    while (!Thread.interrupted()) {
-      try {
-        List<DownloadJob> peek = pendingQueue.peek();
-        for (DownloadJob downloadJob : peek) {
-          if (canRun(downloadJob.getImage().getHost())) {
-            executionQueue.offer(downloadJob);
-            pendingQueue.remove(downloadJob);
+  private Map<Host, Integer> candidateCount() {
+    HashMap<Host, Integer> map = new HashMap<>();
+    hosts.forEach(
+        h -> {
+          AtomicInteger count = threadCount.get(h);
+          if (count == null) {
+            count = new AtomicInteger(0);
+            threadCount.put(h, count);
           }
-        }
-        synchronized (threadCount) {
-          threadCount.wait(2_000);
-        }
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+          map.put(h, settingsService.getSettings().getMaxThreads() - count.get());
+        });
+    return map;
+  }
+
+  private List<DownloadJob> getCandidates(Map<Host, Integer> candidateCount, int max) {
+    int i = 0;
+    List<DownloadJob> candidates = new ArrayList<>();
+    for (DownloadJob downloadJob : pending) {
+      Host host = downloadJob.getImage().getHost();
+      Integer maxPerHost = candidateCount.get(host);
+      if (maxPerHost > 0 && i < max) {
+        candidates.add(downloadJob);
+        candidateCount.put(host, maxPerHost + 1);
+        i++;
+      }
+      if (i >= max) {
         break;
       }
+    }
+    return candidates;
+  }
+
+  public void enqueue(Post post, Collection<Image> imageList) {
+    synchronized (this) {
+      for (Image image : imageList) {
+        log.debug(String.format("Enqueuing a job for %s", image.getUrl()));
+        image.init();
+        dataService.updateImageStatus(image.getStatus(), image.getId());
+        dataService.updateImageCurrent(image.getCurrent(), image.getId());
+        DownloadJob downloadJob =
+            new DownloadJob(post, image, (Settings) settingsService.getSettings().clone());
+        pending.add(downloadJob);
+      }
+      pending.sort(Comparator.comparing(e -> e.getPost().getAddedOn()));
+
+      this.notify();
     }
   }
 
   private void start() {
     while (!Thread.interrupted()) {
       try {
-        push(executionQueue.take());
+        synchronized (this) {
+          List<DownloadJob> accepted = new ArrayList<>();
+          List<DownloadJob> candidates = getCandidates(candidateCount(), MAX_POOL_SIZE);
+          candidates.forEach(
+              c -> {
+                if (canRun(c.getImage().getHost())) {
+                  accepted.add(c);
+                }
+              });
+          pending.removeAll(accepted);
+          accepted.forEach(this::push);
+          accepted.clear();
+          this.wait();
+        }
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        break;
-      } catch (Exception e) {
-        log.error("Execution Service failed", e);
         break;
       }
     }
@@ -214,23 +247,27 @@ public class DownloadService {
 
   private void push(DownloadJob downloadJob) {
     log.debug(String.format("Scheduling a job for %s", downloadJob.getImage().getUrl()));
-    executor.execute(new DownloadRunnable(downloadJob));
-    executing.add(downloadJob);
+    executor.execute(new DownloadJobWrapper(downloadJob));
+    running.add(downloadJob);
   }
 
-  public synchronized void afterJobFinish(DownloadJob downloadJob) {
-    int count = pendingQueue.decrement(downloadJob.getPost().getPostId());
-    if (count == 0) {
-      dataService.finishPost(downloadJob.getPost());
+  public void afterJobFinish(DownloadJob downloadJob) {
+    synchronized (this) {
+      running.remove(downloadJob);
+      threadCount.get(downloadJob.getImage().getHost()).decrementAndGet();
+      if (!isPending(downloadJob.getPost().getPostId())
+          && !isRunning(downloadJob.getPost().getPostId())) {
+        dataService.finishPost(downloadJob.getPost());
+      }
+      this.notify();
     }
-    threadCount.get(downloadJob.getImage().getHost()).decrementAndGet();
-    executing.remove(downloadJob);
-    synchronized (threadCount) {
-      threadCount.notify();
-    }
+  }
+
+  public int pendingCount() {
+    return pending.size();
   }
 
   public int runningCount() {
-    return executing.size();
+    return running.size();
   }
 }

@@ -12,12 +12,16 @@ import org.apache.http.util.EntityUtils;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import reactor.core.Disposable;
+import tn.mnlr.vripper.event.Event;
+import tn.mnlr.vripper.event.EventBus;
 import tn.mnlr.vripper.exception.DownloadException;
 import tn.mnlr.vripper.exception.PostParseException;
 import tn.mnlr.vripper.jpa.domain.Metadata;
 import tn.mnlr.vripper.jpa.domain.Post;
-import tn.mnlr.vripper.services.domain.tasks.MetadataRunnable;
+import tn.mnlr.vripper.tasks.MetadataRunnable;
 
+import javax.annotation.PreDestroy;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -38,19 +42,33 @@ public class MetadataService {
   private final XpathService xpathService;
   private final Map<String, MetadataRunnable> fetchingMetadata = new ConcurrentHashMap<>();
   private final ThreadPoolService threadPoolService;
+  private final Disposable disposable;
 
   public MetadataService(
       ConnectionService cm,
       VGAuthService VGAuthService,
       HtmlProcessorService htmlProcessorService,
       XpathService xpathService,
-      ThreadPoolService threadPoolService) {
+      ThreadPoolService threadPoolService,
+      EventBus eventBus) {
     this.cm = cm;
     this.VGAuthService = VGAuthService;
     this.htmlProcessorService = htmlProcessorService;
     this.xpathService = xpathService;
     this.threadPoolService = threadPoolService;
     cache = Caffeine.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build(this::fetchMetadata);
+    disposable =
+        eventBus
+            .flux()
+            .filter(e -> e.getKind().equals(Event.Kind.SETTINGS_UPDATE))
+            .subscribe(e -> this.cache.invalidateAll());
+  }
+
+  @PreDestroy
+  private void destroy() {
+    if (disposable != null) {
+      disposable.dispose();
+    }
   }
 
   public Metadata get(Post post) throws ExecutionException {

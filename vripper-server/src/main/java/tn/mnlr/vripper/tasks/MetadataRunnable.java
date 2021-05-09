@@ -1,4 +1,4 @@
-package tn.mnlr.vripper.services.domain.tasks;
+package tn.mnlr.vripper.tasks;
 
 import lombok.Getter;
 import lombok.NonNull;

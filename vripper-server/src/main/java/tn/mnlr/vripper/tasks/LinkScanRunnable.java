@@ -1,4 +1,4 @@
-package tn.mnlr.vripper.services.domain.tasks;
+package tn.mnlr.vripper.tasks;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;

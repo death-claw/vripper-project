@@ -161,4 +161,11 @@
                                  initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
                                  referencedColumnNames="ID" referencedTableName="POST"/>
     </changeSet>
+    <changeSet id="1620590428" author="death-claw">
+        <addColumn tableName="POST">
+            <column name="ADDED_ON" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>
