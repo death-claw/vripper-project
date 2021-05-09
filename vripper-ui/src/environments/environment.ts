@@ -6,7 +6,7 @@ export const environment = {
   production: false,
   localhost: 'http://localhost:8080',
   ws: 'ws://localhost:8080',
-  version: '3.3.8'
+  version: '3.4.0'
 };
 
 /*

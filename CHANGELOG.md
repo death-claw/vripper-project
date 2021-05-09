@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.4.0] - 2021-05-09
+
+### Changed
+
+- Fix potential issue with imagebam host
+- Enhance download queue logic
+- Code source enhancements
+
 ## [3.3.8] - 2021-05-05
 
 ### Changed
