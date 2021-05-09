@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tn.mnlr.vripper.exception.RenameException;
 import tn.mnlr.vripper.jpa.domain.Post;
+import tn.mnlr.vripper.services.domain.Settings;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,47 +18,43 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 public class PathService {
 
-  private final SettingsService settingsService;
   private final DataService dataService;
 
   @Getter private final ReentrantLock directoryAccess = new ReentrantLock();
 
-  public PathService(SettingsService settingsService, DataService dataService) {
-    this.settingsService = settingsService;
+  public PathService(DataService dataService) {
     this.dataService = dataService;
   }
 
-  public final File calcDownloadDirectory(Post post) {
-    return new File(settingsService.getSettings().getDownloadPath(), post.getDownloadDirectory());
+  public final File calcDownloadDirectory(Post post, Settings settings) {
+    return new File(settings.getDownloadPath(), post.getDownloadDirectory());
   }
 
-  private File getRootFolder(@NonNull String forum, @NonNull String threadTitle) {
+  private File getRootFolder(
+      @NonNull String forum, @NonNull String threadTitle, Settings settings) {
     File sourceFolder =
-        settingsService.getSettings().getSubLocation()
-            ? new File(settingsService.getSettings().getDownloadPath(), sanitize(forum))
-            : new File(settingsService.getSettings().getDownloadPath());
-    return settingsService.getSettings().getThreadSubLocation()
-        ? new File(sourceFolder, threadTitle)
-        : sourceFolder;
+        settings.getSubLocation()
+            ? new File(settings.getDownloadPath(), sanitize(forum))
+            : new File(settings.getDownloadPath());
+    return settings.getThreadSubLocation() ? new File(sourceFolder, threadTitle) : sourceFolder;
   }
 
-  public final void createDefaultPostFolder(Post post) {
-    File downloadDirectory = getRootFolder(post.getForum(), post.getThreadTitle());
+  public final void createDefaultPostFolder(Post post, Settings settings) {
+    File downloadDirectory = getRootFolder(post.getForum(), post.getThreadTitle(), settings);
     downloadDirectory =
         new File(
             downloadDirectory,
-            settingsService.getSettings().getAppendPostId()
+            settings.getAppendPostId()
                 ? sanitize(post.getTitle()) + "_" + post.getPostId()
                 : sanitize(post.getTitle()));
     downloadDirectory = makeDir(downloadDirectory);
     post.setDownloadDirectory(
-        downloadDirectory
-            .getAbsolutePath()
-            .replace(settingsService.getSettings().getDownloadPath(), ""));
+        downloadDirectory.getAbsolutePath().replace(settings.getDownloadPath(), ""));
     dataService.updateDownloadDirectory(post.getDownloadDirectory(), post.getId());
   }
 
-  public final void rename(@NonNull String postId, @NonNull String altName) throws RenameException {
+  public final void rename(@NonNull String postId, @NonNull String altName, Settings settings)
+      throws RenameException {
     Post post = dataService.findPostByPostId(postId).orElseThrow();
     if (altName.equals(post.getTitle())) {
       return;
@@ -70,9 +67,9 @@ public class PathService {
       return;
     }
 
-    File newDownloadDirectory = getRootFolder(post.getForum(), post.getThreadTitle());
+    File newDownloadDirectory = getRootFolder(post.getForum(), post.getThreadTitle(), settings);
     newDownloadDirectory = new File(newDownloadDirectory, sanitize(altName));
-    File currentDownloadDirectory = calcDownloadDirectory(post);
+    File currentDownloadDirectory = calcDownloadDirectory(post, settings);
     try {
       directoryAccess.lock();
       Files.move(
@@ -80,9 +77,7 @@ public class PathService {
           newDownloadDirectory.toPath(),
           StandardCopyOption.ATOMIC_MOVE);
       post.setDownloadDirectory(
-          newDownloadDirectory
-              .getAbsolutePath()
-              .replace(settingsService.getSettings().getDownloadPath(), ""));
+          newDownloadDirectory.getAbsolutePath().replace(settings.getDownloadPath(), ""));
       dataService.updateDownloadDirectory(post.getDownloadDirectory(), post.getId());
 
       post.setTitle(altName);

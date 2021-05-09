@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import tn.mnlr.vripper.exception.ValidationException;
 import tn.mnlr.vripper.services.SettingsService;
+import tn.mnlr.vripper.services.domain.Settings;
 import tn.mnlr.vripper.web.restendpoints.exceptions.BadRequestException;
 
 import java.util.List;
@@ -37,7 +38,7 @@ public class SettingsRestEndpoint {
 
   @PostMapping("/settings")
   @ResponseStatus(value = HttpStatus.OK)
-  public SettingsService.Settings postSettings(@RequestBody SettingsService.Settings settings) {
+  public Settings postSettings(@RequestBody Settings settings) {
 
     try {
       this.settingsService.check(settings);
@@ -52,7 +53,7 @@ public class SettingsRestEndpoint {
 
   @GetMapping("/settings")
   @ResponseStatus(value = HttpStatus.OK)
-  public SettingsService.Settings getAppSettingsService() {
+  public Settings getAppSettingsService() {
 
     return settingsService.getSettings();
   }

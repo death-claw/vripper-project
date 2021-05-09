@@ -8,6 +8,7 @@ import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.services.DataService;
 import tn.mnlr.vripper.services.SettingsService;
+import tn.mnlr.vripper.services.domain.Settings;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
@@ -46,7 +47,8 @@ public class PendingQueue {
     image.init();
     dataService.updateImageStatus(image.getStatus(), image.getId());
     dataService.updateImageCurrent(image.getCurrent(), image.getId());
-    DownloadJob downloadJob = new DownloadJob(post, image);
+    DownloadJob downloadJob =
+        new DownloadJob(post, image, (Settings) settingsService.getSettings().clone());
     pendingQ.get(downloadJob.getImage().getHost()).putLast(downloadJob);
     checkKey(post.getPostId());
     toBeExecuted.get(post.getPostId()).incrementAndGet();

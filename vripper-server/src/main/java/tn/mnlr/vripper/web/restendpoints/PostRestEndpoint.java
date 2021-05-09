@@ -9,10 +9,7 @@ import tn.mnlr.vripper.download.DownloadService;
 import tn.mnlr.vripper.jpa.domain.Metadata;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.Queued;
-import tn.mnlr.vripper.services.DataService;
-import tn.mnlr.vripper.services.PathService;
-import tn.mnlr.vripper.services.PostService;
-import tn.mnlr.vripper.services.ThreadPoolService;
+import tn.mnlr.vripper.services.*;
 import tn.mnlr.vripper.services.domain.MultiPostItem;
 import tn.mnlr.vripper.services.domain.MultiPostScanResult;
 import tn.mnlr.vripper.services.domain.tasks.AddPostRunnable;
@@ -39,6 +36,7 @@ public class PostRestEndpoint {
   private final DownloadService downloadService;
   private final PostService postService;
   private final ThreadPoolService threadPoolService;
+  private final SettingsService settingsService;
 
   @Autowired
   public PostRestEndpoint(
@@ -46,12 +44,14 @@ public class PostRestEndpoint {
       PathService pathService,
       DownloadService downloadService,
       PostService postService,
-      ThreadPoolService threadPoolService) {
+      ThreadPoolService threadPoolService,
+      SettingsService settingsService) {
     this.dataService = dataService;
     this.pathService = pathService;
     this.downloadService = downloadService;
     this.postService = postService;
     this.threadPoolService = threadPoolService;
+    this.settingsService = settingsService;
   }
 
   @PostMapping("/post")
@@ -108,7 +108,8 @@ public class PostRestEndpoint {
         log.error("Download has not been started yet for this post");
         throw new NotFoundException("Download has not been started yet for this post");
       } else {
-        return new DownloadPath(pathService.calcDownloadDirectory(post).getPath());
+        return new DownloadPath(
+            pathService.calcDownloadDirectory(post, settingsService.getSettings()).getPath());
       }
     } else {
       log.error(String.format("Unable to find post with postId = %s", postId));
@@ -169,7 +170,8 @@ public class PostRestEndpoint {
     synchronized (LOCK) {
       for (AltPostName altPostName : postToRename) {
         try {
-          pathService.rename(altPostName.getPostId(), altPostName.getAltName());
+          pathService.rename(
+              altPostName.getPostId(), altPostName.getAltName(), settingsService.getSettings());
         } catch (Exception e) {
           log.error(
               String.format("Failed to rename post with postId = %s", altPostName.getPostId()), e);
@@ -199,7 +201,7 @@ public class PostRestEndpoint {
             if (!resolvedNames.isEmpty()) {
               String altTitle = resolvedNames.get(0);
               try {
-                pathService.rename(postId.getPostId(), altTitle);
+                pathService.rename(postId.getPostId(), altTitle, settingsService.getSettings());
               } catch (Exception e) {
                 log.error(
                     String.format("Failed to rename post with postId = %s", postId.getPostId()), e);

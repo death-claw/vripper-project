@@ -17,6 +17,7 @@ import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.enums.Status;
 import tn.mnlr.vripper.services.*;
+import tn.mnlr.vripper.services.domain.Settings;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -39,22 +40,22 @@ public class DownloadJob implements CheckedRunnable {
   private final ConnectionService cm;
   private final VGAuthService authService;
   private final DownloadSpeedService downloadSpeedService;
-  private final SettingsService settingsService;
+  private final Settings settings;
   private final HttpClientContext context;
   @Getter private final Image image;
   @Getter private final Post post;
   private volatile boolean stopped = false;
   @Getter private boolean finished = false;
 
-  DownloadJob(Post post, Image image) {
+  DownloadJob(Post post, Image image, Settings settings) {
     this.image = image;
     this.post = post;
+    this.settings = settings;
     dataService = SpringContext.getBean(DataService.class);
     pathService = SpringContext.getBean(PathService.class);
     cm = SpringContext.getBean(ConnectionService.class);
     authService = SpringContext.getBean(VGAuthService.class);
     downloadSpeedService = SpringContext.getBean(DownloadSpeedService.class);
-    settingsService = SpringContext.getBean(SettingsService.class);
     context = HttpClientContext.create();
     context.setCookieStore(new BasicCookieStore());
     context.setAttribute(
@@ -81,10 +82,9 @@ public class DownloadJob implements CheckedRunnable {
         // The post may be updated and the download directory might be set by another thread
         Post updatedPost = dataService.findById(post.getId()).orElseThrow();
         if (updatedPost.getDownloadDirectory() == null) {
-          pathService.createDefaultPostFolder(updatedPost);
+          pathService.createDefaultPostFolder(updatedPost, settings);
         }
-        if (settingsService.getSettings().getLeaveThanksOnStart() != null
-            && settingsService.getSettings().getLeaveThanksOnStart()) {
+        if (settings.getLeaveThanksOnStart() != null && settings.getLeaveThanksOnStart()) {
           authService.leaveThanks(updatedPost);
         }
       }
@@ -225,12 +225,11 @@ public class DownloadJob implements CheckedRunnable {
     }
     try {
       pathService.getDirectoryAccess().lock();
-      File downloadDestinationFolder = pathService.calcDownloadDirectory(post);
+      File downloadDestinationFolder = pathService.calcDownloadDirectory(post, settings);
       File outImage =
           new File(
               downloadDestinationFolder,
-              (settingsService.getSettings().getForceOrder() ? String.format("%03d_", index) : "")
-                  + imageName);
+              (settings.getForceOrder() ? String.format("%03d_", index) : "") + imageName);
       Files.copy(outputFile.toPath(), outImage.toPath(), StandardCopyOption.REPLACE_EXISTING);
     } catch (Exception e) {
       throw new HostException("Failed to rename the image", e);
@@ -268,6 +267,7 @@ public class DownloadJob implements CheckedRunnable {
   }
 
   public void stop() {
+    this.stopped = true;
     List<AbstractExecutionAwareRequest> requests =
         (List<AbstractExecutionAwareRequest>)
             this.context.getAttribute(ContextAttributes.OPEN_CONNECTION.toString());
@@ -276,7 +276,6 @@ public class DownloadJob implements CheckedRunnable {
         request.abort();
       }
     }
-    this.stopped = true;
   }
 
   public enum ContextAttributes {

@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import tn.mnlr.vripper.download.DownloadJob;
+import tn.mnlr.vripper.services.domain.Settings;
 
 import javax.annotation.PreDestroy;
 import java.net.URI;
@@ -43,7 +44,7 @@ public class ConnectionService {
   public ConnectionService(SettingsService settingsService) {
     connectionTimeout = settingsService.getSettings().getConnectionTimeout();
     maxAttempts = settingsService.getSettings().getMaxAttempts();
-    Flux<SettingsService.Settings> settingsFlux = settingsService.getSettingsFlux();
+    Flux<Settings> settingsFlux = settingsService.getSettingsFlux();
     disposable =
         settingsFlux.subscribe(
             settings -> {

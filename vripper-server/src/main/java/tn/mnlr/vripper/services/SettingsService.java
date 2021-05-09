@@ -1,6 +1,5 @@
 package tn.mnlr.vripper.services;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -18,6 +17,7 @@ import reactor.core.publisher.Sinks;
 import tn.mnlr.vripper.SpringContext;
 import tn.mnlr.vripper.exception.ValidationException;
 import tn.mnlr.vripper.listener.EmitHandler;
+import tn.mnlr.vripper.services.domain.Settings;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -304,72 +304,5 @@ public class SettingsService {
     Theme(boolean darkTheme) {
       this.darkTheme = darkTheme;
     }
-  }
-
-  @Getter
-  @Setter
-  @NoArgsConstructor
-  @JsonInclude(JsonInclude.Include.NON_NULL)
-  public static class Settings {
-
-    @JsonProperty("downloadPath")
-    private String downloadPath;
-
-    @JsonProperty("maxThreads")
-    private Integer maxThreads;
-
-    @JsonProperty("maxTotalThreads")
-    private Integer maxTotalThreads;
-
-    @JsonProperty("autoStart")
-    private Boolean autoStart;
-
-    @JsonProperty("vLogin")
-    private Boolean vLogin;
-
-    @JsonProperty("vUsername")
-    private String vUsername;
-
-    @JsonProperty("vPassword")
-    private String vPassword;
-
-    @JsonProperty("vThanks")
-    private Boolean vThanks;
-
-    @JsonProperty("desktopClipboard")
-    private Boolean desktopClipboard;
-
-    @JsonProperty("forceOrder")
-    private Boolean forceOrder;
-
-    @JsonProperty("subLocation")
-    private Boolean subLocation;
-
-    @JsonProperty("threadSubLocation")
-    private Boolean threadSubLocation;
-
-    @JsonProperty("clearCompleted")
-    private Boolean clearCompleted;
-
-    @JsonProperty("darkTheme")
-    private Boolean darkTheme;
-
-    @JsonProperty("appendPostId")
-    private Boolean appendPostId;
-
-    @JsonProperty("leaveThanksOnStart")
-    private Boolean leaveThanksOnStart;
-
-    @JsonProperty("connectionTimeout")
-    private Integer connectionTimeout;
-
-    @JsonProperty("maxAttempts")
-    private Integer maxAttempts;
-
-    @JsonProperty("vProxy")
-    private String vProxy;
-
-    @JsonProperty("maxEventLog")
-    private Integer maxEventLog;
   }
 }
