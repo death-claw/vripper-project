@@ -1,12 +1,13 @@
 # Changelog
 
-## [3.4.0] - 2021-05-09
+## [3.4.1] - 2021-05-09
 
 ### Changed
 
 - Fix potential issue with imagebam host
 - Enhance download queue logic
 - Code source enhancements
+- Fix app icons
 
 ## [3.3.8] - 2021-05-05
 
