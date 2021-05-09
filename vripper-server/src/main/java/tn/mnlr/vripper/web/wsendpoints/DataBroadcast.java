@@ -9,8 +9,6 @@ import tn.mnlr.vripper.event.Event;
 import tn.mnlr.vripper.event.EventBus;
 import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.services.DataService;
-import tn.mnlr.vripper.services.DownloadSpeedService;
-import tn.mnlr.vripper.services.GlobalStateService;
 import tn.mnlr.vripper.services.domain.DownloadSpeed;
 import tn.mnlr.vripper.services.domain.GlobalState;
 
@@ -34,12 +32,7 @@ public class DataBroadcast {
   private Disposable disposable;
 
   @Autowired
-  public DataBroadcast(
-      SimpMessagingTemplate template,
-      GlobalStateService globalStateService,
-      DownloadSpeedService downloadSpeedService,
-      DataService dataService,
-      EventBus eventBus) {
+  public DataBroadcast(SimpMessagingTemplate template, DataService dataService, EventBus eventBus) {
     this.template = template;
     this.dataService = dataService;
     this.eventBus = eventBus;
@@ -54,7 +47,7 @@ public class DataBroadcast {
             .buffer(Duration.of(500, ChronoUnit.MILLIS))
             .subscribe(
                 data -> {
-                  Map<Event.Kind, List<Event>> eventMap =
+                  Map<Event.Kind, List<Event<?>>> eventMap =
                       data.stream().collect(Collectors.groupingBy(Event::getKind));
 
                   eventMap.forEach(

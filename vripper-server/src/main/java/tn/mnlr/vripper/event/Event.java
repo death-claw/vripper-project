@@ -14,7 +14,7 @@ public class Event<T> {
   }
 
   public static <T> Event<T> wrap(Kind kind, T data) {
-    return new Event(kind, data);
+    return new Event<>(kind, data);
   }
 
   public enum Kind {

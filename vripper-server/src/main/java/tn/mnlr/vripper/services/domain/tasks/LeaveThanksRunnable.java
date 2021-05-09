@@ -117,7 +117,7 @@ public class LeaveThanksRunnable implements Runnable {
       try (CloseableHttpResponse response = client.execute(postThanks, context)) {
         if (response.getStatusLine().getStatusCode() / 100 == 2) {
           post.setThanked(true);
-          dataService.updatePostThanked(post.isThanked(), post.getId());
+          dataService.updatePostThanks(post.isThanked(), post.getId());
         }
         EntityUtils.consumeQuietly(response.getEntity());
       }

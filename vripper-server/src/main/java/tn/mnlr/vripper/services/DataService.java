@@ -70,10 +70,6 @@ public class DataService {
         });
   }
 
-  public void setDownloadingToStopped() {
-    postRepository.setDownloadingToStopped();
-  }
-
   public synchronized void afterJobFinish(Image image, Post post) {
     if (image.getStatus().equals(Status.COMPLETE)) {
       post.setDone(post.getDone() + 1);
@@ -86,6 +82,22 @@ public class DataService {
 
   private void updatePostDone(int done, Long id) {
     postRepository.updateDone(done, id);
+  }
+
+  public void updatePostStatus(Status status, Long id) {
+    postRepository.updateStatus(status, id);
+  }
+
+  public void updatePostThanks(boolean thanked, Long id) {
+    postRepository.updateThanked(thanked, id);
+  }
+
+  public void updatePostTitle(String title, Long id) {
+    postRepository.updateTitle(title, id);
+  }
+
+  public void updatePostDownloadDirectory(String postFolderName, Long id) {
+    postRepository.updateFolderName(postFolderName, id);
   }
 
   public void finishPost(@NonNull Post post) {
@@ -201,22 +213,6 @@ public class DataService {
 
   public void updateImageTotal(long total, Long id) {
     imageRepository.updateTotal(total, id);
-  }
-
-  public void updatePostStatus(Status status, Long id) {
-    postRepository.updateStatus(status, id);
-  }
-
-  public void updateDownloadDirectory(String postFolderName, Long id) {
-    postRepository.updateFolderName(postFolderName, id);
-  }
-
-  public void updatePostTitle(String title, Long id) {
-    postRepository.updateTitle(title, id);
-  }
-
-  public void updatePostThanked(boolean thanked, Long id) {
-    postRepository.updateThanked(thanked, id);
   }
 
   public Optional<LogEvent> findEventById(Long id) {

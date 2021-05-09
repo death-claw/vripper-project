@@ -50,7 +50,7 @@ public class PathService {
     downloadDirectory = makeDir(downloadDirectory);
     post.setDownloadDirectory(
         downloadDirectory.getAbsolutePath().replace(settings.getDownloadPath(), ""));
-    dataService.updateDownloadDirectory(post.getDownloadDirectory(), post.getId());
+    dataService.updatePostDownloadDirectory(post.getDownloadDirectory(), post.getId());
   }
 
   public final void rename(@NonNull String postId, @NonNull String altName, Settings settings)
@@ -78,7 +78,7 @@ public class PathService {
           StandardCopyOption.ATOMIC_MOVE);
       post.setDownloadDirectory(
           newDownloadDirectory.getAbsolutePath().replace(settings.getDownloadPath(), ""));
-      dataService.updateDownloadDirectory(post.getDownloadDirectory(), post.getId());
+      dataService.updatePostDownloadDirectory(post.getDownloadDirectory(), post.getId());
 
       post.setTitle(altName);
       dataService.updatePostTitle(post.getTitle(), post.getId());

@@ -20,6 +20,7 @@ public class ImageBamHost extends Host {
 
   private static final String host = "imagebam.com";
   private static final String IMG_XPATH = "//img[contains(@class,'main-image')]";
+  private static final String CONTINUE_XPATH = "//*[contains(text(), 'Continue')]";
 
   private final HostService hostService;
   private final XpathService xpathService;
@@ -46,6 +47,17 @@ public class ImageBamHost extends Host {
 
     HostService.Response response = hostService.getResponse(url, context);
     Document doc = response.getDocument();
+
+    try {
+      log.debug(String.format("Looking for xpath expression %s in %s", CONTINUE_XPATH, url));
+      if (xpathService.getAsNode(doc, CONTINUE_XPATH) != null) {
+        // Button detected. No need to actually click it, just make the call again.
+        response = hostService.getResponse(url, context);
+        doc = response.getDocument();
+      }
+    } catch (XpathException e) {
+      throw new HostException(e);
+    }
 
     Node imgNode;
     try {

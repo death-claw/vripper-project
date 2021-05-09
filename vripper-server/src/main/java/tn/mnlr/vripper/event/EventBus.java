@@ -10,13 +10,13 @@ import javax.annotation.PreDestroy;
 public class EventBus {
 
   public static final Sinks.EmitFailureHandler RETRY = (signalType, emitResult) -> true;
-  private final Sinks.Many<Event> sink = Sinks.many().multicast().onBackpressureBuffer();
+  private final Sinks.Many<Event<?>> sink = Sinks.many().multicast().onBackpressureBuffer();
 
-  public void publishEvent(Event event) {
+  public void publishEvent(Event<?> event) {
     sink.emitNext(event, RETRY);
   }
 
-  public Flux<Event> flux() {
+  public Flux<Event<?>> flux() {
     return sink.asFlux();
   }
 
