@@ -29,13 +29,13 @@ process.on("uncaughtException", err => {
 createWindow = () => {
 
     if (process.platform === 'win32') {
-        app.setAppUserModelId("tn.mnlr.vripper");
+        app.setAppUserModelId('tn.mnlr.vripper');
     }
 
     let icon;
-    if (process.platform === "win32") {
+    if (process.platform === 'win32') {
         icon = __dirname + '/icon.ico';
-    } else {
+    } else if (process.platform === 'linux') {
         icon = __dirname + '/icon.png';
     }
     win = new BrowserWindow({

@@ -82,7 +82,7 @@ export class WsConnectionService {
     if (this.electronService.isElectronApp) {
       const portRequest = setInterval(() => {
         this.electronService.ipcRenderer.send('get-port');
-      }, 1000);
+      }, 200);
 
       // wait for MainIPC
       this.electronService.ipcRenderer.once('port', (event, port) => {
@@ -107,7 +107,7 @@ export class WsConnectionService {
         Authorization: localStorage.getItem('auth') ? 'Bearer ' + localStorage.getItem('auth') : ''
       },
       brokerURL: this.serverService.wsBaseUrl + '/ws',
-      reconnectDelay: 5000,
+      reconnectDelay: 200,
       // debug: function (str) {
       //   console.log('STOMP: ' + str);
       // },

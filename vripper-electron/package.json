@@ -51,7 +51,6 @@
       "synopsis": "vipergirls.to ripper",
       "category": "Utility",
       "packageCategory": "Utility",
-      "icon": "icons",
       "target": [
         "AppImage"
       ]
