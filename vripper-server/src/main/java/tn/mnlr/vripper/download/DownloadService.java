@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -40,7 +41,6 @@ public class DownloadService {
 
   private final List<Host> hosts;
 
-  private boolean pauseQ = false;
   private Thread pollThread;
 
   @Autowired
@@ -90,43 +90,50 @@ public class DownloadService {
     while (!stopping.isEmpty()) {
       stopping.removeIf(DownloadJob::isFinished);
       try {
-        Thread.sleep(500);
+        Thread.sleep(100);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
     }
   }
 
-  public void stopAll(List<String> posIds) {
-    if (posIds != null) {
-      posIds.forEach(this::stop);
-    } else {
-      dataService.findAllPosts().forEach(p -> this.stop(p.getPostId()));
-    }
+  public void stopAll(List<String> postIds) {
+    stop(
+        Objects.requireNonNullElseGet(
+            postIds,
+            () ->
+                dataService.findAllPosts().stream()
+                    .map(Post::getPostId)
+                    .collect(Collectors.toList())));
   }
 
   public void restartAll(List<String> posIds) {
-    if (posIds != null) {
-      posIds.forEach(this::restart);
-    } else {
-      dataService.findAllPosts().forEach(p -> this.restart(p.getPostId()));
-    }
+    restart(
+        Objects.requireNonNullElseGet(
+            posIds,
+            () ->
+                dataService.findAllPosts().stream()
+                    .map(Post::getPostId)
+                    .collect(Collectors.toList())));
   }
 
-  private void restart(@NonNull String postId) {
-    if (isPending(postId)) {
-      log.warn(String.format("Cannot restart, jobs are currently running for post id %s", postId));
-      return;
+  private void restart(@NonNull List<String> postIds) {
+    Map<Post, Collection<Image>> data = new HashMap<>();
+    for (String postId : postIds) {
+      if (isPending(postId)) {
+        log.warn(
+            String.format("Cannot restart, jobs are currently running for post id %s", postIds));
+        continue;
+      }
+      List<Image> images = dataService.findByPostIdAndIsNotCompleted(postId);
+      if (images.isEmpty()) {
+        continue;
+      }
+      Post post = dataService.findPostByPostId(postId).orElseThrow();
+      log.debug(String.format("Restarting %d jobs for post id %s", images.size(), postIds));
+      data.put(post, images);
     }
-    List<Image> images = dataService.findByPostIdAndIsNotCompleted(postId);
-    if (images.isEmpty()) {
-      return;
-    }
-    Post post = dataService.findPostByPostId(postId).orElseThrow();
-    post.setStatus(Status.PENDING);
-    dataService.updatePostStatus(post.getStatus(), post.getId());
-    log.debug(String.format("Restarting %d jobs for post id %s", images.size(), postId));
-    enqueue(post, images);
+    enqueue(data);
   }
 
   private synchronized boolean isPending(String postId) {
@@ -137,23 +144,21 @@ public class DownloadService {
     return running.stream().anyMatch(p -> p.getPost().getPostId().equals(postId));
   }
 
-  private synchronized void stop(String postId) {
-    try {
-      pauseQ = true;
+  private synchronized void stop(List<String> postIds) {
+
+    for (String postId : postIds) {
       final Post post = dataService.findPostByPostId(postId).orElseThrow();
       if (post == null) {
-        return;
+        continue;
       }
       if (FINISHED.contains(post.getStatus())) {
-        return;
+        continue;
       }
       pending.removeIf(p -> p.getPost().equals(post));
       stopRunning(postId);
       dataService.stopImagesByPostIdAndIsNotCompleted(postId);
       dataService.finishPost(post);
       postService.stopFetchingMetadata(post);
-    } finally {
-      pauseQ = false;
     }
   }
 
@@ -165,7 +170,7 @@ public class DownloadService {
             && (settingsService.getSettings().getMaxTotalThreads() == 0
                 ? totalRunning < MAX_POOL_SIZE
                 : totalRunning < settingsService.getSettings().getMaxTotalThreads());
-    if (canRun && !pauseQ) {
+    if (canRun) {
       threadCount.get(host).incrementAndGet();
       return true;
     }
@@ -204,19 +209,23 @@ public class DownloadService {
     return candidates;
   }
 
-  public void enqueue(Post post, Collection<Image> imageList) {
+  public void enqueue(Map<Post, Collection<Image>> images) {
     synchronized (this) {
-      for (Image image : imageList) {
-        log.debug(String.format("Enqueuing a job for %s", image.getUrl()));
-        image.init();
-        dataService.updateImageStatus(image.getStatus(), image.getId());
-        dataService.updateImageCurrent(image.getCurrent(), image.getId());
-        DownloadJob downloadJob =
-            new DownloadJob(post, image, (Settings) settingsService.getSettings().clone());
-        pending.add(downloadJob);
+      for (Map.Entry<Post, Collection<Image>> entry : images.entrySet()) {
+        entry.getKey().setStatus(Status.PENDING);
+        dataService.updatePostStatus(entry.getKey().getStatus(), entry.getKey().getId());
+        for (Image image : entry.getValue()) {
+          log.debug(String.format("Enqueuing a job for %s", image.getUrl()));
+          image.init();
+          dataService.updateImageStatus(image.getStatus(), image.getId());
+          dataService.updateImageCurrent(image.getCurrent(), image.getId());
+          DownloadJob downloadJob =
+              new DownloadJob(
+                  entry.getKey(), image, (Settings) settingsService.getSettings().clone());
+          pending.add(downloadJob);
+        }
       }
       pending.sort(Comparator.comparing(e -> e.getPost().getAddedOn()));
-
       this.notify();
     }
   }

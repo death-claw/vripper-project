@@ -18,6 +18,7 @@ import tn.mnlr.vripper.services.domain.PostScanParser;
 import tn.mnlr.vripper.services.domain.PostScanResult;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Set;
 
 import static tn.mnlr.vripper.jpa.domain.LogEvent.Status.ERROR;
@@ -112,7 +113,7 @@ public class AddPostRunnable implements Runnable {
       if (settingsService.getSettings().getAutoStart()) {
         log.debug("Auto start downloads option is enabled");
         post.setStatus(Status.PENDING);
-        downloadService.enqueue(post, images);
+        downloadService.enqueue(Map.of(post, images));
         log.debug(String.format("Done enqueuing jobs for %s", post.getUrl()));
       } else {
         post.setStatus(Status.STOPPED);
