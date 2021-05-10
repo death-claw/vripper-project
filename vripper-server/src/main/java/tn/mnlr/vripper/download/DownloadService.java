@@ -31,7 +31,7 @@ public class DownloadService {
 
   private final ConcurrentHashMap<Host, AtomicInteger> threadCount = new ConcurrentHashMap<>();
   private final ExecutorService executor = Executors.newFixedThreadPool(MAX_POOL_SIZE);
-  private final List<DownloadJob> running = Collections.synchronizedList(new ArrayList<>());
+  private final List<DownloadJob> running = new ArrayList<>();
   private final List<DownloadJob> pending = new ArrayList<>();
 
   private final SettingsService settingsService;
@@ -75,7 +75,7 @@ public class DownloadService {
     executor.awaitTermination(5, TimeUnit.SECONDS);
   }
 
-  private void stopRunning(@NonNull String postId) {
+  private synchronized void stopRunning(@NonNull String postId) {
     List<DownloadJob> stopping = new ArrayList<>();
     Iterator<DownloadJob> iterator = running.iterator();
     while (iterator.hasNext()) {
@@ -129,15 +129,15 @@ public class DownloadService {
     enqueue(post, images);
   }
 
-  private boolean isPending(String postId) {
+  private synchronized boolean isPending(String postId) {
     return pending.stream().anyMatch(p -> p.getPost().getPostId().equals(postId));
   }
 
-  private boolean isRunning(String postId) {
+  private synchronized boolean isRunning(String postId) {
     return running.stream().anyMatch(p -> p.getPost().getPostId().equals(postId));
   }
 
-  private void stop(String postId) {
+  private synchronized void stop(String postId) {
     try {
       pauseQ = true;
       final Post post = dataService.findPostByPostId(postId).orElseThrow();
@@ -245,7 +245,7 @@ public class DownloadService {
     }
   }
 
-  private void push(DownloadJob downloadJob) {
+  private synchronized void push(DownloadJob downloadJob) {
     log.debug(String.format("Scheduling a job for %s", downloadJob.getImage().getUrl()));
     executor.execute(new DownloadJobWrapper(downloadJob));
     running.add(downloadJob);
