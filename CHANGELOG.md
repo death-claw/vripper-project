@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.4.1] - 2021-05-09
+## [3.4.2] - 2021-05-10
 
 ### Changed
 
@@ -8,6 +8,7 @@
 - Enhance download queue logic
 - Code source enhancements
 - Fix app icons
+- Fix race condition bug
 
 ## [3.3.8] - 2021-05-05
 
