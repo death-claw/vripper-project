@@ -85,7 +85,7 @@ export class PostContextMenuComponent {
           maxHeight: '100vh',
           maxWidth: '100vw',
           height: '200px',
-          width: '60%',
+          width: '400px',
           data: {header: 'Confirmation', content: 'Are you sure you want to remove this item ?'}
         })
         .afterClosed()

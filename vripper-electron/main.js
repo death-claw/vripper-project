@@ -7,6 +7,7 @@ const {spawn} = require("child_process");
 const {ipcMain} = require("electron");
 const {dialog} = require("electron");
 const axios = require('axios');
+const windowStateKeeper = require('electron-window-state');
 
 // non null value when it is an AppImage
 const appImageDir = process.env.APPDIR;
@@ -38,9 +39,17 @@ createWindow = () => {
     } else if (process.platform === 'linux') {
         icon = __dirname + '/icon.png';
     }
+
+    const mainWindowState = windowStateKeeper({
+        defaultWidth: 1024,
+        defaultHeight: 800
+    });
+
     win = new BrowserWindow({
-        width: 1024,
-        height: 800,
+        x: mainWindowState.x,
+        y: mainWindowState.y,
+        width: mainWindowState.width,
+        height: mainWindowState.height,
         minWidth: 800,
         minHeight: 600,
         webPreferences: {
@@ -50,6 +59,7 @@ createWindow = () => {
         icon: icon
     });
 
+    mainWindowState.manage(win);
     win.removeMenu();
     win.setMenu(null);
     win.setMenuBarVisibility(false);
