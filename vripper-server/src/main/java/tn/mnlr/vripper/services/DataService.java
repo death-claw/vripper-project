@@ -45,11 +45,6 @@ public class DataService {
     this.eventRepository = eventRepository;
   }
 
-  @PostConstruct
-  private void init() {
-    sortPostsByRank();
-  }
-
   private void save(Post post) {
     postRepository.save(post);
   }
@@ -238,7 +233,7 @@ public class DataService {
     queuedRepository.deleteAll();
   }
 
-  private synchronized void sortPostsByRank() {
+  public synchronized void sortPostsByRank() {
     List<Post> posts = findAllPosts();
     posts.sort(Comparator.comparing(Post::getAddedOn));
     for (int i = 0; i < posts.size(); i++) {
