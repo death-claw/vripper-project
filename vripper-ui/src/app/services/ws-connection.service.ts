@@ -171,7 +171,7 @@ export class WsConnectionService {
     this.posts = this.rxStomp.watch('/topic/posts').pipe(
       map(e => {
         const posts: Array<Post> = [];
-        (<Array<any>>JSON.parse(e.body)).forEach(element => {
+        (<Array<any>>JSON.parse(e.body)).forEach((element, index) => {
           posts.push(
             new Post(
               element.postId,
@@ -185,7 +185,9 @@ export class WsConnectionService {
               element.hosts,
               element.thanked,
               element.previews,
-              element.metadata
+              element.metadata,
+              element.addedOn,
+              element.rank + 1
             )
           );
         });

@@ -13,9 +13,9 @@ import tn.mnlr.vripper.jpa.repositories.IPostRepository;
 import tn.mnlr.vripper.jpa.repositories.IQueuedRepository;
 import tn.mnlr.vripper.jpa.repositories.impl.LogEventRepository;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import javax.annotation.PostConstruct;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -45,6 +45,11 @@ public class DataService {
     this.eventRepository = eventRepository;
   }
 
+  @PostConstruct
+  private void init() {
+    sortPostsByRank();
+  }
+
   private void save(Post post) {
     postRepository.save(post);
   }
@@ -68,6 +73,7 @@ public class DataService {
           image.setPostIdRef(post.getId());
           save(image);
         });
+    sortPostsByRank();
   }
 
   public synchronized void afterJobFinish(Image image, Post post) {
@@ -100,6 +106,10 @@ public class DataService {
     postRepository.updateFolderName(postFolderName, id);
   }
 
+  public void updatePostRank(int rank, Long id) {
+    postRepository.updateRank(rank, id);
+  }
+
   public void finishPost(@NonNull Post post) {
     if (!imageRepository.findByPostIdAndIsError(post.getPostId()).isEmpty()) {
       post.setStatus(Status.ERROR);
@@ -112,16 +122,19 @@ public class DataService {
         post.setStatus(Status.COMPLETE);
         updatePostStatus(post.getStatus(), post.getId());
         if (settingsService.getSettings().getClearCompleted()) {
-          remove(post.getPostId());
+          remove(List.of(post.getPostId()));
         }
       }
     }
   }
 
-  private void remove(@NonNull final String postId) {
-    imageRepository.deleteAllByPostId(postId);
-    metadataRepository.deleteByPostId(postId);
-    postRepository.deleteByPostId(postId);
+  private void remove(@NonNull final List<String> postIds) {
+    for (String postId : postIds) {
+      imageRepository.deleteAllByPostId(postId);
+      metadataRepository.deleteByPostId(postId);
+      postRepository.deleteByPostId(postId);
+    }
+    sortPostsByRank();
   }
 
   public void newQueueLink(@NonNull final Queued queued) {
@@ -134,18 +147,16 @@ public class DataService {
 
   public List<String> clearCompleted() {
     List<String> completed = postRepository.findCompleted();
-    completed.forEach(this::remove);
+    remove(completed);
     return completed;
   }
 
   public void removeAll(final List<String> postIds) {
-    if (postIds != null && !postIds.isEmpty()) {
-      for (String postId : postIds) {
-        remove(postId);
-      }
-    } else {
-      postRepository.findAll().forEach(p -> remove(p.getPostId()));
-    }
+
+    remove(
+        Objects.requireNonNullElse(
+            postIds,
+            postRepository.findAll().stream().map(Post::getPostId).collect(Collectors.toList())));
   }
 
   public List<Image> findByPostIdAndIsNotCompleted(@NonNull String postId) {
@@ -225,5 +236,14 @@ public class DataService {
 
   public void clearQueueLinks() {
     queuedRepository.deleteAll();
+  }
+
+  private synchronized void sortPostsByRank() {
+    List<Post> posts = findAllPosts();
+    posts.sort(Comparator.comparing(Post::getAddedOn));
+    for (int i = 0; i < posts.size(); i++) {
+      posts.get(i).setRank(i);
+      updatePostRank(i, posts.get(i).getId());
+    }
   }
 }

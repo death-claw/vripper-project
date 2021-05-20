@@ -45,7 +45,7 @@ public class DownloadJob implements CheckedRunnable {
   @Getter private final Image image;
   @Getter private final Post post;
   private volatile boolean stopped = false;
-  @Getter private boolean finished = false;
+  @Getter private volatile boolean finished = false;
 
   DownloadJob(Post post, Image image, Settings settings) {
     this.image = image;

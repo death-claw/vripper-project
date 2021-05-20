@@ -9,7 +9,7 @@ import tn.mnlr.vripper.jpa.domain.Image;
 import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.enums.Status;
 import tn.mnlr.vripper.services.DataService;
-import tn.mnlr.vripper.services.PostService;
+import tn.mnlr.vripper.services.MetadataService;
 import tn.mnlr.vripper.services.SettingsService;
 import tn.mnlr.vripper.services.domain.Settings;
 
@@ -26,8 +26,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DownloadService {
 
-  private static final List<Status> FINISHED =
-      Arrays.asList(Status.ERROR, Status.COMPLETE, Status.STOPPED);
   private final int MAX_POOL_SIZE = 12;
 
   private final ConcurrentHashMap<Host, AtomicInteger> threadCount = new ConcurrentHashMap<>();
@@ -37,7 +35,7 @@ public class DownloadService {
 
   private final SettingsService settingsService;
   private final DataService dataService;
-  private final PostService postService;
+  private final MetadataService metadataService;
 
   private final List<Host> hosts;
 
@@ -47,11 +45,11 @@ public class DownloadService {
   public DownloadService(
       SettingsService settingsService,
       DataService dataService,
-      PostService postService,
+      MetadataService metadataService,
       List<Host> hosts) {
     this.settingsService = settingsService;
     this.dataService = dataService;
-    this.postService = postService;
+    this.metadataService = metadataService;
     this.hosts = hosts;
   }
 
@@ -151,15 +149,12 @@ public class DownloadService {
       if (post == null) {
         continue;
       }
-      if (FINISHED.contains(post.getStatus())) {
-        continue;
-      }
       pending.removeIf(p -> p.getPost().equals(post));
       stopRunning(postId);
       dataService.stopImagesByPostIdAndIsNotCompleted(postId);
       dataService.finishPost(post);
-      postService.stopFetchingMetadata(post);
     }
+    metadataService.stopFetchingMetadata(postIds);
   }
 
   private boolean canRun(Host host) {

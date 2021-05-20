@@ -38,7 +38,7 @@ public class PostRepository implements IPostRepository {
   public Post save(Post post) {
     long id = nextId();
     jdbcTemplate.update(
-        "INSERT INTO POST (ID, DONE, FORUM, HOSTS, POST_FOLDER_NAME, POST_ID, PREVIEWS, SECURITY_TOKEN, STATUS, THANKED, THREAD_ID, THREAD_TITLE, TITLE, TOTAL, URL, ADDED_ON) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO POST (ID, DONE, FORUM, HOSTS, POST_FOLDER_NAME, POST_ID, PREVIEWS, SECURITY_TOKEN, STATUS, THANKED, THREAD_ID, THREAD_TITLE, TITLE, TOTAL, URL, ADDED_ON, RANK) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         id,
         post.getDone(),
         post.getForum(),
@@ -54,7 +54,8 @@ public class PostRepository implements IPostRepository {
         post.getTitle(),
         post.getTotal(),
         post.getUrl(),
-        Timestamp.valueOf(post.getAddedOn()));
+        Timestamp.valueOf(post.getAddedOn()),
+        post.getRank());
     post.setId(id);
     eventBus.publishEvent(Event.wrap(Event.Kind.POST_UPDATE, id));
     return post;
@@ -172,6 +173,14 @@ public class PostRepository implements IPostRepository {
     eventBus.publishEvent(Event.wrap(Event.Kind.POST_UPDATE, id));
     return mutationCount;
   }
+
+  @Override
+  public int updateRank(int rank, Long id) {
+    int mutationCount =
+        jdbcTemplate.update("UPDATE POST AS post SET post.RANK = ? WHERE post.ID = ?", rank, id);
+    eventBus.publishEvent(Event.wrap(Event.Kind.POST_UPDATE, id));
+    return mutationCount;
+  }
 }
 
 class PostRowMapper implements RowMapper<Post> {
@@ -201,6 +210,7 @@ class PostRowMapper implements RowMapper<Post> {
       post.setPreviews(Set.of(previews.split(DELIMITER)));
     }
     post.setAddedOn(rs.getTimestamp("post.ADDED_ON").toLocalDateTime());
+    post.setRank(rs.getInt("post.RANK"));
 
     Long metadataId = rs.getLong("metadata.POST_ID_REF");
     if (!rs.wasNull()) {

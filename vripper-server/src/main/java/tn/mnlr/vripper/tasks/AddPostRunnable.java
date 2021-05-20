@@ -107,7 +107,6 @@ public class AddPostRunnable implements Runnable {
       Set<Image> images = postScanResult.getImages();
 
       dataService.newPost(post, images);
-
       metadataService.startFetchingMetadata(post);
 
       if (settingsService.getSettings().getAutoStart()) {

@@ -1,6 +1,7 @@
 package tn.mnlr.vripper.jpa.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -50,6 +51,9 @@ public class Post {
 
   private Metadata metadata;
 
+  private int rank = Integer.MAX_VALUE;
+
+  @JsonSerialize(using = DateTimeSerializer.class)
   private LocalDateTime addedOn;
 
   public Post(

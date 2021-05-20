@@ -33,4 +33,6 @@ public interface IPostRepository extends IRepository {
   int updateTitle(String title, Long id);
 
   int updateThanked(boolean thanked, Long id);
+
+  int updateRank(int rank, Long id);
 }

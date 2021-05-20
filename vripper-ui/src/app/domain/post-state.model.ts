@@ -11,7 +11,9 @@ export class Post {
     public hosts: string[],
     public thanked: boolean,
     public previews: string[],
-    public metadata: Metadata
+    public metadata: Metadata,
+    public addedOn: string,
+    public rank: number
   ) {
   }
 }

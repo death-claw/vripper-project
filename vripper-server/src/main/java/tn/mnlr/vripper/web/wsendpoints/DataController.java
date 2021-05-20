@@ -17,6 +17,7 @@ import tn.mnlr.vripper.services.domain.DownloadSpeed;
 import tn.mnlr.vripper.services.domain.GlobalState;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 
 @Controller
@@ -56,7 +57,9 @@ public class DataController {
 
   @SubscribeMapping("/posts")
   public Collection<Post> posts() {
-    return dataService.findAllPosts();
+    List<Post> posts = dataService.findAllPosts();
+    posts.sort(Comparator.comparing(Post::getAddedOn));
+    return posts;
   }
 
   @SubscribeMapping("/images/{postId}")

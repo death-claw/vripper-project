@@ -11,6 +11,8 @@ import {PostAltRendererNative} from '../grid-custom-cells/post-alt-renderer.nati
 import {TitleRendererNative} from '../grid-custom-cells/title-renderer.native';
 import {Overlay, OverlayPositionBuilder} from '@angular/cdk/overlay';
 import {PostsService} from '../services/posts.service';
+import {PostAddedRendererNative} from '../grid-custom-cells/post-added-renderer.native';
+import {PostOrderRendererNative} from '../grid-custom-cells/post-order-renderer.native';
 
 @Component({
   selector: 'app-posts',
@@ -43,7 +45,6 @@ export class PostsComponent implements OnDestroy {
             overlay: this.overlay,
             zone: this.zone
           },
-          sort: 'asc',
           headerCheckboxSelection: true,
           headerCheckboxSelectionFilteredOnly: true,
           flex: 2
@@ -81,6 +82,24 @@ export class PostsComponent implements OnDestroy {
             contextMenuService: this.contextMenuService
           },
           flex: 1
+        }, {
+          headerName: 'Added On',
+          field: 'addedOn',
+          cellRenderer: 'nativeAddedCellRenderer',
+          cellRendererParams: {
+            contextMenuService: this.contextMenuService
+          },
+          flex: 1
+        }, {
+          headerName: 'Order',
+          field: 'rank',
+          cellRenderer: 'nativeOrderCellRenderer',
+          cellRendererParams: {
+            contextMenuService: this.contextMenuService,
+          },
+          width: 100,
+          maxWidth: 150,
+          sort: 'asc'
         }
       ],
       defaultColDef: {
@@ -99,6 +118,8 @@ export class PostsComponent implements OnDestroy {
         nativeFilesCellRenderer: PostFilesRendererNative,
         nativeAltCellRenderer: PostAltRendererNative,
         nativeTitleCellRenderer: TitleRendererNative,
+        nativeAddedCellRenderer: PostAddedRendererNative,
+        nativeOrderCellRenderer: PostOrderRendererNative,
       },
       overlayLoadingTemplate: '<span></span>',
       overlayNoRowsTemplate: '<span></span>',

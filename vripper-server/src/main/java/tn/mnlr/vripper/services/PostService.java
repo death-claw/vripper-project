@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.Disposable;
 import tn.mnlr.vripper.event.Event;
 import tn.mnlr.vripper.event.EventBus;
-import tn.mnlr.vripper.jpa.domain.Post;
 import tn.mnlr.vripper.jpa.domain.Queued;
 import tn.mnlr.vripper.services.domain.MultiPostScanParser;
 import tn.mnlr.vripper.services.domain.MultiPostScanResult;
@@ -26,19 +25,14 @@ public class PostService {
 
   private final DataService dataService;
   private final ThreadPoolService threadPoolService;
-  private final MetadataService metadataService;
   private final LoadingCache<Queued, MultiPostScanResult> cache;
   private final Disposable disposable;
 
   @Autowired
   public PostService(
-      DataService dataService,
-      ThreadPoolService threadPoolService,
-      MetadataService metadataService,
-      EventBus eventBus) {
+      DataService dataService, ThreadPoolService threadPoolService, EventBus eventBus) {
     this.dataService = dataService;
     this.threadPoolService = threadPoolService;
-    this.metadataService = metadataService;
     cache =
         Caffeine.newBuilder()
             .expireAfterWrite(5, TimeUnit.MINUTES)
@@ -55,10 +49,6 @@ public class PostService {
     if (disposable != null) {
       disposable.dispose();
     }
-  }
-
-  public void stopFetchingMetadata(Post post) {
-    metadataService.stopFetchingMetadata(post);
   }
 
   public void processMultiPost(List<Queued> queuedList) {

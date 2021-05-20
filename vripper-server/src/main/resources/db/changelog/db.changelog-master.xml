@@ -168,4 +168,11 @@
             </column>
         </addColumn>
     </changeSet>
+    <changeSet id="1621412143" author="death-claw">
+        <addColumn tableName="POST">
+            <column name="RANK" type="INT" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>
