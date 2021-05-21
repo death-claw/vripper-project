@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.5.0] - 2021-05-21
+
+### Changed
+
+- Download queue bug fix
+- Save window size and position
+- Resize confirmation box
+- Enhance metadata interruption
+- Add Added on and Order columns
+
 ## [3.4.2] - 2021-05-10
 
 ### Changed
