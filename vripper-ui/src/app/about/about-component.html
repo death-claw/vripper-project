@@ -48,10 +48,15 @@
                 fill="currentColor"/>
             </svg><h2 class="margin-left no-bottom-margin no-top-margin inline-block">Donation</h2>
           </span>
-          If you feel generous and want to support me, you can donate some coins, and I would be very grateful <span
+          If you feel generous and want to support me, you can toss me some coins, and I would be very grateful <span
           style="font-size: 20px">🙏</span><br/>
-          I accept Bitcoin (BTC) for donations, following is my address
-          <h3>bc1q9jzzw3st49r9vmxgtylq4vrd67cl7zfclf3lsq</h3>
+          You can send me donations through paypal to the following email address
+          <div fxLayout="row">
+            <a (click)="goTo('https://www.paypal.com/myaccount/transfer/homepage/buy/preview')" style="cursor: pointer">
+              <img alt="paypal-logo" src="/assets/paypal.svg" width="64">
+            </a>
+            <h3>dev.vripper@gmail.com</h3>
+          </div>
         </section>
       </mat-card-content>
     </mat-card>
