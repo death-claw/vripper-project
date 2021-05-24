@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.5.2] - 2021-05-24
+
+### Changed
+
+- Update donation infos
+
 ## [3.5.1] - 2021-05-22
 
 ### Changed
