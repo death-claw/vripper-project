@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.5.4] - 2021-05-29
+
+### Changed
+
+- Fix download queue bug
+
 ## [3.5.3] - 2021-05-24
 
 ### Changed
