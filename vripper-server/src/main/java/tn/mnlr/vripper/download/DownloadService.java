@@ -194,7 +194,7 @@ public class DownloadService {
       Integer maxPerHost = candidateCount.get(host);
       if (maxPerHost > 0 && i < max) {
         candidates.add(downloadJob);
-        candidateCount.put(host, maxPerHost + 1);
+        candidateCount.put(host, maxPerHost - 1);
         i++;
       }
       if (i >= max) {
