@@ -247,10 +247,10 @@ public class SettingsService {
           String.format("%s is not a directory", settings.getDownloadPath()));
     }
 
-    if (settings.getMaxTotalThreads() < 0 || settings.getMaxTotalThreads() > 12) {
+    if (settings.getMaxTotalThreads() < 0 || settings.getMaxTotalThreads() > 16) {
       throw new ValidationException(
           String.format(
-              "Invalid max global concurrent download settings, values must be in [%d,%d]", 0, 12));
+              "Invalid max global concurrent download settings, values must be in [%d,%d]", 0, 16));
     }
 
     if (settings.getMaxThreads() < 1 || settings.getMaxThreads() > 4) {
