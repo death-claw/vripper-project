@@ -118,7 +118,7 @@ public class ConnectionService {
     HttpGet httpGet = new HttpGet(url.replace(" ", "+"));
     httpGet.addHeader(
         "User-Agent",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.67");
     addToContext(context, httpGet);
     return httpGet;
   }
@@ -127,7 +127,7 @@ public class ConnectionService {
     HttpPost httpPost = new HttpPost(url.replace(" ", "+"));
     httpPost.addHeader(
         "User-Agent",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.67");
     addToContext(context, httpPost);
     return httpPost;
   }
@@ -136,7 +136,7 @@ public class ConnectionService {
     HttpGet httpGet = new HttpGet(uri);
     httpGet.addHeader(
         "User-Agent",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36");
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.67");
     addToContext(context, httpGet);
     return httpGet;
   }
