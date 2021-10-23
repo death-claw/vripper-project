@@ -1,0 +1,11 @@
+services:
+
+  vripper:
+    container_name: vripper
+    image: death-claw/vripper-project:3.5.4
+    ports:
+      - "8080:8080/tcp"
+    volumes:
+      - "./base:/vripper/base"
+      - "./downloads:/vripper/downloads"
+    restart: "unless-stopped"

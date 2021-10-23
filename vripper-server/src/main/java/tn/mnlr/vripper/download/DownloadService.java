@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DownloadService {
 
-  private final int MAX_POOL_SIZE = 12;
+  private final int MAX_POOL_SIZE = 16;
 
   private final SettingsService settingsService;
   private final DataService dataService;
