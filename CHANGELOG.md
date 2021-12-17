@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.5.5] - 2021-12-17
+
+- Update dependencies based on github dependabot
+
 ## [3.5.4] - 2021-05-29
 
 ### Changed
