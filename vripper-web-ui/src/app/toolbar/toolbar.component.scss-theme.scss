@@ -1,0 +1,37 @@
+@use 'sass:map';
+@use '@angular/material' as mat;
+
+@mixin toolbar-theme($theme, $dark: false) {
+  $theme-color: mat.get-color-config($theme);
+  $primary: map.get($theme-color, 'primary');
+  $accent: map.get($theme-color, 'accent');
+
+  app-toolbar .mat-toolbar {
+    background-color: mat.get-color-from-palette($accent, 900);
+  }
+
+  app-toolbar .mat-form-field-label {
+    color: mat.get-color-from-palette($primary, '900-contrast');
+  }
+
+  app-toolbar .mat-icon {
+    color: mat.get-color-from-palette($primary, '900-contrast');
+  }
+
+  app-toolbar .mat-form-field {
+    color: mat.get-color-from-palette($primary, '900-contrast');
+  }
+
+  app-toolbar .logged-user {
+    color: mat.get-color-from-palette($primary, '900-contrast');
+  }
+
+  app-toolbar .mat-icon-button.mat-button-disabled .mat-icon {
+    color: mat.get-color-from-palette($primary, '900');
+    @debug mat.get-color-from-palette($primary, '900');
+  }
+
+  app-toolbar .add-button .mat-icon {
+    color: mat.get-color-from-palette($primary, '900-contrast');
+  }
+}

@@ -1,0 +1,150 @@
+@use 'sass:map';
+@use '@angular/material' as mat;
+@use "ag-grid-community/styles" as ag;
+
+@mixin grid-theme($theme, $dark) {
+  $theme-color: mat.get-color-config($theme);
+  $primary: map.get($theme-color, 'primary');
+  $accent: map.get($theme-color, 'accent');
+  $warn: map.get($theme-color, 'warn');
+  $red: mat.$red-palette;
+  $grey: mat.$grey-palette;
+  $green: mat.$green-palette;
+  $orange: mat.$orange-palette;
+  $blue: mat.$blue-palette;
+
+  @include ag.grid-styles((
+    theme: alpine,
+    --ag-odd-row-background-color: null,
+    --ag-font-family: (Open, sans-serif),
+  ));
+
+  //
+  //.ag-checkbox-input-wrapper.ag-checked::after {
+  //  color: mat.get-color-from-palette($accent);
+  //}
+  //
+  //.ag-checkbox {
+  //  margin-right: 5px;
+  //}
+  //
+  //.ag-header-row, .ag-sort-order {
+  //  color: mat.get-color-from-palette($primary);
+  //}
+  //
+  //.ag-header, .ag-header .ag-icon {
+  //  color: mat.get-color-from-palette($primary);
+  //  background-color: mat.get-color-from-palette($primary);
+  //}
+  //
+  //.ag-root-wrapper {
+  //  background-color: mat.get-color-from-palette($primary, 900);
+  //
+  //  & .ag-header-cell {
+  //    color: mat.get-color-from-palette($primary, '900-contrast');
+  //    background-color: mat.get-color-from-palette($primary, 900);
+  //  }
+  //}
+  //
+  //.ag-row {
+  //  background-color: mat.get-color-from-palette($primary);
+  //  color: mat.get-color-from-palette($primary);
+  //
+  //  & a {
+  //    color: mat.get-color-from-palette($primary);
+  //  }
+  //}
+  //
+  //.ag-row-selected {
+  //  background-color: transparent;
+  //}
+  //
+  //.ag-center-cols-viewport {
+  //  overflow: hidden;
+  //}
+  //
+  //.ag-cell-focus, .ag-cell {
+  //  border: none !important;
+  //}
+  //
+  //.ag-row-selected {
+  //  background-color: mat.get-color-from-palette($primary) !important;
+  //}
+  //
+  //.text-cell {
+  //  white-space: nowrap;
+  //  overflow: hidden;
+  //  text-overflow: ellipsis;
+  //}
+  //
+  .native-progress-bar-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  .native-progress-bar-back {
+    height: 4px;
+    width: 100%;
+    background-color: lightgrey;
+  }
+
+  .native-progress-bar-front {
+    transition: width 0.75s;
+    height: 100%;
+    @if $dark {
+      background-color: #4a4a4a;
+    } @else {
+      background-color: mat.get-color-from-palette($primary);
+    }
+  }
+
+  .native-status-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .native-status-icon {
+    height: 24px;
+    margin-right: 5px;
+  }
+
+  .native-status-text {
+    line-height: 24px;
+  }
+
+  .native-status-icon.error {
+    color: mat.get-color-from-palette($red, 400);
+  }
+
+  .native-status-icon.partial {
+    color: mat.get-color-from-palette($orange, 400);
+  }
+
+  .native-status-icon.downloading {
+    color: mat.get-color-from-palette($blue, 400);
+  }
+
+  .native-status-icon.complete {
+    color: mat.get-color-from-palette($green, 400);
+  }
+
+  .native-status-icon.pending {
+    color: mat.get-color-from-palette($grey, 600);
+  }
+
+  .native-status-icon.stopped {
+    color: mat.get-color-from-palette($grey, 600);
+  }
+  //
+  //.cell-icon {
+  //  @if $dark {
+  //    color: mat.get-color-from-palette($accent);
+  //  } @else {
+  //    color: mat.get-color-from-palette($primary);
+  //  }
+  //}
+}

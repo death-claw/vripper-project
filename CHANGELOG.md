@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.0.0] - 2023-05-03
+
+- Drop electron app
+- Use javafx for the desktop app
+- Re-written in kotlin
+- Several enhancements
+
+### Changed
+
 ## [3.5.4] - 2021-05-29
 
 ### Changed

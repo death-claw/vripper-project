@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+  <changeSet author="vripper" id="0001">
+    <createTable tableName="POST">
+      <column name="ID" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="POST_PK"/>
+      </column>
+      <column name="DONE" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="HOSTS" type="VARCHAR(500)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="POST_FOLDER_NAME" type="VARCHAR(500)"/>
+      <column name="POST_ID" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="STATUS" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="THREAD_ID" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="POST_TITLE" type="VARCHAR(500)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="THREAD_TITLE" type="VARCHAR(500)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="FORUM" type="VARCHAR(500)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="TOTAL" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="URL" type="VARCHAR(3000)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="TOKEN" type="VARCHAR(500)">
+        <constraints nullable="false"/>
+      </column>
+      <column defaultValueComputed="CURRENT_TIMESTAMP" name="ADDED_ON" type="TIMESTAMP">
+        <constraints nullable="false"/>
+      </column>
+      <column defaultValue="0" name="RANK" type="INT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <createTable tableName="METADATA">
+      <column name="POST_ID_REF" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="METADATA_PK" references="POST(ID)" foreignKeyName="METADATA_POST_ID_REF_POST_ID_FK"/>
+      </column>
+      <column name="POST_ID" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="POSTED_BY" type="VARCHAR(255)"/>
+      <column name="RESOLVED_NAMES" type="VARCHAR(16777216)"/>
+    </createTable>
+    <createTable tableName="IMAGE">
+      <column name="ID" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="IMAGE_PK"/>
+      </column>
+      <column name="CURRENT" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="HOST" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="INDEX" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="POST_ID" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="STATUS" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="TOTAL" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="URL" type="VARCHAR(3000)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="POST_ID_REF" type="BIGINT">
+        <constraints nullable="false" references="POST(ID)" foreignKeyName="IMAGE_POST_ID_REF_POST_ID_FK"/>
+      </column>
+    </createTable>
+    <createTable tableName="THREAD">
+      <column name="ID" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="THREAD_PK"/>
+      </column>
+      <column name="TOTAL" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="LINK" type="VARCHAR(3000)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="THREAD_ID" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <createTable tableName="EVENT">
+      <column name="ID" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="EVENT_PK"/>
+      </column>
+      <column name="TYPE" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="STATUS" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="TIME" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="MESSAGE" type="VARCHAR(16777216)">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+  <changeSet author="vripper" id="0002">
+    <createSequence incrementBy="1" sequenceName="SEQ_IMAGE" startValue="1"/>
+    <createSequence incrementBy="1" sequenceName="SEQ_POST" startValue="1"/>
+    <createSequence incrementBy="1" sequenceName="SEQ_THREAD" startValue="1"/>
+    <createSequence incrementBy="1" sequenceName="SEQ_EVENT" startValue="1"/>
+  </changeSet>
+  <changeSet author="vripper" id="0003">
+    <createIndex indexName="IMAGE_POST_ID_IDX" tableName="IMAGE">
+      <column name="POST_ID"/>
+    </createIndex>
+    <createIndex indexName="IMAGE_STATUS_IDX" tableName="IMAGE">
+      <column name="STATUS"/>
+    </createIndex>
+    <createIndex indexName="POST_POST_ID_IDX" tableName="POST">
+      <column name="POST_ID"/>
+    </createIndex>
+    <createIndex indexName="POST_STATUS_IDX" tableName="POST">
+      <column name="STATUS"/>
+    </createIndex>
+    <createIndex indexName="THREAD_THREAD_ID_IDX" tableName="THREAD">
+      <column name="THREAD_ID"/>
+    </createIndex>
+  </changeSet>
+</databaseChangeLog>

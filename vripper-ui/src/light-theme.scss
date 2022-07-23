@@ -1,9 +1,0 @@
-@import '~@angular/material/theming';
-
-$my-light-theme-primary: mat-palette($mat-red, 900);
-$my-light-theme-accent: mat-palette($mat-red, 900);
-
-$my-light-theme: mat-light-theme(
-    $my-light-theme-primary,
-    $my-light-theme-accent
-);

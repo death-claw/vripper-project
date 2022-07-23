@@ -1,0 +1,12 @@
+@use 'sass:map';
+@use '@angular/material' as mat;
+
+@mixin status-bar-component-theme($theme) {
+
+  $theme-color: mat.get-color-config($theme);
+  $primary: map.get($theme-color, 'primary');
+
+  .status-bar {
+    color: mat.get-color-from-palette($primary, '900-contrast');
+  }
+}
