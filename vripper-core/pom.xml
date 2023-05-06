@@ -11,7 +11,7 @@
   </parent>
   <groupId>me.mnlr.vripper</groupId>
   <artifactId>vripper-core</artifactId>
-  <version>4.0.0</version>
+  <version>4.0.1</version>
   <name>vripper-core</name>
   <description>vripper-core</description>
   <properties>

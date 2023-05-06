@@ -10,7 +10,7 @@
     <module>vripper-gui</module>
   </modules>
   <packaging>pom</packaging>
-  <version>4.0.0</version>
+  <version>4.0.1</version>
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>

@@ -11,7 +11,7 @@
   </parent>
   <groupId>me.mnlr.vripper</groupId>
   <artifactId>vripper-gui</artifactId>
-  <version>4.0.0</version>
+  <version>4.0.1</version>
   <name>vripper-gui</name>
   <description>vripper-gui</description>
   <dependencies>
@@ -99,7 +99,7 @@
     <dependency>
       <artifactId>vripper-core</artifactId>
       <groupId>me.mnlr.vripper</groupId>
-      <version>${project.version}</version>
+      <version>4.0.1</version>
     </dependency>
 
     <dependency>
