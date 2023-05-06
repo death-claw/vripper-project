@@ -4,15 +4,22 @@ import javafx.application.Application
 import javafx.scene.image.Image
 import javafx.stage.Stage
 import javafx.stage.WindowEvent
-import org.springframework.boot.SpringApplication
-import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.context.ConfigurableApplicationContext
 import me.mnlr.vripper.event.ApplicationInitialized
 import me.mnlr.vripper.gui.Styles
 import me.mnlr.vripper.view.LoadingView
-import tornadofx.*
+import org.springframework.boot.SpringApplication
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.context.ConfigurableApplicationContext
+import tornadofx.App
+import tornadofx.DIContainer
+import tornadofx.FX
+import java.io.RandomAccessFile
+import java.nio.file.Files
+import kotlin.io.path.Path
+import kotlin.io.path.pathString
 import kotlin.reflect.KClass
 import kotlin.system.exitProcess
+
 
 @SpringBootApplication
 class VripperGuiApplication : App(
@@ -72,5 +79,23 @@ class VripperGuiApplication : App(
 }
 
 fun main(args: Array<String>) {
-    Application.launch(me.mnlr.vripper.VripperGuiApplication::class.java, *args)
+    val lock = Path(System.getProperty("user.dir")).resolve("lock")
+    try {
+        val randomFile = RandomAccessFile(lock.pathString, "rw")
+        val channel = randomFile.channel
+        val fileLock = channel.tryLock()
+        if (fileLock == null) {
+            println("Already Running...")
+            return
+        } else {
+            Runtime.getRuntime().addShutdownHook(Thread {
+                fileLock.release()
+                channel.close()
+                Files.deleteIfExists(lock)
+            })
+        }
+    } catch (e: Exception) {
+        println(e.toString())
+    }
+    Application.launch(VripperGuiApplication::class.java, *args)
 }
