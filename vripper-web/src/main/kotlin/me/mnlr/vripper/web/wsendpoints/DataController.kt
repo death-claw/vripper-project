@@ -66,12 +66,12 @@ class DataController constructor(
         return imageRepository.findByPostId(postId)
     }
 
-    @SubscribeMapping("/queued")
+    @SubscribeMapping("/threads")
     fun queued(): Collection<Thread> {
         return threadRepository.findAll()
     }
 
-    @SubscribeMapping("/events")
+    @SubscribeMapping("/logs")
     fun events(): Collection<LogEvent> {
         return logEventRepository.findAll()
     }

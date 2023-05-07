@@ -1,0 +1,8 @@
+<ag-grid-angular
+  id="thread-grid"
+  style="width: 100%; height: 100%"
+  class="ag-theme-alpine"
+  #agGrid
+  [gridOptions]="gridOptions"
+  (contextmenu)="disableForRows($event)">
+</ag-grid-angular>

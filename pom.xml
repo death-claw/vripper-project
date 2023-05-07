@@ -7,6 +7,8 @@
   <artifactId>vripper-project</artifactId>
   <modules>
     <module>vripper-core</module>
+    <module>vripper-web-ui</module>
+    <module>vripper-web</module>
     <module>vripper-gui</module>
   </modules>
   <packaging>pom</packaging>

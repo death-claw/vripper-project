@@ -43,6 +43,11 @@
             <artifactId>vripper-core</artifactId>
             <version>4.0.1</version>
         </dependency>
+        <dependency>
+            <groupId>me.mnlr</groupId>
+            <artifactId>vripper-web-ui</artifactId>
+            <version>4.0.1</version>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

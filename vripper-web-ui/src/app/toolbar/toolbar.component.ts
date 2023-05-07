@@ -1,244 +1,120 @@
-import {ChangeDetectionStrategy, Component, NgZone, OnDestroy, OnInit} from '@angular/core';
-import {ServerService} from '../services/server-service';
-import {AppService} from '../services/app.service';
-import {HttpClient} from '@angular/common/http';
-import {MatDialog} from '@angular/material/dialog';
-import {MatSnackBar} from '@angular/material/snack-bar';
-import {ConfirmDialogComponent} from '../confirmation-component/confirmation-dialog';
-import {filter, flatMap} from 'rxjs/operators';
-import {SettingsComponent} from '../settings/settings.component';
-import {BehaviorSubject, Observable, Subject, Subscription} from 'rxjs';
-import {BreakpointObserver, Breakpoints, BreakpointState} from '@angular/cdk/layout';
-import {WsConnectionService} from '../services/ws-connection.service';
-import {SelectionService} from '../services/selection-service';
-import {IRowNode} from 'ag-grid-community';
-import {PostsService} from '../services/posts.service';
-import {HomeTabsService} from '../services/home-tabs.service';
-import {LinkCollectorService} from '../services/link-collector.service';
-import {EventLogService} from '../services/event-log.service';
-import {AboutComponent} from '../about/about-component';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  Signal,
+} from '@angular/core';
+import { CommonModule, NgIf } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { ScanComponent } from '../scan/scan.component';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatDividerModule } from '@angular/material/divider';
 
 @Component({
   selector: 'app-toolbar',
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatButtonModule,
+    MatIconModule,
+    MatToolbarModule,
+    MatTooltipModule,
+    MatDialogModule,
+    NgIf,
+    MatDividerModule,
+  ],
   templateUrl: './toolbar.component.html',
   styleUrls: ['./toolbar.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ToolbarComponent implements OnInit, OnDestroy {
-  user$: Subject<string> = new BehaviorSubject('');
-  disableSelection$: Subject<boolean> = new BehaviorSubject(true);
-  isExtraSmall: Observable<BreakpointState> = this.breakpointObserver.observe(Breakpoints.XSmall);
-  selected: IRowNode[] = [];
-  subscriptions: Subscription[] = [];
-  tabIndex!: number;
-  searchModel!: string;
+export class ToolbarComponent {
+  @Input({ required: true })
+  selectedTab!: number;
 
-  constructor(
-    private serverService: ServerService,
-    private appService: AppService,
-    private ngZone: NgZone,
-    private httpClient: HttpClient,
-    private _snackBar: MatSnackBar,
-    public dialog: MatDialog,
-    private breakpointObserver: BreakpointObserver,
-    private ws: WsConnectionService,
-    private selectionService: SelectionService,
-    private postsDataService: PostsService,
-    public homeTabsService: HomeTabsService,
-    public linkCollectorService: LinkCollectorService,
-    public eventLogService: EventLogService,
-  ) {
-    this.homeTabsService.index.subscribe(e => {
-      this.tabIndex = e;
-      this.search(this.searchModel);
-    });
-  }
+  @Output()
+  links = new EventEmitter<string>();
 
-  openSettings(): void {
-    const dialogRef = this.dialog.open(SettingsComponent, {
-      width: '70%',
-      height: '70%',
-      maxWidth: '100vw',
-      maxHeight: '100vh'
-    });
+  @Output()
+  startSelected = new EventEmitter<void>();
 
-    const smallDialogSubscription = this.isExtraSmall.subscribe(result => {
-      if (result.matches) {
-        dialogRef.updateSize('100%', '100%');
-      } else {
-        dialogRef.updateSize('70%', '70%');
-      }
-    });
+  @Output()
+  stopSelected = new EventEmitter<void>();
 
-    dialogRef.afterClosed().subscribe(result => {
-      smallDialogSubscription.unsubscribe();
-    });
-  }
+  @Output()
+  deleteSelected = new EventEmitter<void>();
 
-  scan() {
-    this.appService.scan();
-  }
+  @Output()
+  clearDownload = new EventEmitter<void>();
 
-  search(event: any) {
-    switch (this.tabIndex) {
-      case 0:
-        this.postsDataService.search(event);
-        break;
-      case 1:
-        this.linkCollectorService.search(event);
-        break;
-      case 2:
-        this.eventLogService.search(event);
-        break;
-    }
-  }
+  @Output()
+  clearLogs = new EventEmitter<void>();
 
-  remove() {
-    const toRemove: any[] = [];
-    this.selected.forEach(e => toRemove.push(e.data.postId));
+  @Output()
+  clearThreads = new EventEmitter<void>();
+
+  @Output()
+  startDownload = new EventEmitter<void>();
+
+  @Output()
+  stopDownload = new EventEmitter<void>();
+
+  @Output()
+  settings = new EventEmitter<void>();
+
+  @Input({ required: true })
+  disableSelected!: Signal<boolean>;
+
+  constructor(public dialog: MatDialog) {}
+
+  openScanDialog() {
     this.dialog
-      .open(ConfirmDialogComponent, {
-        maxHeight: '100vh',
-        maxWidth: '100vw',
-        height: '200px',
-        width: '400px',
-        data: {header: 'Confirmation', content: 'Are you sure you want to remove the selected items ?'}
-      })
+      .open<ScanComponent, never, string>(ScanComponent)
       .afterClosed()
-      .pipe(
-        filter(e => e === 'yes'),
-        flatMap(e => this.httpClient.post<string[]>(this.serverService.baseUrl + '/post/remove', toRemove))
-      )
-      .subscribe(
-        data => {
-          this.postsDataService.remove(data);
-        },
-        error => {
-          this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', undefined, {
-            duration: 5000
-          });
+      .subscribe(v => {
+        if (v) {
+          this.links.next(v);
         }
-      );
+      });
   }
 
-  restart() {
-    const toStart: any[] = [];
-    this.selected.forEach(e => toStart.push(e.data.postId));
-    this.httpClient.post(this.serverService.baseUrl + '/post/restart', toStart).subscribe(
-      () => {
-      },
-      error => {
-        this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', undefined, {
-          duration: 5000
-        });
-      }
-    );
+  startSelectedClick() {
+    this.startSelected.emit();
   }
 
-  stop() {
-    const toStop: any[] = [];
-    this.selected.forEach(e => toStop.push(e.data.postId));
-    this.httpClient.post(this.serverService.baseUrl + '/post/stop', toStop).subscribe(
-      () => {
-      },
-      error => {
-        this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', undefined, {
-          duration: 5000
-        });
-      }
-    );
+  stopSelectedClick() {
+    this.stopSelected.emit();
   }
 
-  clear() {
-    this.ngZone.run(() => {
-      this.httpClient.post(this.serverService.baseUrl + '/post/clear/all', {}).subscribe(
-        data => {
-        },
-        error => {
-          this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', undefined, {
-            duration: 5000
-          });
-        }
-      );
-    });
+  startClick() {
+    this.startDownload.emit();
   }
 
-  clearLinkCollector() {
-    this.ngZone.run(() => {
-      this.httpClient.get<void>(this.serverService.baseUrl + '/grab/clear', {}).subscribe(
-        () => {
-          this.linkCollectorService.clear();
-        },
-        error => {
-          this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', undefined, {
-            duration: 5000
-          });
-        }
-      );
-    });
+  stopClick() {
+    this.stopDownload.emit();
   }
 
-  clearEventLogs() {
-    this.ngZone.run(() => {
-      this.httpClient.get<void>(this.serverService.baseUrl + '/events/clear', {}).subscribe(
-        () => {
-          this.eventLogService.clear();
-        },
-        error => {
-          this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', undefined, {
-            duration: 5000
-          });
-        }
-      );
-    });
+  settingsClick() {
+    this.settings.next();
   }
 
-  stopAll() {
-    this.ngZone.run(() => {
-      this.httpClient.post(this.serverService.baseUrl + '/post/stop/all', {}).subscribe(
-        () => {
-        },
-        error => {
-          this._snackBar.open(error?.error?.message || 'Unexpected error, check log file', undefined, {
-            duration: 5000
-          });
-        }
-      );
-    });
+  removeSelectedClick() {
+    this.deleteSelected.next();
   }
 
-  ngOnInit() {
-    this.subscriptions.push(this.ws.globalState$.subscribe(e => this.ngZone.run(() => this.user$.next(e.loggedUser))));
-    this.subscriptions.push(
-      this.selectionService.selected$.subscribe(selected => {
-        this.selected = selected;
-        this.ngZone.run(() => this.disableSelection$.next(this.selected.length === 0));
-      })
-    );
+  clearDownloadsClick() {
+    this.clearDownload.next();
   }
 
-  ngOnDestroy() {
-    this.subscriptions.forEach(e => e.unsubscribe());
+  clearLogsClick() {
+    this.clearLogs.emit();
   }
 
-  openAbout(): void {
-    const dialogRef = this.dialog.open(AboutComponent, {
-      width: '70%',
-      height: '70%',
-      maxWidth: '100vw',
-      maxHeight: '100vh'
-    });
-
-    const smallDialogSubscription = this.isExtraSmall.subscribe(result => {
-      if (result.matches) {
-        dialogRef.updateSize('100%', '100%');
-      } else {
-        dialogRef.updateSize('70%', '70%');
-      }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      smallDialogSubscription.unsubscribe();
-    });
+  clearThreadsClick() {
+    this.clearThreads.emit();
   }
 }

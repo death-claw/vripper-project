@@ -1,15 +1,72 @@
-<div *ngIf="loaded | async; else loading" fxLayout="column"
-     id="app-container">
-  <div fxFlex="nogrow" id="app-header">
-    <app-toolbar></app-toolbar>
-  </div>
-  <div fxFlex="grow" id="app-body" style="margin-bottom: 20px;">
-    <router-outlet></router-outlet>
-  </div>
-  <app-status-bar style="width: 100%"></app-status-bar>
-</div>
-<ng-template #loading>
-  <div class="overlay loading" fxLayout="column" fxLayoutAlign="center center">
+<ng-container *ngIf="!loading(); else loadingTemplate">
+  <app-toolbar
+    [disableSelected]="noPostSelected"
+    [selectedTab]="tabIndex()"
+    (links)="onLinks($event)"
+    (settings)="onSettings()"
+    (startDownload)="onStartDownload()"
+    (stopDownload)="onStopDownload()"
+    (startSelected)="onStartSelected()"
+    (stopSelected)="onStopSelected()"
+    (deleteSelected)="onDeleteSelected()"
+    (clearDownload)="onClearDownloads()"
+    (clearLogs)="onClearLogs()"
+    (clearThreads)="onClearThreads()"></app-toolbar>
+  <mat-tab-group (selectedIndexChange)="onTabChange($event)" id="tab-group">
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <span>Downloads</span>
+        <mat-icon
+          [matBadgeHidden]="downloadCount() < 1"
+          [matBadge]="downloadCount()"
+          class="icon"
+          >photo_album
+        </mat-icon>
+      </ng-template>
+      <app-download-table
+        (selectedChange)="onPostsSelectionChange($event)"
+        (rowCountChange)="downloadCount.set($event)"></app-download-table>
+    </mat-tab>
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <span>Threads</span>
+        <mat-icon
+          [matBadgeHidden]="threadCount() < 1"
+          [matBadge]="threadCount()"
+          class="icon"
+          >link
+        </mat-icon>
+      </ng-template>
+      <app-thread-table
+        (rowCountChange)="threadCount.set($event)"
+        [clear]="clearThreads"></app-thread-table>
+    </mat-tab>
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <span>Event Log</span>
+        <mat-icon
+          [matBadgeHidden]="logCount() < 1"
+          [matBadge]="logCount()"
+          class="icon"
+          >grid_on
+        </mat-icon>
+      </ng-template>
+      <app-log-table
+        (rowCountChange)="logCount.set($event)"
+        [clear]="clearLogs"></app-log-table>
+    </mat-tab>
+  </mat-tab-group>
+  <app-status-bar></app-status-bar>
+</ng-container>
+<ng-template #loadingTemplate>
+  <div
+    class="overlay loading"
+    style="
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    ">
     <div class="sk-chase">
       <div class="sk-chase-dot"></div>
       <div class="sk-chase-dot"></div>
@@ -20,4 +77,3 @@
     </div>
   </div>
 </ng-template>
-

@@ -216,6 +216,10 @@ abstract class Host(
     override fun hashCode(): Int {
         return host.hashCode()
     }
+
+    override fun toString(): String {
+        return host
+    }
 }
 
 data class DownloadedImage(val name: String, val path: Path, val type: ImageMimeType)

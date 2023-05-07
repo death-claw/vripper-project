@@ -1,5 +1,6 @@
 package me.mnlr.vripper.entities
 
+import com.fasterxml.jackson.annotation.JsonFormat
 import me.mnlr.vripper.entities.domain.Status
 import java.time.LocalDateTime
 
@@ -15,7 +16,7 @@ data class PostDownloadState(
     val total: Int,
     val hosts: Set<String>,
     val downloadDirectory: String,
-    val addedOn: LocalDateTime = LocalDateTime.now(),
+    @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss") val addedOn: LocalDateTime = LocalDateTime.now(),
     var status: Status = Status.STOPPED,
     var done: Int = 0,
     var rank: Int = Int.MAX_VALUE
