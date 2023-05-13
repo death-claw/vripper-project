@@ -67,7 +67,7 @@ class DataBroadcast constructor(
                             }
 
                         Event.Kind.THREAD_UPDATE -> template.convertAndSend(
-                            "/topic/queued",
+                            "/topic/threads",
                             eventList
                                 .asSequence()
                                 .map { (_, data): Event<*> -> data as Long }
@@ -78,12 +78,12 @@ class DataBroadcast constructor(
                                 .toList())
 
                         Event.Kind.THREAD_REMOVE -> template.convertAndSend(
-                            "/topic/queued/deleted",
+                            "/topic/threads/deleted",
                             eventList
                                 .map { (_, data): Event<*> -> data as String })
 
                         Event.Kind.LOG_EVENT_UPDATE -> template.convertAndSend(
-                            "/topic/events",
+                            "/topic/logs",
                             eventList
                                 .asSequence()
                                 .map { (_, data): Event<*> -> data as Long }
@@ -94,7 +94,7 @@ class DataBroadcast constructor(
                                 .toList())
 
                         Event.Kind.LOG_EVENT_REMOVE -> template.convertAndSend(
-                            "/topic/events/deleted",
+                            "/topic/logs/deleted",
                             eventList
                                 .map { (_, data): Event<*> -> data as Long })
 

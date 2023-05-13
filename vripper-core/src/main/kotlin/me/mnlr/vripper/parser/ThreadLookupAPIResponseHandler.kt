@@ -86,7 +86,7 @@ class ThreadLookupAPIResponseHandler : DefaultHandler() {
                         postTitle,
                         imageItemList.size,
                         "${settingsService.settings.viperSettings.host}/threads/?p=$postId&viewfull=1#post$postId",
-                        hostMap.toMap(),
+                        hostMap.toMap().map { Pair(it.key.host, it.value) },
                         securityToken,
                         forum,
                         imageItemList.toList()

@@ -12,7 +12,7 @@ import me.mnlr.vripper.web.restendpoints.exceptions.BadRequestException
 
 
 @RestController
-@CrossOrigin(value = ["*"])
+@RequestMapping("/api")
 class SettingsRestEndpoint @Autowired constructor(private val settingsService: SettingsService) {
 
     private val log by LoggerDelegate()

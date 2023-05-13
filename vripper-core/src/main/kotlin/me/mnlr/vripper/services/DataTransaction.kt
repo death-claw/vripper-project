@@ -1,7 +1,5 @@
 package me.mnlr.vripper.services
 
-import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import me.mnlr.vripper.entities.ImageDownloadState
 import me.mnlr.vripper.entities.Metadata
 import me.mnlr.vripper.entities.PostDownloadState
@@ -12,6 +10,8 @@ import me.mnlr.vripper.repositories.ImageRepository
 import me.mnlr.vripper.repositories.MetadataRepository
 import me.mnlr.vripper.repositories.PostDownloadStateRepository
 import me.mnlr.vripper.repositories.ThreadRepository
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import kotlin.io.path.pathString
 
 @Service
@@ -49,18 +49,26 @@ class DataTransaction(
     }
 
     fun newPost(postItem: PostItem): PostDownloadState {
-        val postDownloadState =  save(PostDownloadState(
-            postTitle = postItem.title,
-            url = postItem.url,
-            token = postItem.securityToken,
-            postId = postItem.postId,
-            threadId = postItem.threadId,
-            total = postItem.imageCount,
-            hosts = postItem.hosts.keys.map { it.host }.toSet(),
-            threadTitle = postItem.threadTitle,
-            forum = postItem.forum,
-            downloadDirectory = pathService.calculateDownloadPath(postItem.forum, postItem.threadTitle, postItem.title, postItem.postId, settingsService.settings).pathString
-        ))
+        val postDownloadState = save(
+            PostDownloadState(
+                postTitle = postItem.title,
+                url = postItem.url,
+                token = postItem.securityToken,
+                postId = postItem.postId,
+                threadId = postItem.threadId,
+                total = postItem.imageCount,
+                hosts = postItem.hosts.map { "${it.first} (${it.second})" }.toSet(),
+                threadTitle = postItem.threadTitle,
+                forum = postItem.forum,
+                downloadDirectory = pathService.calculateDownloadPath(
+                    postItem.forum,
+                    postItem.threadTitle,
+                    postItem.title,
+                    postItem.postId,
+                    settingsService.settings
+                ).pathString
+            )
+        )
         val images: MutableList<ImageDownloadState> = mutableListOf()
         postItem.imageItemList.forEachIndexed { index, imageItem ->
             val imageDownloadState = ImageDownloadState(

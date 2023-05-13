@@ -1,5 +1,4 @@
 export interface Settings {
-  desktopClipboard: boolean;
   maxEventLog: number;
   connectionSettings: ConnectionSettings;
   downloadSettings: DownloadSettings;
@@ -16,6 +15,7 @@ export interface ConnectionSettings {
 export interface DownloadSettings {
   downloadPath: string;
   autoStart: boolean;
+  autoQueueThreshold: number;
   forceOrder: boolean;
   forumSubfolder: boolean;
   threadSubLocation: boolean;

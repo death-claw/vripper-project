@@ -1,0 +1,41 @@
+<app-toolbar [selectedTab]="tabIndex()"></app-toolbar>
+<mat-tab-group (selectedIndexChange)="onTabChange($event)" id="tab-group">
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <span>Downloads</span>
+      <mat-icon
+        [matBadgeHidden]="downloadCount() < 1"
+        [matBadge]="downloadCount()"
+        class="icon"
+        >photo_album
+      </mat-icon>
+    </ng-template>
+    <app-download-table
+      (rowCountChange)="downloadCount.set($event)"></app-download-table>
+  </mat-tab>
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <span>Threads</span>
+      <mat-icon
+        [matBadgeHidden]="threadCount() < 1"
+        [matBadge]="threadCount()"
+        class="icon"
+        >link
+      </mat-icon>
+    </ng-template>
+    <app-thread-table
+      (rowCountChange)="threadCount.set($event)"></app-thread-table>
+  </mat-tab>
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <span>Event Log</span>
+      <mat-icon
+        [matBadgeHidden]="logCount() < 1"
+        [matBadge]="logCount()"
+        class="icon"
+        >grid_on
+      </mat-icon>
+    </ng-template>
+    <app-log-table (rowCountChange)="logCount.set($event)"></app-log-table>
+  </mat-tab>
+</mat-tab-group>

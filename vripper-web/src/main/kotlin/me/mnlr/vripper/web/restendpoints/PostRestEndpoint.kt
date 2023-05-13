@@ -1,19 +1,16 @@
 package me.mnlr.vripper.web.restendpoints
 
-import me.mnlr.vripper.web.restendpoints.domain.PostToAdd
-import me.mnlr.vripper.web.restendpoints.domain.ThreadId
-import me.mnlr.vripper.web.restendpoints.domain.ThreadUrl
-import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.*
 import me.mnlr.vripper.AppEndpointService
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.model.PostItem
 import me.mnlr.vripper.web.restendpoints.domain.*
 import me.mnlr.vripper.web.restendpoints.exceptions.BadRequestException
 import me.mnlr.vripper.web.restendpoints.exceptions.ServerErrorException
+import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.*
 
 @RestController
-@CrossOrigin(value = ["*"])
+@RequestMapping("/api")
 class PostRestEndpoint(
     private val appEndpointService: AppEndpointService
 ) {
@@ -22,12 +19,12 @@ class PostRestEndpoint(
 
     @PostMapping("/post")
     @ResponseStatus(code = HttpStatus.OK)
-    fun scan(@RequestBody threadUrl: ThreadUrl) {
-            if (threadUrl.url.isNullOrBlank()) {
-                log.error("Cannot process empty requests")
-                throw BadRequestException("Cannot process empty requests")
-            }
-            appEndpointService.scanLinks(threadUrl.url)
+    fun scan(@RequestBody scanRequest: ScanRequest) {
+        if (scanRequest.links.isNullOrBlank()) {
+            log.error("Cannot process empty requests")
+            throw BadRequestException("Cannot process empty requests")
+        }
+        appEndpointService.scanLinks(scanRequest.links)
     }
 
     @PostMapping("/post/restart")
@@ -39,10 +36,12 @@ class PostRestEndpoint(
     @PostMapping("/post/add")
     @ResponseStatus(value = HttpStatus.OK)
     fun download(@RequestBody posts: List<PostToAdd>) {
-        appEndpointService.download(posts.map { Pair(
-            it.threadId,
-            it.postId
-        ) })
+        appEndpointService.download(posts.map {
+            Pair(
+                it.threadId,
+                it.postId
+            )
+        })
     }
 
     @PostMapping("/post/restart/all")
@@ -79,24 +78,23 @@ class PostRestEndpoint(
     @GetMapping("/grab/{threadId}")
     @ResponseStatus(value = HttpStatus.OK)
     fun grab(@PathVariable("threadId") threadId: String): List<PostItem> {
-            return try {
-                appEndpointService.grab(threadId)
-            } catch (e: Exception) {
-                throw ServerErrorException(
-                    String.format(
-                        "Failed to get links for threadId = %s, %s",
-                        threadId,
-                        e.message
-                    )
+        return try {
+            appEndpointService.grab(threadId)
+        } catch (e: Exception) {
+            throw ServerErrorException(
+                String.format(
+                    "Failed to get links for threadId = %s, %s",
+                    threadId,
+                    e.message
                 )
-            }
+            )
+        }
     }
 
     @PostMapping("/grab/remove")
     @ResponseStatus(value = HttpStatus.OK)
-    fun grabRemove(@RequestBody threadId: ThreadId): ThreadId {
-            appEndpointService.threadRemove(listOf( threadId.threadId))
-            return threadId
+    fun grabRemove(@RequestBody threadIds: List<String>) {
+        appEndpointService.threadRemove(threadIds)
     }
 
     @GetMapping("/grab/clear")

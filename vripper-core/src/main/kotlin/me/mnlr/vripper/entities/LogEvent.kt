@@ -1,12 +1,13 @@
 package me.mnlr.vripper.entities
 
+import com.fasterxml.jackson.annotation.JsonFormat
 import java.time.LocalDateTime
 
 data class LogEvent(
     val id: Long? = null,
     val type: Type,
     val status: Status,
-    val time: LocalDateTime = LocalDateTime.now(),
+    @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss") val time: LocalDateTime = LocalDateTime.now(),
     val message: String,
 ) {
 

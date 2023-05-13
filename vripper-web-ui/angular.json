@@ -3,21 +3,21 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "vripper-ui": {
-      "root": "",
-      "sourceRoot": "src",
+    "vripper-web-ui": {
       "projectType": "application",
-      "prefix": "app",
       "schematics": {
         "@schematics/angular:component": {
           "style": "scss"
         }
       },
+      "root": "",
+      "sourceRoot": "src",
+      "prefix": "app",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/vripper-ui",
+            "outputPath": "dist/vripper-web-ui",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": [
@@ -27,33 +27,24 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets",
-              {
-                "glob": "mdi.svg",
-                "input": "./node_modules/@mdi/angular-material",
-                "output": "./assets"
-              }
+              "src/assets"
             ],
             "styles": [
+              "@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles.scss"
             ],
-            "allowedCommonJsDependencies": [
-              "@stomp/rx-stomp"
-            ]
+            "scripts": []
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
-                  "type": "initial",
-                  "maximumWarning": "2mb",
-                  "maximumError": "5mb"
-                },
-                {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "6kb"
+                  "maximumWarning": "2kb",
+                  "maximumError": "4kb"
                 }
-              ]
+              ],
+              "outputHashing": "all"
             },
             "development": {
               "buildOptimizer": false,
@@ -70,18 +61,21 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "vripper-ui:build:production"
+              "browserTarget": "vripper-web-ui:build:production"
             },
             "development": {
-              "browserTarget": "vripper-ui:build:development"
+              "browserTarget": "vripper-web-ui:build:development"
             }
+          },
+          "options": {
+            "proxyConfig": "src/proxy.conf.json"
           },
           "defaultConfiguration": "development"
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "vripper-ui:build"
+            "browserTarget": "vripper-web-ui:build"
           }
         },
         "test": {
@@ -93,18 +87,33 @@
             ],
             "tsConfig": "tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
-            "styles": [
-              "src/styles.scss"
-            ],
             "assets": [
               "src/favicon.ico",
-              "src/assets",
-              { "glob": "mdi.svg", "input": "./node_modules/@mdi/angular-material", "output": "./assets" }
+              "src/assets"
+            ],
+            "styles": [
+              "@angular/material/prebuilt-themes/indigo-pink.css",
+              "src/styles.scss"
             ],
             "scripts": []
+          }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "src/**/*.ts",
+              "src/**/*.html"
+            ]
           }
         }
       }
     }
+  },
+  "cli": {
+    "schematicCollections": [
+      "@angular-eslint/schematics"
+    ],
+    "analytics": false
   }
 }

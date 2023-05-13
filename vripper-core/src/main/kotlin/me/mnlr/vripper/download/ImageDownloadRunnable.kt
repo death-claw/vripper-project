@@ -1,8 +1,5 @@
 package me.mnlr.vripper.download
 
-import net.jodah.failsafe.function.CheckedRunnable
-import org.apache.http.client.protocol.HttpClientContext
-import org.apache.http.impl.client.BasicCookieStore
 import me.mnlr.vripper.SpringContext
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.entities.ImageDownloadState
@@ -15,6 +12,9 @@ import me.mnlr.vripper.host.DownloadedImage
 import me.mnlr.vripper.host.ImageMimeType
 import me.mnlr.vripper.model.Settings
 import me.mnlr.vripper.services.*
+import net.jodah.failsafe.function.CheckedRunnable
+import org.apache.http.client.protocol.HttpClientContext
+import org.apache.http.impl.client.BasicCookieStore
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -81,26 +81,26 @@ class ImageDownloadRunnable(
             checkImageTypeAndRename(
                 context.post, downloadedImage, image.index
             )
-            synchronized(image.postId.intern()) {
-                val post = context.post
-                post.done += 1
-                dataTransaction.update(post)
-            }
         } catch (e: Exception) {
             if (stopped) {
                 return
             }
             throw DownloadException(e)
         } finally {
-            val image = image
-            if (image.current == image.total && image.total > 0) {
-                image.status = Status.FINISHED
-            } else if (stopped) {
-                image.status = Status.STOPPED
-            } else {
-                image.status = Status.ERROR
+            synchronized(image.postId.intern()) {
+                val image = image
+                if (image.current == image.total && image.total > 0) {
+                    image.status = Status.FINISHED
+                    val post = context.post
+                    post.done += 1
+                    dataTransaction.update(post)
+                } else if (stopped) {
+                    image.status = Status.STOPPED
+                } else {
+                    image.status = Status.ERROR
+                }
+                dataTransaction.update(image)
             }
-            dataTransaction.update(image)
         }
     }
 
@@ -116,7 +116,7 @@ class ImageDownloadRunnable(
             ImageMimeType.IMAGE_PNG -> "PNG"
             ImageMimeType.IMAGE_WEBP -> "WEBP"
         }
-        val filename = if(existingExtension.isBlank()) "${downloadedImage.name}.$extension" else downloadedImage.name
+        val filename = if (existingExtension.isBlank()) "${downloadedImage.name}.$extension" else downloadedImage.name
         try {
             val downloadDestinationFolder = Path.of(postDownloadState.downloadDirectory)
             synchronized(downloadDestinationFolder.pathString.intern()) {
