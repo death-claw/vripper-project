@@ -16,7 +16,8 @@ class PostModel(
     hosts: String,
     addedOn: String,
     order: Int,
-    path: String
+    path: String,
+    progressCount: String
 ) {
     val postIdProperty = SimpleStringProperty(postId)
     var postId: String by postIdProperty
@@ -50,4 +51,7 @@ class PostModel(
 
     val pathProperty = SimpleStringProperty(path)
     var path: String by pathProperty
+
+    val progressCountProperty = SimpleStringProperty(progressCount)
+    var progressCount: String by progressCountProperty
 }

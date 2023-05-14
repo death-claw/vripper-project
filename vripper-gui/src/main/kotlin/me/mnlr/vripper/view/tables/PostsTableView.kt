@@ -36,6 +36,7 @@ class PostsTableView : View("Download") {
                         done = it.done
                         total = it.total
                         order = it.order
+                        progressCount = it.progressCount
                     }
                 } else {
                     items.add(it)
@@ -45,6 +46,12 @@ class PostsTableView : View("Download") {
                 }
             }
 
+        }
+
+        eventBus.flux().filter {
+            it!!.kind == Event.Kind.POST_REMOVE
+        }.subscribe { event ->
+            items.removeIf { p -> p.postId == event.data as String }
         }
     }
 
@@ -141,7 +148,8 @@ class PostsTableView : View("Download") {
             }
             column("Status", PostModel::statusProperty)
             column("Path", PostModel::pathProperty)
-            column("Images", PostModel::totalProperty)
+            column("Total", PostModel::progressCountProperty)
+            column("Hosts", PostModel::hostsProperty)
             column("Added On", PostModel::addedOnProperty)
             column("Order", PostModel::orderProperty) {
                 sortOrder.add(this)
