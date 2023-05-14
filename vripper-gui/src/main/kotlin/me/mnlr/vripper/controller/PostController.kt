@@ -60,10 +60,11 @@ class PostController : Controller() {
             it.url,
             it.done,
             it.total,
-            it.hosts.joinToString(separator = "||"),
+            it.hosts.joinToString(separator = ", "),
             it.addedOn.format(dateTimeFormatter),
             it.rank + 1,
-            it.downloadDirectory
+            it.downloadDirectory,
+            "${it.done}/${it.total}"
         )
     }
 }
