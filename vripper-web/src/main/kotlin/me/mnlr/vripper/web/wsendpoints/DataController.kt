@@ -1,17 +1,11 @@
 package me.mnlr.vripper.web.wsendpoints
 
-import org.springframework.messaging.handler.annotation.DestinationVariable
-import org.springframework.messaging.simp.annotation.SubscribeMapping
-import org.springframework.stereotype.Controller
 import me.mnlr.vripper.AppEndpointService
 import me.mnlr.vripper.entities.ImageDownloadState
 import me.mnlr.vripper.entities.LogEvent
 import me.mnlr.vripper.entities.PostDownloadState
 import me.mnlr.vripper.entities.Thread
-import me.mnlr.vripper.formatSI
-import me.mnlr.vripper.model.DownloadSpeed
 import me.mnlr.vripper.model.GlobalState
-import me.mnlr.vripper.model.LoggedUser
 import me.mnlr.vripper.repositories.ImageRepository
 import me.mnlr.vripper.repositories.LogEventRepository
 import me.mnlr.vripper.repositories.PostDownloadStateRepository
@@ -19,6 +13,9 @@ import me.mnlr.vripper.repositories.ThreadRepository
 import me.mnlr.vripper.services.DownloadSpeedService
 import me.mnlr.vripper.services.GlobalStateService
 import me.mnlr.vripper.services.VGAuthService
+import org.springframework.messaging.handler.annotation.DestinationVariable
+import org.springframework.messaging.simp.annotation.SubscribeMapping
+import org.springframework.stereotype.Controller
 
 @Controller
 class DataController constructor(

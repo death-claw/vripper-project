@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Component
 import me.mnlr.vripper.download.DownloadService
-import me.mnlr.vripper.services.ThreadPoolService
+import me.mnlr.vripper.services.AsyncTaskRunnerService
 import java.nio.file.Path
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -16,7 +16,7 @@ class Management(
     private val jdbcTemplate: JdbcTemplate,
     @Value("\${base.dir}") baseDir: String,
     @Value("\${base.dir.name}") baseDirName: String,
-    private val threadPoolService: ThreadPoolService,
+    private val asyncTaskRunnerService: AsyncTaskRunnerService,
     private val downloadService: DownloadService
 ) {
     private val backupFolder: Path
@@ -27,7 +27,7 @@ class Management(
 
     @PreDestroy
     fun destroy() {
-        threadPoolService.destroy()
+//        taskRunnerService.destroy()
         downloadService.destroy()
         jdbcTemplate.execute("SHUTDOWN")
     }

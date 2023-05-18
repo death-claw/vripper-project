@@ -1,14 +1,15 @@
 package me.mnlr.vripper
 
-import org.springframework.stereotype.Service
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.download.DownloadService
+import me.mnlr.vripper.download.PostDownloadRunnable
 import me.mnlr.vripper.exception.PostParseException
 import me.mnlr.vripper.model.PostItem
 import me.mnlr.vripper.repositories.LogEventRepository
 import me.mnlr.vripper.repositories.ThreadRepository
 import me.mnlr.vripper.services.*
-import me.mnlr.vripper.tasks.LinkScanRunnable
+import me.mnlr.vripper.tasks.ThreadLookupRunnable
+import org.springframework.stereotype.Service
 import java.util.*
 import java.util.regex.Pattern
 
@@ -19,7 +20,8 @@ class AppEndpointService(
     private val threadRepository: ThreadRepository,
     private val threadCacheService: ThreadCacheService,
     private val eventRepository: LogEventRepository,
-    private val threadPoolService: ThreadPoolService,
+    private val asyncTaskRunnerService: AsyncTaskRunnerService,
+    private val settingsService: SettingsService
 ) {
     private val log by LoggerDelegate()
 
@@ -29,9 +31,39 @@ class AppEndpointService(
             log.warn("Nothing to scan")
             return
         }
-        val urlList = postLinks.split(Pattern.compile("\\r?\\n")).dropLastWhile { it.isEmpty() }.map { it.trim() }
-            .filter { it.isNotEmpty() }
-        threadPoolService.generalExecutor.submit(LinkScanRunnable(urlList))
+        val urlList = postLinks.split(Pattern.compile("\\r?\\n")).dropLastWhile { it.isEmpty() }
+            .map { it.trim() }.filter { it.isNotEmpty() }
+        for (link in urlList) {
+            log.debug("Starting to process thread: $link")
+            if (!link.startsWith(settingsService.settings.viperSettings.host)) {
+                continue
+            }
+            var threadId: String
+            var postId: String?
+            val m = Pattern.compile(
+                Pattern.quote(settingsService.settings.viperSettings.host) + "/threads/(\\d+)((.*p=)(\\d+))?"
+            ).matcher(link)
+            if (m.find()) {
+                threadId = m.group(1)
+                postId = m.group(4)
+                if (postId == null) {
+                    asyncTaskRunnerService.sink.emitNext(
+                        ThreadLookupRunnable(
+                            threadId, settingsService.settings
+                        )
+                    ) { _, _ -> true }
+                } else {
+                    asyncTaskRunnerService.sink.emitNext(
+                        PostDownloadRunnable(
+                            threadId, postId
+                        )
+                    ) { _, _ -> true }
+                }
+            } else {
+                log.error("Cannot retrieve thread id from URL $link")
+                continue
+            }
+        }
     }
 
     @Synchronized
@@ -41,7 +73,13 @@ class AppEndpointService(
 
     @Synchronized
     fun download(posts: List<Pair<String, String>>) {
-        downloadService.download(posts)
+        for (post in posts) {
+            asyncTaskRunnerService.sink.emitNext(
+                PostDownloadRunnable(
+                    post.first, post.second
+                )
+            ) { _, _ -> true }
+        }
     }
 
     @Synchronized

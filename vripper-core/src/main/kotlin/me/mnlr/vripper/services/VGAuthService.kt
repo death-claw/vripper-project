@@ -2,6 +2,12 @@ package me.mnlr.vripper.services
 
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
+import me.mnlr.vripper.delegate.LoggerDelegate
+import me.mnlr.vripper.entities.PostDownloadState
+import me.mnlr.vripper.event.Event
+import me.mnlr.vripper.event.EventBus
+import me.mnlr.vripper.exception.VripperException
+import me.mnlr.vripper.tasks.LeaveThanksRunnable
 import org.apache.http.NameValuePair
 import org.apache.http.client.entity.UrlEncodedFormEntity
 import org.apache.http.client.protocol.HttpClientContext
@@ -11,19 +17,12 @@ import org.apache.http.message.BasicNameValuePair
 import org.apache.http.util.EntityUtils
 import org.springframework.stereotype.Service
 import reactor.core.Disposable
-import me.mnlr.vripper.delegate.LoggerDelegate
-import me.mnlr.vripper.entities.PostDownloadState
-import me.mnlr.vripper.event.Event
-import me.mnlr.vripper.event.EventBus
-import me.mnlr.vripper.exception.VripperException
-import me.mnlr.vripper.model.PostItem
-import me.mnlr.vripper.tasks.LeaveThanksRunnable
 
 @Service
 class VGAuthService(
     private val cm: HTTPService,
     private val settingsService: SettingsService,
-    private val threadPoolService: ThreadPoolService,
+    private val asyncTaskRunnerService: AsyncTaskRunnerService,
     private val eventBus: EventBus
 ) {
     private val log by LoggerDelegate()
@@ -71,7 +70,10 @@ class VGAuthService(
             return
         }
         val postAuth =
-            cm.buildHttpPost(settingsService.settings.viperSettings.host + "/login.php?do=login", context)
+            cm.buildHttpPost(
+                settingsService.settings.viperSettings.host + "/login.php?do=login",
+                context
+            )
         val params: MutableList<NameValuePair> = ArrayList()
         params.add(BasicNameValuePair("vb_login_username", username))
         params.add(BasicNameValuePair("cookieuser", "1"))
@@ -83,13 +85,17 @@ class VGAuthService(
             context.cookieStore.clear()
             loggedUser = ""
             eventBus.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
-            log.error("Failed to authenticate user with " + settingsService.settings.viperSettings.host, e)
+            log.error(
+                "Failed to authenticate user with " + settingsService.settings.viperSettings.host,
+                e
+            )
             return
         }
         postAuth.addHeader("Referer", settingsService.settings.viperSettings.host)
         postAuth.addHeader(
             "Host",
-            settingsService.settings.viperSettings.host.replace("https://", "").replace("http://", "")
+            settingsService.settings.viperSettings.host.replace("https://", "")
+                .replace("http://", "")
         )
         val client = cm.client.build()
         try {
@@ -126,7 +132,10 @@ class VGAuthService(
             context.cookieStore.clear()
             loggedUser = ""
             eventBus.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
-            log.error("Failed to authenticate user with " + settingsService.settings.viperSettings.host, e)
+            log.error(
+                "Failed to authenticate user with " + settingsService.settings.viperSettings.host,
+                e
+            )
             return
         }
         authenticated = true
@@ -136,7 +145,7 @@ class VGAuthService(
     }
 
     fun leaveThanks(post: PostDownloadState) {
-        threadPoolService.generalExecutor
-            .submit(LeaveThanksRunnable(post, authenticated, context))
+        asyncTaskRunnerService.sink
+            .emitNext(LeaveThanksRunnable(post, authenticated, context)) { _, _ -> true }
     }
 }
