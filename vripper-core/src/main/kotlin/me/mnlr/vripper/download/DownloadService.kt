@@ -1,10 +1,6 @@
 package me.mnlr.vripper.download
 
 import jakarta.annotation.PostConstruct
-import net.jodah.failsafe.Failsafe
-import net.jodah.failsafe.RetryPolicy
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Service
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.entities.ImageDownloadState
 import me.mnlr.vripper.entities.LogEvent
@@ -16,6 +12,10 @@ import me.mnlr.vripper.repositories.ImageRepository
 import me.mnlr.vripper.repositories.LogEventRepository
 import me.mnlr.vripper.repositories.PostDownloadStateRepository
 import me.mnlr.vripper.services.*
+import net.jodah.failsafe.Failsafe
+import net.jodah.failsafe.RetryPolicy
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Service
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -29,13 +29,12 @@ class DownloadService(
     @param:Value("\${download.pool-size}") private val maxPoolSize: Int,
     private val settingsService: SettingsService,
     private val dataTransaction: DataTransaction,
-    private val metadataService: MetadataService,
     private val hosts: List<Host>,
     private val eventRepository: LogEventRepository,
     private val retryPolicyService: RetryPolicyService,
     private val postDownloadStateRepository: PostDownloadStateRepository,
     private val imageRepository: ImageRepository,
-    private val threadPoolService: ThreadPoolService,
+    private val asyncTaskRunnerService: AsyncTaskRunnerService,
 ) {
     private val log by LoggerDelegate()
 
@@ -177,7 +176,6 @@ class DownloadService(
                 dataTransaction.stopImagesByPostIdAndIsNotCompleted(postId)
                 dataTransaction.finishPost(postDownloadState)
             }
-            metadataService.stopFetchingMetadata(postIds)
         }
     }
 
@@ -192,7 +190,8 @@ class DownloadService(
             val imageDownloadRunnableList: List<ImageDownloadRunnable> = running.computeIfAbsent(
                 h
             ) { mutableListOf() }
-            val count: Int = settingsService.settings.connectionSettings.maxThreads - imageDownloadRunnableList.size
+            val count: Int =
+                settingsService.settings.connectionSettings.maxThreads - imageDownloadRunnableList.size
             log.debug("Download slots for ${h.host}: $count")
             map[h] = count
         }
@@ -283,15 +282,5 @@ class DownloadService(
 
     fun runningCount(): Int {
         return running.values.sumOf { it.size }
-    }
-
-    fun download(posts: List<Pair<String, String>>) {
-        for (post in posts) {
-            threadPoolService.generalExecutor.submit(
-                PostDownloadRunnable(
-                    post.first, post.second
-                )
-            )
-        }
     }
 }
