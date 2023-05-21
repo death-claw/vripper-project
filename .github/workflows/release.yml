@@ -1,7 +1,7 @@
 # This workflow will build a package using Maven and then publish it to GitHub packages when a release is created
 # For more information see: https://github.com/actions/setup-java/blob/main/docs/advanced-usage.md#apache-maven-with-a-settings-path
 
-name: Maven Package
+name: Release
 
 on:
   release:
@@ -24,16 +24,20 @@ jobs:
 
     - name: Build with Maven
       run: mvn -B install --file pom.xml
+    - name: Rename GUI artifact
+      run: mv vripper-gui/target/vripper-gui-*.jar vripper-gui/target/vripper-gui.jar
     - name: Upload GUI Binary
       uses: skx/github-action-publish-binaries@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        args: 'vripper-gui/target/vripper-gui-*.jar'
+        args: 'vripper-gui/target/vripper-gui.jar'
+    - name: Rename WEB artifact
+      run: mv vripper-web/target/vripper-web-*.jar vripper-web/target/vripper-web.jar
     - name: Upload WEB Binary
       uses: skx/github-action-publish-binaries@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        args: 'vripper-web/target/vripper-web-*.jar'
+        args: 'vripper-web/target/vripper-web.jar'
         
