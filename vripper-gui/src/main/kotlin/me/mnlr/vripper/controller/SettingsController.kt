@@ -1,18 +1,12 @@
 package me.mnlr.vripper.controller
 
-import javafx.scene.control.Alert
-import me.mnlr.vripper.exception.ValidationException
-import me.mnlr.vripper.model.ConnectionSettings
-import me.mnlr.vripper.model.DownloadSettings
-import me.mnlr.vripper.model.settings.DownloadSettingsModel
-import me.mnlr.vripper.model.Settings
-import me.mnlr.vripper.model.ViperSettings
+import me.mnlr.vripper.model.*
+import me.mnlr.vripper.model.settings.ClipboardSettingsModel
 import me.mnlr.vripper.model.settings.ConnectionSettingsModel
+import me.mnlr.vripper.model.settings.DownloadSettingsModel
 import me.mnlr.vripper.model.settings.ViperSettingsModel
 import me.mnlr.vripper.services.SettingsService
-import tornadofx.Controller
-import tornadofx.alert
-import tornadofx.warning
+import tornadofx.*
 
 class SettingsController : Controller() {
 
@@ -30,36 +24,46 @@ class SettingsController : Controller() {
         return settingsService.settings.viperSettings
     }
 
+    fun findClipboardSettings(): ClipboardSettings {
+        return settingsService.settings.clipboardSettings
+    }
+
     fun saveNewSettings(
         downloadSettingsModel: DownloadSettingsModel,
         connectionSettingsModel: ConnectionSettingsModel,
-        viperSettingsModel: ViperSettingsModel
+        viperSettingsModel: ViperSettingsModel,
+        clipboardSettingsModel: ClipboardSettingsModel
     ) {
-            settingsService.newSettings(Settings().apply {
-                downloadSettings = DownloadSettings(
-                    downloadSettingsModel.downloadPath,
-                    downloadSettingsModel.autoStart,
-                    downloadSettingsModel.autoQueueThreshold,
-                    downloadSettingsModel.forceOrder,
-                    downloadSettingsModel.forumSubfolder,
-                    downloadSettingsModel.threadSubLocation,
-                    downloadSettingsModel.clearCompleted,
-                    downloadSettingsModel.appendPostId
+        settingsService.newSettings(Settings().apply {
+            downloadSettings = DownloadSettings(
+                downloadSettingsModel.downloadPath,
+                downloadSettingsModel.autoStart,
+                downloadSettingsModel.autoQueueThreshold,
+                downloadSettingsModel.forceOrder,
+                downloadSettingsModel.forumSubfolder,
+                downloadSettingsModel.threadSubLocation,
+                downloadSettingsModel.clearCompleted,
+                downloadSettingsModel.appendPostId
+            )
+            connectionSettings = ConnectionSettings(
+                connectionSettingsModel.maxThreads,
+                connectionSettingsModel.maxTotalThreads,
+                connectionSettingsModel.timeout,
+                connectionSettingsModel.maxAttempts,
+            )
+            viperSettings = ViperSettings(
+                viperSettingsModel.login,
+                viperSettingsModel.username,
+                viperSettingsModel.password,
+                viperSettingsModel.thanks,
+                viperSettingsModel.host,
+            )
+            clipboardSettings =
+                ClipboardSettings(
+                    clipboardSettingsModel.enable,
+                    if (clipboardSettingsModel.pollingRate.isBlank()) 500 else clipboardSettingsModel.pollingRate.toInt()
                 )
-                connectionSettings = ConnectionSettings(
-                    connectionSettingsModel.maxThreads,
-                    connectionSettingsModel.maxTotalThreads,
-                    connectionSettingsModel.timeout,
-                    connectionSettingsModel.maxAttempts,
-                )
-                viperSettings = ViperSettings(
-                    viperSettingsModel.login,
-                    viperSettingsModel.username,
-                    viperSettingsModel.password,
-                    viperSettingsModel.thanks,
-                    viperSettingsModel.host,
-                )
-            })
+        })
 
     }
 

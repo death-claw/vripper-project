@@ -29,7 +29,7 @@ class ConnectionSettingsView : View("Connection settings") {
                         filterInput { it.controlNewText.isInt() }
                     }
                 }
-                field("Connection timeout") {
+                field("Connection timeout (s)") {
                     textfield(connectionSettingsModel.timeoutProperty) {
                         filterInput { it.controlNewText.isInt() }
                     }

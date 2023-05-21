@@ -1,11 +1,11 @@
 package me.mnlr.vripper.model
 
 class Settings {
-    var desktopClipboard: Boolean = false
     var maxEventLog: Int = 1_000
-    var connectionSettings: ConnectionSettings = ConnectionSettings()
-    var downloadSettings: DownloadSettings = DownloadSettings()
-    var viperSettings: ViperSettings = ViperSettings()
+    var connectionSettings = ConnectionSettings()
+    var downloadSettings = DownloadSettings()
+    var viperSettings = ViperSettings()
+    var clipboardSettings = ClipboardSettings()
 }
 
 data class ViperSettings(
@@ -33,3 +33,5 @@ data class ConnectionSettings(
     var timeout: Int = 30,
     var maxAttempts: Int = 3,
 )
+
+data class ClipboardSettings(var enable: Boolean = false, var pollingRate: Int = 500)
