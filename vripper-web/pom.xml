@@ -10,7 +10,7 @@
     </parent>
     <groupId>me.mnlr.vripper</groupId>
     <artifactId>vripper-web</artifactId>
-    <version>4.0.1</version>
+    <version>4.1.0</version>
     <name>vripper-web</name>
     <description>vripper-web</description>
     <properties>
@@ -41,12 +41,12 @@
         <dependency>
             <groupId>me.mnlr.vripper</groupId>
             <artifactId>vripper-core</artifactId>
-            <version>4.0.1</version>
+            <version>4.1.0</version>
         </dependency>
         <dependency>
             <groupId>me.mnlr</groupId>
             <artifactId>vripper-web-ui</artifactId>
-            <version>4.0.1</version>
+            <version>4.1.0</version>
         </dependency>
 
         <dependency>
