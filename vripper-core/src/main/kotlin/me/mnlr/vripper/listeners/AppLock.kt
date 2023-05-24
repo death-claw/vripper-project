@@ -8,13 +8,21 @@ import kotlin.io.path.Path
 import kotlin.io.path.pathString
 import kotlin.system.exitProcess
 
-class AppListener : ApplicationListener<ApplicationEnvironmentPreparedEvent> {
+class AppLock : ApplicationListener<ApplicationEnvironmentPreparedEvent> {
     override fun onApplicationEvent(event: ApplicationEnvironmentPreparedEvent) {
-        val lock = event.environment.getProperty("base.dir")?.let { Path(it).resolve("lock") }
-        if(lock ==  null) {
+        val baseDir = event.environment.getProperty("base.dir")
+        val appDirName = event.environment.getProperty("base.dir.name")
+        if (baseDir == null || appDirName == null) {
+            if (baseDir == null) {
+                System.err.println("Property base.dir is undefined")
+            }
+            if (appDirName == null) {
+                System.err.println("Property base.dir.name is undefined")
+            }
             System.err.println("Misconfiguration detected, quitting...")
             exitProcess(-1)
         }
+        val lock = Path(baseDir).resolve(appDirName).resolve("lock")
         try {
             val randomFile = RandomAccessFile(lock.pathString, "rw")
             val channel = randomFile.channel

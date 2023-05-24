@@ -6,7 +6,7 @@ import javafx.stage.Stage
 import javafx.stage.WindowEvent
 import me.mnlr.vripper.event.ApplicationInitialized
 import me.mnlr.vripper.gui.Styles
-import me.mnlr.vripper.listeners.AppListener
+import me.mnlr.vripper.listeners.AppLock
 import me.mnlr.vripper.view.LoadingView
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.builder.SpringApplicationBuilder
@@ -44,7 +44,7 @@ class VripperGuiApplication : App(
         }
         stage.addEventFilter(WindowEvent.WINDOW_SHOWN) {
             val contextInitThread = Thread {
-                context = SpringApplicationBuilder(this.javaClass).listeners(AppListener())
+                context = SpringApplicationBuilder(this.javaClass).listeners(AppLock())
                     .run() //We start the application context and let Spring Boot to initialize itself
                 context.autowireCapableBeanFactory.autowireBean(this) //We ask the context to inject all needed dependencies into the current instence (if needed)
 
