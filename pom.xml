@@ -12,8 +12,5 @@
     <module>vripper-gui</module>
   </modules>
   <packaging>pom</packaging>
-  <version>4.1.0</version>
-  <properties>
-    <maven.deploy.skip>true</maven.deploy.skip>
-  </properties>
+  <version>4.2.0</version>
 </project>

@@ -11,7 +11,7 @@
   </parent>
   <groupId>me.mnlr.vripper</groupId>
   <artifactId>vripper-gui</artifactId>
-  <version>4.1.0</version>
+  <version>4.2.0</version>
   <name>vripper-gui</name>
   <description>vripper-gui</description>
   <dependencies>
@@ -99,7 +99,7 @@
     <dependency>
       <artifactId>vripper-core</artifactId>
       <groupId>me.mnlr.vripper</groupId>
-      <version>4.1.0</version>
+      <version>4.2.0</version>
     </dependency>
 
     <dependency>
@@ -144,11 +144,4 @@
       </plugin>
     </plugins>
   </build>
-  <distributionManagement>
-    <repository>
-      <id>github</id>
-      <name>GitHub death-claw Apache Maven Packages</name>
-      <url>https://maven.pkg.github.com/death-claw/vripper-project</url>
-    </repository>
-  </distributionManagement>
 </project>
