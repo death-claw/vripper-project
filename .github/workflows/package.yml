@@ -1,0 +1,35 @@
+# This workflow will build a package using Maven and then publish it to GitHub packages when a release is created
+# For more information see: https://github.com/actions/setup-java/blob/main/docs/advanced-usage.md#apache-maven-with-a-settings-path
+
+name: Package
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
+        settings-path: ${{ github.workspace }} # location for the settings.xml file
+
+    - name: Build with Maven
+      run: mvn -B install --file pom.xml
+    - name: Rename GUI artifact
+      run: mv vripper-gui/target/vripper-gui-*.jar vripper-gui/target/vripper-gui.jar
+    - name: Rename WEB artifact
+      run: mv vripper-web/target/vripper-web-*.jar vripper-web/target/vripper-web.jar
+    - name: Package Linux
+      run: |
+        cd jpackage
+        jpackage --app-version 4.1.0 --type deb "@jpackage.cfg" "@jpackage-linux.cfg"
+        jpackage --app-version 4.1.0 --type rpm "@jpackage.cfg" "@jpackage-linux.cfg"
+        ls -la
