@@ -6,17 +6,14 @@ import javafx.stage.Stage
 import javafx.stage.WindowEvent
 import me.mnlr.vripper.event.ApplicationInitialized
 import me.mnlr.vripper.gui.Styles
+import me.mnlr.vripper.listeners.AppListener
 import me.mnlr.vripper.view.LoadingView
-import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.context.ConfigurableApplicationContext
 import tornadofx.App
 import tornadofx.DIContainer
 import tornadofx.FX
-import java.io.RandomAccessFile
-import java.nio.file.Files
-import kotlin.io.path.Path
-import kotlin.io.path.pathString
 import kotlin.reflect.KClass
 import kotlin.system.exitProcess
 
@@ -47,18 +44,18 @@ class VripperGuiApplication : App(
         }
         stage.addEventFilter(WindowEvent.WINDOW_SHOWN) {
             val contextInitThread = Thread {
-                context =
-                    SpringApplication.run(this.javaClass) //We start the application context and let Spring Boot to initilaize itself
+                context = SpringApplicationBuilder(this.javaClass).listeners(AppListener())
+                    .run() //We start the application context and let Spring Boot to initialize itself
                 context.autowireCapableBeanFactory.autowireBean(this) //We ask the context to inject all needed dependencies into the current instence (if needed)
 
-                FX.dicontainer = object :
-                    DIContainer { // Here we have to implement an interface for TornadoFX DI support
-                    override fun <T : Any> getInstance(type: KClass<T>): T =
-                        context.getBean(type.java) // We find dependencies directly in Spring's application context
+                FX.dicontainer =
+                    object : DIContainer { // Here we have to implement an interface for TornadoFX DI support
+                        override fun <T : Any> getInstance(type: KClass<T>): T =
+                            context.getBean(type.java) // We find dependencies directly in Spring's application context
 
-                    override fun <T : Any> getInstance(type: KClass<T>, name: String): T =
-                        context.getBean(name, type.java)
-                }
+                        override fun <T : Any> getInstance(type: KClass<T>, name: String): T =
+                            context.getBean(name, type.java)
+                    }
                 fire(ApplicationInitialized)
                 initialized = true
             }
@@ -79,23 +76,5 @@ class VripperGuiApplication : App(
 }
 
 fun main(args: Array<String>) {
-    val lock = Path(System.getProperty("user.dir")).resolve("lock")
-    try {
-        val randomFile = RandomAccessFile(lock.pathString, "rw")
-        val channel = randomFile.channel
-        val fileLock = channel.tryLock()
-        if (fileLock == null) {
-            println("Already Running...")
-            return
-        } else {
-            Runtime.getRuntime().addShutdownHook(Thread {
-                fileLock.release()
-                channel.close()
-                Files.deleteIfExists(lock)
-            })
-        }
-    } catch (e: Exception) {
-        println(e.toString())
-    }
     Application.launch(VripperGuiApplication::class.java, *args)
 }

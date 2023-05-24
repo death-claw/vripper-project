@@ -1,4 +1,4 @@
-package me.mnlr.vripper
+package me.mnlr.vripper.listeners
 
 import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.context.event.EventListener
