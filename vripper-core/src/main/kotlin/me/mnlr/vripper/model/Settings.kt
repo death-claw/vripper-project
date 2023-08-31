@@ -18,6 +18,7 @@ data class ViperSettings(
 
 data class DownloadSettings(
     var downloadPath: String = System.getProperty("user.home"),
+    var tempPath: String = System.getProperty("java.io.tmpdir"),
     var autoStart: Boolean = true,
     var autoQueueThreshold: Int = 1,
     var forceOrder: Boolean = false,

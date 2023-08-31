@@ -30,7 +30,7 @@ class ImageDownloadRunnable(
     private val dataTransaction: DataTransaction = SpringContext.getBean(DataTransaction::class.java)
     private val pathService: PathService = SpringContext.getBean(PathService::class.java)
 
-    val context: ImageDownloadContext = ImageDownloadContext(imageInternalId)
+    val context: ImageDownloadContext = ImageDownloadContext(imageInternalId, settings)
     private val image: ImageDownloadState
         get() = context.image
     private var stopped: Boolean
