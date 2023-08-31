@@ -1,21 +1,19 @@
 package me.mnlr.vripper.host
 
-import org.apache.http.Header
-import org.apache.http.client.HttpClient
-import org.apache.http.client.methods.CloseableHttpResponse
-import org.apache.http.client.protocol.HttpClientContext
-import org.apache.http.util.EntityUtils
-import org.w3c.dom.Document
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.download.ImageDownloadContext
 import me.mnlr.vripper.exception.DownloadException
 import me.mnlr.vripper.exception.HostException
 import me.mnlr.vripper.getFileNameWithoutExtension
 import me.mnlr.vripper.services.*
-import java.io.FileOutputStream
+import org.apache.http.Header
+import org.apache.http.client.HttpClient
+import org.apache.http.client.methods.CloseableHttpResponse
+import org.apache.http.client.protocol.HttpClientContext
+import org.apache.http.util.EntityUtils
+import org.w3c.dom.Document
 import java.nio.file.Files
 import java.nio.file.Path
-import kotlin.io.path.pathString
 
 abstract class Host(
     private val httpService: HTTPService,
@@ -84,10 +82,10 @@ abstract class Host(
         val mimeType = getImageMimeType(response.allHeaders)
             ?: throw HostException("Unsupported image type ${response.getFirstHeader("content-type")}")
 
-        val tempImage = Files.createTempFile("vripper", "tmp")
+        val tempImage = Files.createTempFile(Path.of(context.settings.downloadSettings.tempPath), "vripper_", ".tmp")
         return response.entity.content.use { inputStream ->
             try {
-                FileOutputStream(tempImage.pathString).use { fos ->
+                Files.newOutputStream(tempImage).use { fos ->
                     val image = context.image
                     image.total = response.entity.contentLength
                     dataTransaction.update(image)

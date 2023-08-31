@@ -37,6 +37,7 @@ class SettingsController : Controller() {
         settingsService.newSettings(Settings().apply {
             downloadSettings = DownloadSettings(
                 downloadSettingsModel.downloadPath,
+                downloadSettingsModel.tempPath,
                 downloadSettingsModel.autoStart,
                 downloadSettingsModel.autoQueueThreshold,
                 downloadSettingsModel.forceOrder,

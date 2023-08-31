@@ -62,6 +62,7 @@ export class SettingsComponent {
 
   downloadSettingsForm = new FormGroup({
     downloadPath: new FormControl(''),
+    tempPath: new FormControl(''),
     autoStart: new FormControl(false),
     autoQueueThreshold: new FormControl(0),
     forceOrder: new FormControl(false),

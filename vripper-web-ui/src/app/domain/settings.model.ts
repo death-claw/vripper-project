@@ -14,6 +14,7 @@ export interface ConnectionSettings {
 
 export interface DownloadSettings {
   downloadPath: string;
+  tempPath: string;
   autoStart: boolean;
   autoQueueThreshold: number;
   forceOrder: boolean;

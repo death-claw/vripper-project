@@ -7,6 +7,9 @@ class DownloadSettingsModel {
     val downloadPathProperty = SimpleStringProperty()
     var downloadPath: String by downloadPathProperty
 
+    val tempPathProperty = SimpleStringProperty()
+    var tempPath: String by tempPathProperty
+
     val autoStartProperty = SimpleBooleanProperty()
     var autoStart: Boolean by autoStartProperty
 

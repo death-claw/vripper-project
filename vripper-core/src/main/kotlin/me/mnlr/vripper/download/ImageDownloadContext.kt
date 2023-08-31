@@ -4,10 +4,11 @@ import org.apache.http.client.protocol.HttpClientContext
 import me.mnlr.vripper.SpringContext
 import me.mnlr.vripper.entities.ImageDownloadState
 import me.mnlr.vripper.entities.PostDownloadState
+import me.mnlr.vripper.model.Settings
 import me.mnlr.vripper.repositories.ImageRepository
 import me.mnlr.vripper.repositories.PostDownloadStateRepository
 
-class ImageDownloadContext(val imageId: Long) {
+class ImageDownloadContext(val imageId: Long, val settings: Settings) {
 
     private val imageRepository: ImageRepository =
         SpringContext.getBean(ImageRepository::class.java)

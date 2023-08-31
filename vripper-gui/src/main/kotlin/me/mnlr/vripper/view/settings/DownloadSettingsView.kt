@@ -13,6 +13,7 @@ class DownloadSettingsView : View("Download Settings") {
     override fun onDock() {
         val downloadSettings = settingsController.findDownloadSettings()
         downloadSettingsModel.downloadPath = downloadSettings.downloadPath
+        downloadSettingsModel.tempPath = downloadSettings.tempPath
         downloadSettingsModel.autoStart = downloadSettings.autoStart
         downloadSettingsModel.autoQueueThreshold = downloadSettings.autoQueueThreshold
         downloadSettingsModel.forceOrder = downloadSettings.forceOrder
@@ -34,6 +35,19 @@ class DownloadSettingsView : View("Download Settings") {
                             val directory = chooseDirectory(title = "Select download folder")
                             if(directory != null) {
                                 downloadSettingsModel.downloadPathProperty.set(directory.path)
+                            }
+                        }
+                    }
+                }
+                field("Temporary Path") {
+                    textfield(downloadSettingsModel.tempPathProperty) {
+                        isEditable = false
+                    }
+                    button("Browse") {
+                        action {
+                            val directory = chooseDirectory(title = "Select temporary folder")
+                            if(directory != null) {
+                                downloadSettingsModel.tempPathProperty.set(directory.path)
                             }
                         }
                     }
