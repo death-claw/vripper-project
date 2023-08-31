@@ -7,7 +7,7 @@
     <artifactId>spring-boot-starter-parent</artifactId>
     <groupId>org.springframework.boot</groupId>
     <relativePath/>
-    <version>3.0.6</version>
+    <version>3.1.3</version>
   </parent>
   <groupId>me.mnlr.vripper</groupId>
   <artifactId>vripper-core</artifactId>
@@ -49,6 +49,7 @@
     <dependency>
       <artifactId>httpclient</artifactId>
       <groupId>org.apache.httpcomponents</groupId>
+      <version>4.5.14</version>
     </dependency>
     <dependency>
       <artifactId>htmlcleaner</artifactId>
