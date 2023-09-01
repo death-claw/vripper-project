@@ -12,8 +12,8 @@ To build run the following:
 
 Build artifact is located under
 
-    vripper-project\vripper-gui\target\vripper-gui-4.0.0.jar
+    vripper-project\vripper-gui\target\vripper-gui-{{version}}.jar
 
 Copy the artifact into any other folder and run:
 
-    java -jar vripper-gui-4.0.0.jar
+    java -jar vripper-gui-{{version}}.jar
