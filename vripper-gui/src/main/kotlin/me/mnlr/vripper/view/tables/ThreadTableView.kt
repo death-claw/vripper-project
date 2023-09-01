@@ -23,23 +23,39 @@ class ThreadTableView : View("Threads") {
     init {
         items.addAll(threadController.findAll())
 
-        eventBus.flux().filter { it!!.kind == Event.Kind.THREAD_UPDATE }.subscribe { event ->
-                threadController.find(event!!.data as Long).ifPresent {
-                        // search
-                        val find = items.find { threadModel -> threadModel.threadId == it.threadId }
-                        if (find != null) {
-                            find.apply {
-                                total = it.total
-                            }
-                        } else {
-                            items.add(it)
-                            runLater {
-                                find<MainView>().root.selectionModel.select(1)
-                                tableView.selectionModel.clearSelection()
-                                tableView.selectionModel.select(it)
+        eventBus.flux()
+            .filter { it!!.kind == Event.Kind.THREAD_UPDATE || it.kind == Event.Kind.THREAD_REMOVE || it.kind == Event.Kind.THREAD_CLEAR }
+            .subscribe { event ->
+                when (event!!.kind) {
+                    Event.Kind.THREAD_UPDATE -> {
+                        threadController.find(event.data as Long).ifPresent {
+                            // search
+                            val find =
+                                items.find { threadModel -> threadModel.threadId == it.threadId }
+                            if (find != null) {
+                                find.apply {
+                                    total = it.total
+                                }
+                            } else {
+                                items.add(it)
+                                runLater {
+                                    find<MainView>().root.selectionModel.select(1)
+                                    tableView.selectionModel.clearSelection()
+                                    tableView.selectionModel.select(it)
+                                }
                             }
                         }
                     }
+
+                    Event.Kind.THREAD_REMOVE -> {
+                        tableView.items.removeIf { it.threadId == event.data as String }
+                    }
+
+                    Event.Kind.THREAD_CLEAR -> {
+                        tableView.items.clear()
+                    }
+                    else -> {}
+                }
             }
     }
 
@@ -79,8 +95,8 @@ class ThreadTableView : View("Threads") {
                 deleteItem.graphic = deleteIcon
 
                 contextMenu.items.addAll(selectItem, SeparatorMenuItem(), deleteItem)
-                tableRow.contextMenuProperty()
-                    .bind(tableRow.emptyProperty().map { empty -> if (empty) null else contextMenu })
+                tableRow.contextMenuProperty().bind(tableRow.emptyProperty()
+                        .map { empty -> if (empty) null else contextMenu })
                 tableRow
             }
             column("URL", ThreadModel::linkProperty) {
@@ -99,7 +115,6 @@ class ThreadTableView : View("Threads") {
             ButtonType.NO
         ) {
             threadController.delete(threadIdList)
-            tableView.items.removeIf { threadIdList.contains(it.threadId) }
         }
     }
 

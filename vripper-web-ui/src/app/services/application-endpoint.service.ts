@@ -45,6 +45,12 @@ export class ApplicationEndpointService {
     return this.threadRemove;
   }
 
+  private threadRemoveAll!: Observable<void>;
+
+  get threadRemoveAll$(): Observable<void> {
+    return this.threadRemoveAll;
+  }
+
   private logs!: Observable<Log[]>;
 
   get logs$(): Observable<Log[]> {
@@ -130,6 +136,13 @@ export class ApplicationEndpointService {
       share()
     );
 
+    this.threadRemoveAll = this.rxStomp.watch('/topic/threads/deletedAll').pipe(
+      map(() => {
+        return;
+      }),
+      share()
+    );
+
     this.globalState = this.rxStomp.watch('/topic/state').pipe(
       map(e => {
         const state: GlobalState = JSON.parse(e.body);
@@ -205,12 +218,6 @@ export class ApplicationEndpointService {
       .pipe(map(v => v.map(p => ({ ...p, hosts: p.hosts }))));
   }
 
-  // send(wsMessage: WSMessage) {
-  //   this.rxStomp.publish({
-  //     destination: wsMessage.destination,
-  //     body: wsMessage.payload,
-  //   });
-  // }
   startDownload() {
     return this.httpClient.post<void>(
       this.baseUrl + '/api/post/restart/all',
