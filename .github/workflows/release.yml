@@ -65,9 +65,8 @@ jobs:
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-app-image.cfg" --icon icon.png
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-linux.cfg" --type deb
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-linux.cfg" --type rpm
-        ls -la dist
-        mv dist/vripper-${{ github.event.release.tag_name }}-1.x86_64.rpm dist/vripper-${{ github.event.release.tag_name }}.x86_64.rpm
-        mv dist/vripper_${{ github.event.release.tag_name }}-1_amd64.deb dist/vripper-${{ github.event.release.tag_name }}_amd64.deb
+        mv dist/vripper-${{ github.event.release.tag_name }}-1.x86_64.rpm dist/vripper-linux-${{ github.event.release.tag_name }}.x86_64.rpm
+        mv dist/vripper_${{ github.event.release.tag_name }}-1_amd64.deb dist/vripper-linux-${{ github.event.release.tag_name }}_amd64.deb
 
     - if: matrix.os == 'windows-latest'
       name: Package Windows
@@ -77,7 +76,6 @@ jobs:
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-windows.cfg" --type msi
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-windows.cfg" --type exe
         cd dist
-        dir
         ren VRipper-${{ github.event.release.tag_name }}.msi vripper-windows-installer-${{ github.event.release.tag_name }}.msi
         ren VRipper-${{ github.event.release.tag_name }}.exe vripper-windows-installer-${{ github.event.release.tag_name }}.exe
 
@@ -88,15 +86,16 @@ jobs:
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-app-image.cfg" --icon icon.icns
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-macos.cfg" --type pkg
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-macos.cfg" --type dmg
-        mv dist/VRipper-${{ github.event.release.tag_name }}.pkg dist/vripper-${{ github.event.release.tag_name }}.pkg
-        mv dist/VRipper-${{ github.event.release.tag_name }}.dmg dist/vripper-${{ github.event.release.tag_name }}.dmg
+        mv dist/VRipper-${{ github.event.release.tag_name }}.pkg dist/vripper-macos-${{ github.event.release.tag_name }}.pkg
+        mv dist/VRipper-${{ github.event.release.tag_name }}.dmg dist/vripper-macos-${{ github.event.release.tag_name }}.dmg
 
     - if: matrix.os == 'ubuntu-latest'
       name: Zip portable
       uses: thedoctor0/zip-release@0.7.1
       with:
         type: 'zip'
-        directory: 'jpackage/dist/VRipper'
+        directory: 'jpackage/dist'
+        path: 'jpackage/dist/VRipper'
         filename: 'vripper-linux-portable-${{ github.event.release.tag_name }}.zip'
 
     - if: matrix.os == 'windows-latest'
@@ -104,7 +103,8 @@ jobs:
       uses: thedoctor0/zip-release@0.7.1
       with:
         type: 'zip'
-        directory: 'jpackage/dist/VRipper'
+        directory: 'jpackage/dist'
+        path: 'jpackage/dist/VRipper'
         filename: 'vripper-windows-portable-${{ github.event.release.tag_name }}.zip'
 
     - if: matrix.os == 'macos-latest'
@@ -112,7 +112,8 @@ jobs:
       uses: thedoctor0/zip-release@0.7.1
       with:
         type: 'zip'
-        directory: 'jpackage/dist/VRipper.app'
+        directory: 'jpackage/dist'
+        path: 'jpackage/dist/VRipper.app'
         filename: 'vripper-macos-portable-${{ github.event.release.tag_name }}.zip'
 
     - if: matrix.os == 'ubuntu-latest'
