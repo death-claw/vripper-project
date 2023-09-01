@@ -82,8 +82,8 @@ jobs:
         cd jpackage
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-app-image.cfg"
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-macos.cfg"
-        mv dist/VRipper-${{ github.event.release.tag_name }}.pkg vripper-${{ github.event.release.tag_name }}.pkg
-        mv dist/VRipper-${{ github.event.release.tag_name }}.dmg vripper-${{ github.event.release.tag_name }}.dmg
+        mv dist/VRipper-${{ github.event.release.tag_name }}.pkg dist/vripper-${{ github.event.release.tag_name }}.pkg
+        mv dist/VRipper-${{ github.event.release.tag_name }}.dmg dist/vripper-${{ github.event.release.tag_name }}.dmg
 
     - if: matrix.os == 'ubuntu-latest'
       name: Zip portable
