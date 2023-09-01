@@ -95,7 +95,7 @@ jobs:
       with:
         type: 'zip'
         directory: 'jpackage/dist'
-        path: 'jpackage/dist/VRipper'
+        path: 'VRipper'
         filename: 'vripper-linux-portable-${{ github.event.release.tag_name }}.zip'
 
     - if: matrix.os == 'windows-latest'
@@ -104,7 +104,7 @@ jobs:
       with:
         type: 'zip'
         directory: 'jpackage/dist'
-        path: 'jpackage/dist/VRipper'
+        path: 'VRipper'
         filename: 'vripper-windows-portable-${{ github.event.release.tag_name }}.zip'
 
     - if: matrix.os == 'macos-latest'
@@ -113,7 +113,7 @@ jobs:
       with:
         type: 'zip'
         directory: 'jpackage/dist'
-        path: 'jpackage/dist/VRipper.app'
+        path: 'VRipper.app'
         filename: 'vripper-macos-portable-${{ github.event.release.tag_name }}.zip'
 
     - if: matrix.os == 'ubuntu-latest'
