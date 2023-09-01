@@ -1,5 +1,6 @@
 package me.mnlr.vripper.view.tables
 
+import com.sun.jna.WString
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.scene.control.*
@@ -9,6 +10,7 @@ import me.mnlr.vripper.controller.PostController
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.model.PostModel
+import me.mnlr.vripper.utils.Shell32
 import tornadofx.*
 
 
@@ -107,8 +109,17 @@ class PostsTableView : View("Download") {
                 detailsIcon.fitHeight = 18.0
                 detailsItem.graphic = detailsIcon
 
+                val locationItem = MenuItem("Open Download Directory")
+                locationItem.setOnAction {
+                    openFileDirectory(tableRow.item.path)
+                }
+                val locationIcon = ImageView("file-explorer.png")
+                locationIcon.fitWidth = 18.0
+                locationIcon.fitHeight = 18.0
+                locationItem.graphic = locationIcon
+
                 contextMenu.items.addAll(
-                    startItem, stopItem, deleteItem, SeparatorMenuItem(), detailsItem
+                    startItem, stopItem, deleteItem, SeparatorMenuItem(), detailsItem, locationItem
                 )
                 tableRow.contextMenuProperty()
                     .bind(tableRow.emptyProperty().map { empty -> if (empty) null else contextMenu })
@@ -154,6 +165,17 @@ class PostsTableView : View("Download") {
             column("Order", PostModel::orderProperty) {
                 sortOrder.add(this)
             }
+        }
+    }
+
+    private fun openFileDirectory(path: String) {
+        val os = System.getProperty("os.name")
+        if(os.contains("Windows")) {
+            Shell32.INSTANCE.ShellExecuteW(null, WString("open"), WString(path), null, null, 1)
+        } else if(os.contains("Linux")) {
+            Runtime.getRuntime().exec("xdg-open $path")
+        } else if(os.contains("Mac")) {
+            Runtime.getRuntime().exec("open -R $path")
         }
     }
 
