@@ -63,7 +63,8 @@ jobs:
       run: |
         cd jpackage
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-app-image.cfg" --icon icon.png
-        jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-linux.cfg"
+        jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-linux.cfg" --type deb
+        jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-linux.cfg" --type rpm
         ls -la dist
         mv dist/vripper-${{ github.event.release.tag_name }}-1.x86_64.rpm dist/vripper-${{ github.event.release.tag_name }}.x86_64.rpm
         mv dist/vripper_${{ github.event.release.tag_name }}-1_amd64.deb dist/vripper-${{ github.event.release.tag_name }}_amd64.deb
@@ -73,18 +74,20 @@ jobs:
       run: |
         cd jpackage
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-app-image.cfg" --icon icon.ico
-        jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-windows.cfg"
+        jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-windows.cfg" --type msi
+        jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-windows.cfg" --type exe
         cd dist
         dir
-        ren VRipper-${{ github.event.release.tag_name }}.msi vripper-${{ github.event.release.tag_name }}.msi
+        ren VRipper-${{ github.event.release.tag_name }}.msi vripper-windows-installer-${{ github.event.release.tag_name }}.msi
+        ren VRipper-${{ github.event.release.tag_name }}.exe vripper-windows-installer-${{ github.event.release.tag_name }}.exe
 
     - if: matrix.os == 'macos-latest'
       name: Package macOS
       run: |
         cd jpackage
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-app-image.cfg" --icon icon.icns
-        jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-macos.cfg"
-        ls -la dist
+        jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-macos.cfg" --type pkg
+        jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-macos.cfg" --type dmg
         mv dist/VRipper-${{ github.event.release.tag_name }}.pkg dist/vripper-${{ github.event.release.tag_name }}.pkg
         mv dist/VRipper-${{ github.event.release.tag_name }}.dmg dist/vripper-${{ github.event.release.tag_name }}.dmg
 
@@ -94,7 +97,7 @@ jobs:
       with:
         type: 'zip'
         directory: 'jpackage/dist/VRipper'
-        filename: 'vripper-linux-${{ github.event.release.tag_name }}.zip'
+        filename: 'vripper-linux-portable-${{ github.event.release.tag_name }}.zip'
 
     - if: matrix.os == 'windows-latest'
       name: Zip portable
@@ -102,37 +105,39 @@ jobs:
       with:
         type: 'zip'
         directory: 'jpackage/dist/VRipper'
-        filename: 'vripper-windows-${{ github.event.release.tag_name }}.zip'
+        filename: 'vripper-windows-portable-${{ github.event.release.tag_name }}.zip'
 
     - if: matrix.os == 'macos-latest'
       name: Zip portable
       uses: thedoctor0/zip-release@0.7.1
       with:
         type: 'zip'
-        directory: 'jpackage/dist/VRipper'
-        filename: 'vripper-macos-${{ github.event.release.tag_name }}.zip'
+        directory: 'jpackage/dist/VRipper.app'
+        filename: 'vripper-macos-portable-${{ github.event.release.tag_name }}.zip'
 
     - if: matrix.os == 'ubuntu-latest'
       name: Upload DEB and RPM package for Linux
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          jpackage/dist/vripper-${{ github.event.release.tag_name }}.x86_64.rpm
-          jpackage/dist/vripper-${{ github.event.release.tag_name }}_amd64.deb
-          jpackage/dist/vripper-linux-${{ github.event.release.tag_name }}.zip
+          jpackage/dist/vripper-linux-${{ github.event.release.tag_name }}.x86_64.rpm
+          jpackage/dist/vripper-linux-${{ github.event.release.tag_name }}_amd64.deb
+          jpackage/dist/vripper-linux-portable-${{ github.event.release.tag_name }}.zip
 
     - if: matrix.os == 'windows-latest'
       name: Upload packages for Windows
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          jpackage/dist/vripper-${{ github.event.release.tag_name }}.msi
-          jpackage/dist/vripper-windows-${{ github.event.release.tag_name }}.zip
+          jpackage/dist/vripper-windows-installer-${{ github.event.release.tag_name }}.msi
+          jpackage/dist/vripper-windows-installer-${{ github.event.release.tag_name }}.exe
+          jpackage/dist/vripper-windows-portable-${{ github.event.release.tag_name }}.zip
 
     - if: matrix.os == 'macos-latest'
       name: Upload package for macOS
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          jpackage/dist/VRipper-${{ github.event.release.tag_name }}.pkg
-          jpackage/dist/vripper-macos-${{ github.event.release.tag_name }}.zip
+          jpackage/dist/vripper-macos-${{ github.event.release.tag_name }}.pkg
+          jpackage/dist/vripper-macos-${{ github.event.release.tag_name }}.dmg
+          jpackage/dist/vripper-macos-portable-${{ github.event.release.tag_name }}.zip
