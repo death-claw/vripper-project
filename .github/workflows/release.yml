@@ -62,8 +62,9 @@ jobs:
       name: Package Linux
       run: |
         cd jpackage
-        jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-app-image.cfg"
+        jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-app-image.cfg" --icon icon.png
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-linux.cfg"
+        ls -la dist
         mv dist/vripper-${{ github.event.release.tag_name }}-1.x86_64.rpm dist/vripper-${{ github.event.release.tag_name }}.x86_64.rpm
         mv dist/vripper_${{ github.event.release.tag_name }}-1_amd64.deb dist/vripper-${{ github.event.release.tag_name }}_amd64.deb
 
@@ -71,17 +72,19 @@ jobs:
       name: Package Windows
       run: |
         cd jpackage
-        jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-app-image.cfg"
+        jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-app-image.cfg" --icon icon.ico
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-windows.cfg"
         cd dist
+        dir
         ren VRipper-${{ github.event.release.tag_name }}.msi vripper-${{ github.event.release.tag_name }}.msi
 
     - if: matrix.os == 'macos-latest'
       name: Package macOS
       run: |
         cd jpackage
-        jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-app-image.cfg"
+        jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-app-image.cfg" --icon icon.icns
         jpackage --app-version ${{ github.event.release.tag_name }} "@jpackage.cfg" "@jpackage-macos.cfg"
+        ls -la dist
         mv dist/VRipper-${{ github.event.release.tag_name }}.pkg dist/vripper-${{ github.event.release.tag_name }}.pkg
         mv dist/VRipper-${{ github.event.release.tag_name }}.dmg dist/vripper-${{ github.event.release.tag_name }}.dmg
 
