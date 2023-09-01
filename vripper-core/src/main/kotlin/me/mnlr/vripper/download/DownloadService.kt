@@ -67,7 +67,11 @@ class DownloadService(
                         }
                         accepted.clear()
                         candidates.clear()
-                        condition.await()
+                        try {
+                            condition.await()
+                        } catch (e: InterruptedException) {
+                            Thread.currentThread().interrupt()
+                        }
                     }
                 }
             }, "Download scheduler thread"

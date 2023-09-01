@@ -56,11 +56,8 @@ import {
   styleUrls: ['./thread-table.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ThreadTableComponent implements OnInit, OnDestroy {
+export class ThreadTableComponent implements OnDestroy {
   @ViewChild('agGrid') agGrid!: AgGridAngular;
-
-  @Input({ required: true })
-  clear!: Observable<void>;
 
   @Output()
   rowCountChange = new EventEmitter<number>();
@@ -181,10 +178,6 @@ export class ThreadTableComponent implements OnInit, OnDestroy {
     };
   }
 
-  ngOnInit(): void {
-    this.clear.subscribe(() => this.agGrid.api.setRowData([]));
-  }
-
   private connect() {
     this.subscriptions.push(
       this.applicationEndpoint.threads$.subscribe((e: Thread[]) => {
@@ -212,6 +205,12 @@ export class ThreadTableComponent implements OnInit, OnDestroy {
           return;
         });
         this.agGrid.api.applyTransaction({ remove: toRemove });
+      })
+    );
+
+    this.subscriptions.push(
+      this.applicationEndpoint.threadRemoveAll$.subscribe(() => {
+        this.agGrid.api.setRowData([]);
       })
     );
   }

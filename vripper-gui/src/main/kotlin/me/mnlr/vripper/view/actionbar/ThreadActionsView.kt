@@ -46,7 +46,6 @@ class ThreadActionsView : View() {
             action {
                 confirm("Clean threads", "Confirm removal of threads", ButtonType.YES, ButtonType.NO) {
                     threadController.clearAll()
-                    threadTableView.tableView.items.clear()
                 }
             }
         }

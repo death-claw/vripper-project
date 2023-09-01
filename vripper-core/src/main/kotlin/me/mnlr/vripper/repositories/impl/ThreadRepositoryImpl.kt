@@ -72,6 +72,7 @@ class ThreadRepositoryImpl @Autowired constructor(
 
     override fun deleteAll() {
         jdbcTemplate.update("DELETE FROM THREAD")
+        eventBus.publishEvent(Event(Event.Kind.THREAD_CLEAR, null))
     }
 }
 

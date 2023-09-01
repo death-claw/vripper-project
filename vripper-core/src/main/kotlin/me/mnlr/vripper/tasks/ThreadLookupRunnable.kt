@@ -1,5 +1,6 @@
 package me.mnlr.vripper.tasks
 
+import me.mnlr.vripper.AppEndpointService
 import me.mnlr.vripper.SpringContext
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.download.PostDownloadRunnable
@@ -31,6 +32,9 @@ class ThreadLookupRunnable(private val threadId: String, private val settings: S
     )
     private val asyncTaskRunnerService = SpringContext.getBean(
         AsyncTaskRunnerService::class.java
+    )
+    private val appEndpointService = SpringContext.getBean(
+        AppEndpointService::class.java
     )
     private val link: String =
         "${settingsService.settings.viperSettings.host}/threads/$threadId"
@@ -94,8 +98,8 @@ class ThreadLookupRunnable(private val threadId: String, private val settings: S
 
     private fun autostart(lookupResult: ThreadItem) {
         if (lookupResult.postItemList.size <= settings.downloadSettings.autoQueueThreshold) {
+            appEndpointService.threadRemove(listOf(lookupResult.threadId))
             lookupResult.postItemList.forEach {
-                Pair(it.threadId, it.postId)
                 asyncTaskRunnerService.sink.emitNext(
                     PostDownloadRunnable(
                         it.threadId, it.postId

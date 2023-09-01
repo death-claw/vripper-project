@@ -82,6 +82,11 @@ class DataBroadcast constructor(
                             eventList
                                 .map { (_, data): Event<*> -> data as String })
 
+                        Event.Kind.THREAD_CLEAR -> template.convertAndSend(
+                            "/topic/threads/deletedAll",
+                            eventList
+                                .map { true })
+
                         Event.Kind.LOG_EVENT_UPDATE -> template.convertAndSend(
                             "/topic/logs",
                             eventList
