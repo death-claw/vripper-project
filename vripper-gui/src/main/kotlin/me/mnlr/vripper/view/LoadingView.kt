@@ -6,7 +6,7 @@ import javafx.util.Duration
 import me.mnlr.vripper.event.ApplicationInitialized
 import tornadofx.*
 
-class LoadingView : View("Vripper") {
+class LoadingView : View("VRipper") {
 
     private val appView: AppView by inject()
 
