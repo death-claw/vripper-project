@@ -8,10 +8,9 @@ import me.mnlr.vripper.controller.ThreadController
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.model.ThreadModel
-import me.mnlr.vripper.view.main.MainView
 import tornadofx.*
 
-class ThreadTableView : View("Threads") {
+class ThreadTableView : View() {
 
     private val threadController: ThreadController by inject()
     private val eventBus: EventBus by di()
@@ -21,6 +20,13 @@ class ThreadTableView : View("Threads") {
     private var items: ObservableList<ThreadModel> = FXCollections.observableArrayList()
 
     init {
+        titleProperty.bind(items.sizeProperty.map {
+            if (it.toLong() > 0) {
+                "Threads (${it.toLong()})"
+            } else {
+                "Threads"
+            }
+        })
         items.addAll(threadController.findAll())
 
         eventBus.flux()
@@ -38,11 +44,6 @@ class ThreadTableView : View("Threads") {
                                 }
                             } else {
                                 items.add(it)
-                                runLater {
-                                    find<MainView>().root.selectionModel.select(1)
-                                    tableView.selectionModel.clearSelection()
-                                    tableView.selectionModel.select(it)
-                                }
                             }
                         }
                     }
@@ -54,6 +55,7 @@ class ThreadTableView : View("Threads") {
                     Event.Kind.THREAD_CLEAR -> {
                         tableView.items.clear()
                     }
+
                     else -> {}
                 }
             }
@@ -96,7 +98,7 @@ class ThreadTableView : View("Threads") {
 
                 contextMenu.items.addAll(selectItem, SeparatorMenuItem(), deleteItem)
                 tableRow.contextMenuProperty().bind(tableRow.emptyProperty()
-                        .map { empty -> if (empty) null else contextMenu })
+                    .map { empty -> if (empty) null else contextMenu })
                 tableRow
             }
             column("URL", ThreadModel::linkProperty) {

@@ -10,7 +10,7 @@ import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.model.LogModel
 import tornadofx.*
 
-class LogTableView : View("Log") {
+class LogTableView : View() {
 
     private val logController: LogController by inject()
     private val eventBus: EventBus by di()
@@ -20,6 +20,13 @@ class LogTableView : View("Log") {
     var items: ObservableList<LogModel> = FXCollections.observableArrayList()
 
     init {
+        titleProperty.bind(items.sizeProperty.map {
+            if (it.toLong() > 0) {
+                "Log (${it.toLong()})"
+            } else {
+                "Log"
+            }
+        })
         items.addAll(logController.findAll())
 
         eventBus.flux()
