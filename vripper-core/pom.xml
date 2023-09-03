@@ -18,6 +18,8 @@
     <java.version>17</java.version>
     <kotlin.version>1.8.21</kotlin.version>
     <maven.deploy.skip>false</maven.deploy.skip>
+    <timestamp>${maven.build.timestamp}</timestamp>
+    <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
   </properties>
 
   <dependencies>

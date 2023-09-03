@@ -5,7 +5,7 @@ import me.mnlr.vripper.gui.Styles
 import me.mnlr.vripper.view.settings.SettingsView
 import tornadofx.*
 
-class ActionBarView : View("Vripper") {
+class ActionBarView : View() {
 
     override val root = borderpane {
         padding = insets(all = 5)
