@@ -14,7 +14,7 @@ import me.mnlr.vripper.utils.Shell32
 import tornadofx.*
 
 
-class PostsTableView : View("Download") {
+class PostsTableView : View() {
 
     private val postController: PostController by inject()
     private val eventBus: EventBus by di()
@@ -23,6 +23,13 @@ class PostsTableView : View("Download") {
     private var items: ObservableList<PostModel> = FXCollections.observableArrayList()
 
     init {
+        titleProperty.bind(items.sizeProperty.map {
+            if (it.toLong() > 0) {
+                "Download (${it.toLong()})"
+            } else {
+                "Download"
+            }
+        })
         items.addAll(postController.findAllPosts())
 
         eventBus.flux().filter {
