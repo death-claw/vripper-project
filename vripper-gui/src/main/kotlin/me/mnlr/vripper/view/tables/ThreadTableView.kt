@@ -8,6 +8,7 @@ import me.mnlr.vripper.controller.ThreadController
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.model.ThreadModel
+import me.mnlr.vripper.view.FxScheduler
 import tornadofx.*
 
 class ThreadTableView : View() {
@@ -29,35 +30,39 @@ class ThreadTableView : View() {
         })
         items.addAll(threadController.findAll())
 
-        eventBus.flux()
-            .filter { it!!.kind == Event.Kind.THREAD_UPDATE || it.kind == Event.Kind.THREAD_REMOVE || it.kind == Event.Kind.THREAD_CLEAR }
-            .subscribe { event ->
-                when (event!!.kind) {
-                    Event.Kind.THREAD_UPDATE -> {
-                        threadController.find(event.data as Long).ifPresent {
-                            // search
-                            val find =
-                                items.find { threadModel -> threadModel.threadId == it.threadId }
-                            if (find != null) {
-                                find.apply {
-                                    total = it.total
-                                }
-                            } else {
-                                items.add(it)
-                            }
-                        }
+        eventBus
+            .flux()
+            .filter { it!!.kind == Event.Kind.THREAD_UPDATE }
+            .map { threadController.find(it.data as Long) }
+            .filter { it.isPresent }
+            .map { it.get() }
+            .publishOn(FxScheduler)
+            .subscribe {
+                val find =
+                    items.find { threadModel -> threadModel.threadId == it.threadId }
+                if (find != null) {
+                    find.apply {
+                        total = it.total
                     }
-
-                    Event.Kind.THREAD_REMOVE -> {
-                        tableView.items.removeIf { it.threadId == event.data as String }
-                    }
-
-                    Event.Kind.THREAD_CLEAR -> {
-                        tableView.items.clear()
-                    }
-
-                    else -> {}
+                } else {
+                    items.add(it)
                 }
+            }
+
+        eventBus
+            .flux()
+            .filter { it.kind == Event.Kind.THREAD_REMOVE }
+            .publishOn(FxScheduler)
+            .subscribe { event ->
+                tableView.items.removeIf { it.threadId == event.data as String }
+            }
+
+        eventBus
+            .flux()
+            .filter { it.kind == Event.Kind.THREAD_CLEAR }
+            .publishOn(FxScheduler)
+            .subscribe {
+                tableView.items.clear()
             }
     }
 

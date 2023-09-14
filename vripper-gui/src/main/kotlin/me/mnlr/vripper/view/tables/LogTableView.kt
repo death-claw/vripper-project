@@ -8,6 +8,7 @@ import me.mnlr.vripper.controller.LogController
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.model.LogModel
+import me.mnlr.vripper.view.FxScheduler
 import tornadofx.*
 
 class LogTableView : View() {
@@ -29,28 +30,33 @@ class LogTableView : View() {
         })
         items.addAll(logController.findAll())
 
-        eventBus.flux()
-            .doOnNext { event ->
-                if (event!!.kind.equals(Event.Kind.LOG_EVENT_UPDATE)) {
-                    logController.find(event.data as Long)
-                        .ifPresent {
-                            // search
-                            val find = items
-                                .find { threadModel -> threadModel.id == it.id }
-                            if (find != null) {
-                                find.apply {
-                                    status = it.status
-                                    message = it.message
-                                }
-                            } else {
-                                items.add(it)
-                            }
-                        }
-                } else if (event.kind.equals(Event.Kind.LOG_EVENT_REMOVE)) {
-                    items.removeIf { it.id == event.data }
+        eventBus
+            .flux()
+            .filter { it!!.kind == Event.Kind.LOG_EVENT_UPDATE }
+            .map { logController.find(it.data as Long) }
+            .filter { it.isPresent }
+            .map { it.get() }
+            .publishOn(FxScheduler)
+            .subscribe {
+                val find = items
+                    .find { threadModel -> threadModel.id == it.id }
+                if (find != null) {
+                    find.apply {
+                        status = it.status
+                        message = it.message
+                    }
+                } else {
+                    items.add(it)
                 }
             }
-            .subscribe()
+
+        eventBus
+            .flux()
+            .filter { it.kind == Event.Kind.LOG_EVENT_REMOVE }
+            .publishOn(FxScheduler)
+            .subscribe { event ->
+                items.removeIf { it.id == event.data }
+            }
     }
 
     override fun onDock() {
