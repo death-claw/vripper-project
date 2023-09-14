@@ -1,12 +1,12 @@
 package me.mnlr.vripper.model
 
-class Settings {
-    var maxEventLog: Int = 1_000
-    var connectionSettings = ConnectionSettings()
-    var downloadSettings = DownloadSettings()
-    var viperSettings = ViperSettings()
-    var clipboardSettings = ClipboardSettings()
-}
+data class Settings(
+    var maxEventLog: Int = 1_000,
+    var connectionSettings: ConnectionSettings = ConnectionSettings(),
+    var downloadSettings: DownloadSettings = DownloadSettings(),
+    var viperSettings: ViperSettings = ViperSettings(),
+    var clipboardSettings: ClipboardSettings = ClipboardSettings()
+)
 
 data class ViperSettings(
     var login: Boolean = false,

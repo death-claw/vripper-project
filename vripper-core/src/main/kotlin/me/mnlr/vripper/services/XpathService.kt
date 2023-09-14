@@ -14,7 +14,12 @@ class XpathService {
     @Throws(XpathException::class)
     fun getAsNode(source: Node?, xpathExpression: String?): Node? {
         return try {
-            xpath.compile(xpathExpression).evaluate(source, XPathConstants.NODE) as Node
+            val value = xpath.compile(xpathExpression).evaluate(source, XPathConstants.NODE)
+            if(value != null) {
+                value as Node
+            } else {
+                null
+            }
         } catch (e: Exception) {
             throw XpathException(e)
         }
