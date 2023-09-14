@@ -8,6 +8,7 @@ import me.mnlr.vripper.controller.ThreadController
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.model.ThreadModel
+import me.mnlr.vripper.view.openLink
 import tornadofx.*
 
 class ThreadTableView : View() {
@@ -77,26 +78,38 @@ class ThreadTableView : View() {
                     }
                 }
 
+                val selectItem = MenuItem("Select posts").apply {
+                    setOnAction {
+                        selectPosts(tableRow.item.threadId)
+                    }
+                    graphic = ImageView("popup.png").apply {
+                        fitWidth = 18.0
+                        fitHeight = 18.0
+                    }
+                }
+
+                val urlItem = MenuItem("Open link").apply {
+                    setOnAction {
+                        openLink(tableRow.item.link)
+                    }
+                    graphic = ImageView("open-in-browser.png").apply {
+                        fitWidth = 18.0
+                        fitHeight = 18.0
+                    }
+                }
+
+                val deleteItem = MenuItem("Delete").apply {
+                    setOnAction {
+                        deleteSelected()
+                    }
+                    graphic = ImageView("trash.png").apply {
+                        fitWidth = 18.0
+                        fitHeight = 18.0
+                    }
+                }
+
                 val contextMenu = ContextMenu()
-                val selectItem = MenuItem("Select posts")
-                selectItem.setOnAction {
-                    selectPosts(tableRow.item.threadId)
-                }
-                val selectIcon = ImageView("popup.png")
-                selectIcon.fitWidth = 18.0
-                selectIcon.fitHeight = 18.0
-                selectItem.graphic = selectIcon
-
-                val deleteItem = MenuItem("Delete")
-                deleteItem.setOnAction {
-                    deleteSelected()
-                }
-                val deleteIcon = ImageView("trash.png")
-                deleteIcon.fitWidth = 18.0
-                deleteIcon.fitHeight = 18.0
-                deleteItem.graphic = deleteIcon
-
-                contextMenu.items.addAll(selectItem, SeparatorMenuItem(), deleteItem)
+                contextMenu.items.addAll(selectItem, urlItem, SeparatorMenuItem(), deleteItem)
                 tableRow.contextMenuProperty().bind(tableRow.emptyProperty()
                     .map { empty -> if (empty) null else contextMenu })
                 tableRow

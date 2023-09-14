@@ -1,16 +1,18 @@
 package me.mnlr.vripper.view.tables
 
-import com.sun.jna.WString
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.scene.control.*
 import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
+import javafx.util.Callback
 import me.mnlr.vripper.controller.PostController
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.model.PostModel
-import me.mnlr.vripper.utils.Shell32
+import me.mnlr.vripper.view.ProgressTableCell
+import me.mnlr.vripper.view.openFileDirectory
+import me.mnlr.vripper.view.openLink
 import tornadofx.*
 
 
@@ -79,54 +81,69 @@ class PostsTableView : View() {
                     }
                 }
 
+                val startItem = MenuItem("Start").apply {
+                    setOnAction {
+                        startSelected()
+                    }
+                    graphic = ImageView("play.png").apply {
+                        fitWidth = 18.0
+                        fitHeight = 18.0
+                    }
+                }
+
+                val stopItem = MenuItem("Stop").apply {
+                    setOnAction {
+                        stopSelected()
+                    }
+                    graphic = ImageView("pause.png").apply {
+                        fitWidth = 18.0
+                        fitHeight = 18.0
+                    }
+                }
+
+                val deleteItem = MenuItem("Delete").apply {
+                    setOnAction {
+                        deleteSelected()
+                    }
+                    graphic = ImageView("trash.png").apply {
+                        fitWidth = 18.0
+                        fitHeight = 18.0
+                    }
+                }
+
+                val detailsItem = MenuItem("Images").apply {
+                    setOnAction {
+                        openPhotos(tableRow.item.postId)
+                    }
+                    graphic = ImageView("details.png").apply {
+                        fitWidth = 18.0
+                        fitHeight = 18.0
+                    }
+                }
+
+                val locationItem = MenuItem("Open containing folder").apply {
+                    setOnAction {
+                        openFileDirectory(tableRow.item.path)
+                    }
+                    graphic = ImageView("file-explorer.png").apply {
+                        fitWidth = 18.0
+                        fitHeight = 18.0
+                    }
+                }
+
+                val urlItem = MenuItem("Open link").apply {
+                    setOnAction {
+                        openLink(tableRow.item.url)
+                    }
+                    graphic = ImageView("open-in-browser.png").apply {
+                        fitWidth = 18.0
+                        fitHeight = 18.0
+                    }
+                }
+
                 val contextMenu = ContextMenu()
-                val startItem = MenuItem("Start")
-                startItem.setOnAction {
-                    startSelected()
-                }
-                val playIcon = ImageView("play.png")
-                playIcon.fitWidth = 18.0
-                playIcon.fitHeight = 18.0
-                startItem.graphic = playIcon
-
-                val stopItem = MenuItem("Stop")
-                stopItem.setOnAction {
-                    stopSelected()
-                }
-                val stopIcon = ImageView("pause.png")
-                stopIcon.fitWidth = 18.0
-                stopIcon.fitHeight = 18.0
-                stopItem.graphic = stopIcon
-
-                val deleteItem = MenuItem("Delete")
-                deleteItem.setOnAction {
-                    deleteSelected()
-                }
-                val deleteIcon = ImageView("trash.png")
-                deleteIcon.fitWidth = 18.0
-                deleteIcon.fitHeight = 18.0
-                deleteItem.graphic = deleteIcon
-
-                val detailsItem = MenuItem("Images")
-                detailsItem.setOnAction {
-                    openPhotos(tableRow.item.postId)
-                }
-                val detailsIcon = ImageView("details.png")
-                detailsIcon.fitWidth = 18.0
-                detailsIcon.fitHeight = 18.0
-                detailsItem.graphic = detailsIcon
-
-                val locationItem = MenuItem("Open Download Directory")
-                locationItem.setOnAction {
-                    openFileDirectory(tableRow.item.path)
-                }
-                val locationIcon = ImageView("file-explorer.png")
-                locationIcon.fitWidth = 18.0
-                locationIcon.fitHeight = 18.0
-                locationItem.graphic = locationIcon
-
                 contextMenu.items.addAll(
-                    startItem, stopItem, deleteItem, SeparatorMenuItem(), detailsItem, locationItem
+                    startItem, stopItem, deleteItem, SeparatorMenuItem(), detailsItem, locationItem, urlItem
                 )
                 tableRow.contextMenuProperty()
                     .bind(tableRow.emptyProperty().map { empty -> if (empty) null else contextMenu })
@@ -136,32 +153,41 @@ class PostsTableView : View() {
                 prefWidth = 300.0
             }
             column("Progress", PostModel::progressProperty) {
-                cellFormat {
-                    addClass(Stylesheet.progressBarTableCell)
-                    graphic = cache {
-                        progressbar(itemProperty().doubleBinding { it?.toDouble() ?: 0.0 }) {
-                            setOnMouseClicked {
+                cellFactory = Callback {
+                    val cell = ProgressTableCell<PostModel>()
+                    cell.setOnMouseClick {
+                        when (it.button) {
+                            MouseButton.SECONDARY -> {
+                                this@tableview.requestFocus()
+                                this@tableview.focusModel.focus(cell.tableRow.index)
+                                if (!this@tableview.selectionModel.isSelected(cell.tableRow.index)) {
+                                    this@tableview.selectionModel.clearSelection()
+                                    this@tableview.selectionModel.select(cell.tableRow.index)
+                                }
+                            }
+                            MouseButton.PRIMARY -> {
                                 when (it.clickCount) {
                                     1 -> {
                                         this@tableview.requestFocus()
-                                        this@tableview.focusModel.focus(this@cellFormat.tableRow.index)
+                                        this@tableview.focusModel.focus(cell.tableRow.index)
                                         if (it.isControlDown && it.button.equals(MouseButton.PRIMARY)) {
-                                            if (this@tableview.selectionModel.isSelected(this@cellFormat.tableRow.index)) {
-                                                this@tableview.selectionModel.clearSelection(this@cellFormat.tableRow.index)
+                                            if (this@tableview.selectionModel.isSelected(cell.tableRow.index)) {
+                                                this@tableview.selectionModel.clearSelection(cell.tableRow.index)
                                             } else {
-                                                this@tableview.selectionModel.select(this@cellFormat.tableRow.index)
+                                                this@tableview.selectionModel.select(cell.tableRow.index)
                                             }
                                         } else if (it.button.equals(MouseButton.PRIMARY)) {
                                             this@tableview.selectionModel.clearSelection()
-                                            this@tableview.selectionModel.select(this@cellFormat.tableRow.index)
+                                            this@tableview.selectionModel.select(cell.tableRow.index)
                                         }
                                     }
-                                    2 -> openPhotos(this@cellFormat.tableRow.item.postId)
+                                    2 -> openPhotos(cell.tableRow.item.postId)
                                 }
                             }
-                            useMaxWidth = true
+                            else -> {}
                         }
                     }
+                    cell as TableCell<PostModel, Number>
                 }
             }
             column("Status", PostModel::statusProperty)
@@ -172,17 +198,6 @@ class PostsTableView : View() {
             column("Order", PostModel::orderProperty) {
                 sortOrder.add(this)
             }
-        }
-    }
-
-    private fun openFileDirectory(path: String) {
-        val os = System.getProperty("os.name")
-        if(os.contains("Windows")) {
-            Shell32.INSTANCE.ShellExecuteW(null, WString("open"), WString(path), null, null, 1)
-        } else if(os.contains("Linux")) {
-            Runtime.getRuntime().exec("xdg-open $path")
-        } else if(os.contains("Mac")) {
-            Runtime.getRuntime().exec("open -R $path")
         }
     }
 

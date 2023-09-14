@@ -3,12 +3,16 @@ package me.mnlr.vripper.view.tables
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.geometry.Pos
-import javafx.scene.control.TableView
+import javafx.scene.control.*
+import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
+import javafx.util.Callback
 import me.mnlr.vripper.controller.ImageController
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.model.ImageModel
+import me.mnlr.vripper.view.ProgressTableCell
+import me.mnlr.vripper.view.openLink
 import tornadofx.*
 
 class ImagesTableView : Fragment("Photos") {
@@ -57,6 +61,23 @@ class ImagesTableView : Fragment("Photos") {
 
     override val root = vbox(alignment = Pos.CENTER_RIGHT) {
         tableView = tableview(items) {
+            setRowFactory {
+                val tableRow = TableRow<ImageModel>()
+                val urlItem = MenuItem("Open link").apply {
+                    setOnAction {
+                        openLink(tableRow.item.url)
+                    }
+                    graphic = ImageView("open-in-browser.png").apply {
+                        fitWidth = 18.0
+                        fitHeight = 18.0
+                    }
+                }
+                val contextMenu = ContextMenu()
+                contextMenu.items.addAll(urlItem)
+                tableRow.contextMenuProperty().bind(tableRow.emptyProperty()
+                    .map { empty -> if (empty) null else contextMenu })
+                tableRow
+            }
             column("Index", ImageModel::indexProperty) {
                 sortOrder.add(this)
             }
@@ -64,31 +85,21 @@ class ImagesTableView : Fragment("Photos") {
                 prefWidth = 200.0
             }
             column("Progress", ImageModel::progressProperty) {
-                cellFormat {
-                    addClass(Stylesheet.progressBarTableCell)
-                    graphic = cache {
-                        progressbar(itemProperty().doubleBinding { it?.toDouble() ?: 0.0 }) {
-                            setOnMouseClicked {
-                                when (it.clickCount) {
-                                    1 -> {
-                                        this@tableview.requestFocus()
-                                        this@tableview.focusModel.focus(this@cellFormat.tableRow.index)
-                                        if (it.isControlDown && it.button.equals(MouseButton.PRIMARY)) {
-                                            if (this@tableview.selectionModel.isSelected(this@cellFormat.tableRow.index)) {
-                                                this@tableview.selectionModel.clearSelection(this@cellFormat.tableRow.index)
-                                            } else {
-                                                this@tableview.selectionModel.select(this@cellFormat.tableRow.index)
-                                            }
-                                        } else if (it.button.equals(MouseButton.PRIMARY)) {
-                                            this@tableview.selectionModel.clearSelection()
-                                            this@tableview.selectionModel.select(this@cellFormat.tableRow.index)
-                                        }
-                                    }
+                cellFactory = Callback {
+                    val cell = ProgressTableCell<ImageModel>()
+                    cell.setOnMouseClick {
+                        when (it.clickCount) {
+                            1 -> {
+                                this@tableview.requestFocus()
+                                this@tableview.focusModel.focus(cell.tableRow.index)
+                                if (it.button.equals(MouseButton.PRIMARY)) {
+                                    this@tableview.selectionModel.clearSelection()
+                                    this@tableview.selectionModel.select(cell.tableRow.index)
                                 }
                             }
-                            useMaxWidth = true
                         }
                     }
+                    cell as TableCell<ImageModel, Number>
                 }
             }
             column("Status", ImageModel::statusProperty)

@@ -3,12 +3,12 @@ package me.mnlr.vripper.view.tables
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.geometry.Pos
-import javafx.scene.control.Label
-import javafx.scene.control.SelectionMode
-import javafx.scene.control.TableRow
-import javafx.scene.control.TableView
+import javafx.scene.control.*
+import javafx.scene.image.ImageView
+import javafx.scene.input.MouseButton
 import me.mnlr.vripper.controller.ThreadController
 import me.mnlr.vripper.model.ThreadSelectionModel
+import me.mnlr.vripper.view.openLink
 import tornadofx.*
 
 class ThreadSelectionTableView : Fragment("Thread") {
@@ -37,11 +37,25 @@ class ThreadSelectionTableView : Fragment("Thread") {
                 val tableRow = TableRow<ThreadSelectionModel>()
 
                 tableRow.setOnMouseClicked {
-                    if (it.clickCount == 2 && tableRow.item != null) {
+                    if (it.button.equals(MouseButton.PRIMARY) && it.clickCount == 2 && tableRow.item != null) {
                         threadController.download(listOf(tableRow.item))
                         close()
                     }
                 }
+
+                val urlItem = MenuItem("Open link").apply {
+                    setOnAction {
+                        openLink(tableRow.item.url)
+                    }
+                    graphic = ImageView("open-in-browser.png").apply {
+                        fitWidth = 18.0
+                        fitHeight = 18.0
+                    }
+                }
+                val contextMenu = ContextMenu()
+                contextMenu.items.addAll(urlItem)
+                tableRow.contextMenuProperty().bind(tableRow.emptyProperty()
+                    .map { empty -> if (empty) null else contextMenu })
 
                 tableRow
             }
