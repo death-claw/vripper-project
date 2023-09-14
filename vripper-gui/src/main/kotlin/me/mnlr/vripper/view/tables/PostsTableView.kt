@@ -13,6 +13,7 @@ import me.mnlr.vripper.model.PostModel
 import me.mnlr.vripper.view.ProgressTableCell
 import me.mnlr.vripper.view.openFileDirectory
 import me.mnlr.vripper.view.openLink
+import me.mnlr.vripper.view.FxScheduler
 import tornadofx.*
 
 
@@ -34,11 +35,14 @@ class PostsTableView : View() {
         })
         items.addAll(postController.findAllPosts())
 
-        eventBus.flux().filter {
-            it!!.kind == Event.Kind.POST_UPDATE || it.kind == Event.Kind.METADATA_UPDATE
-        }.subscribe { event ->
-            postController.findById(event!!.data as Long).ifPresent {
-                // search
+        eventBus
+            .flux()
+            .filter { it!!.kind == Event.Kind.POST_UPDATE || it.kind == Event.Kind.METADATA_UPDATE }
+            .map { postController.findById(it!!.data as Long) }
+            .filter { it.isPresent }
+            .map { it.get() }
+            .publishOn(FxScheduler)
+            .subscribe {
                 val find = items.find { postModel -> postModel.postId == it.postId }
                 if (find != null) {
                     find.apply {
@@ -51,19 +55,17 @@ class PostsTableView : View() {
                     }
                 } else {
                     items.add(it)
-                    runLater {
-                        this.tableView.refresh()
-                    }
+                    this.tableView.refresh()
                 }
             }
 
-        }
-
-        eventBus.flux().filter {
-            it!!.kind == Event.Kind.POST_REMOVE
-        }.subscribe { event ->
-            items.removeIf { p -> p.postId == event.data as String }
-        }
+        eventBus
+            .flux()
+            .filter { it!!.kind == Event.Kind.POST_REMOVE }
+            .publishOn(FxScheduler)
+            .subscribe {
+                items.removeIf { p -> p.postId == it.data as String }
+            }
     }
 
     override fun onDock() {

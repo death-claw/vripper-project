@@ -13,6 +13,7 @@ import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.model.ImageModel
 import me.mnlr.vripper.view.ProgressTableCell
 import me.mnlr.vripper.view.openLink
+import me.mnlr.vripper.view.FxScheduler
 import tornadofx.*
 
 class ImagesTableView : Fragment("Photos") {
@@ -31,31 +32,31 @@ class ImagesTableView : Fragment("Photos") {
         runLater {
             items.addAll(imageController.findImages(postId))
             tableView.sort()
+        }
 
-            val disposable = eventBus.flux()
-                .filter { it!!.kind == Event.Kind.IMAGE_UPDATE }
-                .subscribe { event ->
-                    imageController
-                        .findImageById(event!!.data as Long)
-                        .filter { it.postId == postId }
-                        .ifPresent {
-                            // search
-                            val find = items
-                                .find { image -> image.id == it.id }
-                            if (find != null) {
-                                find.apply {
-                                    progress = it.progress
-                                    status = it.status
-                                }
-                            } else {
-                                items.add(it)
-                            }
-                        }
+        val disposable = eventBus
+            .flux()
+            .filter { it!!.kind == Event.Kind.IMAGE_UPDATE }
+            .map { imageController.findImageById(it!!.data as Long) }
+            .filter { it.isPresent }
+            .map { it.get() }
+            .filter { it.postId == postId }
+            .publishOn(FxScheduler)
+            .subscribe {
+                val find = items
+                    .find { image -> image.id == it.id }
+                if (find != null) {
+                    find.apply {
+                        progress = it.progress
+                        status = it.status
+                    }
+                } else {
+                    items.add(it)
                 }
-
-            whenUndocked {
-                disposable.dispose()
             }
+
+        whenUndocked {
+            disposable.dispose()
         }
     }
 
