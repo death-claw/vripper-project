@@ -25,6 +25,10 @@ class VripperGuiApplication : App(
 
     private lateinit var context: ConfigurableApplicationContext //We are going to set application context here
     private var initialized = false
+
+    init {
+        APP_INSTANCE = this
+    }
     override fun start(stage: Stage) {
         with(stage) {
             width = 1200.0
@@ -72,6 +76,10 @@ class VripperGuiApplication : App(
             context.close()
         }
         exitProcess(0)
+    }
+
+    companion object {
+        lateinit var APP_INSTANCE: Application
     }
 }
 
