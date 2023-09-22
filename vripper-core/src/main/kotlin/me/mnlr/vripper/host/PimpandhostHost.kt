@@ -31,7 +31,7 @@ class PimpandhostHost(
     ): Pair<String, String> {
         val newUrl: String
         try {
-            newUrl = appendUri(url.replace("http://", "https://"), "size=original")
+            newUrl = appendUri(url.replace("http://", "https://").replace("-medium(\\.html)?".toRegex(), ""), "size=original")
         } catch (e: Exception) {
             throw HostException(e)
         }
