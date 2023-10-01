@@ -4,7 +4,7 @@ export class PostItem {
     public title: string,
     public url: string,
     public hosts: [{ first: string; second: number }],
-    public postId: string,
-    public threadId: string
+    public postId: number,
+    public threadId: number
   ) {}
 }

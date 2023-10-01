@@ -3,9 +3,7 @@ import {
   Component,
   ComponentRef,
   EventEmitter,
-  Input,
   OnDestroy,
-  OnInit,
   Output,
   ViewChild,
 } from '@angular/core';
@@ -18,7 +16,7 @@ import {
   RowDataUpdatedEvent,
   RowDoubleClickedEvent,
 } from 'ag-grid-community';
-import { filter, fromEvent, merge, Observable, Subscription, take } from 'rxjs';
+import { fromEvent, merge, Subscription, take } from 'rxjs';
 import { ApplicationEndpointService } from '../services/application-endpoint.service';
 import { Thread } from '../domain/thread.model';
 import { ComponentPortal, PortalModule } from '@angular/cdk/portal';
@@ -73,6 +71,12 @@ export class ThreadTableComponent implements OnDestroy {
   ) {
     this.gridOptions = <GridOptions>{
       columnDefs: [
+        {
+          headerName: 'Title',
+          field: 'title',
+          tooltipField: 'title',
+          flex: 1,
+        },
         {
           headerName: 'Url',
           field: 'link',
@@ -184,7 +188,7 @@ export class ThreadTableComponent implements OnDestroy {
         const toAdd: Thread[] = [];
         const toUpdate: Thread[] = [];
         e.forEach(v => {
-          if (this.agGrid.api.getRowNode(v.threadId) == null) {
+          if (this.agGrid.api.getRowNode(String(v.threadId)) == null) {
             toAdd.push(v);
           } else {
             toUpdate.push(v);

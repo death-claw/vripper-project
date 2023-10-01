@@ -1,6 +1,6 @@
 export class Post {
   constructor(
-    public postId: string,
+    public postId: number,
     public postTitle: string,
     public status: string,
     public url: string,
@@ -9,6 +9,7 @@ export class Post {
     public hosts: string[],
     public addedOn: string,
     public rank: number,
-    public downloadDirectory: string
+    public downloadDirectory: string,
+    public downloaded: number
   ) {}
 }

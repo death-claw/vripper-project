@@ -9,9 +9,10 @@ import { Image } from '../domain/image.model';
 import { MatButtonModule } from '@angular/material/button';
 import { ValueGetterParams } from 'ag-grid-community/dist/lib/entities/colDef';
 import { ProgressCellComponent } from '../progress-cell/progress-cell.component';
+import { ITooltipParams } from 'ag-grid-community/dist/lib/rendering/tooltipComponent';
 
 export interface ImageDialogData {
-  postId: string;
+  postId: number;
 }
 
 @Component({
@@ -24,7 +25,7 @@ export interface ImageDialogData {
 export class ImagesComponent implements OnDestroy {
   @ViewChild('agGrid') agGrid!: AgGridAngular;
 
-  gridOptions: GridOptions;
+  gridOptions: GridOptions<Image>;
   subscriptions: Subscription[] = [];
 
   constructor(
@@ -48,21 +49,21 @@ export class ImagesComponent implements OnDestroy {
         {
           headerName: 'Progress',
           field: 'progress',
-          tooltipValueGetter: params => {
+          tooltipValueGetter: (params: ITooltipParams<Image>) => {
             if (!params.data) {
               return 0;
             }
-            return params.data.current === 0 || params.data.total === 0
+            return params.data.downloaded === 0 || params.data.size === 0
               ? 0
-              : (params.data.current / params.data.total) * 100;
+              : (params.data.downloaded / params.data.size) * 100;
           },
           valueGetter: (params: ValueGetterParams<Image>) => {
             if (!params.data) {
               return 0;
             }
-            return params.data.current === 0 || params.data.total === 0
+            return params.data.downloaded === 0 || params.data.size === 0
               ? 0
-              : (params.data.current / params.data.total) * 100;
+              : (params.data.downloaded / params.data.size) * 100;
           },
           cellRenderer: ProgressCellComponent,
         },

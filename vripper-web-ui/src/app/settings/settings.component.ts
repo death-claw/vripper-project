@@ -21,6 +21,7 @@ import {
   ConnectionSettings,
   DownloadSettings,
   Settings,
+  SystemSettings,
   ViperSettings,
 } from '../domain/settings.model';
 import { ApplicationEndpointService } from '../services/application-endpoint.service';
@@ -62,7 +63,6 @@ export class SettingsComponent {
 
   downloadSettingsForm = new FormGroup({
     downloadPath: new FormControl(''),
-    tempPath: new FormControl(''),
     autoStart: new FormControl(false),
     autoQueueThreshold: new FormControl(0),
     forceOrder: new FormControl(false),
@@ -73,13 +73,15 @@ export class SettingsComponent {
   });
 
   connectionSettingsForm = new FormGroup({
-    maxThreads: new FormControl(0),
-    maxTotalThreads: new FormControl(0),
+    maxConcurrentPerHost: new FormControl(0),
+    maxGlobalConcurrent: new FormControl(0),
     timeout: new FormControl(0),
     maxAttempts: new FormControl(0),
   });
 
-  eventLogSettingsForm = new FormGroup({
+  systemSettingsForm = new FormGroup({
+    tempPath: new FormControl(''),
+    cachePath: new FormControl(''),
     maxEventLog: new FormControl(0),
   });
 
@@ -91,7 +93,7 @@ export class SettingsComponent {
     this.viperGirlsSettingsForm.reset(data.viperSettings);
     this.downloadSettingsForm.reset(data.downloadSettings);
     this.connectionSettingsForm.reset(data.connectionSettings);
-    this.eventLogSettingsForm.reset(data);
+    this.systemSettingsForm.reset(data.systemSettings);
   }
 
   save = () => {
@@ -106,7 +108,9 @@ export class SettingsComponent {
         downloadSettings: {
           ...(this.downloadSettingsForm.value as DownloadSettings),
         },
-        ...this.eventLogSettingsForm.value,
+        systemSettings: {
+          ...(this.systemSettingsForm.value as SystemSettings),
+        },
       } as Settings)
       .subscribe(() => this.dialogRef.close());
   };

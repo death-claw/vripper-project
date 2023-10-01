@@ -22,10 +22,6 @@
             name="downloadPath"
             required />
         </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Temporary Path</mat-label>
-          <input formControlName="tempPath" matInput name="tempPath" required />
-        </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label
@@ -132,22 +128,22 @@
         <mat-form-field appearance="outline">
           <mat-label>Global concurrent downloads</mat-label>
           <input
-            formControlName="maxTotalThreads"
+            formControlName='maxConcurrentPerHost'
             matInput
             max="12"
             min="0"
-            name="maxTotalThreads"
+            name='maxConcurrentPerHost'
             required
             type="number" />
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Concurrent downloads per host</mat-label>
           <input
-            formControlName="maxThreads"
+            formControlName='maxGlobalConcurrent'
             matInput
             max="4"
             min="1"
-            name="maxThreads"
+            name='maxGlobalConcurrent'
             required
             type="number" />
         </mat-form-field>
@@ -233,9 +229,9 @@
         </div>
       </form>
     </mat-tab>
-    <mat-tab label="Event Log">
+    <mat-tab label='System'>
       <form
-        [formGroup]="eventLogSettingsForm"
+        [formGroup]='systemSettingsForm'
         autocomplete="off"
         style="
           display: flex;
@@ -245,7 +241,19 @@
           padding-right: 20px;
         ">
         <mat-form-field appearance="outline">
-          <mat-label>Maximum records</mat-label>
+          <mat-label>Temporary Path</mat-label>
+          <input formControlName='tempPath' matInput name='tempPath' required />
+        </mat-form-field>
+        <mat-form-field appearance='outline'>
+          <mat-label>Cache Path</mat-label>
+          <input
+            formControlName='cachePath'
+            matInput
+            name='cachePath'
+            required />
+        </mat-form-field>
+        <mat-form-field appearance='outline'>
+          <mat-label>Maximum log entries</mat-label>
           <input
             formControlName="maxEventLog"
             matInput

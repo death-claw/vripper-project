@@ -10,27 +10,42 @@ import { Image } from '../domain/image.model';
 import { HttpClient } from '@angular/common/http';
 import { PostItem } from '../domain/post-item.model';
 import { Settings } from '../domain/settings.model';
-import { GlobalState } from '../domain/global-state.model';
+import { QueueState } from '../domain/queue-state.model';
+import { DownloadSpeed } from '../domain/download.speed';
+import { ErrorCount } from '../domain/error.count';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ApplicationEndpointService {
-  private rxStomp!: RxStomp;
-
-  private posts!: Observable<Post[]>;
-
-  private globalState!: Observable<GlobalState>;
-  connectionState = signal(RxStompState.CLOSED);
-
-  get posts$(): Observable<Post[]> {
-    return this.posts;
+  constructor(
+    @Inject(WS_BASE_URL) private wsBaseUrl: string,
+    @Inject(BASE_URL) private baseUrl: string,
+    private httpClient: HttpClient
+  ) {
+    this.init();
   }
 
-  private postsRemove!: Observable<string[]>;
+  private rxStomp!: RxStomp;
 
-  get postsRemove$(): Observable<string[]> {
-    return this.postsRemove;
+  connectionState = signal(RxStompState.CLOSED);
+
+  private newPosts!: Observable<Post[]>;
+
+  get newPosts$(): Observable<Post[]> {
+    return this.newPosts;
+  }
+
+  private updatedPosts!: Observable<Post[]>;
+
+  get updatedPosts$(): Observable<Post[]> {
+    return this.updatedPosts;
+  }
+
+  private deletedPosts!: Observable<string[]>;
+
+  get deletedPosts$(): Observable<string[]> {
+    return this.deletedPosts;
   }
 
   private threads!: Observable<Thread[]>;
@@ -51,10 +66,16 @@ export class ApplicationEndpointService {
     return this.threadRemoveAll;
   }
 
-  private logs!: Observable<Log[]>;
+  private newLogs!: Observable<Log[]>;
 
-  get logs$(): Observable<Log[]> {
-    return this.logs;
+  get newLogs$(): Observable<Log[]> {
+    return this.newLogs;
+  }
+
+  private updatedLogs!: Observable<Log[]>;
+
+  get updatedLogs$(): Observable<Log[]> {
+    return this.updatedLogs;
   }
 
   private logsRemove!: Observable<number[]>;
@@ -63,7 +84,7 @@ export class ApplicationEndpointService {
     return this.logsRemove;
   }
 
-  postDetails$(postId: string): Observable<Image[]> {
+  postDetails$(postId: number): Observable<Image[]> {
     return this.rxStomp.watch('/topic/images/' + postId).pipe(
       map(e => {
         return JSON.parse(e.body).map((element: any) => {
@@ -72,21 +93,13 @@ export class ApplicationEndpointService {
             element.url,
             element.status,
             element.index + 1,
-            element.current,
-            element.total
+            element.downloaded,
+            element.size
           );
         });
       }),
       share()
     );
-  }
-
-  constructor(
-    @Inject(WS_BASE_URL) private wsBaseUrl: string,
-    @Inject(BASE_URL) private baseUrl: string,
-    private httpClient: HttpClient
-  ) {
-    this.init();
   }
 
   init() {
@@ -98,8 +111,28 @@ export class ApplicationEndpointService {
     this.rxStomp.deactivate();
   }
 
-  get globalState$(): Observable<GlobalState> {
-    return this.globalState;
+  private queueState!: Observable<QueueState>;
+
+  get queueState$(): Observable<QueueState> {
+    return this.queueState;
+  }
+
+  private downloadSpeed!: Observable<DownloadSpeed>;
+
+  get downloadSpeed$(): Observable<DownloadSpeed> {
+    return this.downloadSpeed;
+  }
+
+  private vgUsername!: Observable<string>;
+
+  get vgUsername$(): Observable<string> {
+    return this.vgUsername;
+  }
+
+  private errorCount!: Observable<ErrorCount>;
+
+  get errorCount$(): Observable<ErrorCount> {
+    return this.errorCount;
   }
 
   connect() {
@@ -115,7 +148,28 @@ export class ApplicationEndpointService {
   prepareTopics() {
     this.rxStomp.connectionState$.subscribe(e => this.connectionState.set(e));
 
-    this.postsRemove = this.rxStomp.watch('/topic/posts/deleted').pipe(
+    this.downloadSpeed = this.rxStomp.watch('/topic/download-speed').pipe(
+      map(e => {
+        return JSON.parse(e.body);
+      }),
+      share()
+    );
+
+    this.vgUsername = this.rxStomp.watch('/topic/vg-username').pipe(
+      map(e => {
+        return e.body;
+      }),
+      share()
+    );
+
+    this.errorCount = this.rxStomp.watch('/topic/error-count').pipe(
+      map(e => {
+        return JSON.parse(e.body);
+      }),
+      share()
+    );
+
+    this.deletedPosts = this.rxStomp.watch('/topic/posts/deleted').pipe(
       map(e => {
         return JSON.parse(e.body);
       }),
@@ -143,15 +197,15 @@ export class ApplicationEndpointService {
       share()
     );
 
-    this.globalState = this.rxStomp.watch('/topic/state').pipe(
+    this.queueState = this.rxStomp.watch('/topic/queue-state').pipe(
       map(e => {
-        const state: GlobalState = JSON.parse(e.body);
+        const state: QueueState = JSON.parse(e.body);
         return state;
       }),
       share()
     );
 
-    this.posts = this.rxStomp.watch('/topic/posts').pipe(
+    this.newPosts = this.rxStomp.watch('/topic/posts/new').pipe(
       map(e => {
         // const posts: Array<Post> = [];
         return JSON.parse(e.body).map((element: any) => {
@@ -165,15 +219,52 @@ export class ApplicationEndpointService {
             element.hosts,
             element.addedOn,
             element.rank + 1,
-            element.downloadDirectory
+            element.downloadDirectory,
+            element.downloaded
           );
         });
-        // return posts;
       }),
       share()
     );
 
-    this.logs = this.rxStomp.watch('/topic/logs').pipe(
+    this.updatedPosts = this.rxStomp.watch('/topic/posts/updated').pipe(
+      map(e => {
+        // const posts: Array<Post> = [];
+        return JSON.parse(e.body).map((element: any) => {
+          return new Post(
+            element.postId,
+            element.postTitle,
+            element.status,
+            element.url,
+            element.done,
+            element.total,
+            element.hosts,
+            element.addedOn,
+            element.rank + 1,
+            element.downloadDirectory,
+            element.downloaded
+          );
+        });
+      }),
+      share()
+    );
+
+    this.newLogs = this.rxStomp.watch('/topic/logs/new').pipe(
+      map(e => {
+        return JSON.parse(e.body).map((element: any) => {
+          return new Log(
+            element.id,
+            element.type,
+            element.status,
+            element.time,
+            element.message
+          );
+        });
+      }),
+      share()
+    );
+
+    this.updatedLogs = this.rxStomp.watch('/topic/logs/updated').pipe(
       map(e => {
         return JSON.parse(e.body).map((element: any) => {
           return new Log(
@@ -191,7 +282,12 @@ export class ApplicationEndpointService {
     this.threads = this.rxStomp.watch('/topic/threads').pipe(
       map(e => {
         return JSON.parse(e.body).map((element: any) => {
-          return new Thread(element.link, element.threadId, element.total);
+          return new Thread(
+            element.link,
+            element.title,
+            element.threadId,
+            element.total
+          );
         });
       }),
       share()
@@ -212,7 +308,7 @@ export class ApplicationEndpointService {
     );
   }
 
-  getThreadPosts(threadId: string) {
+  getThreadPosts(threadId: number) {
     return this.httpClient
       .get<PostItem[]>(this.baseUrl + `/api/grab/${threadId}`)
       .pipe(map(v => v.map(p => ({ ...p, hosts: p.hosts }))));

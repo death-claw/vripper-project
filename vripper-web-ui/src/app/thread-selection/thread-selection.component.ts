@@ -18,7 +18,7 @@ import { PostItem } from '../domain/post-item.model';
 import { ValueGetterParams } from 'ag-grid-community/dist/lib/entities/colDef';
 
 export interface ThreadDialogData {
-  threadId: string;
+  threadId: number;
 }
 
 @Component({
