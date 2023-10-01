@@ -4,49 +4,55 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <groupId>org.springframework.boot</groupId>
-    <relativePath/>
-    <version>3.1.3</version>
+    <groupId>me.mnlr</groupId>
+    <artifactId>vripper-project</artifactId>
+    <version>4.4.0</version>
   </parent>
   <groupId>me.mnlr.vripper</groupId>
   <artifactId>vripper-core</artifactId>
-  <version>4.4.0</version>
   <name>vripper-core</name>
   <description>vripper-core</description>
-  <properties>
-    <java.version>17</java.version>
-    <kotlin.version>1.8.21</kotlin.version>
-    <maven.deploy.skip>false</maven.deploy.skip>
-    <timestamp>${maven.build.timestamp}</timestamp>
-    <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
-  </properties>
 
   <dependencies>
     <dependency>
       <artifactId>kotlin-reflect</artifactId>
       <groupId>org.jetbrains.kotlin</groupId>
+      <version>1.8.22</version>
     </dependency>
     <dependency>
       <artifactId>kotlin-stdlib</artifactId>
       <groupId>org.jetbrains.kotlin</groupId>
+      <version>1.9.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains.kotlinx</groupId>
+      <artifactId>kotlinx-coroutines-core-jvm</artifactId>
+      <version>1.7.3</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains.exposed</groupId>
+      <artifactId>exposed-jdbc</artifactId>
+      <version>0.41.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains.exposed</groupId>
+      <artifactId>exposed-java-time</artifactId>
+      <version>0.41.1</version>
+    </dependency>
+    <dependency>
+      <groupId>io.insert-koin</groupId>
+      <artifactId>koin-core-jvm</artifactId>
+      <version>3.4.2</version>
     </dependency>
     <dependency>
       <artifactId>jackson-module-kotlin</artifactId>
       <groupId>com.fasterxml.jackson.module</groupId>
+      <version>2.15.2</version>
     </dependency>
     <dependency>
-      <artifactId>spring-boot-starter-jdbc</artifactId>
-      <groupId>org.springframework.boot</groupId>
-    </dependency>
-    <dependency>
-      <artifactId>liquibase-core</artifactId>
-      <groupId>org.liquibase</groupId>
-    </dependency>
-    <dependency>
-      <artifactId>hsqldb</artifactId>
-      <groupId>org.hsqldb</groupId>
-      <scope>runtime</scope>
+      <groupId>org.xerial</groupId>
+      <artifactId>sqlite-jdbc</artifactId>
+      <version>3.43.0.0</version>
     </dependency>
     <dependency>
       <artifactId>httpclient</artifactId>
@@ -61,6 +67,7 @@
     <dependency>
       <artifactId>reactor-core</artifactId>
       <groupId>io.projectreactor</groupId>
+      <version>3.5.10</version>
     </dependency>
     <dependency>
       <artifactId>failsafe</artifactId>
@@ -70,34 +77,27 @@
     <dependency>
       <artifactId>caffeine</artifactId>
       <groupId>com.github.ben-manes.caffeine</groupId>
+      <version>3.1.8</version>
     </dependency>
     <dependency>
       <artifactId>jackson-databind</artifactId>
       <groupId>com.fasterxml.jackson.core</groupId>
+      <version>2.15.2</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
+      <version>2.15.2</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
+      <version>2.15.2</version>
     </dependency>
     <dependency>
       <groupId>net.java.dev.jna</groupId>
       <artifactId>jna-platform</artifactId>
       <version>5.13.0</version>
-    </dependency>
-
-    <dependency>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <groupId>org.springframework.boot</groupId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <artifactId>spring-restdocs-mockmvc</artifactId>
-      <groupId>org.springframework.restdocs</groupId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -108,14 +108,21 @@
       <plugin>
         <groupId>org.jetbrains.kotlin</groupId>
         <artifactId>kotlin-maven-plugin</artifactId>
-        <configuration>
-          <args>
-            <arg>-Xjsr305=strict</arg>
-          </args>
-          <compilerPlugins>
-            <plugin>spring</plugin>
-          </compilerPlugins>
-        </configuration>
+        <executions>
+          <execution>
+            <id>compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <configuration>
+              <sourceDirs>
+                <source>src/main/kotlin</source>
+                <source>target/generated-sources/annotations</source>
+              </sourceDirs>
+            </configuration>
+          </execution>
+        </executions>
         <dependencies>
           <dependency>
             <artifactId>kotlin-maven-allopen</artifactId>

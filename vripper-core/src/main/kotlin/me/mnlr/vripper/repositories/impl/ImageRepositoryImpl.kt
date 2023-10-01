@@ -1,125 +1,100 @@
 package me.mnlr.vripper.repositories.impl
 
-import org.springframework.jdbc.core.JdbcTemplate
-import org.springframework.jdbc.core.RowMapper
-import org.springframework.stereotype.Service
-import me.mnlr.vripper.SpringContext
 import me.mnlr.vripper.entities.ImageDownloadState
 import me.mnlr.vripper.entities.domain.Status
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
-import me.mnlr.vripper.host.Host
 import me.mnlr.vripper.repositories.ImageRepository
-import java.sql.ResultSet
-import java.sql.SQLException
+import me.mnlr.vripper.tables.ImageTable
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.util.*
 
-@Service
-class ImageRepositoryImpl(
-    private val jdbcTemplate: JdbcTemplate, private val eventBus: EventBus
-) : ImageRepository {
-    @Synchronized
-    private fun nextId(): Long {
-        return jdbcTemplate.queryForObject("CALL NEXT VALUE FOR SEQ_IMAGE", Long::class.java)!!
-    }
-
+class ImageRepositoryImpl(private val eventBus: EventBus) : ImageRepository {
     override fun save(imageDownloadState: ImageDownloadState): ImageDownloadState {
-        val id = nextId()
-        jdbcTemplate.update(
-            "INSERT INTO IMAGE (ID, CURRENT, HOST, INDEX, POST_ID, STATUS, TOTAL, URL, POST_ID_REF) VALUES (?,?,?,?,?,?,?,?,?)",
-            id,
-            imageDownloadState.current,
-            imageDownloadState.host.host,
-            imageDownloadState.index,
-            imageDownloadState.postId,
-            imageDownloadState.status.name,
-            imageDownloadState.total,
-            imageDownloadState.url,
-            imageDownloadState.postIdRef
+
+        val insertStatement = ImageTable.insert {
+            it[current] = imageDownloadState.current
+            it[host] = imageDownloadState.host
+            it[index] = imageDownloadState.index
+            it[postId] = imageDownloadState.postId
+            it[status] = imageDownloadState.status.name
+            it[total] = imageDownloadState.total
+            it[url] = imageDownloadState.url
+            it[postIdRef] = imageDownloadState.postIdRef
+        }
+        eventBus.publishEvent(Event(Event.Kind.IMAGE_UPDATE, insertStatement[ImageTable.id].value))
+        return imageDownloadState.copy(
+            id = insertStatement[ImageTable.id].value
         )
-        imageDownloadState.id = id
-        eventBus.publishEvent(Event(Event.Kind.IMAGE_UPDATE, id))
-        return imageDownloadState
     }
 
     override fun deleteAllByPostId(postId: String) {
-        jdbcTemplate.update("DELETE FROM IMAGE WHERE POST_ID = ?", postId)
+        ImageTable.deleteWhere {ImageTable.postId eq postId}
     }
 
     override fun findByPostId(postId: String): List<ImageDownloadState> {
-        return jdbcTemplate.query(
-            "SELECT * FROM IMAGE WHERE POST_ID = ?", ImageRowMapper(), postId
-        )
+        return ImageTable.select {
+            ImageTable.postId eq postId
+        }.map(this::transform)
     }
 
     override fun countError(): Int {
-        return jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM IMAGE AS image WHERE image.STATUS = ?", Int::class.java, Status.ERROR.name
-        )
+        return ImageTable
+            .slice(ImageTable.id)
+            .select { ImageTable.status eq Status.ERROR.name }
+            .count().toInt()
     }
 
     override fun findByPostIdAndIsNotCompleted(postId: String): List<ImageDownloadState> {
-        return jdbcTemplate.query(
-            "SELECT * FROM IMAGE AS image WHERE image.POST_ID = ? AND image.STATUS <> ?",
-            ImageRowMapper(),
-            postId,
-            Status.FINISHED.name
-        )
+        return ImageTable
+            .select {
+                (ImageTable.postId eq postId) and (ImageTable.status neq Status.FINISHED.name)
+            }.map(this::transform)
     }
 
     override fun stopByPostIdAndIsNotCompleted(postId: String): Int {
-        return jdbcTemplate.update(
-            "UPDATE IMAGE AS image SET image.STATUS = ? WHERE image.POST_ID = ? AND image.STATUS <> ?",
-            Status.STOPPED.name,
-            postId,
-            Status.FINISHED.name
-        )
+        return ImageTable.update({(ImageTable.postId eq postId) and (ImageTable.status neq Status.FINISHED.name)}) {
+            it[status] = Status.STOPPED.name
+        }
     }
 
     override fun findByPostIdAndIsError(postId: String): List<ImageDownloadState> {
-        return jdbcTemplate.query(
-            "SELECT * FROM IMAGE AS image WHERE image.POST_ID = ? AND image.STATUS = ?",
-            ImageRowMapper(),
-            postId,
-            Status.ERROR.name
-        )
+        return ImageTable.select {
+            (ImageTable.postId eq postId) and (ImageTable.status eq Status.ERROR.name)
+        }.map(this::transform)
     }
 
     override fun findById(id: Long): Optional<ImageDownloadState> {
-        val images = jdbcTemplate.query(
-            "SELECT * FROM IMAGE AS image WHERE image.ID = ?", ImageRowMapper(), id
-        )
-        return if (images.isEmpty()) {
+        val result = ImageTable.select {
+            ImageTable.id eq id
+        }.map(this::transform)
+        return if (result.isEmpty()) {
             Optional.empty()
         } else {
-            Optional.of(images[0])
+            Optional.of(result.first())
         }
     }
 
     override fun update(imageDownloadState: ImageDownloadState) {
-        jdbcTemplate.update(
-            "UPDATE IMAGE AS image SET image.STATUS = ?, image.CURRENT = ?, image.TOTAL = ? WHERE image.ID = ?",
-            imageDownloadState.status.name,
-            imageDownloadState.current,
-            imageDownloadState.total,
-            imageDownloadState.id
-        )
+        ImageTable.update({ImageTable.id eq imageDownloadState.id}) {
+            it[status] = imageDownloadState.status.name
+            it[current] = imageDownloadState.current
+            it[total] = imageDownloadState.total
+        }
         eventBus.publishEvent(Event(Event.Kind.IMAGE_UPDATE, imageDownloadState.id))
     }
-}
 
-internal class ImageRowMapper : RowMapper<ImageDownloadState> {
-    @Throws(SQLException::class)
-    override fun mapRow(rs: ResultSet, rowNum: Int): ImageDownloadState {
-        val id = rs.getLong("ID")
-        val postId = rs.getString("POST_ID")
-        val url = rs.getString("URL")
-        val host = SpringContext.getBeansOfType(Host::class.java).values.filter { it.host == rs.getString("HOST") }[0]
-        val index = rs.getInt("INDEX")
-        val current = rs.getLong("CURRENT")
-        val total = rs.getLong("TOTAL")
-        val status = Status.valueOf(rs.getString("STATUS"))
-        val postIdRef = rs.getLong("POST_ID_REF")
+    private fun transform(resultRow: ResultRow): ImageDownloadState {
+        val id = resultRow[ImageTable.id].value
+        val postId = resultRow[ImageTable.postId]
+        val url = resultRow[ImageTable.url]
+        val host = resultRow[ImageTable.host]
+        val index = resultRow[ImageTable.index]
+        val current = resultRow[ImageTable.current]
+        val total = resultRow[ImageTable.total]
+        val status = Status.valueOf(resultRow[ImageTable.status])
+        val postIdRef = resultRow[ImageTable.postIdRef]
         return ImageDownloadState(id, postId, url, host, index, postIdRef, total, current, status)
     }
 }

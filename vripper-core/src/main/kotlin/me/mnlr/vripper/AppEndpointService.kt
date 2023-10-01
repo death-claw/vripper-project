@@ -9,18 +9,16 @@ import me.mnlr.vripper.repositories.LogEventRepository
 import me.mnlr.vripper.repositories.ThreadRepository
 import me.mnlr.vripper.services.*
 import me.mnlr.vripper.tasks.ThreadLookupRunnable
-import org.springframework.stereotype.Service
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import java.util.regex.Pattern
 
-@Service
 class AppEndpointService(
     private val downloadService: DownloadService,
     private val dataTransaction: DataTransaction,
     private val threadRepository: ThreadRepository,
     private val threadCacheService: ThreadCacheService,
     private val eventRepository: LogEventRepository,
-    private val asyncTaskRunnerService: AsyncTaskRunnerService,
     private val settingsService: SettingsService
 ) {
     private val log by LoggerDelegate()
@@ -47,17 +45,13 @@ class AppEndpointService(
                 threadId = m.group(1)
                 postId = m.group(4)
                 if (postId == null) {
-                    asyncTaskRunnerService.sink.emitNext(
-                        ThreadLookupRunnable(
-                            threadId, settingsService.settings
-                        )
-                    ) { _, _ -> true }
+                    CompletableFuture.runAsync(ThreadLookupRunnable(
+                        threadId, settingsService.settings
+                    ))
                 } else {
-                    asyncTaskRunnerService.sink.emitNext(
-                        PostDownloadRunnable(
-                            threadId, postId
-                        )
-                    ) { _, _ -> true }
+                    CompletableFuture.runAsync(PostDownloadRunnable(
+                        threadId, postId
+                    ))
                 }
             } else {
                 log.error("Cannot retrieve thread id from URL $link")
@@ -73,12 +67,10 @@ class AppEndpointService(
 
     @Synchronized
     fun download(posts: List<Pair<String, String>>) {
-        for (post in posts) {
-            asyncTaskRunnerService.sink.emitNext(
-                PostDownloadRunnable(
-                    post.first, post.second
-                )
-            ) { _, _ -> true }
+        posts.forEach {
+            CompletableFuture.runAsync(PostDownloadRunnable(
+                it.first, it.second
+            ))
         }
     }
 

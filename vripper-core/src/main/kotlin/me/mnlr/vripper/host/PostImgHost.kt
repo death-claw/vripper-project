@@ -1,6 +1,5 @@
 package me.mnlr.vripper.host
 
-import org.springframework.stereotype.Service
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import me.mnlr.vripper.delegate.LoggerDelegate
@@ -10,17 +9,12 @@ import me.mnlr.vripper.exception.XpathException
 import me.mnlr.vripper.services.*
 import java.util.*
 
-@Service
 class PostImgHost(
-    private val xpathService: XpathService,
     httpService: HTTPService,
-    htmlProcessorService: HtmlProcessorService,
     dataTransaction: DataTransaction,
-    downloadSpeedService: DownloadSpeedService,
-) : Host(httpService, htmlProcessorService, dataTransaction, downloadSpeedService) {
+    globalStateService: GlobalStateService,
+) : Host("postimg.cc", httpService, dataTransaction, globalStateService) {
     private val log by LoggerDelegate()
-    override val host: String
-        get() = Companion.host
 
     @Throws(HostException::class)
     override fun resolve(
@@ -30,7 +24,7 @@ class PostImgHost(
     ): Pair<String, String> {
         val titleNode = try {
             log.debug(String.format("Looking for xpath expression %s in %s", TITLE_XPATH, url))
-            xpathService.getAsNode(document, TITLE_XPATH)
+            XpathService.getAsNode(document, TITLE_XPATH)
         } catch (e: XpathException) {
             throw HostException(e)
         } ?: throw HostException(
@@ -42,7 +36,7 @@ class PostImgHost(
         )
         val urlNode = try {
             log.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url))
-            xpathService.getAsNode(document, IMG_XPATH)
+            XpathService.getAsNode(document, IMG_XPATH)
         } catch (e: XpathException) {
             throw HostException(e)
         } ?: throw HostException(
@@ -64,8 +58,6 @@ class PostImgHost(
     }
 
     companion object {
-        private const val host = "postimg.cc"
-        private const val lookup = "postimg.cc"
         private const val TITLE_XPATH = "//span[contains(@class,'imagename')]"
         private const val IMG_XPATH = "//a[@id='download']"
     }

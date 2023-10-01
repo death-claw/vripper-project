@@ -1,25 +1,20 @@
 package me.mnlr.vripper.host
 
-import org.springframework.stereotype.Service
-import org.w3c.dom.Document
-import org.w3c.dom.Node
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.download.ImageDownloadContext
 import me.mnlr.vripper.exception.HostException
 import me.mnlr.vripper.exception.XpathException
 import me.mnlr.vripper.services.*
+import org.w3c.dom.Document
+import org.w3c.dom.Node
 import java.util.*
 
-@Service
 class ViprImHost(
-    private val xpathService: XpathService,
     httpService: HTTPService,
-    htmlProcessorService: HtmlProcessorService,
     dataTransaction: DataTransaction,
-    downloadSpeedService: DownloadSpeedService,
-) : Host(httpService, htmlProcessorService, dataTransaction, downloadSpeedService) {
+    globalStateService: GlobalStateService,
+) : Host("vipr.im", httpService, dataTransaction, globalStateService) {
     private val log by LoggerDelegate()
-    override val host: String = "vipr.im"
 
     @Throws(HostException::class)
     override fun resolve(
@@ -29,7 +24,7 @@ class ViprImHost(
     ): Pair<String, String> {
         val imgNode: Node = try {
             log.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url))
-            xpathService.getAsNode(document, IMG_XPATH)
+            XpathService.getAsNode(document, IMG_XPATH)
         } catch (e: XpathException) {
             throw HostException(e)
         } ?: throw HostException(

@@ -1,6 +1,8 @@
 package me.mnlr.vripper.download
 
-import jakarta.annotation.PostConstruct
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.entities.ImageDownloadState
 import me.mnlr.vripper.entities.LogEvent
@@ -11,87 +13,65 @@ import me.mnlr.vripper.host.Host
 import me.mnlr.vripper.repositories.ImageRepository
 import me.mnlr.vripper.repositories.LogEventRepository
 import me.mnlr.vripper.repositories.PostDownloadStateRepository
-import me.mnlr.vripper.services.*
+import me.mnlr.vripper.services.DataTransaction
+import me.mnlr.vripper.services.RetryPolicyService
+import me.mnlr.vripper.services.SettingsService
 import net.jodah.failsafe.Failsafe
 import net.jodah.failsafe.RetryPolicy
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Service
-import java.util.*
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import java.util.stream.Collectors
 import kotlin.concurrent.withLock
 
-@Service
 class DownloadService(
-    @param:Value("\${download.pool-size}") private val maxPoolSize: Int,
     private val settingsService: SettingsService,
     private val dataTransaction: DataTransaction,
-    private val hosts: List<Host>,
-    private val eventRepository: LogEventRepository,
     private val retryPolicyService: RetryPolicyService,
     private val postDownloadStateRepository: PostDownloadStateRepository,
     private val imageRepository: ImageRepository,
-    private val asyncTaskRunnerService: AsyncTaskRunnerService,
+    private val eventRepository: LogEventRepository,
 ) {
+    private val maxPoolSize: Int = 12
     private val log by LoggerDelegate()
 
     // Class fields
-    private val executor: ExecutorService = Executors.newFixedThreadPool(maxPoolSize)
-    private val running: MutableMap<Host, MutableList<ImageDownloadRunnable>> = mutableMapOf()
-    private val pending: MutableMap<Host, MutableList<ImageDownloadRunnable>> = mutableMapOf()
+    private val running: MutableMap<String, MutableList<ImageDownloadRunnable>> = mutableMapOf()
+    private val pending: MutableMap<String, MutableList<ImageDownloadRunnable>> = mutableMapOf()
     private val lock = ReentrantLock()
     private val condition = lock.newCondition()
-    private val pollThread: Thread
 
-    init {
-        pollThread = Thread(
-            {
-                val accepted: MutableList<ImageDownloadRunnable> = mutableListOf()
-                val candidates: MutableList<ImageDownloadRunnable> = mutableListOf()
-                while (!Thread.interrupted()) {
-                    lock.withLock {
-                        candidates.addAll(getCandidates(candidateCount()))
-                        candidates.forEach {
-                            if (canRun(it.context.image.host)) {
-                                accepted.add(it)
-                                running[it.context.image.host]!!.add(it)
-                                log.debug("${it.context.image.url} accepted to run")
-                            }
-                        }
-                        accepted.forEach {
-                            pending[it.context.image.host]?.remove(it)
-                            schedule(it)
-                        }
-                        accepted.clear()
-                        candidates.clear()
-                        try {
-                            condition.await()
-                        } catch (e: InterruptedException) {
-                            Thread.currentThread().interrupt()
+    fun init() {
+        GlobalScope.launch {
+            val accepted: MutableList<ImageDownloadRunnable> = mutableListOf()
+            val candidates: MutableList<ImageDownloadRunnable> = mutableListOf()
+            while (isActive) {
+                lock.withLock {
+                    candidates.addAll(getCandidates(candidateCount()))
+                    candidates.forEach {
+                        if (canRun(it.context.image.host)) {
+                            accepted.add(it)
+                            running[it.context.image.host]!!.add(it)
+                            log.debug("${it.context.image.url} accepted to run")
                         }
                     }
+                    accepted.forEach {
+                        pending[it.context.image.host]?.remove(it)
+                        scheduleForDownload(it)
+                    }
+                    accepted.clear()
+                    candidates.clear()
+                    try {
+                        condition.await()
+                    } catch (e: InterruptedException) {
+                        Thread.currentThread().interrupt()
+                    }
                 }
-            }, "Download scheduler thread"
-        )
-    }
-
-    @PostConstruct
-    fun init() {
-        pollThread.start()
+            }
+        }
     }
 
     fun destroy() {
-        log.info("Shutting down ExecutionService")
-        pollThread.interrupt()
-        executor.shutdown()
         stop(postDownloadStateRepository.findAll().map { it.postId })
-        if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
-            log.warn("Some jobs are still running!, forcing shutdown")
-            executor.shutdownNow()
-        }
     }
 
     fun stopAll(postIds: List<String>?) {
@@ -183,27 +163,27 @@ class DownloadService(
         }
     }
 
-    private fun canRun(host: Host): Boolean {
+    private fun canRun(host: String): Boolean {
         val totalRunning = running.values.sumOf { it.size }
         return (running[host]!!.size < settingsService.settings.connectionSettings.maxThreads && if (settingsService.settings.connectionSettings.maxTotalThreads == 0) totalRunning < maxPoolSize else totalRunning < settingsService.settings.connectionSettings.maxTotalThreads)
     }
 
-    private fun candidateCount(): Map<Host, Int> {
-        val map: MutableMap<Host, Int> = mutableMapOf()
-        hosts.forEach { h: Host ->
+    private fun candidateCount(): Map<String, Int> {
+        val map: MutableMap<String, Int> = mutableMapOf()
+        Host.hosts.forEach { host: String ->
             val imageDownloadRunnableList: List<ImageDownloadRunnable> = running.computeIfAbsent(
-                h
+                host
             ) { mutableListOf() }
             val count: Int =
                 settingsService.settings.connectionSettings.maxThreads - imageDownloadRunnableList.size
-            log.debug("Download slots for ${h.host}: $count")
-            map[h] = count
+            log.debug("Download slots for $host: $count")
+            map[host] = count
         }
         return map
     }
 
-    private fun getCandidates(candidateCount: Map<Host, Int>): List<ImageDownloadRunnable> {
-        val hostIntegerMap: MutableMap<Host, Int> = candidateCount.toMutableMap()
+    private fun getCandidates(candidateCount: Map<String, Int>): List<ImageDownloadRunnable> {
+        val hostIntegerMap: MutableMap<String, Int> = candidateCount.toMutableMap()
         val candidates: MutableList<ImageDownloadRunnable> = mutableListOf()
         hosts@ for (host in pending.keys) {
             val list: List<ImageDownloadRunnable> =
@@ -220,20 +200,20 @@ class DownloadService(
             }
         }
         if (log.isDebugEnabled) {
-            val collect: Map<Host, List<ImageDownloadRunnable>> =
+            val collect: Map<String, List<ImageDownloadRunnable>> =
                 candidates.stream().collect(Collectors.groupingBy { it.context.image.host })
             collect.forEach {
                 log.debug(
-                    "Candidate download for ${it.key.host} ${it.value.size}/${candidateCount[it.key]}"
+                    "Candidate download for ${it.key} ${it.value.size}/${candidateCount[it.key]}"
                 )
             }
         }
         return candidates.sortedWith(Comparator.comparing { v: ImageDownloadRunnable -> v.context.post.rank })
     }
 
-    private fun schedule(imageDownloadRunnable: ImageDownloadRunnable) {
+    private fun scheduleForDownload(imageDownloadRunnable: ImageDownloadRunnable) {
         log.debug("Scheduling a job for ${imageDownloadRunnable.context.image.url}")
-        executor.execute {
+        CompletableFuture.runAsync {
             try {
                 Failsafe.with<Any, RetryPolicy<Any>>(retryPolicyService.buildRetryPolicyForDownload())
                     .onFailure {
@@ -267,7 +247,7 @@ class DownloadService(
         }
     }
 
-    fun afterJobFinish(imageDownloadRunnable: ImageDownloadRunnable) {
+    private fun afterJobFinish(imageDownloadRunnable: ImageDownloadRunnable) {
         lock.withLock {
             running[imageDownloadRunnable.context.image.host]!!.remove(imageDownloadRunnable)
             if (!isPending(imageDownloadRunnable.context.image.postId) && !isRunning(

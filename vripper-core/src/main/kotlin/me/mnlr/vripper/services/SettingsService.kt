@@ -5,32 +5,24 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import jakarta.annotation.PostConstruct
-import jakarta.annotation.PreDestroy
-import me.mnlr.vripper.SpringContext
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.exception.ValidationException
 import me.mnlr.vripper.model.Settings
 import org.apache.commons.codec.digest.DigestUtils
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.core.io.Resource
-import org.springframework.stereotype.Service
 import java.io.FileWriter
 import java.io.IOException
 import java.nio.file.*
 
-@Service
-class SettingsService(
-    @Value("\${base.dir}") baseDir: String,
-    @Value("\${base.dir.name}") baseDirName: String,
-    private val eventBus: EventBus,
-    @Value("classpath:proxies.json") private val defaultProxies: Resource
-) {
+class SettingsService(private val eventBus: EventBus) {
+
+    private val baseDir = System.getProperty("user.dir")
+    private val baseDirName = "vripper"
+
     private val log by LoggerDelegate()
-    private val configPath: Path
-    private val customProxiesPath: Path
+    private val configPath = Paths.get(baseDir, baseDirName, "config.yml")
+    private val customProxiesPath = Paths.get(baseDir, baseDirName, "proxies.json")
     private val om = ObjectMapper(YAMLFactory())
     private val proxies: MutableSet<String> = HashSet()
 
@@ -38,13 +30,12 @@ class SettingsService(
     var settings = Settings()
 
     init {
-        configPath = Paths.get(baseDir, baseDirName, "config.yml")
-        customProxiesPath = Paths.get(baseDir, baseDirName, "proxies.json")
         om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .findAndRegisterModules().registerKotlinModule()
+
+        init()
     }
 
-    @PostConstruct
     private fun init() {
         loadViperProxies()
         restore()
@@ -53,8 +44,8 @@ class SettingsService(
 
     private fun loadViperProxies() {
         try {
-            defaultProxies.inputStream.use { defaultProxiesIs ->
-                val defaultProxies: List<String> = om.readValue(defaultProxiesIs)
+            SettingsService::class.java.getResourceAsStream("proxies.json")?.use {
+                val defaultProxies: List<String> = om.readValue(it)
                 val customProxies: List<String> = if (customProxiesPath.toFile()
                         .exists() && Files.isRegularFile(customProxiesPath)
                 ) {
@@ -127,7 +118,6 @@ class SettingsService(
                     "Your settings are invalid, either remove %s, or fix it", configPath
                 ), e
             )
-            SpringContext.close()
         }
         save()
     }
@@ -145,11 +135,6 @@ class SettingsService(
         } catch (e: IOException) {
             log.error("Failed to store user settings", e)
         }
-    }
-
-    @PreDestroy
-    private fun destroy() {
-        save()
     }
 
     @Throws(ValidationException::class)

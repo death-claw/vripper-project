@@ -5,16 +5,18 @@ import me.mnlr.vripper.entities.Thread
 import me.mnlr.vripper.model.ThreadModel
 import me.mnlr.vripper.model.ThreadSelectionModel
 import me.mnlr.vripper.repositories.ThreadRepository
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.koin.core.component.KoinComponent
 import tornadofx.*
 import java.util.*
 
-class ThreadController : Controller() {
+class ThreadController : KoinComponent, Controller() {
     private val threadRepository: ThreadRepository by di()
 
     private val appEndpointService: AppEndpointService by di()
 
     fun findAll(): List<ThreadModel> {
-        return threadRepository.findAll().map(::threadModelMapper)
+        return transaction { threadRepository.findAll() } .map(::threadModelMapper)
     }
 
     fun find(id: Long): Optional<ThreadModel> {
@@ -23,6 +25,7 @@ class ThreadController : Controller() {
 
     private fun threadModelMapper(it: Thread): ThreadModel {
         return ThreadModel(
+            it.title,
             it.link,
             it.total,
             it.threadId

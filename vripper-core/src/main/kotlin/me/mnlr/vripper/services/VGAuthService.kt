@@ -1,7 +1,5 @@
 package me.mnlr.vripper.services
 
-import jakarta.annotation.PostConstruct
-import jakarta.annotation.PreDestroy
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.entities.PostDownloadState
 import me.mnlr.vripper.event.Event
@@ -15,15 +13,13 @@ import org.apache.http.cookie.Cookie
 import org.apache.http.impl.client.BasicCookieStore
 import org.apache.http.message.BasicNameValuePair
 import org.apache.http.util.EntityUtils
-import org.springframework.stereotype.Service
 import reactor.core.Disposable
+import java.util.concurrent.CompletableFuture
 
-@Service
 class VGAuthService(
     private val cm: HTTPService,
     private val settingsService: SettingsService,
-    private val asyncTaskRunnerService: AsyncTaskRunnerService,
-    private val eventBus: EventBus
+    private val eventBusImpl: EventBus
 ) {
     private val log by LoggerDelegate()
     private val disposable: Disposable
@@ -31,33 +27,31 @@ class VGAuthService(
     final val context: HttpClientContext = HttpClientContext.create()
     var loggedUser = ""
 
-    var authenticated = false
+    private var authenticated = false
 
     init {
         context.cookieStore = BasicCookieStore()
-        disposable = eventBus
+        disposable = eventBusImpl
             .flux()
             .filter { it.kind == Event.Kind.SETTINGS_UPDATE }
             .subscribe { authenticate() }
     }
 
-    @PostConstruct
     private fun init() {
         authenticate()
     }
 
-    @PreDestroy
     private fun destroy() {
         disposable.dispose()
     }
 
-    fun authenticate() {
+    private fun authenticate() {
         authenticated = false
         if (!settingsService.settings.viperSettings.login) {
             log.debug("Authentication option is disabled")
             context.cookieStore.clear()
             loggedUser = ""
-            eventBus.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
+            eventBusImpl.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
             return
         }
         val username = settingsService.settings.viperSettings.username
@@ -66,7 +60,7 @@ class VGAuthService(
             log.error("Cannot authenticate with ViperGirls credentials, username or password is empty")
             context.cookieStore.clear()
             loggedUser = ""
-            eventBus.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
+            eventBusImpl.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
             return
         }
         val postAuth =
@@ -84,7 +78,7 @@ class VGAuthService(
         } catch (e: Exception) {
             context.cookieStore.clear()
             loggedUser = ""
-            eventBus.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
+            eventBusImpl.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
             log.error(
                 "Failed to authenticate user with " + settingsService.settings.viperSettings.host,
                 e
@@ -131,7 +125,7 @@ class VGAuthService(
         } catch (e: Exception) {
             context.cookieStore.clear()
             loggedUser = ""
-            eventBus.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
+            eventBusImpl.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
             log.error(
                 "Failed to authenticate user with " + settingsService.settings.viperSettings.host,
                 e
@@ -141,11 +135,10 @@ class VGAuthService(
         authenticated = true
         loggedUser = username
         log.info(String.format("Authenticated: %s", username))
-        eventBus.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
+        eventBusImpl.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
     }
 
     fun leaveThanks(post: PostDownloadState) {
-        asyncTaskRunnerService.sink
-            .emitNext(LeaveThanksRunnable(post, authenticated, context)) { _, _ -> true }
+        CompletableFuture.runAsync(LeaveThanksRunnable(post, authenticated, context))
     }
 }

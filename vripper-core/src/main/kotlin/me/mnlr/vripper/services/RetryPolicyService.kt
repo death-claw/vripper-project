@@ -1,19 +1,20 @@
 package me.mnlr.vripper.services
 
-import jakarta.annotation.PreDestroy
-import net.jodah.failsafe.RetryPolicy
-import net.jodah.failsafe.event.ExecutionAttemptedEvent
-import org.springframework.stereotype.Service
-import reactor.core.Disposable
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.model.Settings
+import net.jodah.failsafe.RetryPolicy
+import net.jodah.failsafe.event.ExecutionAttemptedEvent
+import reactor.core.Disposable
 import java.time.temporal.ChronoUnit
 
-@Service
-class RetryPolicyService(eventBus: EventBus, settingsService: SettingsService) {
+class RetryPolicyService(
+    eventBus: EventBus,
+    settingsService: SettingsService
+) {
     private val log by LoggerDelegate()
+
     private val disposable: Disposable
     private var maxAttempts: Int = settingsService.settings.connectionSettings.maxAttempts
 
@@ -47,7 +48,6 @@ class RetryPolicyService(eventBus: EventBus, settingsService: SettingsService) {
             }
     }
 
-    @PreDestroy
     private fun destroy() {
         disposable.dispose()
     }

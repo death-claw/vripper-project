@@ -2,6 +2,7 @@ package me.mnlr.vripper.entities
 
 data class Thread(
     val id: Long? = null,
+    val title: String,
     val link: String,
     val threadId: String,
     var total: Int = 0,

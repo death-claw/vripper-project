@@ -7,7 +7,6 @@ import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.message.BasicNameValuePair
 import org.apache.http.util.EntityUtils
-import me.mnlr.vripper.SpringContext
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.entities.LogEvent
 import me.mnlr.vripper.entities.LogEvent.Status.*
@@ -16,17 +15,19 @@ import me.mnlr.vripper.formatToString
 import me.mnlr.vripper.repositories.LogEventRepository
 import me.mnlr.vripper.services.HTTPService
 import me.mnlr.vripper.services.SettingsService
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import java.io.UnsupportedEncodingException
 
 class LeaveThanksRunnable(
     private val postDownloadState: PostDownloadState,
     private val authenticated: Boolean,
     private val context: HttpClientContext
-) : Runnable {
+) : KoinComponent, Runnable {
     private val log by LoggerDelegate()
-    private val cm: HTTPService = SpringContext.getBean(HTTPService::class.java)
-    private val settingsService: SettingsService = SpringContext.getBean(SettingsService::class.java)
-    private val eventRepository: LogEventRepository = SpringContext.getBean(LogEventRepository::class.java)
+    private val cm: HTTPService by inject()
+    private val settingsService: SettingsService by inject()
+    private val eventRepository: LogEventRepository by inject()
     private val logEvent: LogEvent
 
     init {

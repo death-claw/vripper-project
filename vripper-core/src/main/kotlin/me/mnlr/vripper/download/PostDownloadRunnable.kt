@@ -1,14 +1,5 @@
 package me.mnlr.vripper.download
 
-import net.jodah.failsafe.Failsafe
-import net.jodah.failsafe.function.CheckedSupplier
-import org.apache.http.client.HttpClient
-import org.apache.http.client.methods.CloseableHttpResponse
-import org.apache.http.client.methods.HttpGet
-import org.apache.http.client.protocol.HttpClientContext
-import org.apache.http.client.utils.URIBuilder
-import org.apache.http.util.EntityUtils
-import me.mnlr.vripper.SpringContext
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.entities.LogEvent
 import me.mnlr.vripper.entities.LogEvent.Status.*
@@ -19,24 +10,29 @@ import me.mnlr.vripper.model.PostItem
 import me.mnlr.vripper.parser.ThreadLookupAPIResponseHandler
 import me.mnlr.vripper.repositories.LogEventRepository
 import me.mnlr.vripper.services.*
+import net.jodah.failsafe.Failsafe
+import net.jodah.failsafe.function.CheckedSupplier
+import org.apache.http.client.HttpClient
+import org.apache.http.client.methods.CloseableHttpResponse
+import org.apache.http.client.methods.HttpGet
+import org.apache.http.client.protocol.HttpClientContext
+import org.apache.http.client.utils.URIBuilder
+import org.apache.http.util.EntityUtils
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import java.net.URISyntaxException
 import java.util.*
 import javax.xml.parsers.SAXParserFactory
 
-class PostDownloadRunnable(private val threadId: String, private val postId: String) : Runnable {
+class PostDownloadRunnable(private val threadId: String, private val postId: String) : KoinComponent, Runnable {
     private val log by LoggerDelegate()
-    private val dataTransaction: DataTransaction =
-        SpringContext.getBean(DataTransaction::class.java)
-    private val settingsService: SettingsService =
-        SpringContext.getBean(SettingsService::class.java)
-    private val vgAuthService: VGAuthService = SpringContext.getBean(VGAuthService::class.java)
-    private val eventRepository: LogEventRepository =
-        SpringContext.getBean(LogEventRepository::class.java)
-    private val cm: HTTPService = SpringContext.getBean(HTTPService::class.java)
-    private val retryPolicyService: RetryPolicyService =
-        SpringContext.getBean(RetryPolicyService::class.java)
-    private val downloadService: DownloadService =
-        SpringContext.getBean(DownloadService::class.java)
+    private val dataTransaction: DataTransaction by inject()
+    private val settingsService: SettingsService by inject()
+    private val vgAuthService: VGAuthService by inject()
+    private val eventRepository: LogEventRepository by inject()
+    private val cm: HTTPService by inject()
+    private val retryPolicyService: RetryPolicyService by inject()
+    private val downloadService: DownloadService by inject()
     private val link: String =
         "${settingsService.settings.viperSettings.host}/threads/$threadId?p=$postId"
     private val logEvent: LogEvent

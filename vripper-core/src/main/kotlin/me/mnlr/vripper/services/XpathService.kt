@@ -1,14 +1,12 @@
 package me.mnlr.vripper.services
 
-import org.springframework.stereotype.Service
 import org.w3c.dom.Node
 import org.w3c.dom.NodeList
 import me.mnlr.vripper.exception.XpathException
 import javax.xml.xpath.XPathConstants
 import javax.xml.xpath.XPathFactory
 
-@Service
-class XpathService {
+object XpathService {
     private val xpath = XPathFactory.newInstance().newXPath()
 
     @Throws(XpathException::class)

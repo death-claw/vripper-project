@@ -1,22 +1,17 @@
 package me.mnlr.vripper.clipboard
 
-import jakarta.annotation.PostConstruct
-import jakarta.annotation.PreDestroy
 import javafx.scene.input.Clipboard
+import kotlinx.coroutines.*
+import kotlinx.coroutines.javafx.JavaFx
 import me.mnlr.vripper.AppEndpointService
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.services.SettingsService
-import org.springframework.stereotype.Service
 import reactor.core.Disposable
 import reactor.core.publisher.Sinks
 import reactor.core.scheduler.Schedulers
 import tornadofx.*
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
 
-@Service
 class ClipboardService(
     private val appEndpointService: AppEndpointService,
     private val settingsService: SettingsService,
@@ -24,9 +19,8 @@ class ClipboardService(
 ) {
     private val eventBusDisposable: Disposable
     private val sink = Sinks.many().unicast().onBackpressureBuffer<String>()
-    private val scheduler = Executors.newSingleThreadScheduledExecutor()
     private var current: String? = null
-    private var scheduledFuture: ScheduledFuture<*>? = null
+    private var coroutineScope = CoroutineScope(Dispatchers.JavaFx)
 
     init {
         runLater {
@@ -43,36 +37,34 @@ class ClipboardService(
         }
     }
 
-    @PostConstruct
     fun init() {
-        scheduledFuture?.cancel(true)
+        coroutineScope.cancel()
         if(settingsService.settings.clipboardSettings.enable) {
-            scheduledFuture = scheduler.scheduleWithFixedDelay({
-                poll()
-            }, 500, settingsService.settings.clipboardSettings.pollingRate.toLong(), TimeUnit.MILLISECONDS)
+            coroutineScope.launch {
+                while (isActive) {
+                    poll()
+                    delay(settingsService.settings.clipboardSettings.pollingRate.toLong())
+                }
+            }
         } else {
             current = null
         }
     }
 
-    fun poll() {
-        runLater {
-            val clipboard = Clipboard.getSystemClipboard()
-            if (clipboard.hasString()) {
-                val value: String? = clipboard.string
-                if (!value.isNullOrBlank() && value != this.current) {
-                    this.current = value
-                    sink.emitNext(value) { _, _ ->
-                        true
-                    }
+    private fun poll() {
+        val clipboard = Clipboard.getSystemClipboard()
+        if (clipboard.hasString()) {
+            val value: String? = clipboard.string
+            if (!value.isNullOrBlank() && value != this.current) {
+                this.current = value
+                sink.emitNext(value) { _, _ ->
+                    true
                 }
             }
         }
     }
 
-    @PreDestroy
     fun destroy() {
-        scheduledFuture?.cancel(true)
-        scheduler.shutdown()
+        coroutineScope.cancel()
     }
 }

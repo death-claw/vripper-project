@@ -1,40 +1,59 @@
 package me.mnlr.vripper.services
 
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Service
+import kotlinx.coroutines.*
 import me.mnlr.vripper.download.DownloadService
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.formatSI
 import me.mnlr.vripper.model.GlobalState
 import me.mnlr.vripper.repositories.ImageRepository
+import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.concurrent.atomic.AtomicLong
 
-@Service
 class GlobalStateService(
     private val downloadService: DownloadService,
-    private val imageRepository: ImageRepository,
-    private val eventBus: EventBus,
     private val vgAuthService: VGAuthService,
-    private val downloadSpeedService: DownloadSpeedService
+    private val eventBus: EventBus,
+    private val imageRepository: ImageRepository
 ) {
-    private var currentState: GlobalState = newValue()
 
-    @Scheduled(fixedDelay = 200)
-    private fun interval() {
-        val newGlobalState = newValue()
-        if (newGlobalState != currentState) {
-            currentState = newGlobalState
-            eventBus.publishEvent(Event(Event.Kind.DOWNLOAD_STATUS, currentState))
+    private var currentState: GlobalState = newValue()
+    private val coroutineScope = CoroutineScope(Dispatchers.Default)
+    private val bytesCount = AtomicLong(0)
+    private var currentValue = 0L
+
+    fun init() {
+        coroutineScope.launch {
+            while (isActive) {
+                val newValue = bytesCount.getAndSet(0)
+                currentValue = newValue
+                delay(1000)
+            }
         }
+
+        coroutineScope.launch {
+            while (isActive) {
+                val newGlobalState = newValue()
+                if (newGlobalState != currentState) {
+                    currentState = newGlobalState
+                    eventBus.publishEvent(Event(Event.Kind.DOWNLOAD_STATUS, currentState))
+                }
+                delay(200)
+            }
+        }
+    }
+
+    fun reportDownloadedBytes(count: Long) {
+        this.bytesCount.addAndGet(count)
     }
 
     private fun newValue(): GlobalState {
         return GlobalState(
             downloadService.runningCount(),
             downloadService.pendingCount(),
-            imageRepository.countError(),
+            transaction { imageRepository.countError() } ,
             vgAuthService.loggedUser,
-            downloadSpeedService.currentValue.formatSI()
+            currentValue.formatSI()
         )
     }
 

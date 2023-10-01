@@ -142,4 +142,10 @@
       <column name="THREAD_ID"/>
     </createIndex>
   </changeSet>
+  <changeSet id="0004" author="vripper">
+    <addColumn tableName="THREAD">
+      <column name="TITLE" type="VARCHAR(500)" defaultValue="N/A">
+      </column>
+    </addColumn>
+  </changeSet>
 </databaseChangeLog>

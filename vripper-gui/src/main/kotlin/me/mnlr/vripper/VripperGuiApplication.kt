@@ -6,29 +6,30 @@ import javafx.stage.Stage
 import javafx.stage.WindowEvent
 import me.mnlr.vripper.event.ApplicationInitialized
 import me.mnlr.vripper.gui.Styles
-import me.mnlr.vripper.listeners.AppLock
+import me.mnlr.vripper.tables.ImageTable
+import me.mnlr.vripper.tables.PostTable
+import me.mnlr.vripper.tables.ThreadTable
 import me.mnlr.vripper.view.LoadingView
-import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.builder.SpringApplicationBuilder
-import org.springframework.context.ConfigurableApplicationContext
-import tornadofx.App
-import tornadofx.DIContainer
-import tornadofx.FX
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.koin.core.context.GlobalContext
+import org.koin.core.context.startKoin
+import tornadofx.*
 import kotlin.reflect.KClass
 import kotlin.system.exitProcess
 
 
-@SpringBootApplication
 class VripperGuiApplication : App(
     LoadingView::class, Styles::class
 ) { //The application class must be a TornadoFX application and it must have the main view
 
-    private lateinit var context: ConfigurableApplicationContext //We are going to set application context here
     private var initialized = false
 
     init {
         APP_INSTANCE = this
     }
+
     override fun start(stage: Stage) {
         with(stage) {
             width = 1200.0
@@ -47,25 +48,25 @@ class VripperGuiApplication : App(
             )
         }
         stage.addEventFilter(WindowEvent.WINDOW_SHOWN) {
-            val contextInitThread = Thread {
-                context = SpringApplicationBuilder(this.javaClass).listeners(AppLock())
-                    .run() //We start the application context and let Spring Boot to initialize itself
-                context.autowireCapableBeanFactory.autowireBean(this) //We ask the context to inject all needed dependencies into the current instence (if needed)
-
-                FX.dicontainer =
-                    object : DIContainer { // Here we have to implement an interface for TornadoFX DI support
-                        override fun <T : Any> getInstance(type: KClass<T>): T =
-                            context.getBean(type.java) // We find dependencies directly in Spring's application context
-
-                        override fun <T : Any> getInstance(type: KClass<T>, name: String): T =
-                            context.getBean(name, type.java)
-                    }
-                fire(ApplicationInitialized)
-                initialized = true
+            Database.connect("jdbc:sqlite:vripper.db")
+            transaction {
+                try {
+                    SchemaUtils.create(PostTable, ImageTable, ThreadTable)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
-            contextInitThread.apply {
-                this.name = "Spring init Thread"
-            }.start()
+
+            startKoin {
+                modules(appModule)
+            }
+            FX.dicontainer =
+                object : DIContainer {
+                    override fun <T : Any> getInstance(type: KClass<T>): T =
+                        GlobalContext.get().get(type)
+                }
+            fire(ApplicationInitialized)
+            initialized = true
         }
         super.start(stage)
     }
@@ -73,7 +74,7 @@ class VripperGuiApplication : App(
     override fun stop() { // On stop, we have to stop spring as well
         super.stop()
         if (initialized) {
-            context.close()
+            //CLOSE
         }
         exitProcess(0)
     }

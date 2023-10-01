@@ -2,8 +2,6 @@ package me.mnlr.vripper.controller
 
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
-import me.mnlr.vripper.formatSI
-import me.mnlr.vripper.model.DownloadSpeed
 import me.mnlr.vripper.model.GlobalState
 import me.mnlr.vripper.model.GlobalStateModel
 import me.mnlr.vripper.services.GlobalStateService
@@ -44,17 +42,6 @@ class GlobalStateController : Controller() {
                 val user = it.data as String
                 globalState.apply {
                     loggedUser = user
-                }
-            }
-        }
-
-        eventBus.flux().subscribe {
-            if (it!!.kind == Event.Kind.BYTES_PER_SECOND
-            ) {
-                val speed =
-                    DownloadSpeed((it.data as Long).formatSI())
-                globalState.apply {
-                    downloadSpeed = speed.speed
                 }
             }
         }

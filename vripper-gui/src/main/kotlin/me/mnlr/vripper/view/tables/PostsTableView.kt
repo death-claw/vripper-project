@@ -6,6 +6,9 @@ import javafx.scene.control.*
 import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
 import javafx.util.Callback
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import me.mnlr.vripper.controller.PostController
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
@@ -21,6 +24,7 @@ class PostsTableView : View() {
 
     private val postController: PostController by inject()
     private val eventBus: EventBus by di()
+    private val coroutineScope = CoroutineScope(Dispatchers.Default)
 
     lateinit var tableView: TableView<PostModel>
     private var items: ObservableList<PostModel> = FXCollections.observableArrayList()
@@ -33,7 +37,6 @@ class PostsTableView : View() {
                 "Download"
             }
         })
-        items.addAll(postController.findAllPosts())
 
         eventBus
             .flux()
@@ -70,6 +73,9 @@ class PostsTableView : View() {
 
     override fun onDock() {
         tableView.prefHeightProperty().bind(root.heightProperty())
+        coroutineScope.launch {
+            items.addAll(postController.findAllPosts())
+        }
     }
 
     override val root = vbox {

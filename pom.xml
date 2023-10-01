@@ -7,10 +7,43 @@
   <artifactId>vripper-project</artifactId>
   <modules>
     <module>vripper-core</module>
-    <module>vripper-web-ui</module>
-    <module>vripper-web</module>
-    <module>vripper-gui</module>
+<!--    <module>vripper-web-ui</module>-->
+<!--    <module>vripper-web</module>-->
+<!--    <module>vripper-gui</module>-->
   </modules>
   <packaging>pom</packaging>
   <version>4.4.0</version>
+  <properties>
+    <java.version>17</java.version>
+    <kotlin.version>1.8.21</kotlin.version>
+    <maven.deploy.skip>false</maven.deploy.skip>
+    <timestamp>${maven.build.timestamp}</timestamp>
+    <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
+    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.source>17</maven.compiler.source>
+  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.jetbrains.kotlinx</groupId>
+        <artifactId>kotlinx-coroutines-core-jvm</artifactId>
+        <version>1.7.3</version>
+      </dependency>
+      <dependency>
+        <groupId>org.yaml</groupId>
+        <artifactId>snakeyaml</artifactId>
+        <version>2.0</version>
+      </dependency>
+      <dependency>
+        <groupId>io.projectreactor</groupId>
+        <artifactId>reactor-core</artifactId>
+        <version>3.5.10</version>
+      </dependency>
+      <dependency>
+        <groupId>io.insert-koin</groupId>
+        <artifactId>koin-core</artifactId>
+        <version>3.4.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 </project>

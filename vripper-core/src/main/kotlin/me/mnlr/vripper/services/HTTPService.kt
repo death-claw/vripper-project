@@ -1,6 +1,9 @@
 package me.mnlr.vripper.services
 
-import jakarta.annotation.PreDestroy
+import kotlinx.coroutines.*
+import me.mnlr.vripper.event.Event
+import me.mnlr.vripper.event.EventBus
+import me.mnlr.vripper.model.Settings
 import org.apache.http.client.config.CookieSpecs
 import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.methods.AbstractExecutionAwareRequest
@@ -12,17 +15,22 @@ import org.apache.http.impl.client.HttpClientBuilder
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.impl.client.LaxRedirectStrategy
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Service
 import reactor.core.Disposable
-import me.mnlr.vripper.event.Event
-import me.mnlr.vripper.event.EventBus
-import me.mnlr.vripper.model.Settings
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
-@Service
-class HTTPService(eventBus: EventBus, settingsService: SettingsService) {
+class HTTPService(
+    eventBus: EventBus,
+    settingsService: SettingsService
+) {
+
+    companion object {
+        const val USER_AGENT =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
+    }
+
+    private val coroutineScope = CoroutineScope(Dispatchers.Default)
+
     private val disposable: Disposable
     private lateinit var pcm: PoolingHttpClientConnectionManager
     private lateinit var rc: RequestConfig
@@ -43,9 +51,16 @@ class HTTPService(eventBus: EventBus, settingsService: SettingsService) {
         buildConnectionPool()
     }
 
-    @PreDestroy
-    private fun destroy() {
+    fun init() {
+        coroutineScope.launch {
+            pcm.closeIdleConnections(60, TimeUnit.SECONDS)
+            delay(15000)
+        }
+    }
+
+    fun destroy() {
         disposable.dispose()
+        coroutineScope.cancel()
     }
 
     private fun buildConnectionPool() {
@@ -61,11 +76,6 @@ class HTTPService(eventBus: EventBus, settingsService: SettingsService) {
             .setSocketTimeout(connectionTimeout * 1000)
             .setCookieSpec(CookieSpecs.STANDARD)
             .build()
-    }
-
-    @Scheduled(fixedDelay = 15000)
-    private fun idleConnectionMonitoring() {
-        pcm.closeIdleConnections(60, TimeUnit.SECONDS)
     }
 
     val client: HttpClientBuilder
@@ -122,10 +132,5 @@ class HTTPService(eventBus: EventBus, settingsService: SettingsService) {
         companion object {
             const val CONTEXT_ATTRIBUTES = "CONTEXT_ATTRIBUTES"
         }
-    }
-
-    companion object {
-        const val USER_AGENT =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
     }
 }

@@ -7,7 +7,7 @@ data class ImageDownloadState(
     var id: Long? = null,
     val postId: String,
     val url: String,
-    val host: Host,
+    val host: String,
     val index: Int,
     val postIdRef: Long,
     var total: Long = -1,

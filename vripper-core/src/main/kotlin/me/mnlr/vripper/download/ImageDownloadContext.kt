@@ -1,20 +1,18 @@
 package me.mnlr.vripper.download
 
-import org.apache.http.client.protocol.HttpClientContext
-import me.mnlr.vripper.SpringContext
 import me.mnlr.vripper.entities.ImageDownloadState
 import me.mnlr.vripper.entities.PostDownloadState
 import me.mnlr.vripper.model.Settings
 import me.mnlr.vripper.repositories.ImageRepository
 import me.mnlr.vripper.repositories.PostDownloadStateRepository
+import org.apache.http.client.protocol.HttpClientContext
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
-class ImageDownloadContext(val imageId: Long, val settings: Settings) {
+class ImageDownloadContext(val imageId: Long, val settings: Settings) : KoinComponent {
 
-    private val imageRepository: ImageRepository =
-        SpringContext.getBean(ImageRepository::class.java)
-    private val postDownloadStateRepository: PostDownloadStateRepository =
-        SpringContext.getBean(PostDownloadStateRepository::class.java)
-
+    private val imageRepository: ImageRepository by inject()
+    private val postDownloadStateRepository: PostDownloadStateRepository by inject()
 
     val httpContext: HttpClientContext = HttpClientContext.create()
     val postId = image.postIdRef

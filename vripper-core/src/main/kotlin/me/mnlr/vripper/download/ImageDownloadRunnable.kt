@@ -1,6 +1,5 @@
 package me.mnlr.vripper.download
 
-import me.mnlr.vripper.SpringContext
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.entities.ImageDownloadState
 import me.mnlr.vripper.entities.PostDownloadState
@@ -9,12 +8,15 @@ import me.mnlr.vripper.exception.DownloadException
 import me.mnlr.vripper.exception.HostException
 import me.mnlr.vripper.getExtension
 import me.mnlr.vripper.host.DownloadedImage
+import me.mnlr.vripper.host.Host
 import me.mnlr.vripper.host.ImageMimeType
 import me.mnlr.vripper.model.Settings
 import me.mnlr.vripper.services.*
 import net.jodah.failsafe.function.CheckedRunnable
 import org.apache.http.client.protocol.HttpClientContext
 import org.apache.http.impl.client.BasicCookieStore
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -24,11 +26,11 @@ import kotlin.io.path.pathString
 
 class ImageDownloadRunnable(
     private val imageInternalId: Long, private val settings: Settings
-) : CheckedRunnable {
+) : KoinComponent, CheckedRunnable {
     private val log by LoggerDelegate()
 
-    private val dataTransaction: DataTransaction = SpringContext.getBean(DataTransaction::class.java)
-    private val pathService: PathService = SpringContext.getBean(PathService::class.java)
+    private val dataTransaction: DataTransaction by inject()
+    private val hosts: List<Host> by inject()
 
     val context: ImageDownloadContext = ImageDownloadContext(imageInternalId, settings)
     private val image: ImageDownloadState
@@ -68,13 +70,16 @@ class ImageDownloadRunnable(
             if (stopped) {
                 return
             }
+
+
             log.debug("Getting image url and name from ${image.url} using ${image.host}")
-            val downloadedImage = image.host.downloadInternal(image.url, context)
+            val host = hosts.first { it.isSupported(image.url) }
+            val downloadedImage = host.downloadInternal(image.url, context)
             log.debug("Resolved name for ${image.url}: ${downloadedImage.name}")
             log.debug(
                 "Downloaded image ${image.url} to ${downloadedImage.path}"
             )
-            val sanitizedFileName = pathService.sanitize(downloadedImage.name)
+            val sanitizedFileName = PathUtils.sanitize(downloadedImage.name)
             log.debug(
                 "Sanitizing image name from ${downloadedImage.name} to $sanitizedFileName"
             )
@@ -116,7 +121,8 @@ class ImageDownloadRunnable(
             ImageMimeType.IMAGE_PNG -> "PNG"
             ImageMimeType.IMAGE_WEBP -> "WEBP"
         }
-        val filename = if (existingExtension.isBlank()) "${downloadedImage.name}.$extension" else downloadedImage.name
+        val filename =
+            if (existingExtension.isBlank()) "${downloadedImage.name}.$extension" else downloadedImage.name
         try {
             val downloadDestinationFolder = Path.of(postDownloadState.downloadDirectory)
             synchronized(downloadDestinationFolder.pathString.intern()) {
@@ -165,7 +171,8 @@ class ImageDownloadRunnable(
     fun stop() {
         stopped = true
         val contextAttributes = httpContext.getAttribute(
-            HTTPService.ContextAttributes.CONTEXT_ATTRIBUTES, HTTPService.ContextAttributes::class.java
+            HTTPService.ContextAttributes.CONTEXT_ATTRIBUTES,
+            HTTPService.ContextAttributes::class.java
         )
         if (contextAttributes != null) {
             synchronized(contextAttributes.requests) {

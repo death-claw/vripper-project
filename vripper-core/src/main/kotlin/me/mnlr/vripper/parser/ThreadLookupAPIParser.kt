@@ -1,14 +1,5 @@
 package me.mnlr.vripper.parser
 
-import net.jodah.failsafe.Failsafe
-import net.jodah.failsafe.function.CheckedSupplier
-import org.apache.http.client.HttpClient
-import org.apache.http.client.methods.CloseableHttpResponse
-import org.apache.http.client.methods.HttpGet
-import org.apache.http.client.protocol.HttpClientContext
-import org.apache.http.client.utils.URIBuilder
-import org.apache.http.util.EntityUtils
-import me.mnlr.vripper.SpringContext
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.exception.DownloadException
 import me.mnlr.vripper.exception.PostParseException
@@ -17,19 +8,27 @@ import me.mnlr.vripper.services.HTTPService
 import me.mnlr.vripper.services.RetryPolicyService
 import me.mnlr.vripper.services.SettingsService
 import me.mnlr.vripper.services.VGAuthService
+import net.jodah.failsafe.Failsafe
+import net.jodah.failsafe.function.CheckedSupplier
+import org.apache.http.client.HttpClient
+import org.apache.http.client.methods.CloseableHttpResponse
+import org.apache.http.client.methods.HttpGet
+import org.apache.http.client.protocol.HttpClientContext
+import org.apache.http.client.utils.URIBuilder
+import org.apache.http.util.EntityUtils
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import java.io.BufferedInputStream
 import java.net.URISyntaxException
 import java.util.*
 import javax.xml.parsers.SAXParserFactory
 
-class ThreadLookupAPIParser(private val threadId: String) {
+class ThreadLookupAPIParser(private val threadId: String) : KoinComponent {
     private val log by LoggerDelegate()
-    private val cm: HTTPService = SpringContext.getBean(HTTPService::class.java)
-    private val retryPolicyService: RetryPolicyService =
-        SpringContext.getBean(RetryPolicyService::class.java)
-    private val vgAuthService: VGAuthService = SpringContext.getBean(VGAuthService::class.java)
-    private val settingsService: SettingsService =
-        SpringContext.getBean(SettingsService::class.java)
+    private val cm: HTTPService by inject()
+    private val retryPolicyService: RetryPolicyService by inject()
+    private val vgAuthService: VGAuthService by inject()
+    private val settingsService: SettingsService by inject()
 
     @Throws(PostParseException::class)
     fun parse(): ThreadItem {

@@ -1,7 +1,6 @@
 package me.mnlr.vripper.host
 
 import org.apache.http.impl.cookie.BasicClientCookie
-import org.springframework.stereotype.Service
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import me.mnlr.vripper.delegate.LoggerDelegate
@@ -14,17 +13,12 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.*
 
-@Service
 class ImageBamHost(
-    private val htmlProcessorService: HtmlProcessorService,
-    private val xpathService: XpathService,
     httpService: HTTPService,
     dataTransaction: DataTransaction,
-    downloadSpeedService: DownloadSpeedService,
-) : Host(httpService, htmlProcessorService, dataTransaction, downloadSpeedService) {
+    globalStateService: GlobalStateService,
+) : Host("imagebam.com", httpService, dataTransaction, globalStateService) {
     private val log by LoggerDelegate()
-    override val host: String
-        get() = Companion.host
 
     @Throws(HostException::class)
     override fun resolve(
@@ -34,7 +28,7 @@ class ImageBamHost(
     ): Pair<String, String> {
         val doc = try {
             log.debug(String.format("Looking for xpath expression %s in %s", CONTINUE_XPATH, url))
-            if (xpathService.getAsNode(document, CONTINUE_XPATH) != null) {
+            if (XpathService.getAsNode(document, CONTINUE_XPATH) != null) {
                 val clientCookie = BasicClientCookie("nsfw_inter", "1")
                 clientCookie.domain = "www.imagebam.com"
                 clientCookie.path = "/"
@@ -44,7 +38,7 @@ class ImageBamHost(
                     )
                 context.httpContext.cookieStore.addCookie(clientCookie)
                 fetch(url, context) {
-                    htmlProcessorService.clean(it.entity.content)
+                    HtmlProcessorService.clean(it.entity.content)
                 }
             } else {
                 document
@@ -54,7 +48,7 @@ class ImageBamHost(
         }
         val imgNode: Node = try {
             log.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url))
-            xpathService.getAsNode(doc, IMG_XPATH)
+            XpathService.getAsNode(doc, IMG_XPATH)
         } catch (e: XpathException) {
             throw HostException(e)
         } ?: throw HostException(
@@ -84,8 +78,6 @@ class ImageBamHost(
     }
 
     companion object {
-        private const val host = "imagebam.com"
-        private const val lookup = "imagebam.com"
         private const val IMG_XPATH = "//img[contains(@class,'main-image')]"
         private const val CONTINUE_XPATH = "//*[contains(text(), 'Continue')]"
     }

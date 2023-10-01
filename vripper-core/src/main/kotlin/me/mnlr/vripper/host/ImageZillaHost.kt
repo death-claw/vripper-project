@@ -1,6 +1,5 @@
 package me.mnlr.vripper.host
 
-import org.springframework.stereotype.Service
 import org.w3c.dom.Document
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.download.ImageDownloadContext
@@ -8,17 +7,12 @@ import me.mnlr.vripper.exception.HostException
 import me.mnlr.vripper.exception.XpathException
 import me.mnlr.vripper.services.*
 
-@Service
 class ImageZillaHost(
-    private val xpathService: XpathService,
     httpService: HTTPService,
-    htmlProcessorService: HtmlProcessorService,
     dataTransaction: DataTransaction,
-    downloadSpeedService: DownloadSpeedService,
-) : Host(httpService, htmlProcessorService, dataTransaction, downloadSpeedService) {
+    globalStateService: GlobalStateService,
+) : Host("imagezilla.net", httpService, dataTransaction, globalStateService) {
     private val log by LoggerDelegate()
-    override val host: String
-        get() = Companion.host
 
     @Throws(HostException::class)
     override fun resolve(
@@ -28,7 +22,7 @@ class ImageZillaHost(
     ): Pair<String, String> {
         val titleNode = try {
             log.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url))
-            xpathService.getAsNode(document, IMG_XPATH)
+            XpathService.getAsNode(document, IMG_XPATH)
         } catch (e: XpathException) {
             throw HostException(e)
         } ?: throw HostException(
@@ -52,8 +46,6 @@ class ImageZillaHost(
     }
 
     companion object {
-        private const val host = "imagezilla.net"
-        private const val lookup = "imagezilla.net/show"
         private const val IMG_XPATH = "//img[@id='photo']"
     }
 }

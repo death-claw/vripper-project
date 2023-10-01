@@ -7,7 +7,6 @@ import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.message.BasicNameValuePair
 import org.apache.http.util.EntityUtils
-import org.springframework.stereotype.Service
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import me.mnlr.vripper.delegate.LoggerDelegate
@@ -18,17 +17,12 @@ import me.mnlr.vripper.exception.XpathException
 import me.mnlr.vripper.services.*
 import java.io.IOException
 
-@Service
 class ImxHost(
     private val httpService: HTTPService,
-    private val htmlProcessorService: HtmlProcessorService,
-    private val xpathService: XpathService,
     dataTransaction: DataTransaction,
-    downloadSpeedService: DownloadSpeedService,
-) : Host(httpService, htmlProcessorService, dataTransaction, downloadSpeedService) {
+    globalStateService: GlobalStateService,
+) : Host("imx.to", httpService, dataTransaction, globalStateService) {
     private val log by LoggerDelegate()
-    override val host: String
-        get() = Companion.host
 
     @Throws(HostException::class)
     override fun resolve(
@@ -39,7 +33,7 @@ class ImxHost(
         var value: String? = null
         try {
             log.debug("Looking for xpath expression $CONTINUE_BUTTON_XPATH in $url")
-            val contDiv = xpathService.getAsNode(document, CONTINUE_BUTTON_XPATH)
+            val contDiv = XpathService.getAsNode(document, CONTINUE_BUTTON_XPATH)
                 ?: throw HostException("$CONTINUE_BUTTON_XPATH cannot be found")
             val node = contDiv.attributes.getNamedItem("value")
             if (node != null) {
@@ -68,7 +62,7 @@ class ImxHost(
             ) as CloseableHttpResponse).use { response ->
                 log.debug("Cleaning response for $httpPost")
                 try {
-                    htmlProcessorService.clean(response.entity.content)
+                    HtmlProcessorService.clean(response.entity.content)
                 } finally {
                     EntityUtils.consumeQuietly(response.entity)
                 }
@@ -80,7 +74,7 @@ class ImxHost(
         }
         val imgNode: Node = try {
             log.debug("Looking for xpath expression $IMG_XPATH in $url")
-            xpathService.getAsNode(doc, IMG_XPATH)
+            XpathService.getAsNode(doc, IMG_XPATH)
         } catch (e: XpathException) {
             throw HostException(e)
         } ?: throw HostException(
@@ -99,8 +93,6 @@ class ImxHost(
     }
 
     companion object {
-        private const val host = "imx.to"
-        private const val lookup = "imx.to"
         private const val CONTINUE_BUTTON_XPATH = "//*[@name='imgContinue']"
         private const val IMG_XPATH = "//img[@class='centred']"
     }

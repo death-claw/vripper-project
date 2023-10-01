@@ -5,10 +5,14 @@ import javafx.beans.property.SimpleStringProperty
 import tornadofx.*
 
 class ThreadModel(
+    title: String,
     link: String,
     total: Int,
     val threadId: String
 ) {
+    val titleProperty = SimpleStringProperty(title)
+    var title: String by titleProperty
+
     val linkProperty = SimpleStringProperty(link)
     var link: String by linkProperty
 

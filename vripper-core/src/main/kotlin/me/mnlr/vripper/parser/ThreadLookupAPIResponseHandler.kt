@@ -1,21 +1,20 @@
 package me.mnlr.vripper.parser
 
-import org.xml.sax.Attributes
-import org.xml.sax.helpers.DefaultHandler
-import me.mnlr.vripper.SpringContext
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.host.Host
 import me.mnlr.vripper.model.ImageItem
 import me.mnlr.vripper.model.PostItem
 import me.mnlr.vripper.model.ThreadItem
 import me.mnlr.vripper.services.SettingsService
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+import org.xml.sax.Attributes
+import org.xml.sax.helpers.DefaultHandler
 
-class ThreadLookupAPIResponseHandler : DefaultHandler() {
+class ThreadLookupAPIResponseHandler : KoinComponent, DefaultHandler() {
     private val log by LoggerDelegate()
-    private val supportedHosts: Collection<Host> =
-        SpringContext.getBeansOfType(Host::class.java).values
-    private val settingsService: SettingsService =
-        SpringContext.getBean(SettingsService::class.java)
+    private val supportedHosts: List<Host> by inject()
+    private val settingsService: SettingsService by inject()
     private var error: String = ""
     private val hostMap: MutableMap<Host, Int> = mutableMapOf()
     private val postItemList: MutableList<PostItem> = mutableListOf()
@@ -56,7 +55,7 @@ class ThreadLookupAPIResponseHandler : DefaultHandler() {
                 val mainLink = attributes.getValue("main_url")?.trim() ?: ""
                 val thumbLink = attributes.getValue("thumb_url")?.trim() ?: ""
                 val type = attributes.getValue("type")?.trim() ?: ""
-                if(type == "linked") {
+                if (type == "linked") {
                     try {
                         val host = supportedHosts.first {
                             it.isSupported(mainLink)
@@ -86,7 +85,7 @@ class ThreadLookupAPIResponseHandler : DefaultHandler() {
                         postTitle,
                         imageItemList.size,
                         "${settingsService.settings.viperSettings.host}/threads/?p=$postId&viewfull=1#post$postId",
-                        hostMap.toMap().map { Pair(it.key.host, it.value) },
+                        hostMap.toMap().map { Pair(it.key.hostId, it.value) },
                         securityToken,
                         forum,
                         imageItemList.toList()

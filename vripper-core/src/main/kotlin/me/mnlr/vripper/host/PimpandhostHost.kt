@@ -1,6 +1,5 @@
 package me.mnlr.vripper.host
 
-import org.springframework.stereotype.Service
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import me.mnlr.vripper.delegate.LoggerDelegate
@@ -11,17 +10,12 @@ import me.mnlr.vripper.services.*
 import java.net.URI
 import java.net.URISyntaxException
 
-@Service
 class PimpandhostHost(
-    private val xpathService: XpathService,
-    private val htmlProcessorService: HtmlProcessorService,
     httpService: HTTPService,
     dataTransaction: DataTransaction,
-    downloadSpeedService: DownloadSpeedService,
-) : Host(httpService, htmlProcessorService, dataTransaction, downloadSpeedService) {
+    globalStateService: GlobalStateService,
+) : Host("pimpandhost.com", httpService, dataTransaction, globalStateService) {
     private val log by LoggerDelegate()
-    override val host: String
-        get() = Companion.host
 
     @Throws(HostException::class)
     override fun resolve(
@@ -36,11 +30,11 @@ class PimpandhostHost(
             throw HostException(e)
         }
         val doc = fetch(newUrl, context) {
-            htmlProcessorService.clean(it.entity.content)
+            HtmlProcessorService.clean(it.entity.content)
         }
         val imgNode: Node = try {
             log.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, newUrl))
-            xpathService.getAsNode(doc, IMG_XPATH)
+            XpathService.getAsNode(doc, IMG_XPATH)
         } catch (e: XpathException) {
             throw HostException(e)
         } ?: throw HostException(
@@ -78,8 +72,6 @@ class PimpandhostHost(
     }
 
     companion object {
-        private const val host = "pimpandhost.com"
-        private const val lookup = "pimpandhost.com"
         private const val IMG_XPATH = "//img[contains(@class, 'original')]"
     }
 }

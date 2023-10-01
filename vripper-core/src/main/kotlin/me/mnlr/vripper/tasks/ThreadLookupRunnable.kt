@@ -1,7 +1,6 @@
 package me.mnlr.vripper.tasks
 
 import me.mnlr.vripper.AppEndpointService
-import me.mnlr.vripper.SpringContext
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.download.PostDownloadRunnable
 import me.mnlr.vripper.entities.LogEvent
@@ -12,30 +11,22 @@ import me.mnlr.vripper.model.Settings
 import me.mnlr.vripper.model.ThreadItem
 import me.mnlr.vripper.repositories.LogEventRepository
 import me.mnlr.vripper.repositories.ThreadRepository
-import me.mnlr.vripper.services.AsyncTaskRunnerService
 import me.mnlr.vripper.services.DataTransaction
 import me.mnlr.vripper.services.SettingsService
 import me.mnlr.vripper.services.ThreadCacheService
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+import java.util.concurrent.CompletableFuture
 
 class ThreadLookupRunnable(private val threadId: String, private val settings: Settings) :
-    Runnable {
+    KoinComponent, Runnable {
     private val log by LoggerDelegate()
-    private val dataTransaction = SpringContext.getBean(DataTransaction::class.java)
-    private val eventRepository = SpringContext.getBean(LogEventRepository::class.java)
-    private val settingsService: SettingsService =
-        SpringContext.getBean(SettingsService::class.java)
-    private val threadCacheService = SpringContext.getBean(
-        ThreadCacheService::class.java
-    )
-    private val threadRepository = SpringContext.getBean(
-        ThreadRepository::class.java
-    )
-    private val asyncTaskRunnerService = SpringContext.getBean(
-        AsyncTaskRunnerService::class.java
-    )
-    private val appEndpointService = SpringContext.getBean(
-        AppEndpointService::class.java
-    )
+    private val dataTransaction by inject<DataTransaction>()
+    private val eventRepository by inject<LogEventRepository>()
+    private val settingsService by inject<SettingsService>()
+    private val threadCacheService by inject<ThreadCacheService>()
+    private val threadRepository by inject<ThreadRepository>()
+    private val appEndpointService by inject<AppEndpointService>()
     private val link: String =
         "${settingsService.settings.viperSettings.host}/threads/$threadId"
     private val logEvent: LogEvent
@@ -62,6 +53,7 @@ class ThreadLookupRunnable(private val threadId: String, private val settings: S
             if (threadRepository.findByThreadId(threadId).isEmpty) {
                 dataTransaction.save(
                     Thread(
+                        title = threadLookupResult.title,
                         link = link,
                         threadId = threadId,
                         total = threadLookupResult.postItemList.size
@@ -100,11 +92,9 @@ class ThreadLookupRunnable(private val threadId: String, private val settings: S
         if (lookupResult.postItemList.size <= settings.downloadSettings.autoQueueThreshold) {
             appEndpointService.threadRemove(listOf(lookupResult.threadId))
             lookupResult.postItemList.forEach {
-                asyncTaskRunnerService.sink.emitNext(
-                    PostDownloadRunnable(
-                        it.threadId, it.postId
-                    )
-                ) { _, _ -> true }
+                CompletableFuture.runAsync(PostDownloadRunnable(
+                    it.threadId, it.postId
+                ))
             }
         }
     }

@@ -1,6 +1,5 @@
 package me.mnlr.vripper.host
 
-import org.springframework.stereotype.Service
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import me.mnlr.vripper.delegate.LoggerDelegate
@@ -10,17 +9,12 @@ import me.mnlr.vripper.exception.XpathException
 import me.mnlr.vripper.services.*
 import java.util.*
 
-@Service
 class ImageTwistHost(
-    private val xpathService: XpathService,
     httpService: HTTPService,
-    htmlProcessorService: HtmlProcessorService,
     dataTransaction: DataTransaction,
-    downloadSpeedService: DownloadSpeedService,
-) : Host(httpService, htmlProcessorService, dataTransaction, downloadSpeedService) {
+    globalStateService: GlobalStateService,
+) : Host("imagetwist.com", httpService, dataTransaction, globalStateService) {
     private val log by LoggerDelegate()
-    override val host: String
-        get() = Companion.host
 
     @Throws(HostException::class)
     override fun resolve(
@@ -30,7 +24,7 @@ class ImageTwistHost(
     ): Pair<String, String> {
         val imgNode: Node = try {
             log.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url))
-            xpathService.getAsNode(document, IMG_XPATH)
+            XpathService.getAsNode(document, IMG_XPATH)
         } catch (e: XpathException) {
             throw HostException(e)
         } ?: throw HostException(
@@ -54,8 +48,6 @@ class ImageTwistHost(
     }
 
     companion object {
-        private const val host = "imagetwist.com"
-        private const val lookup = "imagetwist.com"
         private const val IMG_XPATH = "//img[contains(@class, 'img')]"
     }
 }

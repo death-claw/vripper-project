@@ -4,6 +4,7 @@ import me.mnlr.vripper.AppEndpointService
 import me.mnlr.vripper.entities.PostDownloadState
 import me.mnlr.vripper.model.PostModel
 import me.mnlr.vripper.repositories.PostDownloadStateRepository
+import org.jetbrains.exposed.sql.transactions.transaction
 import tornadofx.Controller
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -44,7 +45,7 @@ class PostController : Controller() {
     }
 
     fun findAllPosts(): List<PostModel> {
-        return postDownloadStateRepository.findAll().map(::mapper)
+        return transaction { postDownloadStateRepository.findAll() } .map(::mapper)
     }
 
     fun findById(id: Long): Optional<PostModel> {

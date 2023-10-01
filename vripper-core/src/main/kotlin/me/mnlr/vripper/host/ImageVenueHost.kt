@@ -1,6 +1,5 @@
 package me.mnlr.vripper.host
 
-import org.springframework.stereotype.Service
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import me.mnlr.vripper.delegate.LoggerDelegate
@@ -9,17 +8,12 @@ import me.mnlr.vripper.exception.HostException
 import me.mnlr.vripper.exception.XpathException
 import me.mnlr.vripper.services.*
 
-@Service
 class ImageVenueHost(
-    private val htmlProcessorService: HtmlProcessorService,
-    private val xpathService: XpathService,
     httpService: HTTPService,
     dataTransaction: DataTransaction,
-    downloadSpeedService: DownloadSpeedService,
-) : Host(httpService, htmlProcessorService, dataTransaction, downloadSpeedService) {
+    globalStateService: GlobalStateService,
+) : Host("imagevenue.com", httpService, dataTransaction, globalStateService) {
     private val log by LoggerDelegate()
-    override val host: String
-        get() = Companion.host
 
     @Throws(HostException::class)
     override fun resolve(
@@ -35,10 +29,10 @@ class ImageVenueHost(
                     url
                 )
             )
-            if (xpathService.getAsNode(document, CONTINUE_BUTTON_XPATH) != null) {
+            if (XpathService.getAsNode(document, CONTINUE_BUTTON_XPATH) != null) {
                 // Button detected. No need to actually click it, just make the call again.
                 fetch(url, context) {
-                    htmlProcessorService.clean(it.entity.content)
+                    HtmlProcessorService.clean(it.entity.content)
                 }
             } else {
                 document
@@ -48,7 +42,7 @@ class ImageVenueHost(
         }
         val imgNode: Node = try {
             log.debug(String.format("Looking for xpath expression %s in %s", IMG_XPATH, url))
-            xpathService.getAsNode(doc, IMG_XPATH)
+            XpathService.getAsNode(doc, IMG_XPATH)
         } catch (e: XpathException) {
             throw HostException(e)
         } ?: throw HostException(
@@ -72,8 +66,6 @@ class ImageVenueHost(
     }
 
     companion object {
-        private const val host = "imagevenue.com"
-        private const val lookup = "imagevenue.com"
         private const val CONTINUE_BUTTON_XPATH = "//a[@title='Continue to ImageVenue']"
         private const val IMG_XPATH = "//a[@data-toggle='full']/img"
     }

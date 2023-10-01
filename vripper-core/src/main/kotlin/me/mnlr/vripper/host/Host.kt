@@ -16,18 +16,22 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 abstract class Host(
+    val hostId: String,
     private val httpService: HTTPService,
-    private val htmlProcessorService: HtmlProcessorService,
     private val dataTransaction: DataTransaction,
-    private val downloadSpeedService: DownloadSpeedService
+    private val globalStateService: GlobalStateService
 ) {
     private val log by LoggerDelegate()
 
     companion object {
         private const val READ_BUFFER_SIZE = 8192
+        val hosts: List<String> = mutableListOf()
+            get() { return field.toList() }
     }
 
-    abstract val host: String
+    init {
+        (hosts as MutableList).add(hostId)
+    }
 
     @Throws(HostException::class)
     abstract fun resolve(
@@ -54,7 +58,7 @@ abstract class Host(
             if (value != null) {
                 if (value.contains("text/html")) {
                     val document = fetch(url, context) {
-                        htmlProcessorService.clean(it.entity.content)
+                        HtmlProcessorService.clean(it.entity.content)
                     }
                     if (log.isDebugEnabled) {
                         log.debug("Cleaning $url response", url)
@@ -104,7 +108,7 @@ abstract class Host(
                         with(image) {
                             current += read
                         }
-                        downloadSpeedService.increase(read.toLong())
+                        globalStateService.reportDownloadedBytes(read.toLong())
                         dataTransaction.update(image)
                     }
                     Pair(tempImage, mimeType)
@@ -116,7 +120,7 @@ abstract class Host(
     }
 
     fun isSupported(url: String): Boolean {
-        return url.contains(host)
+        return url.contains(hostId)
     }
 
     @Throws(HostException::class)
@@ -206,17 +210,17 @@ abstract class Host(
 
         other as Host
 
-        if (host != other.host) return false
+        if (hostId != other.hostId) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return host.hashCode()
+        return hostId.hashCode()
     }
 
     override fun toString(): String {
-        return host
+        return hostId
     }
 }
 
