@@ -24,7 +24,7 @@ class VGAuthService(
     private val log by LoggerDelegate()
     private val disposable: Disposable
 
-    final val context: HttpClientContext = HttpClientContext.create()
+    val context: HttpClientContext = HttpClientContext.create()
     var loggedUser = ""
 
     private var authenticated = false
@@ -34,10 +34,10 @@ class VGAuthService(
         disposable = eventBusImpl
             .flux()
             .filter { it.kind == Event.Kind.SETTINGS_UPDATE }
-            .subscribe { authenticate() }
-    }
-
-    private fun init() {
+            .doOnNext {
+                println(Thread.currentThread().name)
+                authenticate()
+            }.subscribe()
         authenticate()
     }
 

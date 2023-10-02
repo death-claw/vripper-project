@@ -9,7 +9,7 @@
     <module>vripper-core</module>
 <!--    <module>vripper-web-ui</module>-->
 <!--    <module>vripper-web</module>-->
-<!--    <module>vripper-gui</module>-->
+    <module>vripper-gui</module>
   </modules>
   <packaging>pom</packaging>
   <version>4.4.0</version>

@@ -170,7 +170,7 @@ class DownloadService(
 
     private fun candidateCount(): Map<String, Int> {
         val map: MutableMap<String, Int> = mutableMapOf()
-        Host.hosts.forEach { host: String ->
+        Host.getHosts().forEach { host: String ->
             val imageDownloadRunnableList: List<ImageDownloadRunnable> = running.computeIfAbsent(
                 host
             ) { mutableListOf() }

@@ -13,7 +13,7 @@ class EventBusImpl: EventBus {
     }
 
     override fun flux(): Flux<Event<*>> {
-        return sink.asFlux()
+        return sink.asFlux().publishOn(EventBusScheduler.scheduler)
     }
 
 //    @PreDestroy

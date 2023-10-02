@@ -15,6 +15,11 @@
 
   <dependencies>
     <dependency>
+      <artifactId>logback-classic</artifactId>
+      <groupId>ch.qos.logback</groupId>
+      <version>1.4.11</version>
+    </dependency>
+    <dependency>
       <artifactId>kotlin-reflect</artifactId>
       <groupId>org.jetbrains.kotlin</groupId>
       <version>1.8.22</version>

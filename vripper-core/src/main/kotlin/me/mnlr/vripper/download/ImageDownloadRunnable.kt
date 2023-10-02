@@ -30,7 +30,7 @@ class ImageDownloadRunnable(
     private val log by LoggerDelegate()
 
     private val dataTransaction: DataTransaction by inject()
-    private val hosts: List<Host> by inject()
+    private val hosts: List<Host> = getKoin().getAll()
 
     val context: ImageDownloadContext = ImageDownloadContext(imageInternalId, settings)
     private val image: ImageDownloadState

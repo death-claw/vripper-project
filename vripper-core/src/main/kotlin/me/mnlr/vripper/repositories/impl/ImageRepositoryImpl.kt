@@ -29,6 +29,19 @@ class ImageRepositoryImpl(private val eventBus: EventBus) : ImageRepository {
         )
     }
 
+    override fun save(imageDownloadStateList: List<ImageDownloadState>) {
+        ImageTable.batchInsert(imageDownloadStateList, shouldReturnGeneratedValues = false) {
+            this[ImageTable.current] = it.current
+            this[ImageTable.host] = it.host
+            this[ImageTable.index] = it.index
+            this[ImageTable.postId] = it.postId
+            this[ImageTable.status] = it.status.name
+            this[ImageTable.total] = it.total
+            this[ImageTable.url] = it.url
+            this[ImageTable.postIdRef] = it.postIdRef
+        }
+    }
+
     override fun deleteAllByPostId(postId: String) {
         ImageTable.deleteWhere {ImageTable.postId eq postId}
     }

@@ -23,11 +23,12 @@ class RetryPolicyService(
             .flux()
             .filter { it.kind == Event.Kind.SETTINGS_UPDATE }
             .map { it.data as Settings }
-            .subscribe {
+            .doOnNext {
                 if (maxAttempts != it.connectionSettings.maxAttempts) {
                     maxAttempts = it.connectionSettings.maxAttempts
                 }
             }
+            .subscribe()
     }
 
     fun <T> buildRetryPolicyForDownload(): RetryPolicy<T> {

@@ -13,7 +13,7 @@ import org.xml.sax.helpers.DefaultHandler
 
 class ThreadLookupAPIResponseHandler : KoinComponent, DefaultHandler() {
     private val log by LoggerDelegate()
-    private val supportedHosts: List<Host> by inject()
+    private val supportedHosts: List<Host> = getKoin().getAll()
     private val settingsService: SettingsService by inject()
     private var error: String = ""
     private val hostMap: MutableMap<Host, Int> = mutableMapOf()
@@ -66,7 +66,7 @@ class ThreadLookupAPIResponseHandler : KoinComponent, DefaultHandler() {
                         }
                         imageItemList.add(ImageItem(mainLink, thumbLink, host))
                     } catch (e: Exception) {
-                        log.warn("Unsupported link: $mainLink")
+                        log.warn("Unsupported link: $mainLink", e)
                     }
                 }
             }

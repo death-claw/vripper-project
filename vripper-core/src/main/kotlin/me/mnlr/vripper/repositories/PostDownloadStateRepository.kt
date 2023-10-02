@@ -13,4 +13,5 @@ interface PostDownloadStateRepository {
     fun setDownloadingToStopped(): Int
     fun deleteByPostId(postId: String): Int
     fun update(postDownloadState: PostDownloadState)
+    fun update(postDownloadState: List<PostDownloadState>)
 }

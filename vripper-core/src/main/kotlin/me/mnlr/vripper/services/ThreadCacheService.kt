@@ -21,7 +21,7 @@ class ThreadCacheService(eventBus: EventBus) {
 
     private val disposable: Disposable =
         eventBus.flux().filter { e: Event<*> -> e.kind == Event.Kind.SETTINGS_UPDATE }
-            .subscribe { cache.invalidateAll() }
+            .doOnNext { cache.invalidateAll() }.subscribe()
 
     private fun destroy() {
         disposable.dispose()

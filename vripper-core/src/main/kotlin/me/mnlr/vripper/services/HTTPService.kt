@@ -41,14 +41,16 @@ class HTTPService(
             .flux()
             .filter { it.kind == Event.Kind.SETTINGS_UPDATE }
             .map { it.data as Settings }
-            .subscribe {
+            .doOnNext {
                 if (connectionTimeout != it.connectionSettings.timeout) {
                     connectionTimeout = it.connectionSettings.timeout
                     buildRequestConfig()
                 }
             }
+            .subscribe()
         buildRequestConfig()
         buildConnectionPool()
+
     }
 
     fun init() {

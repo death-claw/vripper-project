@@ -98,6 +98,14 @@ class PostDownloadStateRepositoryImpl(private val eventBus: EventBus) :
         eventBus.publishEvent(Event(Event.Kind.POST_UPDATE, postDownloadState.id))
     }
 
+    override fun update(postDownloadState: List<PostDownloadState>) {
+        PostTable.batchReplace(postDownloadState, shouldReturnGeneratedValues = false) {
+            this[PostTable.status] = it.status.name
+            this[PostTable.done] = it.done
+            this[PostTable.rank] = it.rank
+        }
+    }
+
     private fun transform(resultRow: ResultRow): PostDownloadState {
         val id = resultRow[PostTable.id].value
         val status = Status.valueOf(resultRow[PostTable.status])

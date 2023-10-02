@@ -5,6 +5,7 @@ import java.util.*
 
 interface ImageRepository {
     fun save(imageDownloadState: ImageDownloadState): ImageDownloadState
+    fun save(imageDownloadStateList: List<ImageDownloadState>)
     fun deleteAllByPostId(postId: String)
     fun findByPostId(postId: String): List<ImageDownloadState>
     fun countError(): Int

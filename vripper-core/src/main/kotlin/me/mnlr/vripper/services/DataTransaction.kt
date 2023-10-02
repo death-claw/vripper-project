@@ -11,6 +11,7 @@ import me.mnlr.vripper.repositories.MetadataRepository
 import me.mnlr.vripper.repositories.PostDownloadStateRepository
 import me.mnlr.vripper.repositories.ThreadRepository
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.*
 import kotlin.io.path.pathString
 
 class DataTransaction(
@@ -22,27 +23,23 @@ class DataTransaction(
 ) {
 
     private fun save(postDownloadState: PostDownloadState): PostDownloadState {
-        return postDownloadStateRepository.save(postDownloadState)
+        return transaction { postDownloadStateRepository.save(postDownloadState) }
     }
 
     fun update(postDownloadState: PostDownloadState) {
-        postDownloadStateRepository.update(postDownloadState)
+        transaction { postDownloadStateRepository.update(postDownloadState) }
     }
 
     fun save(thread: Thread): Thread {
-        return threadRepository.save(thread)
-    }
-
-    private fun save(imageDownloadState: ImageDownloadState): ImageDownloadState {
-        return imageRepository.save(imageDownloadState)
+        return transaction { threadRepository.save(thread) }
     }
 
     fun update(imageDownloadState: ImageDownloadState) {
-        imageRepository.update(imageDownloadState)
+        transaction { imageRepository.update(imageDownloadState) }
     }
 
     fun exists(postId: String): Boolean {
-        return postDownloadStateRepository.existByPostId(postId)
+        return transaction { postDownloadStateRepository.existByPostId(postId) }
     }
 
     fun newPost(postItem: PostItem): PostDownloadState {
@@ -67,24 +64,29 @@ class DataTransaction(
                     ).pathString
                 )
             )
-            val images: MutableList<ImageDownloadState> = mutableListOf()
-            postItem.imageItemList.forEachIndexed { index, imageItem ->
-                val imageDownloadState = ImageDownloadState(
+            val images = postItem.imageItemList.mapIndexed { index, imageItem ->
+                ImageDownloadState(
                     postId = postItem.postId,
                     url = imageItem.mainLink,
                     host = imageItem.host.hostId,
                     index = index,
                     postIdRef = postDownloadState.id!!
                 )
-                images.add(save(imageDownloadState))
             }
+            save(images)
             sortPostsByRank()
             postDownloadState
         }
     }
 
+    private fun save(images: List<ImageDownloadState>) {
+        transaction { imageRepository.save(images) }
+    }
+
     fun finishPost(postDownloadState: PostDownloadState) {
-        if (imageRepository.findByPostIdAndIsError(postDownloadState.postId).isNotEmpty()) {
+        val imagesInErrorStatus =
+            imageRepository.findByPostIdAndIsError(postDownloadState.postId)
+        if (imagesInErrorStatus.isNotEmpty()) {
             postDownloadState.status = Status.ERROR
             update(postDownloadState)
         } else {
@@ -92,8 +94,8 @@ class DataTransaction(
                 postDownloadState.status = Status.STOPPED
                 update(postDownloadState)
             } else {
+                postDownloadState.status = Status.FINISHED
                 transaction {
-                    postDownloadState.status = Status.FINISHED
                     update(postDownloadState)
                     if (settingsService.settings.downloadSettings.clearCompleted) {
                         remove(listOf(postDownloadState.postId))
@@ -115,11 +117,11 @@ class DataTransaction(
     }
 
     fun removeThread(threadId: String) {
-        threadRepository.deleteByThreadId(threadId)
+        transaction { threadRepository.deleteByThreadId(threadId) }
     }
 
     fun clearCompleted(): List<String> {
-        val completed = postDownloadStateRepository.findCompleted()
+        val completed = transaction { postDownloadStateRepository.findCompleted() }
         remove(completed)
         return completed
     }
@@ -128,12 +130,12 @@ class DataTransaction(
         if (postIds != null) {
             remove(postIds)
         } else {
-            remove(postDownloadStateRepository.findAll().map(PostDownloadState::postId))
+            remove(findAllPosts().map(PostDownloadState::postId))
         }
     }
 
     fun stopImagesByPostIdAndIsNotCompleted(postId: String) {
-        imageRepository.stopByPostIdAndIsNotCompleted(postId)
+        transaction { imageRepository.stopByPostIdAndIsNotCompleted(postId) }
     }
 
     @Synchronized
@@ -145,16 +147,50 @@ class DataTransaction(
     }
 
     fun clearQueueLinks() {
-        threadRepository.deleteAll()
+        transaction { threadRepository.deleteAll() }
     }
 
     @Synchronized
     fun sortPostsByRank() {
-        val postDownloadState = postDownloadStateRepository.findAll()
+        val postDownloadState = findAllPosts()
             .sortedWith(Comparator.comparing(PostDownloadState::addedOn))
         for (i in postDownloadState.indices) {
             postDownloadState[i].rank = i
-            update(postDownloadState[i])
+        }
+        update(postDownloadState)
+    }
+
+    private fun update(postDownloadStateList: List<PostDownloadState>) {
+        transaction { postDownloadStateRepository.update(postDownloadStateList) }
+    }
+
+    fun setDownloadingToStopped() {
+        transaction { postDownloadStateRepository.setDownloadingToStopped() }
+    }
+
+    fun findAllPosts(): List<PostDownloadState> {
+        return transaction { postDownloadStateRepository.findAll() }
+    }
+
+    fun findPostsById(id: Long): Optional<PostDownloadState> {
+        return transaction { postDownloadStateRepository.findById(id) }
+    }
+
+    fun findImagesByPostId(postId: String): List<ImageDownloadState> {
+        return transaction { imageRepository.findByPostId(postId) }
+    }
+
+    fun findImageById(id: Long): Optional<ImageDownloadState> {
+        return transaction { imageRepository.findById(id) }
+    }
+
+    fun findAllThreads(): List<Thread> {
+        return transaction { threadRepository.findAll() }
+    }
+
+    fun findThreadById(id: Long): Optional<Thread> {
+        return transaction {
+            threadRepository.findById(id)
         }
     }
 }

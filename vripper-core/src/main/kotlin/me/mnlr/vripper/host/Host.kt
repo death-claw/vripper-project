@@ -25,12 +25,15 @@ abstract class Host(
 
     companion object {
         private const val READ_BUFFER_SIZE = 8192
-        val hosts: List<String> = mutableListOf()
-            get() { return field.toList() }
+        private val hosts: MutableList<String> = mutableListOf()
+
+        fun getHosts(): List<String> {
+            return hosts.toList()
+        }
     }
 
     init {
-        (hosts as MutableList).add(hostId)
+        hosts.add(hostId)
     }
 
     @Throws(HostException::class)

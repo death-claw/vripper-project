@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import me.mnlr.vripper.ApplicationProperties.BASE_DIR_NAME
+import me.mnlr.vripper.ApplicationProperties.baseDir
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
@@ -12,17 +14,13 @@ import me.mnlr.vripper.exception.ValidationException
 import me.mnlr.vripper.model.Settings
 import org.apache.commons.codec.digest.DigestUtils
 import java.io.FileWriter
-import java.io.IOException
 import java.nio.file.*
 
 class SettingsService(private val eventBus: EventBus) {
 
-    private val baseDir = System.getProperty("user.dir")
-    private val baseDirName = "vripper"
-
     private val log by LoggerDelegate()
-    private val configPath = Paths.get(baseDir, baseDirName, "config.yml")
-    private val customProxiesPath = Paths.get(baseDir, baseDirName, "proxies.json")
+    private val configPath = Paths.get(baseDir, BASE_DIR_NAME, "config.yml")
+    private val customProxiesPath = Paths.get(baseDir, BASE_DIR_NAME, "proxies.json")
     private val om = ObjectMapper(YAMLFactory())
     private val proxies: MutableSet<String> = HashSet()
 
@@ -49,28 +47,31 @@ class SettingsService(private val eventBus: EventBus) {
                 val customProxies: List<String> = if (customProxiesPath.toFile()
                         .exists() && Files.isRegularFile(customProxiesPath)
                 ) {
-                    om.readValue(
-                        customProxiesPath.toFile()
-                    )
+                    try {
+                        om.readValue(
+                            customProxiesPath.toFile()
+                        )
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
                 } else {
+                    try {
+                        FileWriter(customProxiesPath.toFile()).use { fw ->
+                            fw.append("[]").append(System.lineSeparator())
+                            fw.flush()
+                        }
+                    } catch (e: Exception) {
+                        log.warn(
+                            "Unable to create " + customProxiesPath.toFile().absolutePath, e
+                        )
+                    }
                     emptyList()
                 }
 
-                try {
-                    FileWriter(customProxiesPath.toFile()).use { fw ->
-                        fw.append("[]").append(System.lineSeparator())
-                        fw.flush()
-                    }
-                } catch (e: IOException) {
-                    log.warn(
-                        "Unable to create " + customProxiesPath.toFile().absolutePath, e
-                    )
-                }
-
-                proxies.addAll(customProxies)
                 proxies.addAll(defaultProxies)
+                proxies.addAll(customProxies)
             }
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             log.error("Failed to load vipergirls proxies list", e)
         }
         proxies.add("https://vipergirls.to")
@@ -95,6 +96,7 @@ class SettingsService(private val eventBus: EventBus) {
         check(settings)
         this.settings = settings
         save()
+        println(Thread.currentThread().name)
         eventBus.publishEvent(Event(Event.Kind.SETTINGS_UPDATE, settings))
     }
 
@@ -103,7 +105,7 @@ class SettingsService(private val eventBus: EventBus) {
             if (configPath.toFile().exists()) {
                 settings = om.readValue(configPath.toFile())
             }
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             log.error("Failed restore user settings", e)
             settings = Settings()
         }
@@ -113,11 +115,8 @@ class SettingsService(private val eventBus: EventBus) {
         try {
             check(settings)
         } catch (e: ValidationException) {
-            log.error(
-                String.format(
-                    "Your settings are invalid, either remove %s, or fix it", configPath
-                ), e
-            )
+            log.error("Your settings are invalid, using default settings", e)
+            settings = Settings()
         }
         save()
     }
@@ -132,7 +131,7 @@ class SettingsService(private val eventBus: EventBus) {
                 StandardOpenOption.TRUNCATE_EXISTING,
                 StandardOpenOption.SYNC
             )
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             log.error("Failed to store user settings", e)
         }
     }
