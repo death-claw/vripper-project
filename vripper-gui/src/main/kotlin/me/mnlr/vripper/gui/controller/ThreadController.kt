@@ -7,7 +7,6 @@ import me.mnlr.vripper.gui.model.ThreadSelectionModel
 import me.mnlr.vripper.services.DataTransaction
 import org.koin.core.component.KoinComponent
 import tornadofx.*
-import java.util.*
 
 class ThreadController : KoinComponent, Controller() {
 
@@ -18,11 +17,7 @@ class ThreadController : KoinComponent, Controller() {
         return dataTransaction.findAllThreads().map(::threadModelMapper)
     }
 
-    fun find(id: Long): Optional<ThreadModel> {
-        return dataTransaction.findThreadById(id).map(::threadModelMapper)
-    }
-
-    private fun threadModelMapper(it: Thread): ThreadModel {
+    fun threadModelMapper(it: Thread): ThreadModel {
         return ThreadModel(
             it.title,
             it.link,

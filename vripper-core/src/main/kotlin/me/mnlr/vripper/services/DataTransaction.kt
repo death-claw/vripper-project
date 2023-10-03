@@ -5,6 +5,8 @@ import me.mnlr.vripper.entities.Metadata
 import me.mnlr.vripper.entities.PostDownloadState
 import me.mnlr.vripper.entities.Thread
 import me.mnlr.vripper.entities.domain.Status
+import me.mnlr.vripper.event.Event
+import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.model.PostItem
 import me.mnlr.vripper.repositories.ImageRepository
 import me.mnlr.vripper.repositories.MetadataRepository
@@ -19,19 +21,29 @@ class DataTransaction(
     private val postDownloadStateRepository: PostDownloadStateRepository,
     private val imageRepository: ImageRepository,
     private val threadRepository: ThreadRepository,
-    private val metadataRepository: MetadataRepository
+    private val metadataRepository: MetadataRepository,
+    private val eventBus: EventBus,
 ) {
 
     private fun save(postDownloadState: PostDownloadState): PostDownloadState {
-        return transaction { postDownloadStateRepository.save(postDownloadState) }
+        val createdPost = transaction { postDownloadStateRepository.save(postDownloadState) }
+        eventBus.publishEvent(Event(Event.Kind.POST_CREATE, createdPost))
+        return createdPost
     }
 
     fun update(postDownloadState: PostDownloadState) {
         transaction { postDownloadStateRepository.update(postDownloadState) }
+        eventBus.publishEvent(Event(Event.Kind.POST_UPDATE, postDownloadState))
     }
 
-    fun save(thread: Thread): Thread {
-        return transaction { threadRepository.save(thread) }
+    fun save(thread: Thread) {
+        val savedThread = transaction { threadRepository.save(thread) }
+        eventBus.publishEvent(
+            Event(
+                Event.Kind.THREAD_CREATE, savedThread
+            )
+        )
+
     }
 
     fun update(imageDownloadState: ImageDownloadState) {
@@ -84,8 +96,7 @@ class DataTransaction(
     }
 
     fun finishPost(postDownloadState: PostDownloadState) {
-        val imagesInErrorStatus =
-            imageRepository.findByPostIdAndIsError(postDownloadState.postId)
+        val imagesInErrorStatus = findByPostIdAndIsError(postDownloadState.postId)
         if (imagesInErrorStatus.isNotEmpty()) {
             postDownloadState.status = Status.ERROR
             update(postDownloadState)
@@ -105,6 +116,11 @@ class DataTransaction(
         }
     }
 
+    private fun findByPostIdAndIsError(postId: String): List<ImageDownloadState> {
+        return transaction { imageRepository.findByPostIdAndIsError(postId) }
+
+    }
+
     private fun remove(postIds: List<String>) {
         transaction {
             for (postId in postIds) {
@@ -114,10 +130,14 @@ class DataTransaction(
             }
             sortPostsByRank()
         }
+        postIds.forEach {
+            eventBus.publishEvent(Event(Event.Kind.POST_REMOVE, it))
+        }
     }
 
     fun removeThread(threadId: String) {
         transaction { threadRepository.deleteByThreadId(threadId) }
+        eventBus.publishEvent(Event(Event.Kind.THREAD_REMOVE, threadId))
     }
 
     fun clearCompleted(): List<String> {
@@ -148,12 +168,13 @@ class DataTransaction(
 
     fun clearQueueLinks() {
         transaction { threadRepository.deleteAll() }
+        eventBus.publishEvent(Event(Event.Kind.THREAD_CLEAR, null))
     }
 
     @Synchronized
     fun sortPostsByRank() {
-        val postDownloadState = findAllPosts()
-            .sortedWith(Comparator.comparing(PostDownloadState::addedOn))
+        val postDownloadState =
+            findAllPosts().sortedWith(Comparator.comparing(PostDownloadState::addedOn))
         for (i in postDownloadState.indices) {
             postDownloadState[i].rank = i
         }
@@ -162,6 +183,9 @@ class DataTransaction(
 
     private fun update(postDownloadStateList: List<PostDownloadState>) {
         transaction { postDownloadStateRepository.update(postDownloadStateList) }
+        postDownloadStateList.forEach {
+            eventBus.publishEvent(Event(Event.Kind.POST_UPDATE, it))
+        }
     }
 
     fun setDownloadingToStopped() {
@@ -172,7 +196,7 @@ class DataTransaction(
         return transaction { postDownloadStateRepository.findAll() }
     }
 
-    fun findPostsById(id: Long): Optional<PostDownloadState> {
+    fun findPostById(id: Long): Optional<PostDownloadState> {
         return transaction { postDownloadStateRepository.findById(id) }
     }
 
@@ -192,5 +216,21 @@ class DataTransaction(
         return transaction {
             threadRepository.findById(id)
         }
+    }
+
+    fun findByPostIdAndIsNotCompleted(postId: String): List<ImageDownloadState> {
+        return transaction { imageRepository.findByPostIdAndIsNotCompleted(postId) }
+    }
+
+    fun countImagesInError(): Int {
+        return transaction { imageRepository.countError() }
+    }
+
+    fun findPostsByPostId(postId: String): Optional<PostDownloadState> {
+        return transaction { postDownloadStateRepository.findByPostId(postId) }
+    }
+
+    fun findThreadByThreadId(threadId: String): Optional<Thread> {
+        return transaction { threadRepository.findByThreadId(threadId) }
     }
 }

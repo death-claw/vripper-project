@@ -10,7 +10,6 @@ import me.mnlr.vripper.formatToString
 import me.mnlr.vripper.model.Settings
 import me.mnlr.vripper.model.ThreadItem
 import me.mnlr.vripper.repositories.LogEventRepository
-import me.mnlr.vripper.repositories.ThreadRepository
 import me.mnlr.vripper.services.DataTransaction
 import me.mnlr.vripper.services.SettingsService
 import me.mnlr.vripper.services.ThreadCacheService
@@ -25,7 +24,6 @@ class ThreadLookupRunnable(private val threadId: String, private val settings: S
     private val eventRepository by inject<LogEventRepository>()
     private val settingsService by inject<SettingsService>()
     private val threadCacheService by inject<ThreadCacheService>()
-    private val threadRepository by inject<ThreadRepository>()
     private val appEndpointService by inject<AppEndpointService>()
     private val link: String =
         "${settingsService.settings.viperSettings.host}/threads/$threadId"
@@ -50,7 +48,7 @@ class ThreadLookupRunnable(private val threadId: String, private val settings: S
                 eventRepository.update(logEvent.copy(status = ERROR, message = message))
                 return
             }
-            if (threadRepository.findByThreadId(threadId).isEmpty) {
+            if (dataTransaction.findThreadByThreadId(threadId).isEmpty) {
                 dataTransaction.save(
                     Thread(
                         title = threadLookupResult.title,

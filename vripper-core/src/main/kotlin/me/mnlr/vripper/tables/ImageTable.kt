@@ -2,7 +2,7 @@ package me.mnlr.vripper.tables
 
 import org.jetbrains.exposed.dao.id.LongIdTable
 
-object ImageTable: LongIdTable(name = "IMAGE", columnName = "rowid") {
+object ImageTable : LongIdTable(name = "IMAGE", columnName = "ROWID") {
     val current = long("CURRENT")
     val host = varchar("HOST", 255)
     val index = integer("INDEX")

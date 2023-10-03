@@ -21,19 +21,19 @@ val coreModule = module {
         ImageRepositoryImpl(get())
     }
     single<PostDownloadStateRepository> {
-        PostDownloadStateRepositoryImpl(get())
+        PostDownloadStateRepositoryImpl()
     }
     single<MetadataRepository> {
         MetadataRepositoryImpl()
     }
     single<ThreadRepository> {
-        ThreadRepositoryImpl(get())
+        ThreadRepositoryImpl()
     }
     single<LogEventRepository> {
         LogEventRepositoryImpl()
     }
     single<DataTransaction> {
-        DataTransaction(get(), get(), get(), get(), get())
+        DataTransaction(get(), get(), get(), get(), get(), get())
     }
     single<RetryPolicyService> {
         RetryPolicyService(get(), get())
@@ -48,13 +48,13 @@ val coreModule = module {
         ThreadCacheService(get())
     }
     single<DownloadService> {
-        DownloadService(get(), get(), get(), get(), get(), get())
+        DownloadService(get(), get(), get(), get())
     }
     single<GlobalStateService> {
         GlobalStateService(get(), get(), get(), get())
     }
     single<AppEndpointService> {
-        AppEndpointService(get(), get(), get(), get(), get(), get())
+        AppEndpointService(get(), get(), get(), get(), get())
     }
     single {
         AcidimgHost(get(), get(), get())

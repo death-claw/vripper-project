@@ -9,6 +9,7 @@ import javafx.util.Callback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import me.mnlr.vripper.entities.PostDownloadState
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.gui.controller.PostController
@@ -40,25 +41,27 @@ class PostsTableView : View() {
 
         eventBus
             .flux()
-            .filter { it!!.kind == Event.Kind.POST_UPDATE || it.kind == Event.Kind.METADATA_UPDATE }
-            .map { postController.findById(it!!.data as Long) }
-            .filter { it.isPresent }
-            .map { it.get() }
+            .filter { it!!.kind == Event.Kind.POST_CREATE }
+            .map { postController.mapper(it.data as PostDownloadState) }
             .publishOn(FxScheduler)
             .doOnNext {
-                val find = items.find { postModel -> postModel.postId == it.postId }
-                if (find != null) {
-                    find.apply {
-                        progress = it.progress
-                        status = it.status
-                        done = it.done
-                        total = it.total
-                        order = it.order
-                        progressCount = it.progressCount
-                    }
-                } else {
-                    items.add(it)
-                    this.tableView.refresh()
+                items.add(it)
+                this.tableView.refresh()
+            }.subscribe()
+
+        eventBus
+            .flux()
+            .filter { it!!.kind == Event.Kind.POST_UPDATE }
+            .map { postController.mapper(it.data as PostDownloadState) }
+            .publishOn(FxScheduler)
+            .doOnNext {
+                items.find { postModel -> postModel.postId == it.postId }?.apply {
+                    progress = it.progress
+                    status = it.status
+                    done = it.done
+                    total = it.total
+                    order = it.order
+                    progressCount = it.progressCount
                 }
             }
             .subscribe()
@@ -152,10 +155,17 @@ class PostsTableView : View() {
 
                 val contextMenu = ContextMenu()
                 contextMenu.items.addAll(
-                    startItem, stopItem, deleteItem, SeparatorMenuItem(), detailsItem, locationItem, urlItem
+                    startItem,
+                    stopItem,
+                    deleteItem,
+                    SeparatorMenuItem(),
+                    detailsItem,
+                    locationItem,
+                    urlItem
                 )
                 tableRow.contextMenuProperty()
-                    .bind(tableRow.emptyProperty().map { empty -> if (empty) null else contextMenu })
+                    .bind(
+                        tableRow.emptyProperty().map { empty -> if (empty) null else contextMenu })
                 tableRow
             }
             column("Title", PostModel::titleProperty) {
@@ -174,6 +184,7 @@ class PostsTableView : View() {
                                     this@tableview.selectionModel.select(cell.tableRow.index)
                                 }
                             }
+
                             MouseButton.PRIMARY -> {
                                 when (it.clickCount) {
                                     1 -> {
@@ -190,9 +201,11 @@ class PostsTableView : View() {
                                             this@tableview.selectionModel.select(cell.tableRow.index)
                                         }
                                     }
+
                                     2 -> openPhotos(cell.tableRow.item.postId)
                                 }
                             }
+
                             else -> {}
                         }
                     }

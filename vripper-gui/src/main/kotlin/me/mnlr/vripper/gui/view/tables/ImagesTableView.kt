@@ -42,16 +42,16 @@ class ImagesTableView : Fragment("Photos") {
             .map { it.get() }
             .filter { it.postId == postId }
             .publishOn(FxScheduler)
-            .doOnNext {
+            .doOnNext { image ->
                 val find = items
-                    .find { image -> image.id == it.id }
+                    .find { it.id == image.id }
                 if (find != null) {
                     find.apply {
-                        progress = it.progress
-                        status = it.status
+                        progress = image.progress
+                        status = image.status
                     }
                 } else {
-                    items.add(it)
+                    items.add(image)
                 }
             }.subscribe()
 

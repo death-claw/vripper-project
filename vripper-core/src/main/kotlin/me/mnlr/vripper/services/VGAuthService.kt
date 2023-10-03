@@ -35,9 +35,11 @@ class VGAuthService(
             .flux()
             .filter { it.kind == Event.Kind.SETTINGS_UPDATE }
             .doOnNext {
-                println(Thread.currentThread().name)
                 authenticate()
             }.subscribe()
+    }
+
+    fun init() {
         authenticate()
     }
 

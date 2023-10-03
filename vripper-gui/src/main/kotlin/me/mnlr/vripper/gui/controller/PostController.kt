@@ -6,7 +6,6 @@ import me.mnlr.vripper.gui.model.PostModel
 import me.mnlr.vripper.services.DataTransaction
 import tornadofx.*
 import java.time.format.DateTimeFormatter
-import java.util.*
 
 class PostController : Controller() {
 
@@ -47,11 +46,7 @@ class PostController : Controller() {
         return dataTransaction.findAllPosts().map(::mapper)
     }
 
-    fun findById(id: Long): Optional<PostModel> {
-        return dataTransaction.findPostsById(id).map(::mapper)
-    }
-
-    private fun mapper(it: PostDownloadState): PostModel {
+    fun mapper(it: PostDownloadState): PostModel {
         return PostModel(
             it.postId,
             it.postTitle,

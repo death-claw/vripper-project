@@ -10,9 +10,7 @@ import me.mnlr.vripper.entities.PostDownloadState
 import me.mnlr.vripper.entities.domain.Status
 import me.mnlr.vripper.formatToString
 import me.mnlr.vripper.host.Host
-import me.mnlr.vripper.repositories.ImageRepository
 import me.mnlr.vripper.repositories.LogEventRepository
-import me.mnlr.vripper.repositories.PostDownloadStateRepository
 import me.mnlr.vripper.services.DataTransaction
 import me.mnlr.vripper.services.RetryPolicyService
 import me.mnlr.vripper.services.SettingsService
@@ -27,8 +25,6 @@ class DownloadService(
     private val settingsService: SettingsService,
     private val dataTransaction: DataTransaction,
     private val retryPolicyService: RetryPolicyService,
-    private val postDownloadStateRepository: PostDownloadStateRepository,
-    private val imageRepository: ImageRepository,
     private val eventRepository: LogEventRepository,
 ) {
     private val maxPoolSize: Int = 12
@@ -71,14 +67,14 @@ class DownloadService(
     }
 
     fun destroy() {
-        stop(postDownloadStateRepository.findAll().map { it.postId })
+        stop(dataTransaction.findAllPosts().map { it.postId })
     }
 
     fun stopAll(postIds: List<String>?) {
         if (postIds != null) {
             stop(postIds)
         } else {
-            stop(postDownloadStateRepository.findAll().map(PostDownloadState::postId))
+            stop(dataTransaction.findAllPosts().map(PostDownloadState::postId))
         }
     }
 
@@ -86,7 +82,7 @@ class DownloadService(
         if (postIds.isNotEmpty()) {
             restart(postIds)
         } else {
-            restart(postDownloadStateRepository.findAll().map(PostDownloadState::postId))
+            restart(dataTransaction.findAllPosts().map(PostDownloadState::postId))
         }
     }
 
@@ -99,12 +95,12 @@ class DownloadService(
                     continue
                 }
                 val imageDownloadStates: List<ImageDownloadState> =
-                    imageRepository.findByPostIdAndIsNotCompleted(postId)
+                    dataTransaction.findByPostIdAndIsNotCompleted(postId)
                 if (imageDownloadStates.isEmpty()) {
                     continue
                 }
                 val postDownloadState: PostDownloadState =
-                    postDownloadStateRepository.findByPostId(postId).orElseThrow()
+                    dataTransaction.findPostsByPostId(postId).orElseThrow()
                 log.debug("Restarting ${imageDownloadStates.size} jobs for post id $postIds")
                 postDownloadState.status = Status.PENDING
                 dataTransaction.update(postDownloadState)
@@ -150,7 +146,7 @@ class DownloadService(
         lock.withLock {
             for (postId in postIds) {
                 val postDownloadState: PostDownloadState =
-                    postDownloadStateRepository.findByPostId(postId).orElseThrow()
+                    dataTransaction.findPostsByPostId(postId).orElseThrow()
                 pending.values.forEach { pending ->
                     pending.removeIf { it.context.image.postId == postId }
                 }

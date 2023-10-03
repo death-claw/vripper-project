@@ -4,6 +4,7 @@ import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.scene.control.*
 import javafx.scene.image.ImageView
+import me.mnlr.vripper.entities.Thread
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.gui.controller.ThreadController
@@ -33,21 +34,11 @@ class ThreadTableView : View() {
 
         eventBus
             .flux()
-            .filter { it!!.kind == Event.Kind.THREAD_UPDATE }
-            .map { threadController.find(it.data as Long) }
-            .filter { it.isPresent }
-            .map { it.get() }
+            .filter { it!!.kind == Event.Kind.THREAD_CREATE }
+            .map { threadController.threadModelMapper(it.data as Thread) }
             .publishOn(FxScheduler)
             .doOnNext {
-                val find =
-                    items.find { threadModel -> threadModel.threadId == it.threadId }
-                if (find != null) {
-                    find.apply {
-                        total = it.total
-                    }
-                } else {
-                    items.add(it)
-                }
+                items.add(it)
             }.subscribe()
 
         eventBus

@@ -4,8 +4,8 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.javatime.datetime
 import java.time.LocalDateTime
 
-object PostTable: LongIdTable(name = "POST", columnName = "rowid") {
-    val done = integer("DONE").default(0)
+object PostTable : LongIdTable(name = "POST", columnName = "ROWID") {
+    val done = integer("DONE")
     val hosts = varchar("HOSTS", 500)
     val outputPath = varchar("OUTPUT_PATH", 500)
     val postId = varchar("POST_ID", 255)
@@ -14,7 +14,7 @@ object PostTable: LongIdTable(name = "POST", columnName = "rowid") {
     val postTitle = varchar("POST_TITLE", 500)
     val threadTitle = varchar("THREAD_TITLE", 500)
     val forum = varchar("FORUM", 500)
-    val total = integer("TOTAL").default(0)
+    val total = integer("TOTAL")
     val url = varchar("URL", 3000)
     val token = varchar("TOKEN", 500)
     val addedAt = datetime("ADDED_AT").default(LocalDateTime.now())

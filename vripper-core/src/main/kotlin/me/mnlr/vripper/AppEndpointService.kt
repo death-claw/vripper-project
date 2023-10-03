@@ -6,7 +6,6 @@ import me.mnlr.vripper.download.PostDownloadRunnable
 import me.mnlr.vripper.exception.PostParseException
 import me.mnlr.vripper.model.PostItem
 import me.mnlr.vripper.repositories.LogEventRepository
-import me.mnlr.vripper.repositories.ThreadRepository
 import me.mnlr.vripper.services.*
 import me.mnlr.vripper.tasks.ThreadLookupRunnable
 import java.util.*
@@ -16,7 +15,6 @@ import java.util.regex.Pattern
 class AppEndpointService(
     private val downloadService: DownloadService,
     private val dataTransaction: DataTransaction,
-    private val threadRepository: ThreadRepository,
     private val threadCacheService: ThreadCacheService,
     private val eventRepository: LogEventRepository,
     private val settingsService: SettingsService
@@ -94,7 +92,7 @@ class AppEndpointService(
     @Throws(PostParseException::class)
     fun grab(threadId: String): List<PostItem> {
         return try {
-            val thread = threadRepository.findByThreadId(threadId).orElseThrow {
+            val thread = dataTransaction.findThreadByThreadId(threadId).orElseThrow {
                 PostParseException(
                     String.format(
                         "Unable to find links for threadId = %s", threadId

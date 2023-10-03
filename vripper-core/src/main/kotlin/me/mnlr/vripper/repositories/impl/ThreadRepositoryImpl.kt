@@ -1,29 +1,22 @@
 package me.mnlr.vripper.repositories.impl
 
 import me.mnlr.vripper.entities.Thread
-import me.mnlr.vripper.event.Event
-import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.repositories.ThreadRepository
 import me.mnlr.vripper.tables.ThreadTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.util.*
 
-class ThreadRepositoryImpl(private val eventBus: EventBus) : ThreadRepository {
+class ThreadRepositoryImpl : ThreadRepository {
 
     override fun save(thread: Thread): Thread {
-        val insertStatement = ThreadTable.insert {
+        val id = ThreadTable.insertAndGetId {
             it[title] = thread.title
             it[total] = thread.total
             it[url] = thread.link
             it[threadId] = thread.threadId
-        }
-        eventBus.publishEvent(
-            Event(
-                Event.Kind.THREAD_UPDATE, insertStatement[ThreadTable.id].value
-            )
-        )
-        return thread.copy(id = insertStatement[ThreadTable.id].value)
+        }.value
+        return thread.copy(id = id)
     }
 
     override fun findByThreadId(threadId: String): Optional<Thread> {
@@ -53,14 +46,11 @@ class ThreadRepositoryImpl(private val eventBus: EventBus) : ThreadRepository {
     }
 
     override fun deleteByThreadId(threadId: String): Int {
-        val mutationCount = ThreadTable.deleteWhere { ThreadTable.threadId eq threadId }
-        eventBus.publishEvent(Event(Event.Kind.THREAD_REMOVE, threadId))
-        return mutationCount
+        return ThreadTable.deleteWhere { ThreadTable.threadId eq threadId }
     }
 
     override fun deleteAll() {
         ThreadTable.deleteAll()
-        eventBus.publishEvent(Event(Event.Kind.THREAD_CLEAR, null))
     }
 
     private fun transform(resultRow: ResultRow): Thread {

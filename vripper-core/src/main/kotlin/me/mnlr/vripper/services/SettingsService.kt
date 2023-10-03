@@ -96,7 +96,6 @@ class SettingsService(private val eventBus: EventBus) {
         check(settings)
         this.settings = settings
         save()
-        println(Thread.currentThread().name)
         eventBus.publishEvent(Event(Event.Kind.SETTINGS_UPDATE, settings))
     }
 

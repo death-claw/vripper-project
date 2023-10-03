@@ -52,13 +52,9 @@ class VripperGuiApplication : App(
             )
         }
         stage.addEventFilter(WindowEvent.WINDOW_SHOWN) {
-            Database.connect("jdbc:sqlite:$baseDir/$BASE_DIR_NAME/vripper.db")
+            Database.connect("jdbc:h2:file:$baseDir/$BASE_DIR_NAME/vripper;DB_CLOSE_DELAY=-1;")
             transaction {
-                try {
-                    SchemaUtils.create(PostTable, ImageTable, ThreadTable)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                SchemaUtils.create(PostTable, ImageTable, ThreadTable)
             }
             startKoin {
                 modules(modules)

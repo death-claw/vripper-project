@@ -6,16 +6,18 @@ import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.formatSI
 import me.mnlr.vripper.model.GlobalState
-import me.mnlr.vripper.repositories.ImageRepository
-import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.concurrent.atomic.AtomicLong
 
 class GlobalStateService(
     private val downloadService: DownloadService,
     private val vgAuthService: VGAuthService,
     private val eventBus: EventBus,
-    private val imageRepository: ImageRepository
+    private val dataTransaction: DataTransaction
 ) {
+
+    companion object {
+        const val DOWNLOAD_POLL_RATE = 250
+    }
 
     private var currentState: GlobalState = newValue()
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
@@ -27,7 +29,7 @@ class GlobalStateService(
             while (isActive) {
                 val newValue = bytesCount.getAndSet(0)
                 currentValue = newValue
-                delay(1000)
+                delay(DOWNLOAD_POLL_RATE.toLong())
             }
         }
 
@@ -51,9 +53,9 @@ class GlobalStateService(
         return GlobalState(
             downloadService.runningCount(),
             downloadService.pendingCount(),
-            transaction { imageRepository.countError() } ,
+            dataTransaction.countImagesInError(),
             vgAuthService.loggedUser,
-            currentValue.formatSI()
+            ((currentValue * 1000) / DOWNLOAD_POLL_RATE).formatSI()
         )
     }
 

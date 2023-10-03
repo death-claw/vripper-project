@@ -2,21 +2,19 @@ package me.mnlr.vripper.repositories.impl
 
 import me.mnlr.vripper.entities.PostDownloadState
 import me.mnlr.vripper.entities.domain.Status
-import me.mnlr.vripper.event.Event
-import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.repositories.PostDownloadStateRepository
 import me.mnlr.vripper.tables.PostTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.util.*
 
-class PostDownloadStateRepositoryImpl(private val eventBus: EventBus) :
+class PostDownloadStateRepositoryImpl :
     PostDownloadStateRepository {
 
     private val delimiter = ";"
 
     override fun save(postDownloadState: PostDownloadState): PostDownloadState {
-        val insertStatement = PostTable.insert {
+        val id = PostTable.insertAndGetId {
             it[done] = postDownloadState.done
             it[hosts] = java.lang.String.join(delimiter, postDownloadState.hosts)
             it[outputPath] = postDownloadState.downloadDirectory
@@ -31,12 +29,8 @@ class PostDownloadStateRepositoryImpl(private val eventBus: EventBus) :
             it[token] = postDownloadState.token
             it[addedAt] = postDownloadState.addedOn
             it[rank] = postDownloadState.rank
-        }
-
-        eventBus.publishEvent(Event(Event.Kind.POST_UPDATE, insertStatement[PostTable.id].value))
-        return postDownloadState.copy(
-            id = insertStatement[PostTable.id].value
-        )
+        }.value
+        return postDownloadState.copy(id = id)
     }
 
     override fun findByPostId(postId: String): Optional<PostDownloadState> {
@@ -83,26 +77,33 @@ class PostDownloadStateRepositoryImpl(private val eventBus: EventBus) :
     }
 
     override fun deleteByPostId(postId: String): Int {
-        val mutationCount = PostTable.deleteWhere { PostTable.postId eq postId }
-        eventBus.publishEvent(Event(Event.Kind.POST_REMOVE, postId))
-        return mutationCount
+        return PostTable.deleteWhere { PostTable.postId eq postId }
     }
 
     override fun update(postDownloadState: PostDownloadState) {
-
         PostTable.update({ PostTable.id eq postDownloadState.id }) {
             it[status] = postDownloadState.status.name
             it[done] = postDownloadState.done
             it[rank] = postDownloadState.rank
         }
-        eventBus.publishEvent(Event(Event.Kind.POST_UPDATE, postDownloadState.id))
     }
 
     override fun update(postDownloadState: List<PostDownloadState>) {
         PostTable.batchReplace(postDownloadState, shouldReturnGeneratedValues = false) {
+            this[PostTable.id] = it.id!!
             this[PostTable.status] = it.status.name
             this[PostTable.done] = it.done
+            this[PostTable.total] = it.total
             this[PostTable.rank] = it.rank
+            this[PostTable.hosts] = java.lang.String.join(delimiter, it.hosts)
+            this[PostTable.outputPath] = it.downloadDirectory
+            this[PostTable.postId] = it.postId
+            this[PostTable.threadId] = it.threadId
+            this[PostTable.postTitle] = it.postTitle
+            this[PostTable.threadTitle] = it.threadTitle
+            this[PostTable.forum] = it.forum
+            this[PostTable.url] = it.url
+            this[PostTable.token] = it.token
         }
     }
 

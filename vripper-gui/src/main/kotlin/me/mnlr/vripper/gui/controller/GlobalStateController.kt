@@ -32,6 +32,7 @@ class GlobalStateController : Controller() {
                     running = newState.running
                     remaining = newState.remaining
                     error = newState.error
+                    downloadSpeed = newState.downloadSpeed
                 }
             }
         }.doOnNext {
