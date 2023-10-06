@@ -3,17 +3,15 @@ package me.mnlr.vripper.repositories.impl
 import me.mnlr.vripper.entities.ImageDownloadState
 import me.mnlr.vripper.entities.domain.Status
 import me.mnlr.vripper.event.Event
-import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.repositories.ImageRepository
 import me.mnlr.vripper.tables.ImageTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.util.*
 
-class ImageRepositoryImpl(private val eventBus: EventBus) : ImageRepository {
+class ImageRepositoryImpl : ImageRepository {
     override fun save(imageDownloadState: ImageDownloadState): ImageDownloadState {
-
-        val insertStatement = ImageTable.insert {
+        val id = ImageTable.insertAndGetId {
             it[current] = imageDownloadState.current
             it[host] = imageDownloadState.host
             it[index] = imageDownloadState.index
@@ -22,11 +20,8 @@ class ImageRepositoryImpl(private val eventBus: EventBus) : ImageRepository {
             it[total] = imageDownloadState.total
             it[url] = imageDownloadState.url
             it[postIdRef] = imageDownloadState.postIdRef
-        }
-        eventBus.publishEvent(Event(Event.Kind.IMAGE_UPDATE, insertStatement[ImageTable.id].value))
-        return imageDownloadState.copy(
-            id = insertStatement[ImageTable.id].value
-        )
+        }.value
+        return imageDownloadState.copy(id = id)
     }
 
     override fun save(imageDownloadStateList: List<ImageDownloadState>) {
@@ -43,7 +38,7 @@ class ImageRepositoryImpl(private val eventBus: EventBus) : ImageRepository {
     }
 
     override fun deleteAllByPostId(postId: String) {
-        ImageTable.deleteWhere {ImageTable.postId eq postId}
+        ImageTable.deleteWhere { ImageTable.postId eq postId }
     }
 
     override fun findByPostId(postId: String): List<ImageDownloadState> {
@@ -67,7 +62,7 @@ class ImageRepositoryImpl(private val eventBus: EventBus) : ImageRepository {
     }
 
     override fun stopByPostIdAndIsNotCompleted(postId: String): Int {
-        return ImageTable.update({(ImageTable.postId eq postId) and (ImageTable.status neq Status.FINISHED.name)}) {
+        return ImageTable.update({ (ImageTable.postId eq postId) and (ImageTable.status neq Status.FINISHED.name) }) {
             it[status] = Status.STOPPED.name
         }
     }
@@ -90,12 +85,11 @@ class ImageRepositoryImpl(private val eventBus: EventBus) : ImageRepository {
     }
 
     override fun update(imageDownloadState: ImageDownloadState) {
-        ImageTable.update({ImageTable.id eq imageDownloadState.id}) {
+        ImageTable.update({ ImageTable.id eq imageDownloadState.id }) {
             it[status] = imageDownloadState.status.name
             it[current] = imageDownloadState.current
             it[total] = imageDownloadState.total
         }
-        eventBus.publishEvent(Event(Event.Kind.IMAGE_UPDATE, imageDownloadState.id))
     }
 
     private fun transform(resultRow: ResultRow): ImageDownloadState {

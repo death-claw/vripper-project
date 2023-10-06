@@ -2,9 +2,13 @@ package me.mnlr.vripper.gui.view.tables
 
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
+import javafx.event.EventHandler
 import javafx.scene.control.*
+import javafx.scene.control.cell.TextFieldTableCell
 import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
+import javafx.stage.Stage
+import javafx.stage.StageStyle
 import javafx.util.Callback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +33,7 @@ class PostsTableView : View() {
 
     lateinit var tableView: TableView<PostModel>
     private var items: ObservableList<PostModel> = FXCollections.observableArrayList()
+    private var previewStage: Stage? = null
 
     init {
         titleProperty.bind(items.sizeProperty.map {
@@ -170,6 +175,33 @@ class PostsTableView : View() {
             }
             column("Title", PostModel::titleProperty) {
                 prefWidth = 300.0
+
+                cellFactory = Callback {
+                    val cell = TextFieldTableCell<PostModel, String>()
+                    cell.onMouseEntered = EventHandler {
+                        previewStage?.close()
+                        if(cell.text != null && cell.text.isNotBlank()) {
+                            previewStage = find<Preview>(mapOf(Preview::images to listOf(
+
+                            ))).openWindow(stageStyle = StageStyle.UNDECORATED, owner = null)?.apply {
+                                isAlwaysOnTop = true
+                                x = it.screenX + 10
+                                y = it.screenY
+                            }
+                        }
+                    }
+                    cell.onMouseMoved = EventHandler {
+                        previewStage?.apply {
+                            x = it.screenX + 10
+                            y = it.screenY
+                        }
+                    }
+                    cell.onMouseExited = EventHandler {
+                        previewStage?.close()
+                    }
+                    cell
+                }
+
             }
             column("Progress", PostModel::progressProperty) {
                 cellFactory = Callback {
@@ -248,5 +280,20 @@ class PostsTableView : View() {
 
     private fun openPhotos(postId: String) {
         find<ImagesTableView>(mapOf(ImagesTableView::postId to postId)).openModal()
+    }
+}
+
+
+class Preview : Fragment("Preview") {
+
+    val images: List<String> by param()
+
+    override val root = hbox {
+        images.forEach {
+            imageview(it, lazyload = false) {
+                fitWidth = 250.0
+                isPreserveRatio = true
+            }
+        }
     }
 }

@@ -12,6 +12,7 @@ import me.mnlr.vripper.repositories.ImageRepository
 import me.mnlr.vripper.repositories.MetadataRepository
 import me.mnlr.vripper.repositories.PostDownloadStateRepository
 import me.mnlr.vripper.repositories.ThreadRepository
+import me.mnlr.vripper.tables.ImageTable
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 import kotlin.io.path.pathString
@@ -48,6 +49,7 @@ class DataTransaction(
 
     fun update(imageDownloadState: ImageDownloadState) {
         transaction { imageRepository.update(imageDownloadState) }
+        eventBus.publishEvent(Event(Event.Kind.IMAGE_UPDATE, imageDownloadState))
     }
 
     fun exists(postId: String): Boolean {
@@ -93,6 +95,9 @@ class DataTransaction(
 
     private fun save(images: List<ImageDownloadState>) {
         transaction { imageRepository.save(images) }
+        images.forEach {
+            eventBus.publishEvent(Event(Event.Kind.IMAGE_CREATE, it))
+        }
     }
 
     fun finishPost(postDownloadState: PostDownloadState) {

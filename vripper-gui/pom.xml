@@ -17,19 +17,12 @@
   </properties>
   <dependencies>
     <dependency>
-      <artifactId>kotlin-reflect</artifactId>
-      <groupId>org.jetbrains.kotlin</groupId>
-      <version>1.8.22</version>
-    </dependency>
-    <dependency>
       <artifactId>kotlin-stdlib</artifactId>
       <groupId>org.jetbrains.kotlin</groupId>
-      <version>1.9.0</version>
     </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlinx</groupId>
       <artifactId>kotlinx-coroutines-core-jvm</artifactId>
-      <version>1.7.3</version>
     </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlinx</groupId>
@@ -138,13 +131,6 @@
             <arg>-Xjsr305=strict</arg>
           </args>
         </configuration>
-        <dependencies>
-          <dependency>
-            <artifactId>kotlin-maven-allopen</artifactId>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <version>${kotlin.version}</version>
-          </dependency>
-        </dependencies>
       </plugin>
     </plugins>
   </build>

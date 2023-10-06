@@ -14,11 +14,7 @@ class ImageController : Controller() {
         return dataTransaction.findImagesByPostId(postId).map(::mapper)
     }
 
-    fun findImageById(id: Long): Optional<ImageModel> {
-        return dataTransaction.findImageById(id).map(::mapper)
-    }
-
-    private fun mapper(it: ImageDownloadState): ImageModel {
+    fun mapper(it: ImageDownloadState): ImageModel {
         return ImageModel(
             it.id!!,
             it.index + 1,

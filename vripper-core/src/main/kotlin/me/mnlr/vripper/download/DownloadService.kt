@@ -245,9 +245,10 @@ class DownloadService(
 
     private fun afterJobFinish(imageDownloadRunnable: ImageDownloadRunnable) {
         lock.withLock {
-            running[imageDownloadRunnable.context.image.host]!!.remove(imageDownloadRunnable)
-            if (!isPending(imageDownloadRunnable.context.image.postId) && !isRunning(
-                    imageDownloadRunnable.context.image.postId
+            val image = imageDownloadRunnable.context.image
+            running[image.host]!!.remove(imageDownloadRunnable)
+            if (!isPending(image.postId) && !isRunning(
+                    image.postId
                 )
             ) {
                 dataTransaction.finishPost(imageDownloadRunnable.context.post)

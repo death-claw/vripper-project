@@ -7,6 +7,7 @@ import javafx.scene.control.*
 import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
 import javafx.util.Callback
+import me.mnlr.vripper.entities.ImageDownloadState
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.gui.controller.ImageController
@@ -36,11 +37,9 @@ class ImagesTableView : Fragment("Photos") {
 
         val disposable = eventBus
             .flux()
-            .filter { it!!.kind == Event.Kind.IMAGE_UPDATE }
-            .map { imageController.findImageById(it!!.data as Long) }
-            .filter { it.isPresent }
-            .map { it.get() }
-            .filter { it.postId == postId }
+            .filter { it.kind == Event.Kind.IMAGE_UPDATE }
+            .filter { (it.data as ImageDownloadState).postId == postId }
+            .map { imageController.mapper(it.data as ImageDownloadState) }
             .publishOn(FxScheduler)
             .doOnNext { image ->
                 val find = items

@@ -18,7 +18,7 @@ val coreModule = module {
         SettingsService(get())
     }
     single<ImageRepository> {
-        ImageRepositoryImpl(get())
+        ImageRepositoryImpl()
     }
     single<PostDownloadStateRepository> {
         PostDownloadStateRepositoryImpl()

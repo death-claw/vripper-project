@@ -38,6 +38,8 @@ class VripperGuiApplication : App(
         with(stage) {
             width = 1200.0
             height = 600.0
+            minWidth = 600.0
+            minHeight = 400.0
             icons.addAll(
                 listOf(
                     Image("icons/16x16.png"),

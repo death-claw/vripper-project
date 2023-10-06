@@ -17,6 +17,7 @@ class ClipboardService(
     private val eventBusDisposable: Disposable
     private var current: String? = null
     private var coroutineScope = CoroutineScope(Dispatchers.JavaFx)
+    private var pollJob: Job? = null
 
     init {
         eventBusDisposable = eventBus
@@ -26,9 +27,9 @@ class ClipboardService(
     }
 
     fun init() {
-        coroutineScope.cancel()
+        pollJob?.cancel()
         if(settingsService.settings.clipboardSettings.enable) {
-            coroutineScope.launch {
+            pollJob = coroutineScope.launch {
                 while (isActive) {
                     poll()
                     delay(settingsService.settings.clipboardSettings.pollingRate.toLong())

@@ -67,7 +67,7 @@ class PostDownloadStateRepositoryImpl :
     }
 
     override fun existByPostId(postId: String): Boolean {
-        return PostTable.slice(PostTable.id).selectAll().count() > 0
+        return PostTable.slice(PostTable.id).select { PostTable.postId eq postId }.count() > 0
     }
 
     override fun setDownloadingToStopped(): Int {

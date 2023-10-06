@@ -6,6 +6,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 object EventBusScheduler {
-    private val executor: ExecutorService = Executors.newSingleThreadExecutor()
+    private val executor: ExecutorService = Executors.newCachedThreadPool()
     val scheduler: Scheduler = Schedulers.fromExecutor(executor)
 }
