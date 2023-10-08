@@ -27,6 +27,10 @@
       <artifactId>kotlinx-coroutines-core-jvm</artifactId>
     </dependency>
     <dependency>
+      <artifactId>kotlin-reflect</artifactId>
+      <groupId>org.jetbrains.kotlin</groupId>
+    </dependency>
+    <dependency>
       <groupId>org.jetbrains.exposed</groupId>
       <artifactId>exposed-jdbc</artifactId>
     </dependency>

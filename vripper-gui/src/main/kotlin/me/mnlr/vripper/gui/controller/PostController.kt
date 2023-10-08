@@ -1,6 +1,7 @@
 package me.mnlr.vripper.gui.controller
 
 import me.mnlr.vripper.AppEndpointService
+import me.mnlr.vripper.entities.ImageDownloadState
 import me.mnlr.vripper.entities.PostDownloadState
 import me.mnlr.vripper.gui.model.PostModel
 import me.mnlr.vripper.services.DataTransaction
@@ -59,7 +60,8 @@ class PostController : Controller() {
             it.addedOn.format(dateTimeFormatter),
             it.rank + 1,
             it.downloadDirectory,
-            "${it.done}/${it.total}"
+            "${it.done}/${it.total}",
+            dataTransaction.findImagesByPostId(it.postId).map(ImageDownloadState::thumbUrl).take(4)
         )
     }
 }

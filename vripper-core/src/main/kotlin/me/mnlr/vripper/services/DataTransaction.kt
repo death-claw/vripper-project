@@ -12,7 +12,6 @@ import me.mnlr.vripper.repositories.ImageRepository
 import me.mnlr.vripper.repositories.MetadataRepository
 import me.mnlr.vripper.repositories.PostDownloadStateRepository
 import me.mnlr.vripper.repositories.ThreadRepository
-import me.mnlr.vripper.tables.ImageTable
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 import kotlin.io.path.pathString
@@ -27,9 +26,7 @@ class DataTransaction(
 ) {
 
     private fun save(postDownloadState: PostDownloadState): PostDownloadState {
-        val createdPost = transaction { postDownloadStateRepository.save(postDownloadState) }
-        eventBus.publishEvent(Event(Event.Kind.POST_CREATE, createdPost))
-        return createdPost
+        return transaction { postDownloadStateRepository.save(postDownloadState) }
     }
 
     fun update(postDownloadState: PostDownloadState) {
@@ -57,7 +54,7 @@ class DataTransaction(
     }
 
     fun newPost(postItem: PostItem): PostDownloadState {
-        return transaction {
+        val (post, images) = transaction {
             val postDownloadState = save(
                 PostDownloadState(
                     postTitle = postItem.title,
@@ -82,6 +79,7 @@ class DataTransaction(
                 ImageDownloadState(
                     postId = postItem.postId,
                     url = imageItem.mainLink,
+                    thumbUrl = imageItem.thumbLink,
                     host = imageItem.host.hostId,
                     index = index,
                     postIdRef = postDownloadState.id!!
@@ -89,15 +87,17 @@ class DataTransaction(
             }
             save(images)
             sortPostsByRank()
-            postDownloadState
+            Pair(postDownloadState, images)
         }
+        eventBus.publishEvent(Event(Event.Kind.POST_CREATE, post))
+        images.forEach {
+            eventBus.publishEvent(Event(Event.Kind.IMAGE_CREATE, it))
+        }
+        return post
     }
 
     private fun save(images: List<ImageDownloadState>) {
         transaction { imageRepository.save(images) }
-        images.forEach {
-            eventBus.publishEvent(Event(Event.Kind.IMAGE_CREATE, it))
-        }
     }
 
     fun finishPost(postDownloadState: PostDownloadState) {

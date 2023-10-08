@@ -17,7 +17,8 @@ class PostModel(
     addedOn: String,
     order: Int,
     path: String,
-    progressCount: String
+    progressCount: String,
+    val previewList: List<String>
 ) {
     val postIdProperty = SimpleStringProperty(postId)
     var postId: String by postIdProperty

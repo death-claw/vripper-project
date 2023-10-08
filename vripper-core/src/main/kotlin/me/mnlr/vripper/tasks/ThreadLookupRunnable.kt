@@ -42,13 +42,13 @@ class ThreadLookupRunnable(private val threadId: String, private val settings: S
     override fun run() {
         try {
             eventRepository.update(logEvent.copy(status = PROCESSING))
-            val threadLookupResult = threadCacheService[threadId]
-            if (threadLookupResult.postItemList.isEmpty()) {
-                val message = "Nothing found for $link"
-                eventRepository.update(logEvent.copy(status = ERROR, message = message))
-                return
-            }
             if (dataTransaction.findThreadByThreadId(threadId).isEmpty) {
+                val threadLookupResult = threadCacheService[threadId]
+                if (threadLookupResult.postItemList.isEmpty()) {
+                    val message = "Nothing found for $link"
+                    eventRepository.update(logEvent.copy(status = ERROR, message = message))
+                    return
+                }
                 dataTransaction.save(
                     Thread(
                         title = threadLookupResult.title,

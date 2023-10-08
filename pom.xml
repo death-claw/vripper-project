@@ -113,6 +113,11 @@
         <artifactId>jna-platform</artifactId>
         <version>5.13.0</version>
       </dependency>
+      <dependency>
+        <artifactId>kotlin-reflect</artifactId>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <version>1.9.10</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 </project>

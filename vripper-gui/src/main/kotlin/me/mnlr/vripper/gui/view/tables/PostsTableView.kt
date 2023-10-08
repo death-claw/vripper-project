@@ -7,12 +7,16 @@ import javafx.scene.control.*
 import javafx.scene.control.cell.TextFieldTableCell
 import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
+import javafx.scene.layout.HBox
 import javafx.stage.Stage
 import javafx.stage.StageStyle
 import javafx.util.Callback
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.javafx.JavaFx
+import kotlinx.coroutines.javafx.asFlow
 import me.mnlr.vripper.entities.PostDownloadState
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
@@ -34,6 +38,7 @@ class PostsTableView : View() {
     lateinit var tableView: TableView<PostModel>
     private var items: ObservableList<PostModel> = FXCollections.observableArrayList()
     private var previewStage: Stage? = null
+    private var previewLoadJob: Job? = null
 
     init {
         titleProperty.bind(items.sizeProperty.map {
@@ -44,21 +49,15 @@ class PostsTableView : View() {
             }
         })
 
-        eventBus
-            .flux()
-            .filter { it!!.kind == Event.Kind.POST_CREATE }
-            .map { postController.mapper(it.data as PostDownloadState) }
-            .publishOn(FxScheduler)
+        eventBus.flux().filter { it!!.kind == Event.Kind.POST_CREATE }
+            .map { postController.mapper(it.data as PostDownloadState) }.publishOn(FxScheduler)
             .doOnNext {
                 items.add(it)
                 this.tableView.refresh()
             }.subscribe()
 
-        eventBus
-            .flux()
-            .filter { it!!.kind == Event.Kind.POST_UPDATE }
-            .map { postController.mapper(it.data as PostDownloadState) }
-            .publishOn(FxScheduler)
+        eventBus.flux().filter { it!!.kind == Event.Kind.POST_UPDATE }
+            .map { postController.mapper(it.data as PostDownloadState) }.publishOn(FxScheduler)
             .doOnNext {
                 items.find { postModel -> postModel.postId == it.postId }?.apply {
                     progress = it.progress
@@ -68,13 +67,9 @@ class PostsTableView : View() {
                     order = it.order
                     progressCount = it.progressCount
                 }
-            }
-            .subscribe()
+            }.subscribe()
 
-        eventBus
-            .flux()
-            .filter { it!!.kind == Event.Kind.POST_REMOVE }
-            .publishOn(FxScheduler)
+        eventBus.flux().filter { it!!.kind == Event.Kind.POST_REMOVE }.publishOn(FxScheduler)
             .doOnNext {
                 items.removeIf { p -> p.postId == it.data as String }
             }.subscribe()
@@ -168,9 +163,8 @@ class PostsTableView : View() {
                     locationItem,
                     urlItem
                 )
-                tableRow.contextMenuProperty()
-                    .bind(
-                        tableRow.emptyProperty().map { empty -> if (empty) null else contextMenu })
+                tableRow.contextMenuProperty().bind(tableRow.emptyProperty()
+                    .map { empty -> if (empty) null else contextMenu })
                 tableRow
             }
             column("Title", PostModel::titleProperty) {
@@ -178,30 +172,45 @@ class PostsTableView : View() {
 
                 cellFactory = Callback {
                     val cell = TextFieldTableCell<PostModel, String>()
-                    cell.onMouseEntered = EventHandler {
+                    cell.onMouseEntered = EventHandler { mouseEvent ->
                         previewStage?.close()
-                        if(cell.text != null && cell.text.isNotBlank()) {
-                            previewStage = find<Preview>(mapOf(Preview::images to listOf(
-
-                            ))).openWindow(stageStyle = StageStyle.UNDECORATED, owner = null)?.apply {
-                                isAlwaysOnTop = true
-                                x = it.screenX + 10
-                                y = it.screenY
+                        previewLoadJob?.cancel()
+                        if (cell.text != null && cell.text.isNotBlank()) {
+                            previewLoadJob = coroutineScope.launch(Dispatchers.Default) {
+                                yield()
+                                val map = cell.tableRow.item.previewList.map {
+                                    previewLoading(it).await()
+                                }
+                                yield()
+                                withContext(Dispatchers.JavaFx) {
+                                    previewStage = find<Preview>(
+                                        mapOf(
+                                            Preview::images to map
+                                        )
+                                    ).openWindow(stageStyle = StageStyle.UNDECORATED, owner = null)
+                                        ?.apply {
+                                            isAlwaysOnTop = true
+                                            x = mouseEvent.screenX + 20
+                                            y = mouseEvent.screenY + 10
+                                        }
+                                }
                             }
                         }
                     }
                     cell.onMouseMoved = EventHandler {
                         previewStage?.apply {
-                            x = it.screenX + 10
-                            y = it.screenY
+                            x = it.screenX + 20
+                            y = it.screenY + 10
                         }
                     }
                     cell.onMouseExited = EventHandler {
                         previewStage?.close()
+                        previewLoadJob?.cancel()
+                        previewStage = null
+                        previewLoadJob = null
                     }
                     cell
                 }
-
             }
             column("Progress", PostModel::progressProperty) {
                 cellFactory = Callback {
@@ -255,6 +264,24 @@ class PostsTableView : View() {
         }
     }
 
+    suspend fun previewLoading(url: String): Deferred<ImageView?> {
+        return coroutineScope.async(Dispatchers.IO) {
+            val imageView = ImageView(url).apply {
+                isPreserveRatio = true
+                fitWidth = 200.0
+            }
+
+            val flow = imageView.image.progressProperty().asFlow()
+
+            val lastOrNull =
+                flow.filter { it == 1.0 }.map {
+                    imageView
+                }.first()
+
+            lastOrNull
+        }
+    }
+
     fun deleteSelected() {
         val postIdList = tableView.selectionModel.selectedItems.map { it.postId }
         confirm(
@@ -286,14 +313,14 @@ class PostsTableView : View() {
 
 class Preview : Fragment("Preview") {
 
-    val images: List<String> by param()
+    val images: List<ImageView> by param()
+    private val hBox = HBox()
 
-    override val root = hbox {
+    init {
         images.forEach {
-            imageview(it, lazyload = false) {
-                fitWidth = 250.0
-                isPreserveRatio = true
-            }
+            hBox.add(it)
         }
     }
+
+    override val root = hBox
 }

@@ -2,7 +2,6 @@ package me.mnlr.vripper.repositories.impl
 
 import me.mnlr.vripper.entities.ImageDownloadState
 import me.mnlr.vripper.entities.domain.Status
-import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.repositories.ImageRepository
 import me.mnlr.vripper.tables.ImageTable
 import org.jetbrains.exposed.sql.*
@@ -19,6 +18,7 @@ class ImageRepositoryImpl : ImageRepository {
             it[status] = imageDownloadState.status.name
             it[total] = imageDownloadState.total
             it[url] = imageDownloadState.url
+            it[thumbUrl] = imageDownloadState.thumbUrl
             it[postIdRef] = imageDownloadState.postIdRef
         }.value
         return imageDownloadState.copy(id = id)
@@ -33,6 +33,7 @@ class ImageRepositoryImpl : ImageRepository {
             this[ImageTable.status] = it.status.name
             this[ImageTable.total] = it.total
             this[ImageTable.url] = it.url
+            this[ImageTable.thumbUrl] = it.thumbUrl
             this[ImageTable.postIdRef] = it.postIdRef
         }
     }
@@ -96,12 +97,24 @@ class ImageRepositoryImpl : ImageRepository {
         val id = resultRow[ImageTable.id].value
         val postId = resultRow[ImageTable.postId]
         val url = resultRow[ImageTable.url]
+        val thumbUrl = resultRow[ImageTable.thumbUrl]
         val host = resultRow[ImageTable.host]
         val index = resultRow[ImageTable.index]
         val current = resultRow[ImageTable.current]
         val total = resultRow[ImageTable.total]
         val status = Status.valueOf(resultRow[ImageTable.status])
         val postIdRef = resultRow[ImageTable.postIdRef]
-        return ImageDownloadState(id, postId, url, host, index, postIdRef, total, current, status)
+        return ImageDownloadState(
+            id,
+            postId,
+            url,
+            thumbUrl,
+            host,
+            index,
+            postIdRef,
+            total,
+            current,
+            status
+        )
     }
 }

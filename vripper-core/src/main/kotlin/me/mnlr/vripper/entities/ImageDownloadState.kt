@@ -1,12 +1,12 @@
 package me.mnlr.vripper.entities
 
 import me.mnlr.vripper.entities.domain.Status
-import me.mnlr.vripper.host.Host
 
 data class ImageDownloadState(
     var id: Long? = null,
     val postId: String,
     val url: String,
+    val thumbUrl: String,
     val host: String,
     val index: Int,
     val postIdRef: Long,
