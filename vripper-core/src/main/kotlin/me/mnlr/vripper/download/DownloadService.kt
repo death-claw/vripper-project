@@ -107,23 +107,21 @@ class DownloadService(
                 data[post] = images
             }
 
-            for ((postDownloadState, imageDownloadStates) in data) {
-                postDownloadState.status = Status.PENDING
-                dataTransaction.update(postDownloadState)
-                for (imageDownloadState in imageDownloadStates) {
-                    log.debug("Enqueuing a job for ${imageDownloadState.url}")
-                    with(imageDownloadState) {
-                        this.status = Status.STOPPED
+            for ((_, images) in data) {
+                for (image in images) {
+                    log.debug("Enqueuing a job for ${image.url}")
+                    with(image) {
+                        this.status = Status.PENDING
                         this.current = 0
                     }
-                    dataTransaction.update(imageDownloadState)
+                    dataTransaction.update(image)
                     val imageDownloadRunnable = ImageDownloadRunnable(
-                        imageDownloadState.id!!, settingsService.settings
+                        image.id!!, settingsService.settings
                     )
                     pending.computeIfAbsent(
-                        imageDownloadState.host
+                        image.host
                     ) { mutableListOf() }
-                    pending[imageDownloadState.host]!!.add(imageDownloadRunnable)
+                    pending[image.host]!!.add(imageDownloadRunnable)
                 }
             }
             condition.signal()

@@ -7,6 +7,10 @@ import javafx.scene.control.ContentDisplay
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyCodeCombination
 import javafx.scene.input.KeyCombination
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.javafx.JavaFx
+import kotlinx.coroutines.launch
 import me.mnlr.vripper.gui.Styles
 import me.mnlr.vripper.gui.controller.GlobalStateController
 import me.mnlr.vripper.gui.controller.PostController
@@ -19,6 +23,7 @@ class DownloadActionsView : View() {
     private val globalStateController: GlobalStateController by inject()
     private val postsTableView: PostsTableView by inject()
     private val downloadActiveProperty = SimpleBooleanProperty(true)
+    private val coroutineScope = CoroutineScope(Dispatchers.Default)
 
     init {
         downloadActiveProperty.bind(globalStateController.globalState.runningProperty.greaterThan(0))
@@ -125,8 +130,12 @@ class DownloadActionsView : View() {
             shortcut(KeyCodeCombination(KeyCode.DELETE, KeyCombination.CONTROL_DOWN))
             action {
                 confirm("Clean finished posts", "Confirm removal of finished posts", ButtonType.YES, ButtonType.NO) {
-                    val clearPosts = postController.clearPosts()
-                    postsTableView.tableView.items.removeIf { clearPosts.contains(it.postId) }
+                    coroutineScope.launch {
+                        val clearPosts = postController.clearPosts().await()
+                        coroutineScope.launch(Dispatchers.JavaFx) {
+                            postsTableView.tableView.items.removeIf { clearPosts.contains(it.postId) }
+                        }
+                    }
                 }
             }
         }

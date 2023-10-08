@@ -3,7 +3,9 @@ package me.mnlr.vripper.gui.view.tables
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.event.EventHandler
+import javafx.geometry.Pos
 import javafx.scene.control.*
+import javafx.scene.control.cell.TextFieldTableCell
 import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
 import javafx.stage.Stage
@@ -69,7 +71,7 @@ class PostsTableView : View() {
     override fun onDock() {
         tableView.prefHeightProperty().bind(root.heightProperty())
         coroutineScope.launch {
-            items.addAll(postController.findAllPosts())
+            items.addAll(postController.findAllPosts().await())
         }
     }
 
@@ -190,10 +192,14 @@ class PostsTableView : View() {
             }
             column("Title", PostModel::titleProperty) {
                 prefWidth = 300.0
+                cellFactory = Callback {
+                    TextFieldTableCell<PostModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
+                }
             }
             column("Progress", PostModel::progressProperty) {
                 cellFactory = Callback {
                     val cell = ProgressTableCell<PostModel>()
+                    cell.alignment = Pos.CENTER
                     cell.setOnMouseClick {
                         when (it.button) {
                             MouseButton.SECONDARY -> {
@@ -232,13 +238,36 @@ class PostsTableView : View() {
                     cell as TableCell<PostModel, Number>
                 }
             }
-            column("Status", PostModel::statusProperty)
-            column("Path", PostModel::pathProperty)
-            column("Total", PostModel::progressCountProperty)
-            column("Hosts", PostModel::hostsProperty)
-            column("Added On", PostModel::addedOnProperty)
+            column("Status", PostModel::statusProperty) {
+                cellFactory = Callback {
+                    StatusTableCell<PostModel>()
+                }
+            }
+            column("Path", PostModel::pathProperty) {
+                cellFactory = Callback {
+                    TextFieldTableCell<PostModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
+                }
+            }
+            column("Total", PostModel::progressCountProperty) {
+                cellFactory = Callback {
+                    TextFieldTableCell<PostModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
+                }
+            }
+            column("Hosts", PostModel::hostsProperty) {
+                cellFactory = Callback {
+                    TextFieldTableCell<PostModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
+                }
+            }
+            column("Added On", PostModel::addedOnProperty) {
+                cellFactory = Callback {
+                    TextFieldTableCell<PostModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
+                }
+            }
             column("Order", PostModel::orderProperty) {
                 sortOrder.add(this)
+                cellFactory = Callback {
+                    TextFieldTableCell<PostModel?, Number?>().apply { alignment = Pos.CENTER_LEFT }
+                }
             }
         }
     }

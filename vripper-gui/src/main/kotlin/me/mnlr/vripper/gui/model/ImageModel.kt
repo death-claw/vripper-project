@@ -11,8 +11,7 @@ class ImageModel(
     index: Int,
     url: String,
     progress: Double,
-    status: String,
-    val postId: String
+    status: String
 ) {
     val idProperty = SimpleLongProperty(id)
     var id: Long by idProperty

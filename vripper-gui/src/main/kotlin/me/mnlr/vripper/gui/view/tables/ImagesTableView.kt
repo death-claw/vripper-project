@@ -4,6 +4,7 @@ import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.geometry.Pos
 import javafx.scene.control.*
+import javafx.scene.control.cell.TextFieldTableCell
 import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
 import javafx.util.Callback
@@ -14,6 +15,7 @@ import me.mnlr.vripper.gui.controller.ImageController
 import me.mnlr.vripper.gui.model.ImageModel
 import me.mnlr.vripper.gui.view.FxScheduler
 import me.mnlr.vripper.gui.view.ProgressTableCell
+import me.mnlr.vripper.gui.view.StatusTableCell
 import me.mnlr.vripper.gui.view.openLink
 import tornadofx.*
 
@@ -80,13 +82,20 @@ class ImagesTableView : Fragment("Photos") {
             }
             column("Index", ImageModel::indexProperty) {
                 sortOrder.add(this)
+                cellFactory = Callback {
+                    TextFieldTableCell<ImageModel?, Number?>().apply { alignment = Pos.CENTER_LEFT }
+                }
             }
             column("Link", ImageModel::urlProperty) {
                 prefWidth = 200.0
+                cellFactory = Callback {
+                    TextFieldTableCell<ImageModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
+                }
             }
             column("Progress", ImageModel::progressProperty) {
                 cellFactory = Callback {
                     val cell = ProgressTableCell<ImageModel>()
+                    cell.alignment = Pos.CENTER
                     cell.setOnMouseClick {
                         when (it.clickCount) {
                             1 -> {
@@ -102,7 +111,11 @@ class ImagesTableView : Fragment("Photos") {
                     cell as TableCell<ImageModel, Number>
                 }
             }
-            column("Status", ImageModel::statusProperty)
+            column("Status", ImageModel::statusProperty) {
+                cellFactory = Callback {
+                    StatusTableCell()
+                }
+            }
         }
     }
 }

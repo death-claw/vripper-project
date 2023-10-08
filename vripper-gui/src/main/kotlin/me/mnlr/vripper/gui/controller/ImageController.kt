@@ -19,8 +19,7 @@ class ImageController : Controller() {
             it.index + 1,
             it.url,
             if (it.current == 0L && it.total == 0L) 0.0 else (it.current.toDouble() / it.total),
-            it.status.stringValue,
-            it.postId
+            it.status.name,
         )
     }
 }
