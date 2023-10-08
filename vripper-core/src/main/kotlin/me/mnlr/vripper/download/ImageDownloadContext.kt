@@ -1,7 +1,7 @@
 package me.mnlr.vripper.download
 
-import me.mnlr.vripper.entities.ImageDownloadState
-import me.mnlr.vripper.entities.PostDownloadState
+import me.mnlr.vripper.entities.Image
+import me.mnlr.vripper.entities.Post
 import me.mnlr.vripper.model.Settings
 import me.mnlr.vripper.services.DataTransaction
 import org.apache.http.client.protocol.HttpClientContext
@@ -15,8 +15,8 @@ class ImageDownloadContext(val imageId: Long, val settings: Settings) : KoinComp
     val httpContext: HttpClientContext = HttpClientContext.create()
     val postId = image.postIdRef
     var stopped = false
-    val image: ImageDownloadState
+    val image: Image
         get() = dataTransaction.findImageById(imageId).orElseThrow()
-    val post: PostDownloadState
+    val post: Post
         get() = dataTransaction.findPostById(postId).orElseThrow()
 }

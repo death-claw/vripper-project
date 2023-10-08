@@ -2,7 +2,7 @@ package me.mnlr.vripper.entities
 
 import me.mnlr.vripper.entities.domain.Status
 
-data class ImageDownloadState(
+data class Image(
     var id: Long? = null,
     val postId: String,
     val url: String,
@@ -18,7 +18,7 @@ data class ImageDownloadState(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as ImageDownloadState
+        other as Image
 
         if (url != other.url) return false
 

@@ -1,8 +1,8 @@
 package me.mnlr.vripper.download
 
 import me.mnlr.vripper.delegate.LoggerDelegate
-import me.mnlr.vripper.entities.ImageDownloadState
-import me.mnlr.vripper.entities.PostDownloadState
+import me.mnlr.vripper.entities.Image
+import me.mnlr.vripper.entities.Post
 import me.mnlr.vripper.entities.domain.Status
 import me.mnlr.vripper.exception.DownloadException
 import me.mnlr.vripper.exception.HostException
@@ -33,7 +33,7 @@ class ImageDownloadRunnable(
     private val hosts: List<Host> = getKoin().getAll()
 
     val context: ImageDownloadContext = ImageDownloadContext(imageInternalId, settings)
-    private val image: ImageDownloadState
+    private val image: Image
         get() = context.image
     private var stopped: Boolean
         get() = context.stopped
@@ -111,7 +111,7 @@ class ImageDownloadRunnable(
 
     @Throws(HostException::class)
     private fun checkImageTypeAndRename(
-        postDownloadState: PostDownloadState, downloadedImage: DownloadedImage, index: Int
+        post: Post, downloadedImage: DownloadedImage, index: Int
     ) {
         val existingExtension = getExtension(downloadedImage.name)
         val extension = when (downloadedImage.type) {
@@ -124,7 +124,7 @@ class ImageDownloadRunnable(
         val filename =
             if (existingExtension.isBlank()) "${downloadedImage.name}.$extension" else downloadedImage.name
         try {
-            val downloadDestinationFolder = Path.of(postDownloadState.downloadDirectory)
+            val downloadDestinationFolder = Path.of(post.downloadDirectory)
             synchronized(downloadDestinationFolder.pathString.intern()) {
                 Files.createDirectories(downloadDestinationFolder)
             }

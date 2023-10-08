@@ -1,17 +1,17 @@
 package me.mnlr.vripper.repositories
 
-import me.mnlr.vripper.entities.ImageDownloadState
+import me.mnlr.vripper.entities.Image
 import java.util.*
 
 interface ImageRepository {
-    fun save(imageDownloadState: ImageDownloadState): ImageDownloadState
-    fun save(imageDownloadStateList: List<ImageDownloadState>)
+    fun save(image: Image): Image
+    fun save(imageList: List<Image>)
     fun deleteAllByPostId(postId: String)
-    fun findByPostId(postId: String): List<ImageDownloadState>
+    fun findByPostId(postId: String): List<Image>
     fun countError(): Int
-    fun findByPostIdAndIsNotCompleted(postId: String): List<ImageDownloadState>
+    fun findByPostIdAndIsNotCompleted(postId: String): List<Image>
     fun stopByPostIdAndIsNotCompleted(postId: String): Int
-    fun findByPostIdAndIsError(postId: String): List<ImageDownloadState>
-    fun findById(id: Long): Optional<ImageDownloadState>
-    fun update(imageDownloadState: ImageDownloadState)
+    fun findByPostIdAndIsError(postId: String): List<Image>
+    fun findById(id: Long): Optional<Image>
+    fun update(image: Image)
 }

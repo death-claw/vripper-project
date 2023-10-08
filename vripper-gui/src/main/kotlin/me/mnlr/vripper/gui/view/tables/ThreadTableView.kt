@@ -132,6 +132,9 @@ class ThreadTableView : View() {
 
     private fun selectPosts(threadId: String) {
         find<ThreadSelectionTableView>(mapOf(ThreadSelectionTableView::threadId to threadId)).openModal()
-
+            ?.apply {
+                minWidth = 600.0
+                minHeight = 400.0
+            }
     }
 }

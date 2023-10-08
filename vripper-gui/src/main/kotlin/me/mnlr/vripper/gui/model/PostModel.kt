@@ -18,7 +18,7 @@ class PostModel(
     order: Int,
     path: String,
     progressCount: String,
-    val previewList: List<String>
+    previewList: List<String>
 ) {
     val postIdProperty = SimpleStringProperty(postId)
     var postId: String by postIdProperty
@@ -55,4 +55,7 @@ class PostModel(
 
     val progressCountProperty = SimpleStringProperty(progressCount)
     var progressCount: String by progressCountProperty
+
+    val previewListProperty = SimpleStringProperty(previewList.joinToString("|"))
+    var previewList: List<String> = previewListProperty.value.split("|")
 }

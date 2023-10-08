@@ -21,7 +21,10 @@ class ActionBarView : View() {
                 contentDisplay = ContentDisplay.GRAPHIC_ONLY
                 tooltip("Open settings menu")
                 action {
-                    find<SettingsView>().openModal()
+                    find<SettingsView>().openModal()?.apply {
+                        minWidth = 600.0
+                        minHeight = 400.0
+                    }
                 }
             }
         }

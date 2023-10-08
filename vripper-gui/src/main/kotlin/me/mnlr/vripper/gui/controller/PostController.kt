@@ -1,8 +1,8 @@
 package me.mnlr.vripper.gui.controller
 
 import me.mnlr.vripper.AppEndpointService
-import me.mnlr.vripper.entities.ImageDownloadState
-import me.mnlr.vripper.entities.PostDownloadState
+import me.mnlr.vripper.entities.Image
+import me.mnlr.vripper.entities.Post
 import me.mnlr.vripper.gui.model.PostModel
 import me.mnlr.vripper.services.DataTransaction
 import tornadofx.*
@@ -47,7 +47,7 @@ class PostController : Controller() {
         return dataTransaction.findAllPosts().map(::mapper)
     }
 
-    fun mapper(it: PostDownloadState): PostModel {
+    fun mapper(it: Post): PostModel {
         return PostModel(
             it.postId,
             it.postTitle,
@@ -61,7 +61,7 @@ class PostController : Controller() {
             it.rank + 1,
             it.downloadDirectory,
             "${it.done}/${it.total}",
-            dataTransaction.findImagesByPostId(it.postId).map(ImageDownloadState::thumbUrl).take(4)
+            dataTransaction.findImagesByPostId(it.postId).map(Image::thumbUrl).take(4)
         )
     }
 }

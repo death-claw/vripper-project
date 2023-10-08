@@ -1,7 +1,7 @@
 package me.mnlr.vripper.services
 
 import me.mnlr.vripper.delegate.LoggerDelegate
-import me.mnlr.vripper.entities.PostDownloadState
+import me.mnlr.vripper.entities.Post
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.exception.VripperException
@@ -140,7 +140,7 @@ class VGAuthService(
         eventBusImpl.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
     }
 
-    fun leaveThanks(post: PostDownloadState) {
+    fun leaveThanks(post: Post) {
         CompletableFuture.runAsync(LeaveThanksRunnable(post, authenticated, context))
     }
 }

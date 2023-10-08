@@ -1,6 +1,6 @@
 package me.mnlr.vripper.repositories.impl
 
-import me.mnlr.vripper.entities.ImageDownloadState
+import me.mnlr.vripper.entities.Image
 import me.mnlr.vripper.entities.domain.Status
 import me.mnlr.vripper.repositories.ImageRepository
 import me.mnlr.vripper.tables.ImageTable
@@ -9,23 +9,23 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.util.*
 
 class ImageRepositoryImpl : ImageRepository {
-    override fun save(imageDownloadState: ImageDownloadState): ImageDownloadState {
+    override fun save(image: Image): Image {
         val id = ImageTable.insertAndGetId {
-            it[current] = imageDownloadState.current
-            it[host] = imageDownloadState.host
-            it[index] = imageDownloadState.index
-            it[postId] = imageDownloadState.postId
-            it[status] = imageDownloadState.status.name
-            it[total] = imageDownloadState.total
-            it[url] = imageDownloadState.url
-            it[thumbUrl] = imageDownloadState.thumbUrl
-            it[postIdRef] = imageDownloadState.postIdRef
+            it[current] = image.current
+            it[host] = image.host
+            it[index] = image.index
+            it[postId] = image.postId
+            it[status] = image.status.name
+            it[total] = image.total
+            it[url] = image.url
+            it[thumbUrl] = image.thumbUrl
+            it[postIdRef] = image.postIdRef
         }.value
-        return imageDownloadState.copy(id = id)
+        return image.copy(id = id)
     }
 
-    override fun save(imageDownloadStateList: List<ImageDownloadState>) {
-        ImageTable.batchInsert(imageDownloadStateList, shouldReturnGeneratedValues = false) {
+    override fun save(imageList: List<Image>) {
+        ImageTable.batchInsert(imageList, shouldReturnGeneratedValues = false) {
             this[ImageTable.current] = it.current
             this[ImageTable.host] = it.host
             this[ImageTable.index] = it.index
@@ -42,7 +42,7 @@ class ImageRepositoryImpl : ImageRepository {
         ImageTable.deleteWhere { ImageTable.postId eq postId }
     }
 
-    override fun findByPostId(postId: String): List<ImageDownloadState> {
+    override fun findByPostId(postId: String): List<Image> {
         return ImageTable.select {
             ImageTable.postId eq postId
         }.map(this::transform)
@@ -55,7 +55,7 @@ class ImageRepositoryImpl : ImageRepository {
             .count().toInt()
     }
 
-    override fun findByPostIdAndIsNotCompleted(postId: String): List<ImageDownloadState> {
+    override fun findByPostIdAndIsNotCompleted(postId: String): List<Image> {
         return ImageTable
             .select {
                 (ImageTable.postId eq postId) and (ImageTable.status neq Status.FINISHED.name)
@@ -68,13 +68,13 @@ class ImageRepositoryImpl : ImageRepository {
         }
     }
 
-    override fun findByPostIdAndIsError(postId: String): List<ImageDownloadState> {
+    override fun findByPostIdAndIsError(postId: String): List<Image> {
         return ImageTable.select {
             (ImageTable.postId eq postId) and (ImageTable.status eq Status.ERROR.name)
         }.map(this::transform)
     }
 
-    override fun findById(id: Long): Optional<ImageDownloadState> {
+    override fun findById(id: Long): Optional<Image> {
         val result = ImageTable.select {
             ImageTable.id eq id
         }.map(this::transform)
@@ -85,15 +85,15 @@ class ImageRepositoryImpl : ImageRepository {
         }
     }
 
-    override fun update(imageDownloadState: ImageDownloadState) {
-        ImageTable.update({ ImageTable.id eq imageDownloadState.id }) {
-            it[status] = imageDownloadState.status.name
-            it[current] = imageDownloadState.current
-            it[total] = imageDownloadState.total
+    override fun update(image: Image) {
+        ImageTable.update({ ImageTable.id eq image.id }) {
+            it[status] = image.status.name
+            it[current] = image.current
+            it[total] = image.total
         }
     }
 
-    private fun transform(resultRow: ResultRow): ImageDownloadState {
+    private fun transform(resultRow: ResultRow): Image {
         val id = resultRow[ImageTable.id].value
         val postId = resultRow[ImageTable.postId]
         val url = resultRow[ImageTable.url]
@@ -104,7 +104,7 @@ class ImageRepositoryImpl : ImageRepository {
         val total = resultRow[ImageTable.total]
         val status = Status.valueOf(resultRow[ImageTable.status])
         val postIdRef = resultRow[ImageTable.postIdRef]
-        return ImageDownloadState(
+        return Image(
             id,
             postId,
             url,

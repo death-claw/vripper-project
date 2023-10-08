@@ -2,12 +2,18 @@ package me.mnlr.vripper.gui.view.tables
 
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
+import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
+import javafx.stage.Stage
+import javafx.stage.StageStyle
+import javafx.util.Callback
 import me.mnlr.vripper.gui.controller.ThreadController
 import me.mnlr.vripper.gui.model.ThreadSelectionModel
+import me.mnlr.vripper.gui.view.Preview
+import me.mnlr.vripper.gui.view.PreviewTableCell
 import me.mnlr.vripper.gui.view.openLink
 import tornadofx.*
 
@@ -16,6 +22,7 @@ class ThreadSelectionTableView : Fragment("Thread") {
     private lateinit var tableView: TableView<ThreadSelectionModel>
     private val threadController: ThreadController by inject()
     private var items: ObservableList<ThreadSelectionModel> = FXCollections.observableArrayList()
+    private var previewStage: Stage? = null
     val threadId: String by param()
 
     override fun onDock() {
@@ -58,6 +65,36 @@ class ThreadSelectionTableView : Fragment("Thread") {
                     .map { empty -> if (empty) null else contextMenu })
 
                 tableRow
+            }
+            column("Preview", ThreadSelectionModel::previewListProperty) {
+                cellFactory = Callback {
+                    val cell = PreviewTableCell<ThreadSelectionModel>()
+                    cell.onMouseEntered = EventHandler { mouseEvent ->
+                        previewStage?.close()
+                        if (cell.tableRow.item != null && cell.tableRow.item.previewList.isNotEmpty()) {
+                            previewStage =
+                                find<Preview>(mapOf(Preview::images to cell.tableRow.item.previewList)).openWindow(
+                                    stageStyle = StageStyle.UNDECORATED,
+                                    owner = null
+                                )
+                                    ?.apply {
+                                        isAlwaysOnTop = true
+                                        x = mouseEvent.screenX + 20
+                                        y = mouseEvent.screenY + 10
+                                    }
+                        }
+                    }
+                    cell.onMouseMoved = EventHandler {
+                        previewStage?.apply {
+                            x = it.screenX + 20
+                            y = it.screenY + 10
+                        }
+                    }
+                    cell.onMouseExited = EventHandler {
+                        previewStage?.close()
+                    }
+                    cell
+                }
             }
             column("Post Index", ThreadSelectionModel::indexProperty) {
                 sortOrder.add(this)

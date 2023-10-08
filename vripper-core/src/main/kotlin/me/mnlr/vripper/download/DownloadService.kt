@@ -4,9 +4,9 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import me.mnlr.vripper.delegate.LoggerDelegate
-import me.mnlr.vripper.entities.ImageDownloadState
+import me.mnlr.vripper.entities.Image
 import me.mnlr.vripper.entities.LogEvent
-import me.mnlr.vripper.entities.PostDownloadState
+import me.mnlr.vripper.entities.Post
 import me.mnlr.vripper.entities.domain.Status
 import me.mnlr.vripper.formatToString
 import me.mnlr.vripper.host.Host
@@ -74,7 +74,7 @@ class DownloadService(
         if (postIds != null) {
             stop(postIds)
         } else {
-            stop(dataTransaction.findAllPosts().map(PostDownloadState::postId))
+            stop(dataTransaction.findAllPosts().map(Post::postId))
         }
     }
 
@@ -82,29 +82,29 @@ class DownloadService(
         if (postIds.isNotEmpty()) {
             restart(postIds)
         } else {
-            restart(dataTransaction.findAllPosts().map(PostDownloadState::postId))
+            restart(dataTransaction.findAllPosts().map(Post::postId))
         }
     }
 
     private fun restart(postIds: List<String>) {
         lock.withLock {
-            val data: MutableMap<PostDownloadState, Collection<ImageDownloadState>> = mutableMapOf()
+            val data: MutableMap<Post, Collection<Image>> = mutableMapOf()
             for (postId in postIds) {
                 if (isPending(postId)) {
                     log.warn("Cannot restart, jobs are currently running for post id $postIds")
                     continue
                 }
-                val imageDownloadStates: List<ImageDownloadState> =
+                val images: List<Image> =
                     dataTransaction.findByPostIdAndIsNotCompleted(postId)
-                if (imageDownloadStates.isEmpty()) {
+                if (images.isEmpty()) {
                     continue
                 }
-                val postDownloadState: PostDownloadState =
+                val post: Post =
                     dataTransaction.findPostsByPostId(postId).orElseThrow()
-                log.debug("Restarting ${imageDownloadStates.size} jobs for post id $postIds")
-                postDownloadState.status = Status.PENDING
-                dataTransaction.update(postDownloadState)
-                data[postDownloadState] = imageDownloadStates
+                log.debug("Restarting ${images.size} jobs for post id $postIds")
+                post.status = Status.PENDING
+                dataTransaction.update(post)
+                data[post] = images
             }
 
             for ((postDownloadState, imageDownloadStates) in data) {
@@ -145,7 +145,7 @@ class DownloadService(
     private fun stop(postIds: List<String>) {
         lock.withLock {
             for (postId in postIds) {
-                val postDownloadState: PostDownloadState =
+                val post: Post =
                     dataTransaction.findPostsByPostId(postId).orElseThrow()
                 pending.values.forEach { pending ->
                     pending.removeIf { it.context.image.postId == postId }
@@ -154,7 +154,7 @@ class DownloadService(
                     .filter { p: ImageDownloadRunnable -> p.context.image.postId == postId }
                     .forEach { obj: ImageDownloadRunnable -> obj.stop() }
                 dataTransaction.stopImagesByPostIdAndIsNotCompleted(postId)
-                dataTransaction.finishPost(postDownloadState)
+                dataTransaction.finishPost(post)
             }
         }
     }

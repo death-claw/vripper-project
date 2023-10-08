@@ -42,7 +42,8 @@ class ThreadController : KoinComponent, Controller() {
                 it.url,
                 it.hosts,
                 it.postId,
-                it.threadId
+                it.threadId,
+                it.imageItemList.take(4).map { it.thumbLink }
             )
         }
     }
