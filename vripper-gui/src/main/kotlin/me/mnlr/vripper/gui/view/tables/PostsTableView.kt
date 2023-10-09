@@ -14,6 +14,7 @@ import javafx.util.Callback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.mnlr.vripper.entities.Post
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
@@ -44,9 +45,14 @@ class PostsTableView : View() {
 
         eventBus.flux().filter { it!!.kind == Event.Kind.POST_CREATE }
             .map { postController.mapper(it.data as Post) }.publishOn(FxScheduler)
-            .doOnNext {
-                items.add(it)
+            .doOnNext { postModel ->
+                items.add(postModel)
                 this.tableView.refresh()
+                coroutineScope.launch(Dispatchers.IO) {
+                    postModel.previewList.forEach {
+                        PreviewCache.cache.asMap()[it] = PreviewCache.loadByteArray(it)
+                    }
+                }
             }.subscribe()
 
         eventBus.flux().filter { it!!.kind == Event.Kind.POST_UPDATE }
@@ -71,7 +77,13 @@ class PostsTableView : View() {
     override fun onDock() {
         tableView.prefHeightProperty().bind(root.heightProperty())
         coroutineScope.launch {
-            items.addAll(postController.findAllPosts().await())
+            val postModelList = postController.findAllPosts().await()
+            items.addAll(postModelList)
+            withContext(Dispatchers.IO) {
+                postModelList.flatMap { it.previewList }.forEach {
+                    PreviewCache.cache.asMap()[it] = PreviewCache.loadByteArray(it)
+                }
+            }
         }
     }
 

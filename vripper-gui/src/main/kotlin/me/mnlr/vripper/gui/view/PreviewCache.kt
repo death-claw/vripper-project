@@ -9,5 +9,9 @@ object PreviewCache {
         .newBuilder()
         .weigher { _: String, value: ByteArray -> value.size }
         .maximumWeight(1024 * 1024 * 100)
-        .build { URL(it).openStream().use { `is` -> `is`.readAllBytes() } }
+        .build(::loadByteArray)
+
+    fun loadByteArray(url: String): ByteArray {
+        return URL(url).openStream().use { `is` -> `is`.readAllBytes() }
+    }
 }
