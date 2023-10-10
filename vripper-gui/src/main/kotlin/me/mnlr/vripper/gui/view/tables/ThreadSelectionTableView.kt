@@ -8,8 +8,6 @@ import javafx.scene.control.*
 import javafx.scene.control.cell.TextFieldTableCell
 import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
-import javafx.stage.Stage
-import javafx.stage.StageStyle
 import javafx.util.Callback
 import me.mnlr.vripper.gui.controller.ThreadController
 import me.mnlr.vripper.gui.model.ThreadSelectionModel
@@ -23,15 +21,13 @@ class ThreadSelectionTableView : Fragment("Thread") {
     private lateinit var tableView: TableView<ThreadSelectionModel>
     private val threadController: ThreadController by inject()
     private var items: ObservableList<ThreadSelectionModel> = FXCollections.observableArrayList()
-    private var previewStage: Stage? = null
+    private var preview: Preview? = null
     val threadId: String by param()
 
     override fun onDock() {
         tableView.prefWidthProperty().bind(root.widthProperty())
         tableView.prefHeightProperty().bind(root.heightProperty())
-        modalStage?.width = 600.0
         tableView.placeholder = Label("Loading")
-
         runLater {
             items.addAll(threadController.grab(threadId))
         }
@@ -72,28 +68,22 @@ class ThreadSelectionTableView : Fragment("Thread") {
                     val cell = PreviewTableCell<ThreadSelectionModel>()
                     cell.alignment = Pos.CENTER
                     cell.onMouseEntered = EventHandler { mouseEvent ->
-                        previewStage?.close()
                         if (cell.tableRow.item != null && cell.tableRow.item.previewList.isNotEmpty()) {
-                            previewStage =
-                                find<Preview>(mapOf(Preview::images to cell.tableRow.item.previewList)).openWindow(
-                                    stageStyle = StageStyle.UNDECORATED,
-                                    owner = null
-                                )
-                                    ?.apply {
-                                        isAlwaysOnTop = true
-                                        x = mouseEvent.screenX + 20
-                                        y = mouseEvent.screenY + 10
-                                    }
+                            preview = Preview(currentStage!!, cell.tableRow.item.previewList)
+                            preview?.previewPopup?.apply {
+                                x = mouseEvent.screenX + 20
+                                y = mouseEvent.screenY + 10
+                            }
                         }
                     }
                     cell.onMouseMoved = EventHandler {
-                        previewStage?.apply {
+                        preview?.previewPopup?.apply {
                             x = it.screenX + 20
                             y = it.screenY + 10
                         }
                     }
                     cell.onMouseExited = EventHandler {
-                        previewStage?.close()
+                        preview?.hide()
                     }
                     cell
                 }

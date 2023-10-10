@@ -137,6 +137,8 @@ class ThreadTableView : View() {
             ?.apply {
                 minWidth = 600.0
                 minHeight = 400.0
+                width = 800.0
+                height = 600.0
             }
     }
 }

@@ -8,19 +8,18 @@ import javafx.scene.control.*
 import javafx.scene.control.cell.TextFieldTableCell
 import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
-import javafx.stage.Stage
-import javafx.stage.StageStyle
 import javafx.util.Callback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import me.mnlr.vripper.entities.Post
 import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.gui.controller.PostController
 import me.mnlr.vripper.gui.model.PostModel
 import me.mnlr.vripper.gui.view.*
+import me.mnlr.vripper.gui.view.PreviewCache.previewDispatcher
 import tornadofx.*
 
 
@@ -28,11 +27,11 @@ class PostsTableView : View() {
 
     private val postController: PostController by inject()
     private val eventBus: EventBus by di()
-    private val coroutineScope = CoroutineScope(Dispatchers.Default)
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     lateinit var tableView: TableView<PostModel>
     private var items: ObservableList<PostModel> = FXCollections.observableArrayList()
-    private var previewStage: Stage? = null
+    private var preview: Preview? = null
 
     init {
         titleProperty.bind(items.sizeProperty.map {
@@ -48,9 +47,9 @@ class PostsTableView : View() {
             .doOnNext { postModel ->
                 items.add(postModel)
                 this.tableView.refresh()
-                coroutineScope.launch(Dispatchers.IO) {
-                    postModel.previewList.forEach {
-                        PreviewCache.cache.asMap()[it] = PreviewCache.loadByteArray(it)
+                postModel.previewList.forEach {
+                    coroutineScope.launch(previewDispatcher) {
+                        PreviewCache.cache.asMap()[it] = PreviewCache.load(it)
                     }
                 }
             }.subscribe()
@@ -79,9 +78,9 @@ class PostsTableView : View() {
         coroutineScope.launch {
             val postModelList = postController.findAllPosts().await()
             items.addAll(postModelList)
-            withContext(Dispatchers.IO) {
-                postModelList.flatMap { it.previewList }.forEach {
-                    PreviewCache.cache.asMap()[it] = PreviewCache.loadByteArray(it)
+            postModelList.flatMap { it.previewList }.forEach {
+                launch(previewDispatcher) {
+                    PreviewCache.cache.asMap()[it] = PreviewCache.load(it)
                 }
             }
         }
@@ -176,28 +175,22 @@ class PostsTableView : View() {
                 cellFactory = Callback {
                     val cell = PreviewTableCell<PostModel>()
                     cell.onMouseEntered = EventHandler { mouseEvent ->
-                        previewStage?.close()
                         if (cell.tableRow.item != null && cell.tableRow.item.previewList.isNotEmpty()) {
-                            previewStage =
-                                find<Preview>(mapOf(Preview::images to cell.tableRow.item.previewList)).openWindow(
-                                    stageStyle = StageStyle.UNDECORATED,
-                                    owner = null
-                                )
-                                    ?.apply {
-                                        isAlwaysOnTop = true
-                                        x = mouseEvent.screenX + 20
+                            preview = Preview(currentStage!!, cell.tableRow.item.previewList)
+                            preview?.previewPopup?.apply {
+                                x = mouseEvent.screenX + 20
                                         y = mouseEvent.screenY + 10
-                                    }
+                            }
                         }
                     }
                     cell.onMouseMoved = EventHandler {
-                        previewStage?.apply {
+                        preview?.previewPopup?.apply {
                             x = it.screenX + 20
                             y = it.screenY + 10
                         }
                     }
                     cell.onMouseExited = EventHandler {
-                        previewStage?.close()
+                        preview?.hide()
                     }
                     cell
                 }

@@ -1,8 +1,6 @@
 package me.mnlr.vripper.download
 
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.entities.Image
 import me.mnlr.vripper.entities.LogEvent
@@ -16,7 +14,6 @@ import me.mnlr.vripper.services.RetryPolicyService
 import me.mnlr.vripper.services.SettingsService
 import net.jodah.failsafe.Failsafe
 import net.jodah.failsafe.RetryPolicy
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import java.util.stream.Collectors
 import kotlin.concurrent.withLock
@@ -35,9 +32,10 @@ class DownloadService(
     private val pending: MutableMap<String, MutableList<ImageDownloadRunnable>> = mutableMapOf()
     private val lock = ReentrantLock()
     private val condition = lock.newCondition()
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun init() {
-        GlobalScope.launch {
+        coroutineScope.launch(Dispatchers.Default) {
             val accepted: MutableList<ImageDownloadRunnable> = mutableListOf()
             val candidates: MutableList<ImageDownloadRunnable> = mutableListOf()
             while (isActive) {
@@ -207,7 +205,7 @@ class DownloadService(
 
     private fun scheduleForDownload(imageDownloadRunnable: ImageDownloadRunnable) {
         log.debug("Scheduling a job for ${imageDownloadRunnable.context.image.url}")
-        CompletableFuture.runAsync {
+        coroutineScope.launch {
             try {
                 Failsafe.with<Any, RetryPolicy<Any>>(retryPolicyService.buildRetryPolicyForDownload())
                     .onFailure {

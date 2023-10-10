@@ -4,56 +4,57 @@ import javafx.scene.control.ProgressIndicator
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.scene.layout.HBox
+import javafx.stage.Popup
+import javafx.stage.Stage
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.javafx.JavaFx
 import kotlinx.coroutines.javafx.asFlow
+import me.mnlr.vripper.gui.view.PreviewCache.previewDispatcher
 import tornadofx.*
 import java.io.ByteArrayInputStream
 
-class Preview : Fragment("Preview") {
+class Preview(private val owner: Stage, val images: List<String>) {
 
-    val images: List<String> by param()
-    private val coroutineScope = CoroutineScope(Dispatchers.Default)
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var previewLoadJob: Job? = null
+    val previewPopup = Popup()
 
-    override val root = anchorpane()
-
-    override fun onDock() {
-        currentStage?.width = 52.0
-        currentStage?.height = 52.0
-        root.add(ProgressIndicator().apply { minWidth = 50.0; minHeight = 50.0 })
+    init {
+        previewPopup.content.add(ProgressIndicator().apply { prefWidth = 25.0; prefHeight = 25.0 })
+        previewPopup.show(owner)
         show()
     }
 
-    override fun onUndock() {
+    fun hide() {
         previewLoadJob?.cancel()
         coroutineScope.cancel()
+        previewPopup.hide()
     }
 
     private fun show() {
         previewLoadJob = coroutineScope.launch(Dispatchers.Default) {
             yield()
             val imageViewList = images.map {
-                previewLoading(it).await()
+                previewLoading(it)
+            }.map {
+                it.await()
             }
             yield()
             withContext(Dispatchers.JavaFx) {
                 val hBox = HBox()
                 imageViewList.forEach { hBox.add(it) }
-                root.clear()
-                root.add(hBox)
-                val maxHeight = imageViewList.maxOf { it.boundsInParent.height }
-                this@Preview.currentStage?.width = 200.0 * 4
-                this@Preview.currentStage?.height = maxHeight
+                previewPopup.content.clear()
+                previewPopup.content.add(hBox)
+                previewPopup.show(owner)
             }
         }
     }
 
     private suspend fun previewLoading(url: String): Deferred<ImageView> {
-        return coroutineScope.async(Dispatchers.IO) {
+        return coroutineScope.async(previewDispatcher) {
             val imageView = ImageView(Image(ByteArrayInputStream(PreviewCache.cache[url]))).apply {
                 isPreserveRatio = true
                 fitWidth = 200.0

@@ -2,6 +2,7 @@ package me.mnlr.vripper
 
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.security.MessageDigest
 
 fun Throwable.formatToString(): String {
     return StringWriter().use { stringWriter ->
@@ -36,4 +37,11 @@ fun getFileNameWithoutExtension(fileName: String): String {
         0,
         fileName.lastIndexOf(".")
     ) else fileName
+}
+
+fun String.hash256(): String {
+    val bytes = this.toByteArray()
+    val md = MessageDigest.getInstance("SHA-256")
+    val digest = md.digest(bytes)
+    return digest.fold("") { str, it -> str + "%02x".format(it) }
 }
