@@ -5,6 +5,7 @@ import javafx.collections.ObservableList
 import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.*
+import javafx.scene.control.cell.TextFieldTableCell
 import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
 import javafx.stage.Stage
@@ -69,6 +70,7 @@ class ThreadSelectionTableView : Fragment("Thread") {
             column("Preview", ThreadSelectionModel::previewListProperty) {
                 cellFactory = Callback {
                     val cell = PreviewTableCell<ThreadSelectionModel>()
+                    cell.alignment = Pos.CENTER
                     cell.onMouseEntered = EventHandler { mouseEvent ->
                         previewStage?.close()
                         if (cell.tableRow.item != null && cell.tableRow.item.previewList.isNotEmpty()) {
@@ -98,10 +100,27 @@ class ThreadSelectionTableView : Fragment("Thread") {
             }
             column("Post Index", ThreadSelectionModel::indexProperty) {
                 sortOrder.add(this)
+                cellFactory = Callback {
+                    TextFieldTableCell<ThreadSelectionModel?, Number?>().apply { alignment = Pos.CENTER_LEFT }
+                }
             }
-            column("Title", ThreadSelectionModel::titleProperty) { prefWidth = 200.0 }
-            column("URL", ThreadSelectionModel::urlProperty) { prefWidth = 200.0 }
-            column("Hosts", ThreadSelectionModel::hostsProperty)
+            column("Title", ThreadSelectionModel::titleProperty) {
+                prefWidth = 200.0
+                cellFactory = Callback {
+                    TextFieldTableCell<ThreadSelectionModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
+                }
+            }
+            column("URL", ThreadSelectionModel::urlProperty) {
+                prefWidth = 200.0
+                cellFactory = Callback {
+                    TextFieldTableCell<ThreadSelectionModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
+                }
+            }
+            column("Hosts", ThreadSelectionModel::hostsProperty) {
+                cellFactory = Callback {
+                    TextFieldTableCell<ThreadSelectionModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
+                }
+            }
         }
         borderpane {
             right {

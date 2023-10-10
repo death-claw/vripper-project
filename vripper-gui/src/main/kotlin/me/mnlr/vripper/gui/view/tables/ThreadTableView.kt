@@ -110,7 +110,9 @@ class ThreadTableView : View() {
                     .map { empty -> if (empty) null else contextMenu })
                 tableRow
             }
-            column("Title", ThreadModel::titleProperty)
+            column("Title", ThreadModel::titleProperty) {
+                prefWidth = 350.0
+            }
             column("URL", ThreadModel::linkProperty) {
                 prefWidth = 350.0
             }
