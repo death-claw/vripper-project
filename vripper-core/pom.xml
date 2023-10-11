@@ -53,6 +53,16 @@
     <dependency>
       <artifactId>httpclient</artifactId>
       <groupId>org.apache.httpcomponents</groupId>
+      <exclusions>
+        <exclusion>
+          <artifactId>commons-logging</artifactId>
+          <groupId>commons-logging</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <groupId>org.slf4j</groupId>
     </dependency>
     <dependency>
       <artifactId>htmlcleaner</artifactId>

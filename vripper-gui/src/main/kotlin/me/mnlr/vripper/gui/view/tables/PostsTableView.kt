@@ -179,7 +179,7 @@ class PostsTableView : View() {
                             preview = Preview(currentStage!!, cell.tableRow.item.previewList)
                             preview?.previewPopup?.apply {
                                 x = mouseEvent.screenX + 20
-                                        y = mouseEvent.screenY + 10
+                                y = mouseEvent.screenY + 10
                             }
                         }
                     }

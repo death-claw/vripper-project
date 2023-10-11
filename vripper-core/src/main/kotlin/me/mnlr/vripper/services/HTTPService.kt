@@ -26,7 +26,7 @@ class HTTPService(
 
     companion object {
         const val USER_AGENT =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/118.0"
     }
 
     private val coroutineScope = CoroutineScope(Dispatchers.Default)

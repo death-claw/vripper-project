@@ -1,5 +1,11 @@
 package me.mnlr.vripper.host
 
+import me.mnlr.vripper.delegate.LoggerDelegate
+import me.mnlr.vripper.download.ImageDownloadContext
+import me.mnlr.vripper.exception.HostException
+import me.mnlr.vripper.exception.HtmlProcessorException
+import me.mnlr.vripper.exception.XpathException
+import me.mnlr.vripper.services.*
 import org.apache.http.NameValuePair
 import org.apache.http.client.HttpClient
 import org.apache.http.client.entity.UrlEncodedFormEntity
@@ -9,12 +15,6 @@ import org.apache.http.message.BasicNameValuePair
 import org.apache.http.util.EntityUtils
 import org.w3c.dom.Document
 import org.w3c.dom.Node
-import me.mnlr.vripper.delegate.LoggerDelegate
-import me.mnlr.vripper.download.ImageDownloadContext
-import me.mnlr.vripper.exception.HostException
-import me.mnlr.vripper.exception.HtmlProcessorException
-import me.mnlr.vripper.exception.XpathException
-import me.mnlr.vripper.services.*
 import java.io.IOException
 
 class ImxHost(
@@ -30,9 +30,10 @@ class ImxHost(
         document: Document,
         context: ImageDownloadContext
     ): Pair<String, String> {
+        val httpsUrl = url.replace("http:", "https:")
         var value: String? = null
         try {
-            log.debug("Looking for xpath expression $CONTINUE_BUTTON_XPATH in $url")
+            log.debug("Looking for xpath expression $CONTINUE_BUTTON_XPATH in $httpsUrl")
             val contDiv = XpathService.getAsNode(document, CONTINUE_BUTTON_XPATH)
                 ?: throw HostException("$CONTINUE_BUTTON_XPATH cannot be found")
             val node = contDiv.attributes.getNamedItem("value")
@@ -45,9 +46,9 @@ class ImxHost(
         if (value == null) {
             throw HostException("Failed to obtain value attribute from continue input")
         }
-        log.debug("Click button found for $url")
+        log.debug("Click button found for $httpsUrl")
         val client: HttpClient = httpService.client.build()
-        val httpPost: HttpPost = httpService.buildHttpPost(url, context.httpContext)
+        val httpPost: HttpPost = httpService.buildHttpPost(httpsUrl, context.httpContext)
         val params: MutableList<NameValuePair> = ArrayList()
         params.add(BasicNameValuePair("imgContinue", value))
         try {
@@ -73,15 +74,15 @@ class ImxHost(
             throw HostException(e)
         }
         val imgNode: Node = try {
-            log.debug("Looking for xpath expression $IMG_XPATH in $url")
+            log.debug("Looking for xpath expression $IMG_XPATH in $httpsUrl")
             XpathService.getAsNode(doc, IMG_XPATH)
         } catch (e: XpathException) {
             throw HostException(e)
         } ?: throw HostException(
-            "Xpath $IMG_XPATH cannot be found in $url"
+            "Xpath $IMG_XPATH cannot be found in $httpsUrl"
         )
         return try {
-            log.debug("Resolving name and image url for $url")
+            log.debug("Resolving name and image url for $httpsUrl")
             val imgTitle = imgNode.attributes.getNamedItem("alt").textContent.trim { it <= ' ' }
             val imgUrl = imgNode.attributes.getNamedItem("src").textContent.trim { it <= ' ' }
             Pair(

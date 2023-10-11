@@ -118,6 +118,11 @@
         <groupId>org.jetbrains.kotlin</groupId>
         <version>1.9.10</version>
       </dependency>
+      <dependency>
+        <artifactId>jcl-over-slf4j</artifactId>
+        <groupId>org.slf4j</groupId>
+        <version>1.7.32</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 </project>
