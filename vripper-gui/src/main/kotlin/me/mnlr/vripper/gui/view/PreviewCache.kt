@@ -13,7 +13,7 @@ import kotlin.io.path.Path
 
 object PreviewCache {
 
-    const val CACHE_DIR_NAME = "cache"
+    private const val CACHE_DIR_NAME = "cache"
     val previewDispatcher = Executors.newCachedThreadPool().asCoroutineDispatcher()
     private val cachePath = Path(baseDir, BASE_DIR_NAME, CACHE_DIR_NAME)
 

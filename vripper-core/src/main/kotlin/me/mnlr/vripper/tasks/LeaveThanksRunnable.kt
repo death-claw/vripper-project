@@ -8,13 +8,13 @@ import me.mnlr.vripper.formatToString
 import me.mnlr.vripper.repositories.LogEventRepository
 import me.mnlr.vripper.services.HTTPService
 import me.mnlr.vripper.services.SettingsService
-import org.apache.http.NameValuePair
-import org.apache.http.client.entity.UrlEncodedFormEntity
-import org.apache.http.client.methods.HttpPost
-import org.apache.http.client.protocol.HttpClientContext
-import org.apache.http.impl.client.CloseableHttpClient
-import org.apache.http.message.BasicNameValuePair
-import org.apache.http.util.EntityUtils
+import org.apache.hc.client5.http.classic.methods.HttpPost
+import org.apache.hc.client5.http.entity.UrlEncodedFormEntity
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient
+import org.apache.hc.client5.http.protocol.HttpClientContext
+import org.apache.hc.core5.http.NameValuePair
+import org.apache.hc.core5.http.io.entity.EntityUtils
+import org.apache.hc.core5.http.message.BasicNameValuePair
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.UnsupportedEncodingException
@@ -97,7 +97,7 @@ class LeaveThanksRunnable(
             postThanks.addHeader(
                 "Host", settingsService.settings.viperSettings.host.replace("https://", "").replace("http://", "")
             )
-            val client: CloseableHttpClient = cm.client.build()
+            val client: CloseableHttpClient = cm.clientBuilder.build()
             client.execute(postThanks, context).use { response ->
                 try {
                 } finally {

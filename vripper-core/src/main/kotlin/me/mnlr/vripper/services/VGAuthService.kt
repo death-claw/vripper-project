@@ -12,13 +12,13 @@ import me.mnlr.vripper.event.VGUserLoginEvent
 import me.mnlr.vripper.exception.VripperException
 import me.mnlr.vripper.model.Settings
 import me.mnlr.vripper.tasks.LeaveThanksRunnable
-import org.apache.http.NameValuePair
-import org.apache.http.client.entity.UrlEncodedFormEntity
-import org.apache.http.client.protocol.HttpClientContext
-import org.apache.http.cookie.Cookie
-import org.apache.http.impl.client.BasicCookieStore
-import org.apache.http.message.BasicNameValuePair
-import org.apache.http.util.EntityUtils
+import org.apache.hc.client5.http.cookie.BasicCookieStore
+import org.apache.hc.client5.http.cookie.Cookie
+import org.apache.hc.client5.http.entity.UrlEncodedFormEntity
+import org.apache.hc.client5.http.protocol.HttpClientContext
+import org.apache.hc.core5.http.NameValuePair
+import org.apache.hc.core5.http.io.entity.EntityUtils
+import org.apache.hc.core5.http.message.BasicNameValuePair
 import java.util.concurrent.CompletableFuture
 
 class VGAuthService(
@@ -49,9 +49,8 @@ class VGAuthService(
             log.debug("Authentication option is disabled")
             context.cookieStore.clear()
             loggedUser = ""
-            coroutineScope.launch {
                 eventBus.publishEvent(VGUserLoginEvent(loggedUser))
-            }
+
             return
         }
         val username = settings.viperSettings.username
@@ -60,9 +59,9 @@ class VGAuthService(
             log.error("Cannot authenticate with ViperGirls credentials, username or password is empty")
             context.cookieStore.clear()
             loggedUser = ""
-            coroutineScope.launch {
+
                 eventBus.publishEvent(VGUserLoginEvent(loggedUser))
-            }
+
             return
         }
         val postAuth =
@@ -80,9 +79,9 @@ class VGAuthService(
         } catch (e: Exception) {
             context.cookieStore.clear()
             loggedUser = ""
-            coroutineScope.launch {
-                eventBus.publishEvent(VGUserLoginEvent(loggedUser))
-            }
+
+            eventBus.publishEvent(VGUserLoginEvent(loggedUser))
+
             log.error(
                 "Failed to authenticate user with " + settings.viperSettings.host,
                 e
@@ -95,13 +94,13 @@ class VGAuthService(
             settings.viperSettings.host.replace("https://", "")
                 .replace("http://", "")
         )
-        val client = cm.client.build()
+        val client = cm.clientBuilder.build()
         try {
             client.execute(postAuth, context).use { response ->
-                if (response.statusLine.statusCode / 100 != 2) {
+                if (response.code / 100 != 2) {
                     throw VripperException(
                         String.format(
-                            "Unexpected response code returned %s", response.statusLine.statusCode
+                            "Unexpected response code returned %s", response.code
                         )
                     )
                 }
@@ -129,9 +128,9 @@ class VGAuthService(
         } catch (e: Exception) {
             context.cookieStore.clear()
             loggedUser = ""
-            coroutineScope.launch {
-                eventBus.publishEvent(VGUserLoginEvent(loggedUser))
-            }
+
+            eventBus.publishEvent(VGUserLoginEvent(loggedUser))
+
             log.error(
                 "Failed to authenticate user with " + settings.viperSettings.host,
                 e
@@ -141,9 +140,9 @@ class VGAuthService(
         authenticated = true
         loggedUser = username
         log.info(String.format("Authenticated: %s", username))
-        coroutineScope.launch {
-            eventBus.publishEvent(VGUserLoginEvent(loggedUser))
-        }
+
+        eventBus.publishEvent(VGUserLoginEvent(loggedUser))
+
     }
 
     fun leaveThanks(post: Post) {

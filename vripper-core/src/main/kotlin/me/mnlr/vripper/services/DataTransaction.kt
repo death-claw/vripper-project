@@ -2,10 +2,6 @@ package me.mnlr.vripper.services
 
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.LoadingCache
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import me.mnlr.vripper.entities.Image
 import me.mnlr.vripper.entities.Metadata
 import me.mnlr.vripper.entities.Post
@@ -30,7 +26,6 @@ class DataTransaction(
     private val eventBus: EventBus,
 ) {
 
-    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val imageIdCache: LoadingCache<Long, Optional<Image>> = Caffeine.newBuilder().build {
         _findImageById(it)
     }
@@ -45,28 +40,27 @@ class DataTransaction(
     fun update(post: Post) {
         transaction { postDownloadStateRepository.update(post) }
         postIdCache.invalidate(post.id)
-        coroutineScope.launch {
+
             eventBus.publishEvent(PostUpdateEvent(post))
-        }
+
     }
 
     fun save(thread: Thread) {
         val savedThread = transaction { threadRepository.save(thread) }
-        coroutineScope.launch {
             eventBus.publishEvent(
                 ThreadCreateEvent(
                     savedThread
                 )
             )
-        }
+
     }
 
     fun update(image: Image) {
         transaction { imageRepository.update(image) }
         imageIdCache.invalidate(image.id)
-        coroutineScope.launch {
-            eventBus.publishEvent(ImageUpdateEvent(image))
-        }
+
+        eventBus.publishEvent(ImageUpdateEvent(image))
+
     }
 
     fun exists(postId: String): Boolean {
@@ -109,13 +103,11 @@ class DataTransaction(
             sortPostsByRank()
             Pair(post, images)
         }
-        coroutineScope.launch {
             eventBus.publishEvent(PostCreateEvent(post))
-        }
+
         images.forEach {
-            coroutineScope.launch {
                 eventBus.publishEvent(ImageCreateEvent(it))
-            }
+
         }
         return post
     }
@@ -160,17 +152,17 @@ class DataTransaction(
             sortPostsByRank()
         }
         postIds.forEach {
-            coroutineScope.launch {
-                eventBus.publishEvent(PostDeleteEvent(it))
-            }
+
+        eventBus.publishEvent(PostDeleteEvent(it))
+
         }
     }
 
     fun removeThread(threadId: String) {
         transaction { threadRepository.deleteByThreadId(threadId) }
-        coroutineScope.launch {
-            eventBus.publishEvent(ThreadDeleteEvent(threadId))
-        }
+
+        eventBus.publishEvent(ThreadDeleteEvent(threadId))
+
     }
 
     fun clearCompleted(): List<String> {
@@ -201,9 +193,7 @@ class DataTransaction(
 
     fun clearQueueLinks() {
         transaction { threadRepository.deleteAll() }
-        coroutineScope.launch {
-            eventBus.publishEvent(ThreadClearEvent())
-        }
+        eventBus.publishEvent(ThreadClearEvent())
     }
 
     @Synchronized
@@ -219,11 +209,11 @@ class DataTransaction(
     private fun update(postList: List<Post>) {
         transaction { postDownloadStateRepository.update(postList) }
         postList.forEach { postIdCache.invalidate(it.id) }
-        coroutineScope.launch {
-            postList.forEach {
+
+        postList.forEach {
                 eventBus.publishEvent(PostUpdateEvent(it))
             }
-        }
+
     }
 
     fun setDownloadingToStopped() {

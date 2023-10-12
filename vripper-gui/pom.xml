@@ -13,7 +13,7 @@
   <name>vripper-gui</name>
   <description>vripper-gui</description>
   <properties>
-    <javafx.version>20.0.1</javafx.version>
+    <javafx.version>21</javafx.version>
   </properties>
   <dependencies>
     <dependency>

@@ -3,7 +3,7 @@ package me.mnlr.vripper.entities
 import me.mnlr.vripper.entities.domain.Status
 
 data class Image(
-    var id: Long? = null,
+    var id: Long = -1,
     val postId: String,
     val url: String,
     val thumbUrl: String,

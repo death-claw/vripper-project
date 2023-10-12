@@ -5,12 +5,12 @@ import me.mnlr.vripper.download.ImageDownloadContext
 import me.mnlr.vripper.exception.HostException
 import me.mnlr.vripper.exception.XpathException
 import me.mnlr.vripper.services.*
-import org.apache.http.NameValuePair
-import org.apache.http.client.HttpClient
-import org.apache.http.client.entity.UrlEncodedFormEntity
-import org.apache.http.client.methods.CloseableHttpResponse
-import org.apache.http.message.BasicNameValuePair
-import org.apache.http.util.EntityUtils
+import org.apache.hc.client5.http.classic.HttpClient
+import org.apache.hc.client5.http.entity.UrlEncodedFormEntity
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse
+import org.apache.hc.core5.http.NameValuePair
+import org.apache.hc.core5.http.io.entity.EntityUtils
+import org.apache.hc.core5.http.message.BasicNameValuePair
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 
@@ -36,7 +36,7 @@ class AcidimgHost(
             throw HostException(e)
         }
         log.debug(String.format("Click button found for %s", url))
-        val client: HttpClient = httpService.client.build()
+        val client: HttpClient = httpService.clientBuilder.build()
         val httpPost = httpService.buildHttpPost(url, context.httpContext)
         httpPost.addHeader("Referer", url)
         val params: MutableList<NameValuePair> = ArrayList()

@@ -123,6 +123,21 @@
         <groupId>org.slf4j</groupId>
         <version>1.7.32</version>
       </dependency>
+      <dependency>
+        <artifactId>httpclient5</artifactId>
+        <groupId>org.apache.httpcomponents.client5</groupId>
+        <version>5.2.1</version>
+      </dependency>
+      <dependency>
+        <artifactId>commons-codec</artifactId>
+        <groupId>commons-codec</groupId>
+        <version>1.16.0</version>
+      </dependency>
+      <dependency>
+        <artifactId>liquibase-core</artifactId>
+        <groupId>org.liquibase</groupId>
+        <version>4.24.0</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 </project>

@@ -5,7 +5,7 @@ import me.mnlr.vripper.entities.domain.Status
 import java.time.LocalDateTime
 
 data class Post(
-    var id: Long? = null,
+    var id: Long = -1,
     val postTitle: String,
     val threadTitle: String,
     val forum: String,

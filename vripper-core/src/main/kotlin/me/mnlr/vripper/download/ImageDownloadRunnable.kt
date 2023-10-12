@@ -13,8 +13,8 @@ import me.mnlr.vripper.host.ImageMimeType
 import me.mnlr.vripper.model.Settings
 import me.mnlr.vripper.services.*
 import net.jodah.failsafe.function.CheckedRunnable
-import org.apache.http.client.protocol.HttpClientContext
-import org.apache.http.impl.client.BasicCookieStore
+import org.apache.hc.client5.http.cookie.BasicCookieStore
+import org.apache.hc.client5.http.protocol.HttpClientContext
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.IOException
@@ -35,6 +35,9 @@ class ImageDownloadRunnable(
     val context: ImageDownloadContext = ImageDownloadContext(imageInternalId, settings)
     private val image: Image
         get() = context.image
+
+    private val post: Post
+        get() = context.post
     private var stopped: Boolean
         get() = context.stopped
         set(value) {
@@ -59,7 +62,7 @@ class ImageDownloadRunnable(
                 this.current = 0
             }
             dataTransaction.update(image)
-            synchronized(image.postId.intern()) {
+            synchronized(post.id.toString().intern()) {
                 val post = context.post
                 if (post.status != Status.DOWNLOADING) {
                     post.status = Status.DOWNLOADING
@@ -92,7 +95,7 @@ class ImageDownloadRunnable(
             }
             throw DownloadException(e)
         } finally {
-            synchronized(image.postId.intern()) {
+            synchronized(post.id.toString().intern()) {
                 val image = image
                 if (image.current == image.total && image.total > 0) {
                     image.status = Status.FINISHED

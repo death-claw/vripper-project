@@ -10,12 +10,8 @@ import me.mnlr.vripper.gui.event.ApplicationInitialized
 import me.mnlr.vripper.gui.listener.GuiStartupLister
 import me.mnlr.vripper.gui.view.LoadingView
 import me.mnlr.vripper.listeners.AppLock
-import me.mnlr.vripper.tables.ImageTable
-import me.mnlr.vripper.tables.PostTable
-import me.mnlr.vripper.tables.ThreadTable
+import me.mnlr.vripper.services.DatabaseMigration
 import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 import tornadofx.*
@@ -55,9 +51,10 @@ class VripperGuiApplication : App(
         }
         stage.addEventFilter(WindowEvent.WINDOW_SHOWN) {
             Database.connect("jdbc:h2:file:$baseDir/$BASE_DIR_NAME/vripper;DB_CLOSE_DELAY=-1;")
-            transaction {
-                SchemaUtils.create(PostTable, ImageTable, ThreadTable)
-            }
+//            transaction {
+//                SchemaUtils.create(PostTable, ImageTable, ThreadTable)
+//            }
+            DatabaseMigration.update()
             startKoin {
                 modules(modules)
             }

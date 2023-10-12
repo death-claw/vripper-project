@@ -12,12 +12,12 @@ import me.mnlr.vripper.repositories.LogEventRepository
 import me.mnlr.vripper.services.*
 import net.jodah.failsafe.Failsafe
 import net.jodah.failsafe.function.CheckedSupplier
-import org.apache.http.client.HttpClient
-import org.apache.http.client.methods.CloseableHttpResponse
-import org.apache.http.client.methods.HttpGet
-import org.apache.http.client.protocol.HttpClientContext
-import org.apache.http.client.utils.URIBuilder
-import org.apache.http.util.EntityUtils
+import org.apache.hc.client5.http.classic.HttpClient
+import org.apache.hc.client5.http.classic.methods.HttpGet
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse
+import org.apache.hc.client5.http.protocol.HttpClientContext
+import org.apache.hc.core5.http.io.entity.EntityUtils
+import org.apache.hc.core5.net.URIBuilder
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.net.URISyntaxException
@@ -131,17 +131,17 @@ class PostDownloadRunnable(private val threadId: String, private val postId: Str
                     "parsing failed for thread $threadId, post $postId", it.failure
                 )
             }.get(CheckedSupplier {
-                val connection: HttpClient = cm.client.build()
+                val connection: HttpClient = cm.clientBuilder.build()
                 (connection.execute(
                     httpGet, vgAuthService.context
                 ) as CloseableHttpResponse).use { response ->
                     try {
-                        if (response.statusLine.statusCode / 100 != 2) {
-                            throw DownloadException("Unexpected response code '${response.statusLine.statusCode}' for $httpGet")
+                        if (response.code / 100 != 2) {
+                            throw DownloadException("Unexpected response code '${response.code}' for $httpGet")
                         }
                         factory.newSAXParser()
                             .parse(response.entity.content, threadLookupAPIResponseHandler)
-                        threadLookupAPIResponseHandler.result.postItemList[0]
+                        threadLookupAPIResponseHandler.result.postItemList.first()
                     } finally {
                         EntityUtils.consumeQuietly(response.entity)
                     }

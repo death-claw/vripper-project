@@ -90,7 +90,7 @@ class PostDownloadStateRepositoryImpl :
 
     override fun update(post: List<Post>) {
         PostTable.batchReplace(post, shouldReturnGeneratedValues = false) {
-            this[PostTable.id] = it.id!!
+            this[PostTable.id] = it.id
             this[PostTable.status] = it.status.name
             this[PostTable.done] = it.done
             this[PostTable.total] = it.total

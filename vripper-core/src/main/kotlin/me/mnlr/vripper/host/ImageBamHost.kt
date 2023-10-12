@@ -5,7 +5,7 @@ import me.mnlr.vripper.download.ImageDownloadContext
 import me.mnlr.vripper.exception.HostException
 import me.mnlr.vripper.exception.XpathException
 import me.mnlr.vripper.services.*
-import org.apache.http.impl.cookie.BasicClientCookie
+import org.apache.hc.client5.http.impl.cookie.BasicClientCookie
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import java.sql.Date

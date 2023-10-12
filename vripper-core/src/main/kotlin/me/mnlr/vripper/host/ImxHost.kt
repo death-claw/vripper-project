@@ -6,13 +6,13 @@ import me.mnlr.vripper.exception.HostException
 import me.mnlr.vripper.exception.HtmlProcessorException
 import me.mnlr.vripper.exception.XpathException
 import me.mnlr.vripper.services.*
-import org.apache.http.NameValuePair
-import org.apache.http.client.HttpClient
-import org.apache.http.client.entity.UrlEncodedFormEntity
-import org.apache.http.client.methods.CloseableHttpResponse
-import org.apache.http.client.methods.HttpPost
-import org.apache.http.message.BasicNameValuePair
-import org.apache.http.util.EntityUtils
+import org.apache.hc.client5.http.classic.HttpClient
+import org.apache.hc.client5.http.classic.methods.HttpPost
+import org.apache.hc.client5.http.entity.UrlEncodedFormEntity
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse
+import org.apache.hc.core5.http.NameValuePair
+import org.apache.hc.core5.http.io.entity.EntityUtils
+import org.apache.hc.core5.http.message.BasicNameValuePair
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import java.io.IOException
@@ -47,7 +47,7 @@ class ImxHost(
             throw HostException("Failed to obtain value attribute from continue input")
         }
         log.debug("Click button found for $httpsUrl")
-        val client: HttpClient = httpService.client.build()
+        val client: HttpClient = httpService.clientBuilder.build()
         val httpPost: HttpPost = httpService.buildHttpPost(httpsUrl, context.httpContext)
         val params: MutableList<NameValuePair> = ArrayList()
         params.add(BasicNameValuePair("imgContinue", value))

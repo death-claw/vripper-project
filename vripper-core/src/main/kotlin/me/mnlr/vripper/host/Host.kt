@@ -6,11 +6,12 @@ import me.mnlr.vripper.exception.DownloadException
 import me.mnlr.vripper.exception.HostException
 import me.mnlr.vripper.getFileNameWithoutExtension
 import me.mnlr.vripper.services.*
-import org.apache.http.Header
-import org.apache.http.client.HttpClient
-import org.apache.http.client.methods.CloseableHttpResponse
-import org.apache.http.client.protocol.HttpClientContext
-import org.apache.http.util.EntityUtils
+import org.apache.hc.client5.http.classic.HttpClient
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse
+import org.apache.hc.client5.http.protocol.HttpClientContext
+import org.apache.hc.core5.http.Header
+import org.apache.hc.core5.http.io.entity.EntityUtils
 import org.w3c.dom.Document
 import java.nio.file.Files
 import java.nio.file.Path
@@ -86,7 +87,7 @@ abstract class Host(
         response: CloseableHttpResponse,
         context: ImageDownloadContext
     ): Pair<Path, ImageMimeType> {
-        val mimeType = getImageMimeType(response.allHeaders)
+        val mimeType = getImageMimeType(response.headers)
             ?: throw HostException("Unsupported image type ${response.getFirstHeader("content-type")}")
 
         val tempImage = Files.createTempFile(Path.of(context.settings.downloadSettings.tempPath), "vripper_", ".tmp")
@@ -128,7 +129,7 @@ abstract class Host(
 
     @Throws(HostException::class)
     fun head(url: String, context: HttpClientContext): Array<Header> {
-        val client: HttpClient = httpService.client.build()
+        val client: CloseableHttpAsyncClient = httpService.clientBuilder.build()
         val httpGet = httpService.buildHttpHead(url, context)
         log.debug(String.format("Requesting %s", url))
         return try {
@@ -137,14 +138,14 @@ abstract class Host(
                 context
             ) as CloseableHttpResponse).use { response ->
                 try {
-                    if (response.statusLine.statusCode / 100 != 2) {
+                    if (response.code / 100 != 2) {
                         throw HostException(
                             String.format(
-                                "Unexpected response code: %d", response.statusLine.statusCode
+                                "Unexpected response code: %d", response.code
                             )
                         )
                     }
-                    response.allHeaders
+                    response.headers
                 } finally {
                     EntityUtils.consumeQuietly(response.entity)
                 }
@@ -160,7 +161,7 @@ abstract class Host(
         context: ImageDownloadContext,
         transformer: (CloseableHttpResponse) -> T
     ): T {
-        val client: HttpClient = httpService.client.build()
+        val client: HttpClient = httpService.clientBuilder.build()
         val httpGet = httpService.buildHttpGet(url, context.httpContext)
         httpGet.addHeader("Referer", context.image.url)
         log.debug(String.format("Requesting %s", url))
@@ -169,10 +170,10 @@ abstract class Host(
                 httpGet,
                 context.httpContext
             ) as CloseableHttpResponse).use { response ->
-                if (response.statusLine.statusCode / 100 != 2) {
+                if (response.code / 100 != 2) {
                     EntityUtils.consumeQuietly(response.entity)
                     throw DownloadException(
-                        "Server returned code ${response.statusLine.statusCode}"
+                        "Server returned code ${response.code}"
                     )
                 }
                 try {

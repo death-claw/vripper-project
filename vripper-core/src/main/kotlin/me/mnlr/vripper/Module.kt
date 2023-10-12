@@ -47,7 +47,7 @@ val coreModule = module {
         ThreadCacheService(get())
     }
     single<DownloadService> {
-        DownloadService(get(), get(), get(), get(), get(), get())
+        DownloadService(get(), get(), get(), get(), get())
     }
     single<DownloadSpeedService> {
         DownloadSpeedService(get())

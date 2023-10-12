@@ -31,7 +31,7 @@ data class DownloadSettings(
 data class ConnectionSettings(
     var maxThreads: Int = 2,
     var maxTotalThreads: Int = 0,
-    var timeout: Int = 30,
+    var timeout: Long = 30,
     var maxAttempts: Int = 3,
 )
 

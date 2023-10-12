@@ -15,7 +15,6 @@ import me.mnlr.vripper.model.ErrorCount
 import me.mnlr.vripper.model.QueueState
 import me.mnlr.vripper.repositories.LogEventRepository
 import me.mnlr.vripper.services.DataTransaction
-import me.mnlr.vripper.services.DownloadSpeedService
 import me.mnlr.vripper.services.RetryPolicyService
 import me.mnlr.vripper.services.SettingsService
 import net.jodah.failsafe.Failsafe
@@ -29,7 +28,6 @@ class DownloadService(
     private val dataTransaction: DataTransaction,
     private val retryPolicyService: RetryPolicyService,
     private val eventRepository: LogEventRepository,
-    private val downloadSpeedService: DownloadSpeedService,
     private val eventBus: EventBus
 ) {
     private val maxPoolSize: Int = 12
@@ -107,7 +105,7 @@ class DownloadService(
                 }
                 val post: Post =
                     dataTransaction.findPostsByPostId(postId).orElseThrow()
-                log.debug("Restarting ${images.size} jobs for post id $postIds")
+                log.debug("Restarting {} jobs for post id {}", images.size, postIds)
                 post.status = Status.PENDING
                 dataTransaction.update(post)
                 data[post] = images
@@ -122,7 +120,7 @@ class DownloadService(
                     }
                     dataTransaction.update(image)
                     val imageDownloadRunnable = ImageDownloadRunnable(
-                        image.id!!, settingsService.settings
+                        image.id, settingsService.settings
                     )
                     pending.computeIfAbsent(
                         image.host
@@ -213,11 +211,7 @@ class DownloadService(
 
     private fun scheduleForDownload(imageDownloadRunnable: ImageDownloadRunnable) {
         log.debug("Scheduling a job for ${imageDownloadRunnable.context.image.url}")
-        coroutineScope.launch {
-            launch {
                 eventBus.publishEvent(QueueStateEvent(QueueState(runningCount(), pendingCount())))
-            }
-            try {
                 Failsafe.with<Any, RetryPolicy<Any>>(retryPolicyService.buildRetryPolicyForDownload())
                     .onFailure {
                         try {
@@ -238,12 +232,9 @@ class DownloadService(
                         val image = imageDownloadRunnable.context.image
                         image.status = Status.ERROR
                         dataTransaction.update(image)
-                        launch {
                             eventBus.publishEvent(ErrorCountEvent(ErrorCount(dataTransaction.countImagesInError())))
-                        }
                     }.onComplete {
                         afterJobFinish(imageDownloadRunnable)
-                        launch {
                             eventBus.publishEvent(
                                 QueueStateEvent(
                                     QueueState(
@@ -252,14 +243,10 @@ class DownloadService(
                                     )
                                 )
                             )
-                        }
                         log.debug(
                             "Finished downloading ${imageDownloadRunnable.context.image.url}"
                         )
-                    }.run(imageDownloadRunnable::run)
-            } catch (ignored: Exception) {
-            }
-        }
+                    }.runAsync(imageDownloadRunnable::run)
     }
 
     private fun afterJobFinish(imageDownloadRunnable: ImageDownloadRunnable) {
@@ -276,11 +263,11 @@ class DownloadService(
         }
     }
 
-    fun pendingCount(): Int {
+    private fun pendingCount(): Int {
         return pending.values.sumOf { it.size }
     }
 
-    fun runningCount(): Int {
+    private fun runningCount(): Int {
         return running.values.sumOf { it.size }
     }
 }

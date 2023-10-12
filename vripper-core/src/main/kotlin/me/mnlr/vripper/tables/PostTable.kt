@@ -4,7 +4,7 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.javatime.datetime
 import java.time.LocalDateTime
 
-object PostTable : LongIdTable(name = "POST", columnName = "ROWID") {
+object PostTable : LongIdTable(name = "POST", columnName = "ID") {
     val done = integer("DONE")
     val hosts = varchar("HOSTS", 500)
     val outputPath = varchar("OUTPUT_PATH", 500)
