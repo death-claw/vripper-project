@@ -6,10 +6,16 @@ import me.mnlr.vripper.entities.Image
 import me.mnlr.vripper.entities.LogEvent
 import me.mnlr.vripper.entities.Post
 import me.mnlr.vripper.entities.domain.Status
+import me.mnlr.vripper.event.ErrorCountEvent
+import me.mnlr.vripper.event.EventBus
+import me.mnlr.vripper.event.QueueStateEvent
 import me.mnlr.vripper.formatToString
 import me.mnlr.vripper.host.Host
+import me.mnlr.vripper.model.ErrorCount
+import me.mnlr.vripper.model.QueueState
 import me.mnlr.vripper.repositories.LogEventRepository
 import me.mnlr.vripper.services.DataTransaction
+import me.mnlr.vripper.services.DownloadSpeedService
 import me.mnlr.vripper.services.RetryPolicyService
 import me.mnlr.vripper.services.SettingsService
 import net.jodah.failsafe.Failsafe
@@ -23,6 +29,8 @@ class DownloadService(
     private val dataTransaction: DataTransaction,
     private val retryPolicyService: RetryPolicyService,
     private val eventRepository: LogEventRepository,
+    private val downloadSpeedService: DownloadSpeedService,
+    private val eventBus: EventBus
 ) {
     private val maxPoolSize: Int = 12
     private val log by LoggerDelegate()
@@ -206,6 +214,9 @@ class DownloadService(
     private fun scheduleForDownload(imageDownloadRunnable: ImageDownloadRunnable) {
         log.debug("Scheduling a job for ${imageDownloadRunnable.context.image.url}")
         coroutineScope.launch {
+            launch {
+                eventBus.publishEvent(QueueStateEvent(QueueState(runningCount(), pendingCount())))
+            }
             try {
                 Failsafe.with<Any, RetryPolicy<Any>>(retryPolicyService.buildRetryPolicyForDownload())
                     .onFailure {
@@ -227,9 +238,21 @@ class DownloadService(
                         val image = imageDownloadRunnable.context.image
                         image.status = Status.ERROR
                         dataTransaction.update(image)
+                        launch {
+                            eventBus.publishEvent(ErrorCountEvent(ErrorCount(dataTransaction.countImagesInError())))
+                        }
                     }.onComplete {
-
                         afterJobFinish(imageDownloadRunnable)
+                        launch {
+                            eventBus.publishEvent(
+                                QueueStateEvent(
+                                    QueueState(
+                                        runningCount(),
+                                        pendingCount()
+                                    )
+                                )
+                            )
+                        }
                         log.debug(
                             "Finished downloading ${imageDownloadRunnable.context.image.url}"
                         )

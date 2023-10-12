@@ -9,13 +9,12 @@ import javafx.scene.control.cell.TextFieldTableCell
 import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
 import javafx.util.Callback
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import me.mnlr.vripper.entities.Post
-import me.mnlr.vripper.event.Event
+import kotlinx.coroutines.*
+import kotlinx.coroutines.javafx.JavaFx
 import me.mnlr.vripper.event.EventBus
+import me.mnlr.vripper.event.PostCreateEvent
+import me.mnlr.vripper.event.PostDeleteEvent
+import me.mnlr.vripper.event.PostUpdateEvent
 import me.mnlr.vripper.gui.controller.PostController
 import me.mnlr.vripper.gui.model.PostModel
 import me.mnlr.vripper.gui.view.*
@@ -41,39 +40,53 @@ class PostsTableView : View() {
                 "Download"
             }
         })
-
-        eventBus.flux().filter { it!!.kind == Event.Kind.POST_CREATE }
-            .map { postController.mapper(it.data as Post) }.publishOn(FxScheduler)
-            .doOnNext { postModel ->
-                items.add(postModel)
-                this.tableView.refresh()
-                postModel.previewList.forEach {
-                    coroutineScope.launch(previewDispatcher) {
-                        PreviewCache.cache.asMap()[it] = PreviewCache.load(it)
-                    }
-                }
-            }.subscribe()
-
-        eventBus.flux().filter { it!!.kind == Event.Kind.POST_UPDATE }
-            .map { postController.mapper(it.data as Post) }.publishOn(FxScheduler)
-            .doOnNext {
-                items.find { postModel -> postModel.postId == it.postId }?.apply {
-                    progress = it.progress
-                    status = it.status
-                    done = it.done
-                    total = it.total
-                    order = it.order
-                    progressCount = it.progressCount
-                }
-            }.subscribe()
-
-        eventBus.flux().filter { it!!.kind == Event.Kind.POST_REMOVE }.publishOn(FxScheduler)
-            .doOnNext {
-                items.removeIf { p -> p.postId == it.data as String }
-            }.subscribe()
     }
 
     override fun onDock() {
+        coroutineScope.launch {
+            eventBus.subscribe<PostCreateEvent> {
+                launch {
+                    val postModel = postController.mapper(it.post)
+                    withContext(Dispatchers.JavaFx) {
+                        items.add(postModel)
+                        this@PostsTableView.tableView.refresh()
+                    }
+                    postModel.previewList.forEach {
+                        coroutineScope.launch(previewDispatcher) {
+                            PreviewCache.cache.asMap()[it] = PreviewCache.load(it)
+                        }
+                    }
+                }
+            }
+        }
+
+        coroutineScope.launch {
+            eventBus.subscribe<PostUpdateEvent> {
+                launch {
+                    val postModel = postController.mapper(it.post)
+                    withContext(Dispatchers.JavaFx) {
+                        items.find { post -> post.postId == postModel.postId }?.apply {
+                            progress = postModel.progress
+                            status = postModel.status
+                            done = postModel.done
+                            total = postModel.total
+                            order = postModel.order
+                            progressCount = postModel.progressCount
+                        }
+                    }
+                }
+            }
+        }
+
+        coroutineScope.launch {
+            eventBus.subscribe<PostDeleteEvent> {
+                launch {
+                    withContext(Dispatchers.JavaFx) {
+                        items.removeIf { p -> p.postId == it.postId }
+                    }
+                }
+            }
+        }
         tableView.prefHeightProperty().bind(root.heightProperty())
         coroutineScope.launch {
             val postModelList = postController.findAllPosts().await()

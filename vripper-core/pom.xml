@@ -69,10 +69,6 @@
       <groupId>net.sourceforge.htmlcleaner</groupId>
     </dependency>
     <dependency>
-      <artifactId>reactor-core</artifactId>
-      <groupId>io.projectreactor</groupId>
-    </dependency>
-    <dependency>
       <artifactId>failsafe</artifactId>
       <groupId>net.jodah</groupId>
     </dependency>

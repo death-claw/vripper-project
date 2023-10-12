@@ -1,34 +1,32 @@
 package me.mnlr.vripper.services
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import me.mnlr.vripper.delegate.LoggerDelegate
-import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
-import me.mnlr.vripper.model.Settings
+import me.mnlr.vripper.event.SettingsUpdateEvent
 import net.jodah.failsafe.RetryPolicy
 import net.jodah.failsafe.event.ExecutionAttemptedEvent
-import reactor.core.Disposable
 import java.time.temporal.ChronoUnit
 
 class RetryPolicyService(
-    eventBus: EventBus,
+    val eventBus: EventBus,
     settingsService: SettingsService
 ) {
     private val log by LoggerDelegate()
-
-    private val disposable: Disposable
     private var maxAttempts: Int = settingsService.settings.connectionSettings.maxAttempts
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    init {
-        disposable = eventBus
-            .flux()
-            .filter { it.kind == Event.Kind.SETTINGS_UPDATE }
-            .map { it.data as Settings }
-            .doOnNext {
-                if (maxAttempts != it.connectionSettings.maxAttempts) {
-                    maxAttempts = it.connectionSettings.maxAttempts
+    fun init() {
+        coroutineScope.launch {
+            eventBus.subscribe<SettingsUpdateEvent> {
+                if (maxAttempts != it.settings.connectionSettings.maxAttempts) {
+                    maxAttempts = it.settings.connectionSettings.maxAttempts
                 }
             }
-            .subscribe()
+        }
     }
 
     fun <T> buildRetryPolicyForDownload(): RetryPolicy<T> {
@@ -47,9 +45,5 @@ class RetryPolicyService(
             .onFailedAttempt { e: ExecutionAttemptedEvent<T> ->
                 log.warn("#${e.attemptCount} tries failed", e.lastFailure)
             }
-    }
-
-    private fun destroy() {
-        disposable.dispose()
     }
 }

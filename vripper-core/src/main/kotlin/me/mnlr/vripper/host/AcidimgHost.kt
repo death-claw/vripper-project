@@ -17,8 +17,8 @@ import org.w3c.dom.Node
 class AcidimgHost(
     private val httpService: HTTPService,
     dataTransaction: DataTransaction,
-    globalStateService: GlobalStateService,
-) : Host("acidimg.cc", httpService, dataTransaction, globalStateService) {
+    downloadSpeedService: DownloadSpeedService,
+) : Host("acidimg.cc", httpService, dataTransaction, downloadSpeedService) {
     private val log by LoggerDelegate()
 
     @Throws(HostException::class)

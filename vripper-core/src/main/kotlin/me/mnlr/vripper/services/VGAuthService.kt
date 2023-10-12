@@ -1,10 +1,16 @@
 package me.mnlr.vripper.services
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.entities.Post
-import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
+import me.mnlr.vripper.event.SettingsUpdateEvent
+import me.mnlr.vripper.event.VGUserLoginEvent
 import me.mnlr.vripper.exception.VripperException
+import me.mnlr.vripper.model.Settings
 import me.mnlr.vripper.tasks.LeaveThanksRunnable
 import org.apache.http.NameValuePair
 import org.apache.http.client.entity.UrlEncodedFormEntity
@@ -13,61 +19,55 @@ import org.apache.http.cookie.Cookie
 import org.apache.http.impl.client.BasicCookieStore
 import org.apache.http.message.BasicNameValuePair
 import org.apache.http.util.EntityUtils
-import reactor.core.Disposable
 import java.util.concurrent.CompletableFuture
 
 class VGAuthService(
     private val cm: HTTPService,
     private val settingsService: SettingsService,
-    private val eventBusImpl: EventBus
+    private val eventBus: EventBus
 ) {
     private val log by LoggerDelegate()
-    private val disposable: Disposable
-
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val context: HttpClientContext = HttpClientContext.create()
     var loggedUser = ""
 
     private var authenticated = false
 
-    init {
-        context.cookieStore = BasicCookieStore()
-        disposable = eventBusImpl
-            .flux()
-            .filter { it.kind == Event.Kind.SETTINGS_UPDATE }
-            .doOnNext {
-                authenticate()
-            }.subscribe()
-    }
-
     fun init() {
-        authenticate()
+        context.cookieStore = BasicCookieStore()
+        coroutineScope.launch {
+            eventBus.subscribe<SettingsUpdateEvent> {
+                authenticate(it.settings)
+            }
+        }
+        authenticate(settingsService.settings)
     }
 
-    private fun destroy() {
-        disposable.dispose()
-    }
-
-    private fun authenticate() {
+    private fun authenticate(settings: Settings) {
         authenticated = false
-        if (!settingsService.settings.viperSettings.login) {
+        if (!settings.viperSettings.login) {
             log.debug("Authentication option is disabled")
             context.cookieStore.clear()
             loggedUser = ""
-            eventBusImpl.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
+            coroutineScope.launch {
+                eventBus.publishEvent(VGUserLoginEvent(loggedUser))
+            }
             return
         }
-        val username = settingsService.settings.viperSettings.username
-        val password = settingsService.settings.viperSettings.password
+        val username = settings.viperSettings.username
+        val password = settings.viperSettings.password
         if (username.isEmpty() || password.isEmpty()) {
             log.error("Cannot authenticate with ViperGirls credentials, username or password is empty")
             context.cookieStore.clear()
             loggedUser = ""
-            eventBusImpl.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
+            coroutineScope.launch {
+                eventBus.publishEvent(VGUserLoginEvent(loggedUser))
+            }
             return
         }
         val postAuth =
             cm.buildHttpPost(
-                settingsService.settings.viperSettings.host + "/login.php?do=login",
+                settings.viperSettings.host + "/login.php?do=login",
                 context
             )
         val params: MutableList<NameValuePair> = ArrayList()
@@ -80,17 +80,19 @@ class VGAuthService(
         } catch (e: Exception) {
             context.cookieStore.clear()
             loggedUser = ""
-            eventBusImpl.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
+            coroutineScope.launch {
+                eventBus.publishEvent(VGUserLoginEvent(loggedUser))
+            }
             log.error(
-                "Failed to authenticate user with " + settingsService.settings.viperSettings.host,
+                "Failed to authenticate user with " + settings.viperSettings.host,
                 e
             )
             return
         }
-        postAuth.addHeader("Referer", settingsService.settings.viperSettings.host)
+        postAuth.addHeader("Referer", settings.viperSettings.host)
         postAuth.addHeader(
             "Host",
-            settingsService.settings.viperSettings.host.replace("https://", "")
+            settings.viperSettings.host.replace("https://", "")
                 .replace("http://", "")
         )
         val client = cm.client.build()
@@ -118,7 +120,7 @@ class VGAuthService(
                     log.error(
                         String.format(
                             "Failed to authenticate user with %s, missing vg_userid cookie",
-                            settingsService.settings.viperSettings.host
+                            settings.viperSettings.host
                         )
                     )
                     return
@@ -127,9 +129,11 @@ class VGAuthService(
         } catch (e: Exception) {
             context.cookieStore.clear()
             loggedUser = ""
-            eventBusImpl.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
+            coroutineScope.launch {
+                eventBus.publishEvent(VGUserLoginEvent(loggedUser))
+            }
             log.error(
-                "Failed to authenticate user with " + settingsService.settings.viperSettings.host,
+                "Failed to authenticate user with " + settings.viperSettings.host,
                 e
             )
             return
@@ -137,7 +141,9 @@ class VGAuthService(
         authenticated = true
         loggedUser = username
         log.info(String.format("Authenticated: %s", username))
-        eventBusImpl.publishEvent(Event(Event.Kind.VG_USER, loggedUser))
+        coroutineScope.launch {
+            eventBus.publishEvent(VGUserLoginEvent(loggedUser))
+        }
     }
 
     fun leaveThanks(post: Post) {

@@ -61,20 +61,21 @@ class PostController : Controller() {
     }
 
     fun mapper(it: Post): PostModel {
+        val updated = dataTransaction.findPostById(it.id!!).orElseThrow()
         return PostModel(
-            it.postId,
-            it.postTitle,
-            if (it.done == 0 && it.total == 0) 0.0 else (it.done.toDouble() / it.total),
-            it.status.name,
-            it.url,
-            it.done,
-            it.total,
-            it.hosts.joinToString(separator = ", "),
-            it.addedOn.format(dateTimeFormatter),
-            it.rank + 1,
-            it.downloadDirectory,
-            "${it.done}/${it.total}",
-            dataTransaction.findImagesByPostId(it.postId).map(Image::thumbUrl).take(4)
+            updated.postId,
+            updated.postTitle,
+            if (updated.done == 0 && updated.total == 0) 0.0 else (updated.done.toDouble() / updated.total),
+            updated.status.name,
+            updated.url,
+            updated.done,
+            updated.total,
+            updated.hosts.joinToString(separator = ", "),
+            updated.addedOn.format(dateTimeFormatter),
+            updated.rank + 1,
+            updated.downloadDirectory,
+            "${updated.done}/${updated.total}",
+            dataTransaction.findImagesByPostId(updated.postId).map(Image::thumbUrl).take(4)
         )
     }
 }

@@ -12,8 +12,8 @@ import java.util.*
 class ViprImHost(
     httpService: HTTPService,
     dataTransaction: DataTransaction,
-    globalStateService: GlobalStateService,
-) : Host("vipr.im", httpService, dataTransaction, globalStateService) {
+    downloadSpeedService: DownloadSpeedService,
+) : Host("vipr.im", httpService, dataTransaction, downloadSpeedService) {
     private val log by LoggerDelegate()
 
     @Throws(HostException::class)

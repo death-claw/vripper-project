@@ -6,7 +6,7 @@
     </encoder>
   </appender>
 
-  <logger level="debug" name="org.apache.http.headers"/>
+  <!--  <logger level="debug" name="org.apache.http.headers"/>-->
 
   <root level="INFO">
     <appender-ref ref="STDOUT"/>

@@ -4,35 +4,33 @@ import javafx.scene.input.Clipboard
 import kotlinx.coroutines.*
 import kotlinx.coroutines.javafx.JavaFx
 import me.mnlr.vripper.AppEndpointService
-import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
-import me.mnlr.vripper.services.SettingsService
-import reactor.core.Disposable
+import me.mnlr.vripper.event.SettingsUpdateEvent
+import me.mnlr.vripper.model.Settings
 
 class ClipboardService(
     private val appEndpointService: AppEndpointService,
-    private val settingsService: SettingsService,
-    eventBus: EventBus
+    private val eventBus: EventBus
 ) {
-    private val eventBusDisposable: Disposable
     private var current: String? = null
     private var coroutineScope = CoroutineScope(Dispatchers.JavaFx)
     private var pollJob: Job? = null
 
-    init {
-        eventBusDisposable = eventBus
-            .flux()
-            .filter { it.kind == Event.Kind.SETTINGS_UPDATE }
-            .doOnNext { init() }.subscribe()
+    fun init() {
+        coroutineScope.launch {
+            eventBus.subscribe<SettingsUpdateEvent> {
+                run(it.settings)
+            }
+        }
     }
 
-    fun init() {
+    fun run(settings: Settings) {
         pollJob?.cancel()
-        if(settingsService.settings.clipboardSettings.enable) {
+        if (settings.clipboardSettings.enable) {
             pollJob = coroutineScope.launch {
                 while (isActive) {
                     poll()
-                    delay(settingsService.settings.clipboardSettings.pollingRate.toLong())
+                    delay(settings.clipboardSettings.pollingRate.toLong())
                 }
             }
         } else {

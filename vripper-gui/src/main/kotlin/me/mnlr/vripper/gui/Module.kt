@@ -6,7 +6,7 @@ import org.koin.dsl.module
 
 val guiModule = module {
     single<ClipboardService> {
-        ClipboardService(get(), get(), get())
+        ClipboardService(get(), get())
     }
 }
 

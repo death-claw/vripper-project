@@ -4,12 +4,14 @@ import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.scene.control.*
 import javafx.scene.image.ImageView
-import me.mnlr.vripper.entities.Thread
-import me.mnlr.vripper.event.Event
+import kotlinx.coroutines.*
+import kotlinx.coroutines.javafx.JavaFx
 import me.mnlr.vripper.event.EventBus
+import me.mnlr.vripper.event.ThreadClearEvent
+import me.mnlr.vripper.event.ThreadCreateEvent
+import me.mnlr.vripper.event.ThreadDeleteEvent
 import me.mnlr.vripper.gui.controller.ThreadController
 import me.mnlr.vripper.gui.model.ThreadModel
-import me.mnlr.vripper.gui.view.FxScheduler
 import me.mnlr.vripper.gui.view.openLink
 import tornadofx.*
 
@@ -17,6 +19,7 @@ class ThreadTableView : View() {
 
     private val threadController: ThreadController by inject()
     private val eventBus: EventBus by di()
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     lateinit var tableView: TableView<ThreadModel>
 
@@ -32,30 +35,32 @@ class ThreadTableView : View() {
         })
         items.addAll(threadController.findAll())
 
-        eventBus
-            .flux()
-            .filter { it!!.kind == Event.Kind.THREAD_CREATE }
-            .map { threadController.threadModelMapper(it.data as Thread) }
-            .publishOn(FxScheduler)
-            .doOnNext {
-                items.add(it)
-            }.subscribe()
+        coroutineScope.launch {
+            eventBus.subscribe<ThreadCreateEvent> {
+                launch {
+                    val threadModelMapper = threadController.threadModelMapper(it.thread)
+                    withContext(Dispatchers.JavaFx) {
+                        items.add(threadModelMapper)
+                    }
+                }
+            }
+        }
 
-        eventBus
-            .flux()
-            .filter { it.kind == Event.Kind.THREAD_REMOVE }
-            .publishOn(FxScheduler)
-            .doOnNext { event ->
-                tableView.items.removeIf { it.threadId == event.data as String }
-            }.subscribe()
+        coroutineScope.launch {
+            eventBus.subscribe<ThreadDeleteEvent> { event ->
+                launch(Dispatchers.JavaFx) {
+                    tableView.items.removeIf { it.threadId == event.threadId }
+                }
+            }
+        }
 
-        eventBus
-            .flux()
-            .filter { it.kind == Event.Kind.THREAD_CLEAR }
-            .publishOn(FxScheduler)
-            .doOnNext {
-                tableView.items.clear()
-            }.subscribe()
+        coroutineScope.launch {
+            eventBus.subscribe<ThreadClearEvent> {
+                launch(Dispatchers.JavaFx) {
+                    tableView.items.clear()
+                }
+            }
+        }
     }
 
     override fun onDock() {

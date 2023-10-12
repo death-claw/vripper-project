@@ -19,7 +19,7 @@ abstract class Host(
     val hostId: String,
     private val httpService: HTTPService,
     private val dataTransaction: DataTransaction,
-    private val globalStateService: GlobalStateService
+    private val downloadSpeedService: DownloadSpeedService
 ) {
     private val log by LoggerDelegate()
 
@@ -111,7 +111,7 @@ abstract class Host(
                         with(image) {
                             current += read
                         }
-                        globalStateService.reportDownloadedBytes(read.toLong())
+                        downloadSpeedService.reportDownloadedBytes(read.toLong())
                         dataTransaction.update(image)
                     }
                     Pair(tempImage, mimeType)

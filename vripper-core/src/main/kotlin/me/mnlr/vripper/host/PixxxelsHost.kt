@@ -1,17 +1,17 @@
 package me.mnlr.vripper.host
 
-import org.w3c.dom.Document
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.download.ImageDownloadContext
 import me.mnlr.vripper.exception.HostException
 import me.mnlr.vripper.exception.XpathException
 import me.mnlr.vripper.services.*
+import org.w3c.dom.Document
 
 class PixxxelsHost(
     httpService: HTTPService,
     dataTransaction: DataTransaction,
-    globalStateService: GlobalStateService,
-) : Host("pixxxels.cc", httpService, dataTransaction, globalStateService) {
+    downloadSpeedService: DownloadSpeedService,
+) : Host("pixxxels.cc", httpService, dataTransaction, downloadSpeedService) {
     private val log by LoggerDelegate()
 
     @Throws(HostException::class)

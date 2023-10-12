@@ -20,8 +20,8 @@ import java.io.IOException
 class ImxHost(
     private val httpService: HTTPService,
     dataTransaction: DataTransaction,
-    globalStateService: GlobalStateService,
-) : Host("imx.to", httpService, dataTransaction, globalStateService) {
+    downloadSpeedService: DownloadSpeedService,
+) : Host("imx.to", httpService, dataTransaction, downloadSpeedService) {
     private val log by LoggerDelegate()
 
     @Throws(HostException::class)

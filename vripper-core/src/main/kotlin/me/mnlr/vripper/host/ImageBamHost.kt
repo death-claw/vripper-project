@@ -1,13 +1,13 @@
 package me.mnlr.vripper.host
 
-import org.apache.http.impl.cookie.BasicClientCookie
-import org.w3c.dom.Document
-import org.w3c.dom.Node
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.download.ImageDownloadContext
 import me.mnlr.vripper.exception.HostException
 import me.mnlr.vripper.exception.XpathException
 import me.mnlr.vripper.services.*
+import org.apache.http.impl.cookie.BasicClientCookie
+import org.w3c.dom.Document
+import org.w3c.dom.Node
 import java.sql.Date
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -16,8 +16,8 @@ import java.util.*
 class ImageBamHost(
     httpService: HTTPService,
     dataTransaction: DataTransaction,
-    globalStateService: GlobalStateService,
-) : Host("imagebam.com", httpService, dataTransaction, globalStateService) {
+    downloadSpeedService: DownloadSpeedService,
+) : Host("imagebam.com", httpService, dataTransaction, downloadSpeedService) {
     private val log by LoggerDelegate()
 
     @Throws(HostException::class)

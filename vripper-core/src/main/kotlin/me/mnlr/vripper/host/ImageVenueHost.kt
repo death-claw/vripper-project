@@ -1,18 +1,18 @@
 package me.mnlr.vripper.host
 
-import org.w3c.dom.Document
-import org.w3c.dom.Node
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.download.ImageDownloadContext
 import me.mnlr.vripper.exception.HostException
 import me.mnlr.vripper.exception.XpathException
 import me.mnlr.vripper.services.*
+import org.w3c.dom.Document
+import org.w3c.dom.Node
 
 class ImageVenueHost(
     httpService: HTTPService,
     dataTransaction: DataTransaction,
-    globalStateService: GlobalStateService,
-) : Host("imagevenue.com", httpService, dataTransaction, globalStateService) {
+    downloadSpeedService: DownloadSpeedService,
+) : Host("imagevenue.com", httpService, dataTransaction, downloadSpeedService) {
     private val log by LoggerDelegate()
 
     @Throws(HostException::class)

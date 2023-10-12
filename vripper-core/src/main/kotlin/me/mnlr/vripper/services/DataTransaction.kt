@@ -1,12 +1,17 @@
 package me.mnlr.vripper.services
 
+import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.LoadingCache
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import me.mnlr.vripper.entities.Image
 import me.mnlr.vripper.entities.Metadata
 import me.mnlr.vripper.entities.Post
 import me.mnlr.vripper.entities.Thread
 import me.mnlr.vripper.entities.domain.Status
-import me.mnlr.vripper.event.Event
-import me.mnlr.vripper.event.EventBus
+import me.mnlr.vripper.event.*
 import me.mnlr.vripper.model.PostItem
 import me.mnlr.vripper.repositories.ImageRepository
 import me.mnlr.vripper.repositories.MetadataRepository
@@ -25,28 +30,43 @@ class DataTransaction(
     private val eventBus: EventBus,
 ) {
 
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val imageIdCache: LoadingCache<Long, Optional<Image>> = Caffeine.newBuilder().build {
+        _findImageById(it)
+    }
+    private val postIdCache: LoadingCache<Long, Optional<Post>> = Caffeine.newBuilder().build {
+        _findPostById(it)
+    }
+
     private fun save(post: Post): Post {
         return transaction { postDownloadStateRepository.save(post) }
     }
 
     fun update(post: Post) {
         transaction { postDownloadStateRepository.update(post) }
-        eventBus.publishEvent(Event(Event.Kind.POST_UPDATE, post))
+        postIdCache.invalidate(post.id)
+        coroutineScope.launch {
+            eventBus.publishEvent(PostUpdateEvent(post))
+        }
     }
 
     fun save(thread: Thread) {
         val savedThread = transaction { threadRepository.save(thread) }
-        eventBus.publishEvent(
-            Event(
-                Event.Kind.THREAD_CREATE, savedThread
+        coroutineScope.launch {
+            eventBus.publishEvent(
+                ThreadCreateEvent(
+                    savedThread
+                )
             )
-        )
-
+        }
     }
 
     fun update(image: Image) {
         transaction { imageRepository.update(image) }
-        eventBus.publishEvent(Event(Event.Kind.IMAGE_UPDATE, image))
+        imageIdCache.invalidate(image.id)
+        coroutineScope.launch {
+            eventBus.publishEvent(ImageUpdateEvent(image))
+        }
     }
 
     fun exists(postId: String): Boolean {
@@ -89,9 +109,13 @@ class DataTransaction(
             sortPostsByRank()
             Pair(post, images)
         }
-        eventBus.publishEvent(Event(Event.Kind.POST_CREATE, post))
+        coroutineScope.launch {
+            eventBus.publishEvent(PostCreateEvent(post))
+        }
         images.forEach {
-            eventBus.publishEvent(Event(Event.Kind.IMAGE_CREATE, it))
+            coroutineScope.launch {
+                eventBus.publishEvent(ImageCreateEvent(it))
+            }
         }
         return post
     }
@@ -136,13 +160,17 @@ class DataTransaction(
             sortPostsByRank()
         }
         postIds.forEach {
-            eventBus.publishEvent(Event(Event.Kind.POST_REMOVE, it))
+            coroutineScope.launch {
+                eventBus.publishEvent(PostDeleteEvent(it))
+            }
         }
     }
 
     fun removeThread(threadId: String) {
         transaction { threadRepository.deleteByThreadId(threadId) }
-        eventBus.publishEvent(Event(Event.Kind.THREAD_REMOVE, threadId))
+        coroutineScope.launch {
+            eventBus.publishEvent(ThreadDeleteEvent(threadId))
+        }
     }
 
     fun clearCompleted(): List<String> {
@@ -173,7 +201,9 @@ class DataTransaction(
 
     fun clearQueueLinks() {
         transaction { threadRepository.deleteAll() }
-        eventBus.publishEvent(Event(Event.Kind.THREAD_CLEAR, null))
+        coroutineScope.launch {
+            eventBus.publishEvent(ThreadClearEvent())
+        }
     }
 
     @Synchronized
@@ -188,8 +218,11 @@ class DataTransaction(
 
     private fun update(postList: List<Post>) {
         transaction { postDownloadStateRepository.update(postList) }
-        postList.forEach {
-            eventBus.publishEvent(Event(Event.Kind.POST_UPDATE, it))
+        postList.forEach { postIdCache.invalidate(it.id) }
+        coroutineScope.launch {
+            postList.forEach {
+                eventBus.publishEvent(PostUpdateEvent(it))
+            }
         }
     }
 
@@ -202,6 +235,10 @@ class DataTransaction(
     }
 
     fun findPostById(id: Long): Optional<Post> {
+        return postIdCache[id]
+    }
+
+    private fun _findPostById(id: Long): Optional<Post> {
         return transaction { postDownloadStateRepository.findById(id) }
     }
 
@@ -210,6 +247,10 @@ class DataTransaction(
     }
 
     fun findImageById(id: Long): Optional<Image> {
+        return imageIdCache[id]
+    }
+
+    private fun _findImageById(id: Long): Optional<Image> {
         return transaction { imageRepository.findById(id) }
     }
 

@@ -5,11 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import me.mnlr.vripper.ApplicationProperties.BASE_DIR_NAME
 import me.mnlr.vripper.ApplicationProperties.baseDir
 import me.mnlr.vripper.delegate.LoggerDelegate
-import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
+import me.mnlr.vripper.event.SettingsUpdateEvent
 import me.mnlr.vripper.exception.ValidationException
 import me.mnlr.vripper.model.Settings
 import org.apache.commons.codec.digest.DigestUtils
@@ -23,6 +26,7 @@ class SettingsService(private val eventBus: EventBus) {
     private val customProxiesPath = Paths.get(baseDir, BASE_DIR_NAME, "proxies.json")
     private val om = ObjectMapper(YAMLFactory())
     private val proxies: MutableSet<String> = HashSet()
+    private val coroutineScope = CoroutineScope(Dispatchers.Default)
 
 
     var settings = Settings()
@@ -37,7 +41,9 @@ class SettingsService(private val eventBus: EventBus) {
     private fun init() {
         loadViperProxies()
         restore()
-        eventBus.publishEvent(Event(Event.Kind.SETTINGS_UPDATE, settings))
+        coroutineScope.launch {
+            eventBus.publishEvent(SettingsUpdateEvent(settings))
+        }
     }
 
     private fun loadViperProxies() {
@@ -96,7 +102,9 @@ class SettingsService(private val eventBus: EventBus) {
         check(settings)
         this.settings = settings
         save()
-        eventBus.publishEvent(Event(Event.Kind.SETTINGS_UPDATE, settings))
+        coroutineScope.launch {
+            eventBus.publishEvent(SettingsUpdateEvent(settings))
+        }
     }
 
     fun restore() {

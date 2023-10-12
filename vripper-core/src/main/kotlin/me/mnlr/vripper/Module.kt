@@ -2,7 +2,6 @@ package me.mnlr.vripper
 
 import me.mnlr.vripper.download.DownloadService
 import me.mnlr.vripper.event.EventBus
-import me.mnlr.vripper.event.EventBusImpl
 import me.mnlr.vripper.host.*
 import me.mnlr.vripper.repositories.*
 import me.mnlr.vripper.repositories.impl.*
@@ -12,7 +11,7 @@ import org.koin.dsl.module
 
 val coreModule = module {
     single<EventBus> {
-        EventBusImpl()
+        EventBus
     }
     single<SettingsService> {
         SettingsService(get())
@@ -48,10 +47,10 @@ val coreModule = module {
         ThreadCacheService(get())
     }
     single<DownloadService> {
-        DownloadService(get(), get(), get(), get())
+        DownloadService(get(), get(), get(), get(), get(), get())
     }
-    single<GlobalStateService> {
-        GlobalStateService(get(), get(), get(), get())
+    single<DownloadSpeedService> {
+        DownloadSpeedService(get())
     }
     single<AppEndpointService> {
         AppEndpointService(get(), get(), get(), get(), get())

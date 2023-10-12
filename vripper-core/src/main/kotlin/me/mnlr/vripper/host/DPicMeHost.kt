@@ -1,19 +1,19 @@
 package me.mnlr.vripper.host
 
-import org.w3c.dom.Document
-import org.w3c.dom.Node
 import me.mnlr.vripper.delegate.LoggerDelegate
 import me.mnlr.vripper.download.ImageDownloadContext
 import me.mnlr.vripper.exception.HostException
 import me.mnlr.vripper.exception.XpathException
 import me.mnlr.vripper.services.*
+import org.w3c.dom.Document
+import org.w3c.dom.Node
 import java.util.*
 
 class DPicMeHost(
     httpService: HTTPService,
     dataTransaction: DataTransaction,
-    globalStateService: GlobalStateService,
-) : Host("dpic.me", httpService, dataTransaction, globalStateService) {
+    downloadSpeedService: DownloadSpeedService,
+) : Host("dpic.me", httpService, dataTransaction, downloadSpeedService) {
     private val log by LoggerDelegate()
 
     @Throws(HostException::class)

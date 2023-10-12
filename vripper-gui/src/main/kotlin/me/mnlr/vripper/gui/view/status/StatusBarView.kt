@@ -33,4 +33,8 @@ class StatusBarView : View("Status bar") {
             }
         }
     }
+
+    override fun onDock() {
+        globalStateController.init()
+    }
 }

@@ -1,48 +1,54 @@
 package me.mnlr.vripper.gui.controller
 
-import me.mnlr.vripper.event.Event
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import me.mnlr.vripper.event.*
 import me.mnlr.vripper.event.EventBus
 import me.mnlr.vripper.gui.model.GlobalStateModel
-import me.mnlr.vripper.model.GlobalState
-import me.mnlr.vripper.services.GlobalStateService
 import tornadofx.*
 
 class GlobalStateController : Controller() {
 
-    private val globalStateService: GlobalStateService by di()
     private val eventBus: EventBus by di()
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    var globalState: GlobalStateModel = GlobalStateModel(0, 0, 0, "", "")
+    var globalState: GlobalStateModel = GlobalStateModel(0, 0, 0, "", "0 B")
 
-    init {
-        val currentState = globalStateService.get()
-        globalState.apply {
-            running = currentState.running
-            remaining = currentState.remaining
-            error = currentState.error
-            loggedUser = currentState.loggedUser
-            downloadSpeed = currentState.downloadSpeed
-        }
-
-        eventBus.flux().doOnNext {
-            if (it!!.kind == Event.Kind.DOWNLOAD_STATUS
-            ) {
-                val newState = it.data as GlobalState
+    fun init() {
+        coroutineScope.launch {
+            eventBus.subscribe<DownloadSpeedEvent> {
                 globalState.apply {
-                    running = newState.running
-                    remaining = newState.remaining
-                    error = newState.error
-                    downloadSpeed = newState.downloadSpeed
+                    downloadSpeed = it.downloadSpeed.speed
                 }
             }
-        }.doOnNext {
-            if (it!!.kind == Event.Kind.VG_USER
-            ) {
-                val user = it.data as String
+        }
+
+        coroutineScope.launch {
+            eventBus.subscribe<VGUserLoginEvent> {
+                val user = it.username
                 globalState.apply {
                     loggedUser = user
                 }
             }
-        }.subscribe()
+        }
+
+        coroutineScope.launch {
+            eventBus.subscribe<QueueStateEvent> {
+                globalState.apply {
+                    running = it.queueState.running
+                    remaining = it.queueState.remaining
+                }
+            }
+        }
+
+        coroutineScope.launch {
+            eventBus.subscribe<ErrorCountEvent> {
+                globalState.apply {
+                    error = it.errorCount.count
+                }
+            }
+        }
     }
 }

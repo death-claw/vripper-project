@@ -1,9 +1,8 @@
 package me.mnlr.vripper.services
 
 import kotlinx.coroutines.*
-import me.mnlr.vripper.event.Event
 import me.mnlr.vripper.event.EventBus
-import me.mnlr.vripper.model.Settings
+import me.mnlr.vripper.event.SettingsUpdateEvent
 import org.apache.http.client.config.CookieSpecs
 import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.methods.AbstractExecutionAwareRequest
@@ -15,12 +14,11 @@ import org.apache.http.impl.client.HttpClientBuilder
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.impl.client.LaxRedirectStrategy
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager
-import reactor.core.Disposable
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
 class HTTPService(
-    eventBus: EventBus,
+    val eventBus: EventBus,
     settingsService: SettingsService
 ) {
 
@@ -29,40 +27,28 @@ class HTTPService(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/118.0"
     }
 
-    private val coroutineScope = CoroutineScope(Dispatchers.Default)
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    private val disposable: Disposable
     private lateinit var pcm: PoolingHttpClientConnectionManager
     private lateinit var rc: RequestConfig
     private var connectionTimeout: Int = settingsService.settings.connectionSettings.timeout
 
-    init {
-        disposable = eventBus
-            .flux()
-            .filter { it.kind == Event.Kind.SETTINGS_UPDATE }
-            .map { it.data as Settings }
-            .doOnNext {
-                if (connectionTimeout != it.connectionSettings.timeout) {
-                    connectionTimeout = it.connectionSettings.timeout
-                    buildRequestConfig()
-                }
-            }
-            .subscribe()
+    fun init() {
         buildRequestConfig()
         buildConnectionPool()
-
-    }
-
-    fun init() {
         coroutineScope.launch {
             pcm.closeIdleConnections(60, TimeUnit.SECONDS)
             delay(15000)
         }
-    }
-
-    fun destroy() {
-        disposable.dispose()
-        coroutineScope.cancel()
+        coroutineScope.launch {
+            eventBus
+                .subscribe<SettingsUpdateEvent> {
+                    if (connectionTimeout != it.settings.connectionSettings.timeout) {
+                        connectionTimeout = it.settings.connectionSettings.timeout
+                        buildRequestConfig()
+                    }
+                }
+        }
     }
 
     private fun buildConnectionPool() {
