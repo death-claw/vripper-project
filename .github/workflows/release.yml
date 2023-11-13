@@ -13,10 +13,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up JDK 17
+    - name: Set up JDK 21
       uses: actions/setup-java@v3
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'temurin'
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
@@ -31,7 +31,7 @@ jobs:
       run: mv vripper-gui/target/vripper-gui-${{ github.event.release.tag_name }}.jar vripper-gui/target/vripper-noarch-gui-${{ github.event.release.tag_name }}.jar
 
     - if: matrix.os == 'ubuntu-latest'
-      name: Upload GUI Jar
+      name: Release GUI Jar
       uses: softprops/action-gh-release@v1
       with:
         files: vripper-gui/target/vripper-noarch-gui-${{ github.event.release.tag_name }}.jar
@@ -48,7 +48,7 @@ jobs:
       run: mv vripper-web/target/vripper-web-${{ github.event.release.tag_name }}.jar vripper-web/target/vripper-noarch-web-${{ github.event.release.tag_name }}.jar
 
     - if: matrix.os == 'ubuntu-latest'
-      name: Upload WEB Jar
+      name: Release WEB Jar
       uses: softprops/action-gh-release@v1
       with:
         files: vripper-web/target/vripper-noarch-web-${{ github.event.release.tag_name }}.jar
@@ -90,7 +90,7 @@ jobs:
         mv dist/VRipper-${{ github.event.release.tag_name }}.dmg dist/vripper-macos-${{ github.event.release.tag_name }}.dmg
 
     - if: matrix.os == 'ubuntu-latest'
-      name: Zip portable
+      name: Zip Ubuntu portable
       uses: thedoctor0/zip-release@0.7.1
       with:
         type: 'zip'
@@ -99,7 +99,7 @@ jobs:
         filename: 'vripper-linux-portable-${{ github.event.release.tag_name }}.zip'
 
     - if: matrix.os == 'windows-latest'
-      name: Zip portable
+      name: Zip Windows portable
       uses: thedoctor0/zip-release@0.7.1
       with:
         type: 'zip'
@@ -108,7 +108,7 @@ jobs:
         filename: 'vripper-windows-portable-${{ github.event.release.tag_name }}.zip'
 
     - if: matrix.os == 'macos-latest'
-      name: Zip portable
+      name: Zip MacOS portable
       uses: thedoctor0/zip-release@0.7.1
       with:
         type: 'zip'
@@ -117,7 +117,7 @@ jobs:
         filename: 'vripper-macos-portable-${{ github.event.release.tag_name }}.zip'
 
     - if: matrix.os == 'ubuntu-latest'
-      name: Upload DEB and RPM package for Linux
+      name: Release packages for Linux
       uses: softprops/action-gh-release@v1
       with:
         files: |
@@ -126,7 +126,7 @@ jobs:
           jpackage/dist/vripper-linux-portable-${{ github.event.release.tag_name }}.zip
 
     - if: matrix.os == 'windows-latest'
-      name: Upload packages for Windows
+      name: Release packages for Windows
       uses: softprops/action-gh-release@v1
       with:
         files: |
@@ -135,7 +135,7 @@ jobs:
           jpackage/dist/vripper-windows-portable-${{ github.event.release.tag_name }}.zip
 
     - if: matrix.os == 'macos-latest'
-      name: Upload package for macOS
+      name: Release packages for macOS
       uses: softprops/action-gh-release@v1
       with:
         files: |

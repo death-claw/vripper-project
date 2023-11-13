@@ -2,10 +2,12 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
   xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>me.mnlr</groupId>
+
+  <groupId>me.vripper</groupId>
   <artifactId>vripper-web-ui</artifactId>
-  <version>4.4.0</version>
+  <version>5.0.0</version>
   <name>vripper-web-ui</name>
+
   <build>
     <resources>
       <resource>

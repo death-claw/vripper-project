@@ -101,17 +101,20 @@ export class LogTableComponent implements OnInit, OnDestroy {
 
   private connect() {
     this.subscriptions.push(
-      this.applicationEndpoint.logs$.subscribe((e: Log[]) => {
-        const toAdd: Log[] = [];
+      this.applicationEndpoint.newLogs$.subscribe((e: Log[]) => {
+        this.agGrid.api.applyTransaction({ add: e });
+      })
+    );
+
+    this.subscriptions.push(
+      this.applicationEndpoint.updatedLogs$.subscribe((e: Log[]) => {
         const toUpdate: Log[] = [];
         e.forEach(v => {
-          if (this.agGrid.api.getRowNode(v.id.toString()) == null) {
-            toAdd.push(v);
-          } else {
+          if (this.agGrid.api.getRowNode(v.id.toString()) != null) {
             toUpdate.push(v);
           }
         });
-        this.agGrid.api.applyTransaction({ update: toUpdate, add: toAdd });
+        this.agGrid.api.applyTransaction({ update: toUpdate });
       })
     );
 
@@ -125,7 +128,6 @@ export class LogTableComponent implements OnInit, OnDestroy {
           if (rowNode != null) {
             toRemove.push(rowNode.data);
           }
-          return;
         });
         this.agGrid.api.applyTransaction({ remove: toRemove });
       })

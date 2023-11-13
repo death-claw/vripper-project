@@ -40,6 +40,7 @@ import {
 import { ProgressCellComponent } from '../progress-cell/progress-cell.component';
 import { Image } from '../domain/image.model';
 import { ImageDialogData, ImagesComponent } from '../images/images.component';
+import { formatBytes } from '../utils/utils';
 
 @Component({
   selector: 'app-download-table',
@@ -130,8 +131,13 @@ export class DownloadTableComponent implements OnDestroy {
         {
           headerName: 'Total',
           tooltipValueGetter: params =>
-            `${params.data?.done}/${params.data?.total}`,
-          valueGetter: params => `${params.data?.done}/${params.data?.total}`,
+            `${params.data?.done}/${params.data?.total} (${formatBytes(
+              params.data?.downloaded
+            )})`,
+          valueGetter: params =>
+            `${params.data?.done}/${params.data?.total} (${formatBytes(
+              params.data?.downloaded
+            )})`,
         },
         {
           headerName: 'Hosts',
@@ -253,31 +259,36 @@ export class DownloadTableComponent implements OnDestroy {
 
   private connect() {
     this.subscriptions.push(
-      this.applicationEndpoint.posts$.subscribe((e: Post[]) => {
-        const toAdd: Post[] = [];
-        const toUpdate: Post[] = [];
-        e.forEach(v => {
-          if (this.agGrid.api.getRowNode(v.postId) == null) {
-            toAdd.push(v);
-          } else {
-            toUpdate.push(v);
-          }
-        });
-        this.agGrid.api.applyTransaction({ update: toUpdate, add: toAdd });
+      this.applicationEndpoint.newPosts$.subscribe((newPosts: Post[]) => {
+        this.agGrid.api.applyTransaction({ add: newPosts });
       })
     );
 
     this.subscriptions.push(
-      this.applicationEndpoint.postsRemove$.subscribe((e: string[]) => {
+      this.applicationEndpoint.deletedPosts$.subscribe((e: string[]) => {
         const toRemove: string[] = [];
         e.forEach(v => {
           const rowNode: IRowNode | undefined = this.agGrid.api.getRowNode(v);
           if (rowNode != null) {
             toRemove.push(rowNode.data);
           }
-          return;
         });
         this.agGrid.api.applyTransaction({ remove: toRemove });
+      })
+    );
+
+    this.subscriptions.push(
+      this.applicationEndpoint.updatedPosts$.subscribe((e: Post[]) => {
+        const toUpdate: Post[] = [];
+        e.forEach(v => {
+          const rowNode: IRowNode | undefined = this.agGrid.api.getRowNode(
+            String(v.postId)
+          );
+          if (rowNode != null) {
+            toUpdate.push(v);
+          }
+        });
+        this.agGrid.api.applyTransaction({ update: toUpdate });
       })
     );
   }

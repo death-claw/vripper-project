@@ -1,16 +1,22 @@
-<ng-container *ngIf="globalState$ | async as state">
-  <div class="status-bar" style="display: flex">
-    <span style="padding-left: 10px; flex-grow: 1">
-      <ng-container *ngIf="state.loggedUser.length > 0"
-        >Logged in as: {{ state.loggedUser }}</ng-container
-      >
-    </span>
-    <span>{{ state.downloadSpeed || '0' + '/s' }}</span>
+<div class='status-bar' style='display: flex'>
+  <span style='padding-left: 10px; flex-grow: 1'>
+    <ng-container *ngIf='vgUsername$ | async as vgUsername'>
+      <span>{{
+        vgUsername.length > 0 ? 'Logged in as: ' + vgUsername : ''
+        }}</span>
+    </ng-container>
+  </span>
+  <span *ngIf='downloadSpeed$ | async as downloadSpeed'>{{
+    (downloadSpeed.speed | downloadSpeed) + '/s'
+    }}</span>
+  <mat-divider [vertical]='true' style='height: 20px'></mat-divider>
+  <ng-container *ngIf='queueState$ | async as queueState'>
+    <span>Downloading: {{ queueState.running }}</span>
     <mat-divider [vertical]="true" style="height: 20px"></mat-divider>
-    <span>Downloading: {{ state.running }}</span>
+    <span>Pending: {{ queueState.remaining }}</span>
     <mat-divider [vertical]="true" style="height: 20px"></mat-divider>
-    <span>Pending: {{ state.remaining }}</span>
-    <mat-divider [vertical]="true" style="height: 20px"></mat-divider>
-    <span style="padding-right: 10px">Error: {{ state.error }}</span>
-  </div>
-</ng-container>
+  </ng-container>
+  <span *ngIf='errorCount$ | async as errorCount' style='padding-right: 10px'
+  >Error: {{ errorCount.count }}</span
+  >
+</div>

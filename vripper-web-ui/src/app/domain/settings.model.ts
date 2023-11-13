@@ -1,20 +1,19 @@
 export interface Settings {
-  maxEventLog: number;
   connectionSettings: ConnectionSettings;
   downloadSettings: DownloadSettings;
   viperSettings: ViperSettings;
+  systemSettings: SystemSettings;
 }
 
 export interface ConnectionSettings {
-  maxThreads: number;
-  maxTotalThreads: number;
+  maxConcurrentPerHost: number;
+  maxGlobalConcurrent: number;
   timeout: number;
   maxAttempts: number;
 }
 
 export interface DownloadSettings {
   downloadPath: string;
-  tempPath: string;
   autoStart: boolean;
   autoQueueThreshold: number;
   forceOrder: boolean;
@@ -30,4 +29,10 @@ export interface ViperSettings {
   password: string;
   thanks: boolean;
   proxy: string;
+}
+
+export interface SystemSettings {
+  tempPath: string;
+  cachePath: string;
+  maxEventLog: number;
 }
