@@ -21,6 +21,9 @@ jobs:
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
 
+    - name: Build parent project
+      run: mvn -N -q install --file pom.xml
+
     - name: Build Core Jar
       run: mvn -B -q install --file vripper-core/pom.xml
 
