@@ -31,7 +31,7 @@ jobs:
       run: mvn -B -q install --file vripper-gui/pom.xml
 
     - name: Rename GUI Jar
-      run: mv vripper-gui/target/vripper-gui-${{ github.event.release.tag_name }}.jar vripper-gui/target/vripper-noarch-gui-${{ github.event.release.tag_name }}.jar
+      run: mv vripper-gui/target/vripper-gui-${{ github.event.release.tag_name }}-with-dependencies.jar vripper-gui/target/vripper-noarch-gui-${{ github.event.release.tag_name }}.jar
 
     - if: matrix.os == 'ubuntu-latest'
       name: Release GUI Jar
