@@ -28,7 +28,7 @@ object PreviewCache : KoinComponent {
         .maximumWeight(1024 * 1024 * 100)
         .build(::load)
 
-    fun load(url: String): ByteArray {
+    private fun load(url: String): ByteArray {
         val path = cachePath.resolve(url.hash256())
         if (Files.exists(path) && Files.isRegularFile(path)) {
             return Files.readAllBytes(path)

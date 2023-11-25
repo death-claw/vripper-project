@@ -1,5 +1,6 @@
 package me.vripper.gui.view
 
+import javafx.event.EventHandler
 import javafx.scene.control.ProgressIndicator
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
@@ -7,13 +8,15 @@ import javafx.scene.layout.HBox
 import javafx.stage.Popup
 import javafx.stage.Stage
 import kotlinx.coroutines.*
+import me.vripper.delegate.LoggerDelegate
 import me.vripper.gui.view.PreviewCache.previewDispatcher
 import tornadofx.add
 import tornadofx.runLater
 import java.io.ByteArrayInputStream
 
-class Preview(private val owner: Stage, val images: List<String>) {
+class Preview(private val owner: Stage, private val images: List<String>) {
 
+    private val log by LoggerDelegate()
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var previewLoadJob: Job? = null
     val previewPopup = Popup()
@@ -43,6 +46,9 @@ class Preview(private val owner: Stage, val images: List<String>) {
             yield()
             runLater {
                 val hBox = HBox()
+                hBox.onMouseEntered = EventHandler {
+                    hide()
+                }
                 imageViewList.forEach { hBox.add(it) }
                 previewPopup.content.clear()
                 previewPopup.content.add(hBox)
@@ -54,16 +60,19 @@ class Preview(private val owner: Stage, val images: List<String>) {
     private fun previewLoading(url: String): Deferred<ImageView?> {
         return coroutineScope.async(previewDispatcher) {
             val imageView = try {
-                ImageView(Image(ByteArrayInputStream(PreviewCache.cache[url]))).apply {
-                    isPreserveRatio = true
+                ByteArrayInputStream(PreviewCache.cache[url]).use {
+                    ImageView(Image(it)).apply {
+                        isPreserveRatio = true
 
-                    fitWidth = if (image.width > 200.0) {
-                        if (image.width > image.height) 200.0 * image.width / image.height else 200.0
-                    } else {
-                        200.0
+                        fitWidth = if (image.width > 200.0) {
+                            if (image.width > image.height) 200.0 * image.width / image.height else 200.0
+                        } else {
+                            200.0
+                        }
                     }
                 }
             } catch (e: Exception) {
+                log.warn("Failed to load preview $url")
                 null
             }
             imageView
