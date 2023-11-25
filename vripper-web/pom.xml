@@ -10,7 +10,7 @@
     <parent>
         <groupId>me.vripper</groupId>
         <artifactId>vripper-project</artifactId>
-        <version>5.0.0</version>
+        <version>5.1.0</version>
     </parent>
 
     <properties>
@@ -37,12 +37,12 @@
         <dependency>
             <groupId>me.vripper</groupId>
             <artifactId>vripper-core</artifactId>
-            <version>5.0.0</version>
+            <version>5.1.0</version>
         </dependency>
         <dependency>
             <groupId>me.vripper</groupId>
             <artifactId>vripper-web-ui</artifactId>
-            <version>5.0.0</version>
+            <version>5.1.0</version>
         </dependency>
     </dependencies>
 

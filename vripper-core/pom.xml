@@ -7,7 +7,7 @@
     <parent>
         <groupId>me.vripper</groupId>
         <artifactId>vripper-project</artifactId>
-        <version>5.0.0</version>
+        <version>5.1.0</version>
     </parent>
 
     <artifactId>vripper-core</artifactId>
