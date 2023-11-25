@@ -84,22 +84,23 @@ class ThreadSelectionTableView : Fragment("Thread") {
                     val cell = PreviewTableCell<ThreadSelectionModel>()
                     cell.alignment = Pos.CENTER
                     cell.onMouseEntered = EventHandler { mouseEvent ->
+                        preview?.hide()
                         if (cell.tableRow.item != null && cell.tableRow.item.previewList.isNotEmpty()) {
                             preview = Preview(currentStage!!, cell.tableRow.item.previewList)
                             preview?.previewPopup?.apply {
                                 x = mouseEvent.screenX + 20
                                 y = mouseEvent.screenY + 10
                             }
+                            cell.onMouseMoved = EventHandler {
+                                preview?.previewPopup?.apply {
+                                    x = it.screenX + 20
+                                    y = it.screenY + 10
+                                }
+                            }
+                            cell.onMouseExited = EventHandler {
+                                preview?.hide()
+                            }
                         }
-                    }
-                    cell.onMouseMoved = EventHandler {
-                        preview?.previewPopup?.apply {
-                            x = it.screenX + 20
-                            y = it.screenY + 10
-                        }
-                    }
-                    cell.onMouseExited = EventHandler {
-                        preview?.hide()
                     }
                     cell
                 }
