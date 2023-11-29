@@ -28,7 +28,7 @@
       <dependency>
         <artifactId>logback-classic</artifactId>
         <groupId>ch.qos.logback</groupId>
-        <version>1.4.11</version>
+        <version>1.4.12</version>
       </dependency>
       <dependency>
         <artifactId>kotlin-stdlib</artifactId>
