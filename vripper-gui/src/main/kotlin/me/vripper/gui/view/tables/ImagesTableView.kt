@@ -51,7 +51,7 @@ class ImagesTableView : Fragment("Photos") {
             it.copy(images = it.images.filter { image: Image -> image.postId == postId })
         }.filter {
             it.images.isNotEmpty()
-        }.buffer(Duration.ofMillis(125))
+        }.buffer(Duration.ofMillis(175))
             .subscribe { imageEvent ->
             runLater {
                 for (image in imageEvent.map { it.images }.flatten().reversed().distinct()) {

@@ -27,12 +27,12 @@ class DataTransaction(
 
     fun updatePosts(posts: List<Post>) {
         transaction { postDownloadStateRepository.update(posts) }
-        eventBus.publishEvent(PostEvent(update = posts))
+        eventBus.publishEvent(PostUpdateEvent(posts))
     }
 
-    fun updatePost(posts: Post) {
-        transaction { postDownloadStateRepository.update(posts) }
-        eventBus.publishEvent(PostEvent(update = listOf(posts)))
+    fun updatePost(post: Post) {
+        transaction { postDownloadStateRepository.update(post) }
+        eventBus.publishEvent(PostUpdateEvent(listOf(post)))
     }
 
     fun save(thread: Thread) {
@@ -102,7 +102,7 @@ class DataTransaction(
             }
             savedPosts
         }
-        eventBus.publishEvent(PostEvent(add = savedPosts))
+        eventBus.publishEvent(PostCreateEvent(savedPosts))
         return savedPosts
     }
 
@@ -150,7 +150,7 @@ class DataTransaction(
         }
 
 
-        eventBus.publishEvent(PostEvent(delete = postIds))
+        eventBus.publishEvent(PostDeleteEvent(postIds = postIds))
         eventBus.publishEvent(ErrorCountEvent(ErrorCount(countImagesInError())))
     }
 

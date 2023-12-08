@@ -25,6 +25,8 @@ import {
   ViperSettings,
 } from '../domain/settings.model';
 import { ApplicationEndpointService } from '../services/application-endpoint.service';
+import { DialogRef } from '@angular/cdk/dialog';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 
 @Component({
   selector: 'app-settings',
@@ -87,13 +89,23 @@ export class SettingsComponent {
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: Settings,
-    public dialogRef: MatDialogRef<SettingsComponent>,
-    private applicationEndpoint: ApplicationEndpointService
+    public dialogRef: DialogRef<Settings>,
+    private applicationEndpoint: ApplicationEndpointService,
+    breakpointObserver: BreakpointObserver
   ) {
     this.viperGirlsSettingsForm.reset(data.viperSettings);
     this.downloadSettingsForm.reset(data.downloadSettings);
     this.connectionSettingsForm.reset(data.connectionSettings);
     this.systemSettingsForm.reset(data.systemSettings);
+    breakpointObserver
+      .observe(Breakpoints.HandsetPortrait)
+      .subscribe(result => {
+        if (result.matches) {
+          this.dialogRef.updateSize('100vw', '80vh');
+        } else {
+          this.dialogRef.updateSize('80vw', '80vh');
+        }
+      });
   }
 
   save = () => {

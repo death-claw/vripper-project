@@ -75,18 +75,19 @@ export class ThreadTableComponent implements OnDestroy {
           headerName: 'Title',
           field: 'title',
           tooltipField: 'title',
-          flex: 1,
+          flex: 2,
         },
         {
           headerName: 'Url',
           field: 'link',
           tooltipField: 'link',
-          flex: 1,
+          flex: 2,
         },
         {
           headerName: 'Count',
           field: 'total',
           tooltipField: 'total',
+          flex: 1,
         },
       ],
       defaultColDef: {
@@ -138,7 +139,13 @@ export class ThreadTableComponent implements OnDestroy {
             return;
           }
           const data: ThreadDialogData = { threadId: event.data.threadId };
-          this.dialog.open(ThreadSelectionComponent, { data });
+          this.dialog.open(ThreadSelectionComponent, {
+            data,
+            maxWidth: '100vw',
+            maxHeight: '100vh',
+            width: '80vw',
+            height: '80vh',
+          });
         };
 
         ref.instance.onThreadDelete = () => {
@@ -177,7 +184,13 @@ export class ThreadTableComponent implements OnDestroy {
           return;
         }
         const data: ThreadDialogData = { threadId: event.data.threadId };
-        this.dialog.open(ThreadSelectionComponent, { data });
+        this.dialog.open(ThreadSelectionComponent, {
+          data,
+          maxWidth: '100vw',
+          maxHeight: '100vh',
+          width: '80vw',
+          height: '80vh',
+        });
       },
     };
   }

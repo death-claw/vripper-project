@@ -1,22 +1,32 @@
-<div class='status-bar' style='display: flex'>
-  <span style='padding-left: 10px; flex-grow: 1'>
-    <ng-container *ngIf='vgUsername$ | async as vgUsername'>
-      <span>{{
-        vgUsername.length > 0 ? 'Logged in as: ' + vgUsername : ''
+<div class="status-bar" style="display: flex; justify-content: space-between">
+  <div>
+    <span
+      *ngIf="!(handsetPortrait$ | async)?.matches"
+      style="padding-left: 10px; flex-grow: 1">
+      <ng-container *ngIf="vgUsername$ | async as vgUsername">
+        <span>{{
+          vgUsername.length > 0 ? 'Logged in as: ' + vgUsername : ''
         }}</span>
-    </ng-container>
-  </span>
-  <span *ngIf='downloadSpeed$ | async as downloadSpeed'>{{
-    (downloadSpeed.speed | downloadSpeed) + '/s'
+      </ng-container>
+    </span>
+  </div>
+  <div style="display: flex">
+    <span *ngIf="downloadSpeed$ | async as downloadSpeed">{{
+      (downloadSpeed.speed | downloadSpeed) + '/s'
     }}</span>
-  <mat-divider [vertical]='true' style='height: 20px'></mat-divider>
-  <ng-container *ngIf='queueState$ | async as queueState'>
-    <span>Downloading: {{ queueState.running }}</span>
-    <mat-divider [vertical]="true" style="height: 20px"></mat-divider>
-    <span>Pending: {{ queueState.remaining }}</span>
-    <mat-divider [vertical]="true" style="height: 20px"></mat-divider>
-  </ng-container>
-  <span *ngIf='errorCount$ | async as errorCount' style='padding-right: 10px'
-  >Error: {{ errorCount.count }}</span
-  >
+    <ng-container *ngIf="queueState$ | async as queueState">
+      <ng-container *ngIf="!(handsetPortrait$ | async)?.matches">
+        <mat-divider [vertical]="true" style="height: 20px"></mat-divider>
+        <span>Downloading: {{ queueState.running }}</span>
+        <mat-divider [vertical]="true" style="height: 20px"></mat-divider>
+        <span>Pending: {{ queueState.remaining }}</span>
+      </ng-container>
+    </ng-container>
+    <ng-container *ngIf="errorCount$ | async as errorCount">
+      <ng-container *ngIf="!(handsetPortrait$ | async)?.matches">
+        <mat-divider [vertical]="true" style="height: 20px"></mat-divider>
+        <span style="padding-right: 10px">Error: {{ errorCount.count }}</span>
+      </ng-container>
+    </ng-container>
+  </div>
 </div>

@@ -10,6 +10,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { ValueGetterParams } from 'ag-grid-community/dist/lib/entities/colDef';
 import { ProgressCellComponent } from '../progress-cell/progress-cell.component';
 import { ITooltipParams } from 'ag-grid-community/dist/lib/rendering/tooltipComponent';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { DialogRef } from '@angular/cdk/dialog';
 
 export interface ImageDialogData {
   postId: number;
@@ -30,23 +32,29 @@ export class ImagesComponent implements OnDestroy {
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ImageDialogData,
-    private applicationEndpoint: ApplicationEndpointService
+    public dialogRef: DialogRef<ImageDialogData>,
+    private applicationEndpoint: ApplicationEndpointService,
+    breakpointObserver: BreakpointObserver
   ) {
     this.gridOptions = <GridOptions>{
       columnDefs: [
         {
+          colId: 'index',
           headerName: '#',
           field: 'index',
           tooltipField: 'index',
           sort: 'asc',
-        },
-        {
-          headerName: 'URL',
-          field: 'url',
-          tooltipField: 'url',
           flex: 1,
         },
         {
+          colId: 'url',
+          headerName: 'URL',
+          field: 'url',
+          tooltipField: 'url',
+          flex: 2,
+        },
+        {
+          colId: 'progress',
           headerName: 'Progress',
           field: 'progress',
           tooltipValueGetter: (params: ITooltipParams<Image>) => {
@@ -66,8 +74,10 @@ export class ImagesComponent implements OnDestroy {
               : (params.data.downloaded / params.data.size) * 100;
           },
           cellRenderer: ProgressCellComponent,
+          flex: 1,
         },
         {
+          colId: 'status',
           headerName: 'Status',
           field: 'status',
           valueFormatter: (params: ValueFormatterParams<Image>) => {
@@ -77,6 +87,7 @@ export class ImagesComponent implements OnDestroy {
               value.substring(1, value.length).toLowerCase()
             );
           },
+          flex: 1,
         },
       ],
       defaultColDef: {
@@ -84,7 +95,23 @@ export class ImagesComponent implements OnDestroy {
         resizable: true,
       },
       getRowId: row => row.data['url'].toString(),
-      onGridReady: () => this.connect(),
+      onGridReady: () => {
+        this.connect();
+        breakpointObserver
+          .observe(Breakpoints.HandsetPortrait)
+          .subscribe(result => {
+            this.agGrid.columnApi.setColumnsVisible(
+              ['index', 'status'],
+              !result.matches
+            );
+            if (result.matches) {
+              this.dialogRef.updateSize('100vw', '80vh');
+            } else {
+              this.dialogRef.updateSize('80vw', '80vh');
+            }
+            this.dialogRef.updatePosition();
+          });
+      },
     };
   }
 

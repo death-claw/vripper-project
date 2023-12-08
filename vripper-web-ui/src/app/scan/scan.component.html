@@ -2,12 +2,13 @@
 <mat-dialog-content
   class="mat-typography"
   style="min-width: 50vw; min-height: 50vh">
-  <mat-form-field appearance="outline" style="width: 100%; height: 100%; padding-top: 20px">
+  <mat-form-field
+    appearance="outline"
+    style="width: 100%; height: calc(100% - 20px); padding-top: 20px">
     <mat-label>Add new links</mat-label>
     <textarea
       [formControl]="formControl"
       cdkTextareaAutosize
-      cdkAutosizeMinRows="5"
       matInput
       name="url"
       placeholder="Put each link in a new line"
@@ -15,8 +16,11 @@
   </mat-form-field>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button mat-button mat-dialog-close>Cancel</button>
-  <button mat-button [mat-dialog-close]="formControl.value" cdkFocusInitial>
+  <button mat-flat-button mat-dialog-close cdkFocusInitial>Cancel</button>
+  <button
+    mat-flat-button
+    color="primary"
+    [mat-dialog-close]="formControl.value">
     Scan
   </button>
 </mat-dialog-actions>

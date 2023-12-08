@@ -41,7 +41,13 @@ export class PostContextmenuComponent {
 
   openImages = () => {
     const data: ImageDialogData = { postId: this.post.postId };
-    this.dialog.open(ImagesComponent, { data });
+    this.dialog.open(ImagesComponent, {
+      data,
+      maxWidth: '100vw',
+      maxHeight: '100vh',
+      width: '80vw',
+      height: '80vh',
+    });
   };
 
   onPostStart!: () => void;
