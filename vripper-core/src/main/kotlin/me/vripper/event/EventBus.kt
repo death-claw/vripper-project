@@ -8,10 +8,10 @@ import java.util.concurrent.Executors
 
 object EventBus {
 
-    private val Scheduler: Scheduler = Schedulers.fromExecutor(Executors.newSingleThreadExecutor())
+    private val scheduler: Scheduler = Schedulers.fromExecutor(Executors.newSingleThreadExecutor())
     private val _events = Sinks.many().multicast().onBackpressureBuffer<Any>()
-    val events: Flux<Any> = _events.asFlux().publishOn(Scheduler)
+    val events: Flux<Any> = _events.asFlux().publishOn(scheduler)
     fun publishEvent(event: Any) {
-        _events.tryEmitNext(event)
+        _events.emitNext(event) { _, _ -> true }
     }
 }

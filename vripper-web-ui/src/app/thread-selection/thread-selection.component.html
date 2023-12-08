@@ -1,14 +1,15 @@
 <h2 mat-dialog-title>Thread</h2>
-<mat-dialog-content
-  class="mat-typography"
-  style="min-width: 50vw; min-height: 50vh">
+<mat-dialog-content class="mat-typography">
   <ag-grid-angular
-    style="width: 50vw; height: 50vh"
+    style="width: 100%; height: 100%"
     class="ag-theme-alpine"
     #agGrid
     [gridOptions]="gridOptions">
   </ag-grid-angular>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button mat-button (click)="downloadSelected()" cdkFocusInitial>Download</button>
+  <button mat-flat-button [mat-dialog-close]="true" cdkFocusInitial>
+    Cancel
+  </button>
+  <button mat-flat-button color="primary" (click)="downloadSelected()">Download</button>
 </mat-dialog-actions>

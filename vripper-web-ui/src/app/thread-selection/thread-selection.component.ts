@@ -2,11 +2,7 @@ import { Component, Inject, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
 import { MatButtonModule } from '@angular/material/button';
-import {
-  MAT_DIALOG_DATA,
-  MatDialogModule,
-  MatDialogRef,
-} from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import {
   GridOptions,
   ITooltipParams,
@@ -16,6 +12,8 @@ import { ApplicationEndpointService } from '../services/application-endpoint.ser
 import { GridReadyEvent } from 'ag-grid-community/dist/lib/events';
 import { PostItem } from '../domain/post-item.model';
 import { ValueGetterParams } from 'ag-grid-community/dist/lib/entities/colDef';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { DialogRef } from '@angular/cdk/dialog';
 
 export interface ThreadDialogData {
   threadId: number;
@@ -35,31 +33,37 @@ export class ThreadSelectionComponent {
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ThreadDialogData,
-    private dialogRef: MatDialogRef<ThreadSelectionComponent>,
-    private applicationEndpoint: ApplicationEndpointService
+    private dialogRef: DialogRef<ThreadDialogData>,
+    private applicationEndpoint: ApplicationEndpointService,
+    breakpointObserver: BreakpointObserver
   ) {
     this.gridOptions = <GridOptions>{
       columnDefs: [
         {
+          colId: 'number',
           headerName: 'Number',
           field: 'number',
           tooltipField: 'number',
           checkboxSelection: true,
           headerCheckboxSelection: true,
+          flex: 1,
         },
         {
+          colId: 'title',
           headerName: 'Title',
           field: 'title',
           tooltipField: 'title',
           flex: 2,
         },
         {
+          colId: 'url',
           headerName: 'URL',
           field: 'url',
           tooltipField: 'url',
-          flex: 1,
+          flex: 2,
         },
         {
+          colId: 'hosts',
           headerName: 'Hosts',
           field: 'hosts',
           tooltipValueGetter: (params: ITooltipParams<PostItem>) => {
@@ -72,6 +76,7 @@ export class ThreadSelectionComponent {
               .map(v => `${v.first} (${v.second})`)
               .join(', ');
           },
+          flex: 1,
         },
       ],
       defaultColDef: {
@@ -81,6 +86,17 @@ export class ThreadSelectionComponent {
       rowSelection: 'multiple',
       getRowId: row => row.data['postId'].toString(),
       onGridReady: (event: GridReadyEvent<PostItem>) => {
+        breakpointObserver
+          .observe(Breakpoints.HandsetPortrait)
+          .subscribe(result => {
+            this.agGrid.columnApi.setColumnsVisible(['url'], !result.matches);
+            if (result.matches) {
+              this.dialogRef.updateSize('100vw', '80vh');
+            } else {
+              this.dialogRef.updateSize('80vw', '80vh');
+            }
+            this.dialogRef.updatePosition();
+          });
         this.applicationEndpoint
           .getThreadPosts(this.data.threadId)
           .subscribe(result => {

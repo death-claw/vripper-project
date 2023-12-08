@@ -17,7 +17,7 @@ body {
 }
 
 #tab-group {
-  height: calc(100% - 64px);
+  height: calc(100% - 84px);
 }
 
 .ag-theme-alpine {
@@ -135,12 +135,6 @@ body {
   }
 }
 
-.status-bar {
-  position: fixed;
-  width: 100%;
-  bottom: 0;
-  left: 0;
-  white-space: nowrap;
-  padding: 2px 0;
-  z-index: 9999;
+.mat-mdc-dialog-content {
+  max-height: 100vh !important;
 }

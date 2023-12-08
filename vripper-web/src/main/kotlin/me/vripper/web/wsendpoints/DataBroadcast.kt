@@ -17,23 +17,14 @@ class DataBroadcast(
 
     @PostConstruct
     private fun run() {
-        eventBus.events.ofType(PostEvent::class.java).buffer(Duration.ofMillis(125)).subscribe { events ->
-
-            events.map { it.delete }.flatten().also {
-                if (it.isNotEmpty()) {
-                    template.convertAndSend("/topic/posts/deleted", it)
-                }
-            }
-
-            events.map { it.add }.flatten().also {
-                if (it.isNotEmpty()) {
-                    template.convertAndSend("/topic/posts/new", it)
-                }
-            }
-
-            events.map { it.update }.flatten().reversed().distinct().also {
-                template.convertAndSend("/topic/posts/updated", it)
-            }
+        eventBus.events.ofType(PostCreateEvent::class.java).subscribe { events ->
+            template.convertAndSend("/topic/posts/new", events.posts)
+        }
+        eventBus.events.ofType(PostUpdateEvent::class.java).subscribe { events ->
+            template.convertAndSend("/topic/posts/updated", events.posts)
+        }
+        eventBus.events.ofType(PostDeleteEvent::class.java).subscribe { events ->
+            template.convertAndSend("/topic/posts/deleted", events.postIds)
         }
 
         eventBus.events.ofType(QueueStateEvent::class.java).subscribe {
@@ -56,41 +47,35 @@ class DataBroadcast(
             template.convertAndSend("/topic/loading", it.loading)
         }
 
-        eventBus.events.ofType(ImageEvent::class.java).buffer(Duration.ofMillis(125)).subscribe { events ->
-            events.map { it.images }.flatten().reversed().distinct().groupBy { it.postId }
-                .forEach { template.convertAndSend("/topic/images/${it.key}", it.value) }
+        eventBus.events.ofType(ImageEvent::class.java).buffer(Duration.ofMillis(500)).subscribe { events ->
+            events.reversed().map { it.images }.flatten().distinct().groupBy { it.postId }
+                .forEach {
+                    template.convertAndSend("/topic/images/${it.key}", it.value)
+                }
         }
 
-        eventBus.events.ofType(ThreadCreateEvent::class.java).map { it.thread }.distinct()
-            .buffer(Duration.ofMillis(125)).subscribe {
-                template.convertAndSend("/topic/threads", it)
+        eventBus.events.ofType(ThreadCreateEvent::class.java).map { listOf(it.thread) }
+            .subscribe { events ->
+                template.convertAndSend("/topic/threads", events)
             }
 
-        eventBus.events.ofType(ThreadDeleteEvent::class.java).map { it.threadId }.distinct()
-            .buffer(Duration.ofMillis(125)).subscribe {
+        eventBus.events.ofType(ThreadDeleteEvent::class.java).map { listOf(it.threadId) }
+            .subscribe {
                 template.convertAndSend("/topic/threads/deleted", it)
             }
 
-        eventBus.events.ofType(ThreadClearEvent::class.java).subscribe {
-            template.convertAndSend("/topic/threads/deletedAll", listOf(true))
+        eventBus.events.ofType(ThreadClearEvent::class.java).map { listOf(true) }.subscribe {
+            template.convertAndSend("/topic/threads/deletedAll", it)
         }
 
-        eventBus.events.ofType(LogCreateEvent::class.java).map { it.logEntry }.buffer(Duration.ofMillis(125))
+        eventBus.events.ofType(LogCreateEvent::class.java).map { it.logEntry }
             .subscribe { logCreateEvent ->
-                logCreateEvent.distinct().also {
-                    if (it.isNotEmpty()) {
-                        template.convertAndSend("/topic/logs/new", it)
-                    }
-                }
+                template.convertAndSend("/topic/logs/new", logCreateEvent)
             }
 
-        eventBus.events.ofType(LogUpdateEvent::class.java).map { it.logEntry }.buffer(Duration.ofMillis(125))
+        eventBus.events.ofType(LogUpdateEvent::class.java).map { it.logEntry }
             .subscribe { logUpdateEvent ->
-                logUpdateEvent.distinct().also {
-                    if (it.isNotEmpty()) {
-                        template.convertAndSend("/topic/logs/updated", it)
-                    }
-                }
+                template.convertAndSend("/topic/logs/updated", logUpdateEvent)
             }
 
         eventBus.events.ofType(LogDeleteEvent::class.java).subscribe {

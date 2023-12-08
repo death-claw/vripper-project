@@ -128,22 +128,22 @@
         <mat-form-field appearance="outline">
           <mat-label>Global concurrent downloads</mat-label>
           <input
-            formControlName='maxConcurrentPerHost'
+            formControlName="maxConcurrentPerHost"
             matInput
             max="12"
             min="0"
-            name='maxConcurrentPerHost'
+            name="maxConcurrentPerHost"
             required
             type="number" />
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Concurrent downloads per host</mat-label>
           <input
-            formControlName='maxGlobalConcurrent'
+            formControlName="maxGlobalConcurrent"
             matInput
             max="4"
             min="1"
-            name='maxGlobalConcurrent'
+            name="maxGlobalConcurrent"
             required
             type="number" />
         </mat-form-field>
@@ -229,9 +229,9 @@
         </div>
       </form>
     </mat-tab>
-    <mat-tab label='System'>
+    <mat-tab label="System">
       <form
-        [formGroup]='systemSettingsForm'
+        [formGroup]="systemSettingsForm"
         autocomplete="off"
         style="
           display: flex;
@@ -242,17 +242,17 @@
         ">
         <mat-form-field appearance="outline">
           <mat-label>Temporary Path</mat-label>
-          <input formControlName='tempPath' matInput name='tempPath' required />
+          <input formControlName="tempPath" matInput name="tempPath" required />
         </mat-form-field>
-        <mat-form-field appearance='outline'>
+        <mat-form-field appearance="outline">
           <mat-label>Cache Path</mat-label>
           <input
-            formControlName='cachePath'
+            formControlName="cachePath"
             matInput
-            name='cachePath'
+            name="cachePath"
             required />
         </mat-form-field>
-        <mat-form-field appearance='outline'>
+        <mat-form-field appearance="outline">
           <mat-label>Maximum log entries</mat-label>
           <input
             formControlName="maxEventLog"
@@ -268,6 +268,6 @@
   </mat-tab-group>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button mat-button mat-dialog-close>Cancel</button>
-  <button (click)="save()" mat-button cdkFocusInitial>Save</button>
+  <button mat-flat-button mat-dialog-close cdkFocusInitial>Cancel</button>
+  <button (click)="save()" mat-flat-button color="primary">Save</button>
 </mat-dialog-actions>

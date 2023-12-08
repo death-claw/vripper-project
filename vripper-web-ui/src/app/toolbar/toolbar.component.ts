@@ -14,6 +14,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ScanComponent } from '../scan/scan.component';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 
 @Component({
   selector: 'app-toolbar',
@@ -69,11 +70,21 @@ export class ToolbarComponent {
   @Input({ required: true })
   disableSelected!: Signal<boolean>;
 
-  constructor(public dialog: MatDialog) {}
+  handsetPortrait$ = this.breakpointObserver.observe(
+    Breakpoints.HandsetPortrait
+  );
+
+  constructor(
+    public dialog: MatDialog,
+    private breakpointObserver: BreakpointObserver
+  ) {}
 
   openScanDialog() {
     this.dialog
-      .open<ScanComponent, never, string>(ScanComponent)
+      .open<ScanComponent, never, string>(ScanComponent, {
+        maxWidth: '100vw',
+        maxHeight: '100vh',
+      })
       .afterClosed()
       .subscribe(v => {
         if (v) {

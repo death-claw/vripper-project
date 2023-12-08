@@ -16,7 +16,10 @@ import {
 } from '@angular/material/dialog';
 import { SettingsComponent } from './settings/settings.component';
 import { Settings } from './domain/settings.model';
-import { ConfirmComponent, ConfirmDialogData } from './confirm/confirm.component';
+import {
+  ConfirmComponent,
+  ConfirmDialogData,
+} from './confirm/confirm.component';
 import { Subject } from 'rxjs';
 import { RxStompState } from '@stomp/rx-stomp';
 import { StatusBarComponent } from './status-bar/status-bar.component';
@@ -96,6 +99,10 @@ export class AppComponent {
     this.applicationEndpoint.settings().subscribe(s =>
       this.dialog.open<SettingsComponent, Settings>(SettingsComponent, {
         data: s,
+        maxWidth: '100vw',
+        maxHeight: '100vh',
+        width: '80vw',
+        height: '80vh',
       })
     );
   };

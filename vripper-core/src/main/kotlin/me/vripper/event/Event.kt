@@ -9,12 +9,9 @@ import me.vripper.model.ErrorCount
 import me.vripper.model.QueueState
 import me.vripper.model.Settings
 
-data class PostEvent(
-    val add: List<Post> = emptyList(),
-    val update: List<Post> = emptyList(),
-    val delete: List<Long> = emptyList()
-)
-
+data class PostCreateEvent(val posts: List<Post>)
+data class PostUpdateEvent(val posts: List<Post>)
+data class PostDeleteEvent(val postIds: List<Long>)
 data class ImageEvent(val images: List<Image>)
 data class ThreadCreateEvent(val thread: Thread)
 data class ThreadDeleteEvent(val threadId: Long)

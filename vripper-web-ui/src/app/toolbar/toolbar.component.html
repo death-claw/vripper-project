@@ -26,27 +26,31 @@
           <mat-divider
             [vertical]="true"
             style="height: 20px; flex-grow: 0"></mat-divider>
-          <button
-            [disabled]="disableSelected()"
-            (click)="startSelectedClick()"
-            mat-icon-button
-            matTooltip="Start selected">
-            <mat-icon>play_arrow</mat-icon>
-          </button>
-          <button
-            [disabled]="disableSelected()"
-            (click)="stopSelectedClick()"
-            mat-icon-button
-            matTooltip="Stop selected">
-            <mat-icon>pause</mat-icon>
-          </button>
-          <button
-            [disabled]="disableSelected()"
-            (click)="removeSelectedClick()"
-            mat-icon-button
-            matTooltip="Remove selected">
-            <mat-icon>delete</mat-icon>
-          </button>
+          <ng-container *ngIf="handsetPortrait$ | async as handsetPortrait">
+            @if (!handsetPortrait.matches) {
+            <button
+              [disabled]="disableSelected()"
+              (click)="startSelectedClick()"
+              mat-icon-button
+              matTooltip="Start selected">
+              <mat-icon>play_arrow</mat-icon>
+            </button>
+            <button
+              [disabled]="disableSelected()"
+              (click)="stopSelectedClick()"
+              mat-icon-button
+              matTooltip="Stop selected">
+              <mat-icon>pause</mat-icon>
+            </button>
+            <button
+              [disabled]="disableSelected()"
+              (click)="removeSelectedClick()"
+              mat-icon-button
+              matTooltip="Remove selected">
+              <mat-icon>delete</mat-icon>
+            </button>
+            }
+          </ng-container>
           <mat-divider
             [vertical]="true"
             style="height: 20px; flex-grow: 0"></mat-divider>
@@ -78,9 +82,9 @@
         <button mat-icon-button matTooltip="Settings" (click)="settingsClick()">
           <mat-icon>settings</mat-icon>
         </button>
-        <button mat-icon-button matTooltip="About">
-          <mat-icon>info</mat-icon>
-        </button>
+        <!--        <button mat-icon-button matTooltip="About">-->
+        <!--          <mat-icon>info</mat-icon>-->
+        <!--        </button>-->
       </div>
     </div>
   </mat-toolbar-row>

@@ -43,6 +43,7 @@ export class LogTableComponent implements OnInit, OnDestroy {
           field: 'time',
           tooltipField: 'time',
           sort: 'desc',
+          flex: 1,
         },
         {
           headerName: 'Type',
@@ -70,11 +71,13 @@ export class LogTableComponent implements OnInit, OnDestroy {
                 return params.data.type;
             }
           },
+          flex: 1,
         },
         {
           headerName: 'Status',
           field: 'status',
           tooltipField: 'status',
+          flex: 1,
         },
         {
           headerName: 'Message',

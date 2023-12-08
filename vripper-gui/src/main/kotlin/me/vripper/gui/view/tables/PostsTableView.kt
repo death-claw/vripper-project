@@ -14,13 +14,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import me.vripper.event.EventBus
-import me.vripper.event.PostEvent
+import me.vripper.event.PostCreateEvent
+import me.vripper.event.PostDeleteEvent
+import me.vripper.event.PostUpdateEvent
 import me.vripper.gui.clipboard.ClipboardService
 import me.vripper.gui.controller.PostController
 import me.vripper.gui.model.PostModel
 import me.vripper.gui.view.*
 import tornadofx.*
-import java.time.Duration
 
 class PostsTableView : View() {
 
@@ -54,15 +55,17 @@ class PostsTableView : View() {
                 clipboardService.init()
             }
         }
-        eventBus.events.ofType(PostEvent::class.java).buffer(Duration.ofMillis(125)).subscribe { postEvents ->
-            runLater {
-                postEvents.map { it.delete }.flatten().forEach {
-                    items.removeIf { p -> p.postId == it }
-                }
-                val add = postEvents.map { it.add }.flatten().map { postController.mapper(it) }
-                tableView.items.addAll(add)
 
-                for (post in postEvents.map { it.update }.flatten().reversed().distinct()) {
+        eventBus.events.ofType(PostCreateEvent::class.java).subscribe { postEvents ->
+            val add = postEvents.posts.map { postController.mapper(it) }
+            runLater {
+                tableView.items.addAll(add)
+            }
+        }
+
+        eventBus.events.ofType(PostUpdateEvent::class.java).subscribe { postEvents ->
+            runLater {
+                for (post in postEvents.posts) {
                     val postModel = items.find { it.postId == post.postId } ?: continue
 
                     postModel.status = post.status.name
@@ -74,6 +77,14 @@ class PostsTableView : View() {
                     postModel.progress = postController.progress(
                         post.total, post.done
                     )
+                }
+            }
+        }
+
+        eventBus.events.ofType(PostDeleteEvent::class.java).subscribe { postEvents ->
+            runLater {
+                postEvents.postIds.forEach {
+                    items.removeIf { p -> p.postId == it }
                 }
             }
         }
