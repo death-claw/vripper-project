@@ -20,6 +20,7 @@ import me.vripper.utilities.formatToString
 import net.jodah.failsafe.Failsafe
 import net.jodah.failsafe.RetryPolicy
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -218,41 +219,43 @@ class DownloadService(
 
     private fun scheduleForDownload(imageDownloadRunnable: ImageDownloadRunnable) {
         log.debug("Scheduling a job for ${imageDownloadRunnable.context.image.url}")
-        eventBus.publishEvent(QueueStateEvent(QueueState(runningCount(), pendingCount())))
-        Failsafe.with<Any, RetryPolicy<Any>>(retryPolicyService.buildRetryPolicyForDownload()).with(GLOBAL_EXECUTOR)
-            .onFailure {
-                try {
-                    dataTransaction.saveLog(
-                        LogEntry(
-                            type = LogEntry.Type.DOWNLOAD,
-                            status = LogEntry.Status.ERROR,
-                            message = "Failed to download ${imageDownloadRunnable.context.image.url}\n ${it.failure.formatToString()}"
+        CompletableFuture.runAsync({
+            eventBus.publishEvent(QueueStateEvent(QueueState(runningCount(), pendingCount())))
+            Failsafe.with<Any, RetryPolicy<Any>>(retryPolicyService.buildRetryPolicyForDownload())
+                .onFailure {
+                    try {
+                        dataTransaction.saveLog(
+                            LogEntry(
+                                type = LogEntry.Type.DOWNLOAD,
+                                status = LogEntry.Status.ERROR,
+                                message = "Failed to download ${imageDownloadRunnable.context.image.url}\n ${it.failure.formatToString()}"
+                            )
+                        )
+                    } catch (exp: Exception) {
+                        log.error("Failed to save event", exp)
+                    }
+                    log.error(
+                        "Failed to download ${imageDownloadRunnable.context.image.url} after ${it.attemptCount} tries",
+                        it.failure
+                    )
+                    val image = imageDownloadRunnable.context.image
+                    image.status = Status.ERROR
+                    dataTransaction.updateImage(image)
+                }.onComplete {
+                    afterJobFinish(imageDownloadRunnable)
+                    eventBus.publishEvent(
+                        QueueStateEvent(
+                            QueueState(
+                                runningCount(), pendingCount()
+                            )
                         )
                     )
-                } catch (exp: Exception) {
-                    log.error("Failed to save event", exp)
-                }
-                log.error(
-                    "Failed to download ${imageDownloadRunnable.context.image.url} after ${it.attemptCount} tries",
-                    it.failure
-                )
-                val image = imageDownloadRunnable.context.image
-                image.status = Status.ERROR
-                dataTransaction.updateImage(image)
-            }.onComplete {
-                afterJobFinish(imageDownloadRunnable)
-                eventBus.publishEvent(
-                    QueueStateEvent(
-                        QueueState(
-                            runningCount(), pendingCount()
-                        )
+                    eventBus.publishEvent(ErrorCountEvent(ErrorCount(dataTransaction.countImagesInError())))
+                    log.debug(
+                        "Finished downloading ${imageDownloadRunnable.context.image.url}"
                     )
-                )
-                eventBus.publishEvent(ErrorCountEvent(ErrorCount(dataTransaction.countImagesInError())))
-                log.debug(
-                    "Finished downloading ${imageDownloadRunnable.context.image.url}"
-                )
-            }.runAsync(imageDownloadRunnable::run)
+                }.run(imageDownloadRunnable::run)
+        }, GLOBAL_EXECUTOR)
     }
 
     private fun afterJobFinish(imageDownloadRunnable: ImageDownloadRunnable) {
