@@ -6,7 +6,7 @@
         post.status === 'ERROR' ||
         post.status === 'STOPPED'
       "
-      (click)="onPostStart()">
+      (click)="onPostStart(); close()">
       <mat-icon matListItemIcon>play_arrow</mat-icon>
       <div matListItemTitle>
         {{ post.done / post.total === 0 ? 'Start' : 'Resume' }}
@@ -18,15 +18,15 @@
         post.status === 'PARTIAL' ||
         post.status === 'PENDING'
       "
-      (click)="onPostStop()">
+      (click)="onPostStop(); close()">
       <mat-icon matListItemIcon>pause</mat-icon>
       <div matListItemTitle>Stop</div>
     </mat-list-item>
-    <mat-list-item (click)="onPostDelete()">
+    <mat-list-item (click)="onPostDelete(); close()">
       <mat-icon matListItemIcon>delete</mat-icon>
       <div matListItemTitle>Remove</div>
     </mat-list-item>
-    <mat-list-item (click)="openImages()">
+    <mat-list-item (click)="openImages(); close()">
       <mat-icon matListItemIcon>list</mat-icon>
       <div matListItemTitle>Photos</div>
     </mat-list-item>

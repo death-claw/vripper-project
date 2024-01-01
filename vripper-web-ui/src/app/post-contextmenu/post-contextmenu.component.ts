@@ -1,11 +1,5 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  EventEmitter,
-  Output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { CommonModule, NgIf } from '@angular/common';
-import { Post } from '../domain/post.model';
 import {
   animate,
   state,
@@ -18,6 +12,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { ImageDialogData, ImagesComponent } from '../images/images.component';
+import { PostRow } from '../domain/post-row.model';
 
 @Component({
   selector: 'app-post-contextmenu',
@@ -35,7 +30,7 @@ import { ImageDialogData, ImagesComponent } from '../images/images.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PostContextmenuComponent {
-  post!: Post;
+  post!: PostRow;
 
   constructor(public dialog: MatDialog) {}
 
@@ -55,4 +50,6 @@ export class PostContextmenuComponent {
   onPostStop!: () => void;
 
   onPostDelete!: () => void;
+
+  close!: () => void;
 }

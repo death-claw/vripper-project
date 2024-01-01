@@ -23,8 +23,6 @@
     "@angular/router": "^17.0.5",
     "@stomp/rx-stomp": "^2.0.0",
     "@stomp/stompjs": "^7.0.0",
-    "ag-grid-angular": "^29.3.4",
-    "ag-grid-community": "^29.3.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.2"

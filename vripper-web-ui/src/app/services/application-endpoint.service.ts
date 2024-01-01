@@ -42,9 +42,9 @@ export class ApplicationEndpointService {
     return this.updatedPosts;
   }
 
-  private deletedPosts!: Observable<string[]>;
+  private deletedPosts!: Observable<number[]>;
 
-  get deletedPosts$(): Observable<string[]> {
+  get deletedPosts$(): Observable<number[]> {
     return this.deletedPosts;
   }
 
@@ -207,7 +207,6 @@ export class ApplicationEndpointService {
 
     this.newPosts = this.rxStomp.watch('/topic/posts/new').pipe(
       map(e => {
-        // const posts: Array<Post> = [];
         return JSON.parse(e.body).map((element: any) => {
           return new Post(
             element.postId,
@@ -229,7 +228,6 @@ export class ApplicationEndpointService {
 
     this.updatedPosts = this.rxStomp.watch('/topic/posts/updated').pipe(
       map(e => {
-        // const posts: Array<Post> = [];
         return JSON.parse(e.body).map((element: any) => {
           return new Post(
             element.postId,
@@ -309,9 +307,9 @@ export class ApplicationEndpointService {
   }
 
   getThreadPosts(threadId: number) {
-    return this.httpClient
-      .get<PostItem[]>(this.baseUrl + `/api/grab/${threadId}`)
-      .pipe(map(v => v.map(p => ({ ...p, hosts: p.hosts }))));
+    return this.httpClient.get<PostItem[]>(
+      this.baseUrl + `/api/grab/${threadId}`
+    );
   }
 
   startDownload() {

@@ -1,17 +1,19 @@
-import { Component, Inject, OnDestroy, ViewChild } from '@angular/core';
+import { Component, Inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
-import { GridOptions, ValueFormatterParams } from 'ag-grid-community';
-import { Subscription } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import { ApplicationEndpointService } from '../services/application-endpoint.service';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { Image } from '../domain/image.model';
 import { MatButtonModule } from '@angular/material/button';
-import { ValueGetterParams } from 'ag-grid-community/dist/lib/entities/colDef';
-import { ProgressCellComponent } from '../progress-cell/progress-cell.component';
-import { ITooltipParams } from 'ag-grid-community/dist/lib/rendering/tooltipComponent';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { DialogRef } from '@angular/cdk/dialog';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTableModule } from '@angular/material/table';
+import { isDisplayed, progress, statusIcon } from '../utils/utils';
+import { DataSource, SelectionModel } from '@angular/cdk/collections';
+import { ImageRow } from '../domain/image-row.model';
 
 export interface ImageDialogData {
   postId: number;
@@ -20,15 +22,30 @@ export interface ImageDialogData {
 @Component({
   selector: 'app-images',
   standalone: true,
-  imports: [CommonModule, AgGridModule, MatDialogModule, MatButtonModule],
+  imports: [
+    CommonModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatIconModule,
+    MatProgressBarModule,
+    MatTableModule,
+  ],
   templateUrl: './images.component.html',
   styleUrls: ['./images.component.scss'],
 })
-export class ImagesComponent implements OnDestroy {
-  @ViewChild('agGrid') agGrid!: AgGridAngular;
+export class ImagesComponent {
+  displayedColumns: string[] = ['index', 'url', 'progress', 'status'];
+  selection = new SelectionModel<ImageRow>(
+    false,
+    [],
+    true,
+    (a, b) => a.url === b.url
+  );
+  dataSource = new ImageDataSource(this.applicationEndpoint, this.data.postId);
 
-  gridOptions: GridOptions<Image>;
-  subscriptions: Subscription[] = [];
+  columnsToDisplay = signal([...this.displayedColumns]);
+  isDisplayed = isDisplayed;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ImageDialogData,
@@ -36,109 +53,73 @@ export class ImagesComponent implements OnDestroy {
     private applicationEndpoint: ApplicationEndpointService,
     breakpointObserver: BreakpointObserver
   ) {
-    this.gridOptions = <GridOptions>{
-      columnDefs: [
-        {
-          colId: 'index',
-          headerName: '#',
-          field: 'index',
-          tooltipField: 'index',
-          sort: 'asc',
-          flex: 1,
-        },
-        {
-          colId: 'url',
-          headerName: 'URL',
-          field: 'url',
-          tooltipField: 'url',
-          flex: 2,
-        },
-        {
-          colId: 'progress',
-          headerName: 'Progress',
-          field: 'progress',
-          tooltipValueGetter: (params: ITooltipParams<Image>) => {
-            if (!params.data) {
-              return 0;
-            }
-            return params.data.downloaded === 0 || params.data.size === 0
-              ? 0
-              : (params.data.downloaded / params.data.size) * 100;
-          },
-          valueGetter: (params: ValueGetterParams<Image>) => {
-            if (!params.data) {
-              return 0;
-            }
-            return params.data.downloaded === 0 || params.data.size === 0
-              ? 0
-              : (params.data.downloaded / params.data.size) * 100;
-          },
-          cellRenderer: ProgressCellComponent,
-          flex: 1,
-        },
-        {
-          colId: 'status',
-          headerName: 'Status',
-          field: 'status',
-          valueFormatter: (params: ValueFormatterParams<Image>) => {
-            const value = params.value as string;
-            return (
-              value.at(0)?.toUpperCase() +
-              value.substring(1, value.length).toLowerCase()
-            );
-          },
-          flex: 1,
-        },
-      ],
-      defaultColDef: {
-        sortable: true,
-        resizable: true,
-      },
-      getRowId: row => row.data['url'].toString(),
-      onGridReady: () => {
-        this.connect();
-        breakpointObserver
-          .observe(Breakpoints.HandsetPortrait)
-          .subscribe(result => {
-            this.agGrid.columnApi.setColumnsVisible(
-              ['index', 'status'],
-              !result.matches
-            );
-            if (result.matches) {
-              this.dialogRef.updateSize('100vw', '80vh');
-            } else {
-              this.dialogRef.updateSize('80vw', '80vh');
-            }
-            this.dialogRef.updatePosition();
-          });
-      },
-    };
+    breakpointObserver
+      .observe([Breakpoints.XSmall, Breakpoints.Small, Breakpoints.Medium])
+      .subscribe(result => {
+        if (result.matches) {
+          this.columnsToDisplay.set(['index', 'progress', 'status']);
+        } else {
+          this.columnsToDisplay.set(['index', 'url', 'progress', 'status']);
+        }
+        if (result.matches) {
+          this.dialogRef.updateSize('100vw', '80vh');
+        } else {
+          this.dialogRef.updateSize('80vw', '80vh');
+        }
+        this.dialogRef.updatePosition();
+      });
   }
 
-  private connect() {
+  onClick(row: ImageRow) {
+    this.selection.clear();
+    this.selection.select(row);
+  }
+}
+
+class ImageDataSource extends DataSource<ImageRow> {
+  subscriptions: Subscription[] = [];
+  _dataStream = new BehaviorSubject<ImageRow[]>([]);
+
+  constructor(
+    private applicationEndpoint: ApplicationEndpointService,
+    private postId: number
+  ) {
+    super();
+  }
+
+  connect(): Observable<ImageRow[]> {
     this.subscriptions.push(
       this.applicationEndpoint
-        .postDetails$(this.data.postId)
+        .postDetails$(this.postId)
         .subscribe((e: Image[]) => {
-          const toAdd: Image[] = [];
-          const toUpdate: Image[] = [];
-          e.forEach(v => {
-            if (this.agGrid.api.getRowNode(v.url.toString()) == null) {
-              toAdd.push(v);
+          e.forEach(image => {
+            const rowNode = this._dataStream.value.find(
+              d => d.url === image.url
+            );
+            if (rowNode == null) {
+              this._dataStream.next([
+                ...this._dataStream.value,
+                new ImageRow(
+                  image.postId,
+                  image.url,
+                  image.status,
+                  image.index,
+                  image.downloaded,
+                  image.size
+                ),
+              ]);
             } else {
-              toUpdate.push(v);
+              Object.assign(rowNode, image);
+              rowNode.statusIcon.set(statusIcon(image.status));
+              rowNode.progress.set(progress(image.downloaded, image.size));
             }
           });
-          this.agGrid.api.applyTransaction({ update: toUpdate, add: toAdd });
         })
     );
+    return this._dataStream.asObservable();
   }
 
-  private disconnect() {
+  disconnect(): void {
     this.subscriptions.forEach(e => e.unsubscribe());
-  }
-
-  ngOnDestroy(): void {
-    this.disconnect();
   }
 }

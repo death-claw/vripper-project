@@ -5,10 +5,6 @@ import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { Thread } from '../domain/thread.model';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import {
-  ThreadDialogData,
-  ThreadSelectionComponent,
-} from '../thread-selection/thread-selection.component';
 
 @Component({
   selector: 'app-thread-contextmenu',
@@ -31,4 +27,5 @@ export class ThreadContextmenuComponent {
   onThreadSelection!: () => void;
 
   onThreadDelete!: () => void;
+  close!: () => void;
 }

@@ -1,0 +1,40 @@
+.mat-column-progress {
+  text-align: center;
+  width: 150px;
+}
+
+.mat-column-status {
+  text-align: center;
+  width: 25px;
+}
+
+.mat-column-addedOn {
+  width: 165px;
+  text-align: center;
+}
+
+.mat-column-order {
+  text-align: center;
+  width: 25px;
+  max-width: 100px;
+}
+
+.mat-column-total {
+  text-align: center;
+  width: 150px;
+  max-width: 200px;
+}
+
+.mat-column-path {
+  text-align: center;
+}
+
+.mat-column-hosts {
+  text-align: center;
+  width: 150px;
+  max-width: 200px;
+}
+
+.row {
+  cursor: default;
+}
