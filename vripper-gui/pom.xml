@@ -98,6 +98,11 @@
             <version>1.7.20</version>
         </dependency>
         <dependency>
+            <artifactId>materialfx</artifactId>
+            <groupId>io.github.palexdev</groupId>
+            <version>11.17.0</version>
+        </dependency>
+        <dependency>
             <artifactId>vripper-core</artifactId>
             <groupId>me.vripper</groupId>
             <version>5.1.0</version>

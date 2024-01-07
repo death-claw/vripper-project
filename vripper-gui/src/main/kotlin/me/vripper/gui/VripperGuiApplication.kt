@@ -1,5 +1,8 @@
 package me.vripper.gui
 
+import io.github.palexdev.materialfx.theming.JavaFXThemes
+import io.github.palexdev.materialfx.theming.MaterialFXStylesheets
+import io.github.palexdev.materialfx.theming.UserAgentBuilder
 import javafx.application.Application
 import javafx.scene.image.Image
 import javafx.stage.Stage
@@ -13,9 +16,7 @@ import me.vripper.utilities.DbUtils
 import org.jetbrains.exposed.sql.Database
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
-import tornadofx.App
-import tornadofx.DIContainer
-import tornadofx.FX
+import tornadofx.*
 import kotlin.reflect.KClass
 import kotlin.system.exitProcess
 
@@ -32,6 +33,13 @@ class VripperGuiApplication : App(
     }
 
     override fun start(stage: Stage) {
+        UserAgentBuilder.builder()
+            .themes(JavaFXThemes.MODENA) // Optional if you don't need JavaFX's default theme, still recommended though
+            .themes(MaterialFXStylesheets.forAssemble(true)) // Adds the MaterialFX's default theme. The boolean argument is to include legacy controls
+            .setDeploy(true) // Whether to deploy each theme's assets on a temporary dir on the disk
+            .setResolveAssets(true) // Whether to try resolving @import statements and resources urls
+            .build() // Assembles all the added themes into a single CSSFragment (very powerful class check its documentation)
+            .setGlobal(); // Finally, sets the produced stylesheet as the global User-Agent stylesheet
         with(stage) {
             width = 1366.0
             height = 768.0

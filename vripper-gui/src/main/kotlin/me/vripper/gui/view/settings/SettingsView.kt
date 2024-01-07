@@ -1,5 +1,7 @@
 package me.vripper.gui.view.settings
 
+import io.github.palexdev.materialfx.controls.MFXButton
+import io.github.palexdev.materialfx.enums.ButtonType
 import javafx.geometry.Pos
 import javafx.scene.control.Alert
 import javafx.scene.control.TabPane
@@ -53,7 +55,8 @@ class SettingsView : Fragment("Settings") {
         borderpane {
             right {
                 padding = insets(all = 5.0)
-                button("Save") {
+                MFXButton("Save").apply {
+                    buttonType = ButtonType.RAISED
                     imageview("save.png") {
                         fitWidth = 18.0
                         fitHeight = 18.0
@@ -70,9 +73,8 @@ class SettingsView : Fragment("Settings") {
                         } catch (e: ValidationException) {
                             alert(Alert.AlertType.ERROR, "Invalid settings", e.message)
                         }
-
                     }
-                }
+                }.attachTo(this)
             }
         }
     }
