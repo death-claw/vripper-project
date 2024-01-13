@@ -3,20 +3,11 @@ import {
   Component,
   ComponentRef,
   EventEmitter,
-  OnDestroy,
   Output,
-  ViewChild,
+  signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
-import {
-  CellContextMenuEvent,
-  GridOptions,
-  IRowNode,
-  RowDataUpdatedEvent,
-  RowDoubleClickedEvent,
-} from 'ag-grid-community';
-import { fromEvent, merge, Subscription, take } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription, take } from 'rxjs';
 import { ApplicationEndpointService } from '../services/application-endpoint.service';
 import { Thread } from '../domain/thread.model';
 import { ComponentPortal, PortalModule } from '@angular/cdk/portal';
@@ -39,29 +30,46 @@ import {
   ConfirmComponent,
   ConfirmDialogData,
 } from '../confirm/confirm.component';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTableModule } from '@angular/material/table';
+import { DataSource, SelectionModel } from '@angular/cdk/collections';
+import { isDisplayed } from '../utils/utils';
+import { ThreadRow } from '../domain/thread-row.model';
 
 @Component({
   selector: 'app-thread-table',
   standalone: true,
   imports: [
     CommonModule,
-    AgGridModule,
     OverlayModule,
     PortalModule,
     MatDialogModule,
+    MatCheckboxModule,
+    MatIconModule,
+    MatProgressBarModule,
+    MatTableModule,
   ],
   templateUrl: './thread-table.component.html',
   styleUrls: ['./thread-table.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ThreadTableComponent implements OnDestroy {
-  @ViewChild('agGrid') agGrid!: AgGridAngular;
-
+export class ThreadTableComponent {
+  dataSource = new ThreadDataSource(this.applicationEndpoint);
+  displayedColumns: string[] = ['title', 'link', 'total'];
+  selection = new SelectionModel<ThreadRow>(
+    true,
+    [],
+    true,
+    (a, b) => a.link === b.link
+  );
+  isDisplayed = isDisplayed;
   @Output()
   rowCountChange = new EventEmitter<number>();
-
-  gridOptions: GridOptions;
-  subscriptions: Subscription[] = [];
+  @Output()
+  selectedChange = new EventEmitter<Thread[]>();
+  columnsToDisplay = signal([...this.displayedColumns]);
 
   constructor(
     private applicationEndpoint: ApplicationEndpointService,
@@ -69,171 +77,138 @@ export class ThreadTableComponent implements OnDestroy {
     private overlay: Overlay,
     private dialog: MatDialog
   ) {
-    this.gridOptions = <GridOptions>{
-      columnDefs: [
+    this.dataSource._dataStream.subscribe(v =>
+      this.rowCountChange.emit(v.length)
+    );
+    this.selection.changed.subscribe(() =>
+      this.selectedChange.emit(this.selection.selected)
+    );
+  }
+
+  onRowDoubleClicked(row: ThreadRow) {
+    const data: ThreadDialogData = { threadId: row.threadId };
+    this.dialog.open(ThreadSelectionComponent, {
+      data,
+      maxWidth: '100vw',
+      maxHeight: '100vh',
+      width: '80vw',
+      height: '80vh',
+    });
+  }
+
+  onClick(row: ThreadRow) {
+    this.selection.clear();
+    this.selection.select(row);
+  }
+
+  onContextMenu(mouseEvent: MouseEvent, row: ThreadRow) {
+    mouseEvent.preventDefault();
+    if (this.selection.selected.length > 1) {
+      this.selection.select(row);
+    } else {
+      this.selection.clear();
+      this.selection.select(row);
+    }
+    const positionStrategy = this.overlayPositionBuilder
+      .flexibleConnectedTo({ x: mouseEvent.x, y: mouseEvent.y })
+      .withPush(true)
+      .withGrowAfterOpen(true)
+      .withPositions([
         {
-          headerName: 'Title',
-          field: 'title',
-          tooltipField: 'title',
-          flex: 2,
+          originX: 'start',
+          originY: 'bottom',
+          overlayX: 'start',
+          overlayY: 'top',
         },
         {
-          headerName: 'Url',
-          field: 'link',
-          tooltipField: 'link',
-          flex: 2,
+          originX: 'start',
+          originY: 'top',
+          overlayX: 'start',
+          overlayY: 'bottom',
         },
-        {
-          headerName: 'Count',
-          field: 'total',
-          tooltipField: 'total',
-          flex: 1,
-        },
-      ],
-      defaultColDef: {
-        sortable: true,
-        resizable: true,
-      },
-      rowSelection: 'multiple',
-      getRowId: row => row.data['threadId'],
-      onGridReady: () => this.connect(),
-      onRowDataUpdated: (event: RowDataUpdatedEvent) =>
-        this.rowCountChange.emit(event.api.getDisplayedRowCount()),
-      onCellContextMenu: (event: CellContextMenuEvent<Thread>) => {
-        if (event.api.getSelectedRows().length > 1) {
-          event.node.setSelected(true);
-        } else {
-          event.node.setSelected(true, true);
-        }
-        const mouseEvent = event.event as MouseEvent;
-        const positionStrategy = this.overlayPositionBuilder
-          .flexibleConnectedTo({ x: mouseEvent.x, y: mouseEvent.y })
-          .withPush(true)
-          .withGrowAfterOpen(true)
-          .withPositions([
-            {
-              originX: 'start',
-              originY: 'bottom',
-              overlayX: 'start',
-              overlayY: 'top',
-            },
-            {
-              originX: 'start',
-              originY: 'top',
-              overlayX: 'start',
-              overlayY: 'bottom',
-            },
-          ]);
-        const postContextMenuOverlayRef = this.overlay.create({
-          positionStrategy,
-        });
-        const postContextMenuPortal = new ComponentPortal(
-          ThreadContextmenuComponent
-        );
-        const ref: ComponentRef<ThreadContextmenuComponent> =
-          postContextMenuOverlayRef.attach(postContextMenuPortal);
-        ref.instance.thread = event.data as Thread;
+      ]);
+    const threadContextMenuOverlayRef = this.overlay.create({
+      positionStrategy,
+    });
+    const threadContextMenuPortal = new ComponentPortal(
+      ThreadContextmenuComponent
+    );
+    const ref: ComponentRef<ThreadContextmenuComponent> =
+      threadContextMenuOverlayRef.attach(threadContextMenuPortal);
+    ref.instance.thread = row as ThreadRow;
 
-        ref.instance.onThreadSelection = () => {
-          if (!event.data) {
-            return;
-          }
-          const data: ThreadDialogData = { threadId: event.data.threadId };
-          this.dialog.open(ThreadSelectionComponent, {
-            data,
-            maxWidth: '100vw',
-            maxHeight: '100vh',
-            width: '80vw',
-            height: '80vh',
-          });
-        };
-
-        ref.instance.onThreadDelete = () => {
-          const dialog: MatDialogRef<ConfirmComponent, ConfirmDialogData> =
-            this.dialog.open<ConfirmComponent, ConfirmDialogData>(
-              ConfirmComponent,
-              {
-                data: {
-                  message: `Confirm removal of ${
-                    event.api.getSelectedRows().length
-                  } post${event.api.getSelectedRows().length > 1 ? 's' : ''}`,
-                  confirmCallback: () => {
-                    this.applicationEndpoint
-                      .deleteThreads(event.api.getSelectedRows())
-                      .subscribe(() => dialog.close());
-                  },
-                },
-              }
-            );
-        };
-
-        const subscription = merge(
-          fromEvent<MouseEvent>(document, 'click'),
-          fromEvent<MouseEvent>(document, 'contextmenu')
-        )
-          .pipe(take(1))
-          .subscribe(() => {
-            subscription.unsubscribe();
-            postContextMenuOverlayRef?.detach();
-            postContextMenuOverlayRef?.dispose();
-            ref.destroy();
-          });
-      },
-      onRowDoubleClicked: (event: RowDoubleClickedEvent<Thread>) => {
-        if (!event.data) {
-          return;
-        }
-        const data: ThreadDialogData = { threadId: event.data.threadId };
-        this.dialog.open(ThreadSelectionComponent, {
-          data,
-          maxWidth: '100vw',
-          maxHeight: '100vh',
-          width: '80vw',
-          height: '80vh',
-        });
-      },
+    ref.instance.close = () => {
+      threadContextMenuOverlayRef?.detach();
+      threadContextMenuOverlayRef?.dispose();
+      ref.destroy();
     };
+
+    ref.instance.onThreadSelection = () => {
+      const data: ThreadDialogData = { threadId: row.threadId };
+      this.dialog.open(ThreadSelectionComponent, {
+        data,
+        maxWidth: '100vw',
+        maxHeight: '100vh',
+        width: '80vw',
+        height: '80vh',
+      });
+    };
+
+    ref.instance.onThreadDelete = () => {
+      const dialog: MatDialogRef<ConfirmComponent, ConfirmDialogData> =
+        this.dialog.open<ConfirmComponent, ConfirmDialogData>(
+          ConfirmComponent,
+          {
+            data: {
+              message: `Confirm removal of ${
+                this.selection.selected.length
+              } post${this.selection.selected.length > 1 ? 's' : ''}`,
+              confirmCallback: () => {
+                this.applicationEndpoint
+                  .deleteThreads(this.selection.selected)
+                  .subscribe(() => dialog.close());
+              },
+            },
+          }
+        );
+    };
+
+    threadContextMenuOverlayRef
+      .outsidePointerEvents()
+      .pipe(take(1))
+      .subscribe(() => {
+        console.log('click away');
+        threadContextMenuOverlayRef?.detach();
+        threadContextMenuOverlayRef?.dispose();
+        ref.destroy();
+      });
   }
 
-  private connect() {
-    this.subscriptions.push(
-      this.applicationEndpoint.threads$.subscribe((e: Thread[]) => {
-        const toAdd: Thread[] = [];
-        const toUpdate: Thread[] = [];
-        e.forEach(v => {
-          if (this.agGrid.api.getRowNode(String(v.threadId)) == null) {
-            toAdd.push(v);
-          } else {
-            toUpdate.push(v);
-          }
-        });
-        this.agGrid.api.applyTransaction({ update: toUpdate, add: toAdd });
-      })
-    );
-
-    this.subscriptions.push(
-      this.applicationEndpoint.threadRemove$.subscribe((e: string[]) => {
-        const toRemove: any[] = [];
-        e.forEach(v => {
-          const rowNode: IRowNode | undefined = this.agGrid.api.getRowNode(v);
-          if (rowNode != null) {
-            toRemove.push(rowNode.data);
-          }
-          return;
-        });
-        this.agGrid.api.applyTransaction({ remove: toRemove });
-      })
-    );
-
-    this.subscriptions.push(
-      this.applicationEndpoint.threadRemoveAll$.subscribe(() => {
-        this.agGrid.api.setRowData([]);
-      })
-    );
+  /** Whether the number of selected elements matches the total number of rows. */
+  isAllSelected() {
+    const numSelected = this.selection.selected.length;
+    const numRows = this.dataSource._dataStream.value.length;
+    return numSelected === numRows;
   }
 
-  private disconnect() {
-    this.subscriptions.forEach(e => e.unsubscribe());
+  /** Selects all rows if they are not all selected; otherwise clear selection. */
+  toggleAllRows() {
+    if (this.isAllSelected()) {
+      this.selection.clear();
+      return;
+    }
+
+    this.selection.select(...this.dataSource._dataStream.value);
+  }
+
+  /** The label for the checkbox on the passed row */
+  checkboxLabel(row?: ThreadRow): string {
+    if (!row) {
+      return `${this.isAllSelected() ? 'deselect' : 'select'} all`;
+    }
+    return `${this.selection.isSelected(row) ? 'deselect' : 'select'} row ${
+      row.link
+    }`;
   }
 
   disableForRows(event: MouseEvent) {
@@ -246,8 +221,57 @@ export class ThreadTableComponent implements OnDestroy {
       event.preventDefault();
     }
   }
+}
 
-  ngOnDestroy(): void {
-    this.disconnect();
+class ThreadDataSource extends DataSource<Thread> {
+  subscriptions: Subscription[] = [];
+  _dataStream = new BehaviorSubject<Thread[]>([]);
+
+  constructor(private applicationEndpoint: ApplicationEndpointService) {
+    super();
+  }
+
+  connect(): Observable<Thread[]> {
+    this.subscriptions.push(
+      this.applicationEndpoint.threads$.subscribe((newThreads: Thread[]) => {
+        newThreads.forEach(thread => {
+          const rowNode = this._dataStream.value.find(
+            d => d.link === thread.link
+          );
+          if (rowNode == null) {
+            this._dataStream.next([
+              ...this._dataStream.value,
+              new ThreadRow(
+                thread.link,
+                thread.title,
+                thread.threadId,
+                thread.total
+              ),
+            ]);
+          } else {
+            Object.assign(rowNode, thread);
+          }
+        });
+      })
+    );
+    this.subscriptions.push(
+      this.applicationEndpoint.threadRemove$.subscribe((e: string[]) => {
+        this._dataStream.next([
+          ...this._dataStream.value.filter(
+            v => e.find(d => d === v.link) == null
+          ),
+        ]);
+      })
+    );
+    this.subscriptions.push(
+      this.applicationEndpoint.threadRemoveAll$.subscribe(() => {
+        this._dataStream.next([]);
+      })
+    );
+    return this._dataStream.asObservable();
+  }
+
+  disconnect(): void {
+    this.subscriptions.forEach(e => e.unsubscribe());
   }
 }

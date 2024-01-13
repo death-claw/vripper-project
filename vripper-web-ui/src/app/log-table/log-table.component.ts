@@ -3,145 +3,109 @@ import {
   Component,
   EventEmitter,
   Input,
-  OnDestroy,
   OnInit,
   Output,
-  ViewChild,
+  signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AgGridAngular, AgGridModule } from 'ag-grid-angular';
-import { GridOptions, IRowNode, RowDataUpdatedEvent } from 'ag-grid-community';
-import { Observable, Subscription } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import { ApplicationEndpointService } from '../services/application-endpoint.service';
 import { Log } from '../domain/log.model';
+import { DataSource, SelectionModel } from '@angular/cdk/collections';
+import { formatType, LogRow } from '../domain/log-row.model';
+import { isDisplayed } from '../utils/utils';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatTableModule } from '@angular/material/table';
 
 @Component({
   selector: 'app-log-table',
   standalone: true,
-  imports: [CommonModule, AgGridModule],
+  imports: [CommonModule, MatCheckboxModule, MatTableModule],
   templateUrl: './log-table.component.html',
   styleUrls: ['./log-table.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LogTableComponent implements OnInit, OnDestroy {
-  @ViewChild('agGrid') agGrid!: AgGridAngular;
-
+export class LogTableComponent implements OnInit {
+  dataSource = new LogDataSource(this.applicationEndpoint);
+  displayedColumns: string[] = ['time', 'type', 'status', 'message'];
+  selection = new SelectionModel<LogRow>(
+    false,
+    [],
+    true,
+    (a, b) => a.id === b.id
+  );
+  isDisplayed = isDisplayed;
+  columnsToDisplay = signal([...this.displayedColumns]);
   @Output()
   rowCountChange = new EventEmitter<number>();
-
   @Input({ required: true })
   clear!: Observable<void>;
 
-  gridOptions: GridOptions;
-  subscriptions: Subscription[] = [];
-
   constructor(private applicationEndpoint: ApplicationEndpointService) {
-    this.gridOptions = <GridOptions>{
-      columnDefs: [
-        {
-          headerName: 'Time',
-          field: 'time',
-          tooltipField: 'time',
-          sort: 'desc',
-          flex: 1,
-        },
-        {
-          headerName: 'Type',
-          field: 'type',
-          tooltipField: 'type',
-          valueGetter: params => {
-            switch (params.data.type) {
-              case 'POST':
-                return '🖼️ New gallery';
-              case 'THREAD':
-                return '🧵 New thread';
-              case 'THANKS':
-                return '👍 Sending a like ';
-              case 'SCAN':
-                return '🔍 Links scan';
-              case 'METADATA':
-              case 'METADATA_CACHE_MISS':
-                return '🗄️ Loading post metadata';
-              case 'QUEUED':
-              case 'QUEUED_CACHE_MISS':
-                return '📋 Loading multi-post link';
-              case 'DOWNLOAD':
-                return '📥 Download';
-              default:
-                return params.data.type;
-            }
-          },
-          flex: 1,
-        },
-        {
-          headerName: 'Status',
-          field: 'status',
-          tooltipField: 'status',
-          flex: 1,
-        },
-        {
-          headerName: 'Message',
-          field: 'message',
-          tooltipField: 'message',
-          flex: 1,
-        },
-      ],
-      defaultColDef: {
-        sortable: true,
-        resizable: true,
-      },
-      rowSelection: 'single',
-      getRowId: row => row.data['id'].toString(),
-      onGridReady: () => this.connect(),
-      onRowDataUpdated: (event: RowDataUpdatedEvent) =>
-        this.rowCountChange.emit(event.api.getDisplayedRowCount()),
-    };
+    this.dataSource._dataStream.subscribe(v =>
+      this.rowCountChange.emit(v.length)
+    );
   }
 
   ngOnInit(): void {
-    this.clear.subscribe(() => this.agGrid.api.setRowData([]));
+    this.clear.subscribe(() => {
+      this.dataSource._dataStream.next([]);
+    });
   }
 
-  private connect() {
-    this.subscriptions.push(
-      this.applicationEndpoint.newLogs$.subscribe((e: Log[]) => {
-        this.agGrid.api.applyTransaction({ add: e });
-      })
-    );
+  onClick(row: LogRow) {
+    this.selection.clear();
+    this.selection.select(row);
+  }
+}
 
+class LogDataSource extends DataSource<LogRow> {
+  subscriptions: Subscription[] = [];
+  _dataStream = new BehaviorSubject<LogRow[]>([]);
+
+  constructor(private applicationEndpoint: ApplicationEndpointService) {
+    super();
+  }
+
+  connect(): Observable<LogRow[]> {
     this.subscriptions.push(
-      this.applicationEndpoint.updatedLogs$.subscribe((e: Log[]) => {
-        const toUpdate: Log[] = [];
-        e.forEach(v => {
-          if (this.agGrid.api.getRowNode(v.id.toString()) != null) {
-            toUpdate.push(v);
-          }
-        });
-        this.agGrid.api.applyTransaction({ update: toUpdate });
+      this.applicationEndpoint.newLogs$.subscribe((newLogs: Log[]) => {
+        this._dataStream.next([
+          ...this._dataStream.value,
+          ...newLogs.map(
+            e => new LogRow(e.id, e.type, e.status, e.time, e.message)
+          ),
+        ]);
       })
     );
 
     this.subscriptions.push(
       this.applicationEndpoint.logsRemove$.subscribe((e: number[]) => {
-        const toRemove: any[] = [];
-        e.forEach(v => {
-          const rowNode: IRowNode | undefined = this.agGrid.api.getRowNode(
-            v.toString()
-          );
-          if (rowNode != null) {
-            toRemove.push(rowNode.data);
-          }
-        });
-        this.agGrid.api.applyTransaction({ remove: toRemove });
+        this._dataStream.next([
+          ...this._dataStream.value.filter(
+            v => e.find(d => d === v.id) == null
+          ),
+        ]);
       })
     );
+
+    this.subscriptions.push(
+      this.applicationEndpoint.updatedLogs$.subscribe((e: Log[]) => {
+        e.forEach(v => {
+          const rowNode = this._dataStream.value.find(d => d.id === v.id);
+          if (rowNode != null) {
+            Object.assign(rowNode, v);
+            rowNode.type = formatType(v.type);
+            rowNode.statusSignal.set(v.status);
+            rowNode.messageSignal.set(v.message);
+          }
+        });
+      })
+    );
+    return this._dataStream.asObservable();
   }
 
-  private disconnect() {
+  disconnect(): void {
     this.subscriptions.forEach(e => e.unsubscribe());
-  }
-
-  ngOnDestroy(): void {
-    this.disconnect();
   }
 }

@@ -1,6 +1,24 @@
 /* You can add global styles to this file, and also import other style files */
-@import 'ag-grid-community/styles/ag-grid.css';
-@import 'ag-grid-community/styles/ag-theme-alpine.css';
+@use '@angular/material' as mat;
+@use './app/download-table/download-table.component-theme' as downloadTable;
+
+@include mat.core();
+
+$my-primary: mat.define-palette(mat.$indigo-palette, 500);
+$my-accent: mat.define-palette(mat.$pink-palette, A200, A100, A400);
+
+$my-theme: mat.define-light-theme((
+  color: (
+    primary: $my-primary,
+    accent: $my-accent,
+  ),
+  typography: mat.define-typography-config(
+    $font-family: roboto,
+  )
+));
+
+@include mat.all-component-themes($my-theme);
+@include downloadTable.theme($my-theme);
 
 html,
 body {
@@ -53,7 +71,7 @@ body {
   position: absolute;
   left: 0;
   top: 0;
-  animation: sk-chase-dot 2.0s infinite ease-in-out both;
+  animation: sk-chase-dot 2s infinite ease-in-out both;
 }
 
 .sk-chase-dot:before {
@@ -63,7 +81,7 @@ body {
   height: 25%;
   background-color: #fff;
   border-radius: 100%;
-  animation: sk-chase-dot-before 2.0s infinite ease-in-out both;
+  animation: sk-chase-dot-before 2s infinite ease-in-out both;
 }
 
 .sk-chase-dot:nth-child(1) {
@@ -71,7 +89,7 @@ body {
 }
 
 .sk-chase-dot:nth-child(2) {
-  animation-delay: -1.0s;
+  animation-delay: -1s;
 }
 
 .sk-chase-dot:nth-child(3) {
@@ -95,7 +113,7 @@ body {
 }
 
 .sk-chase-dot:nth-child(2):before {
-  animation-delay: -1.0s;
+  animation-delay: -1s;
 }
 
 .sk-chase-dot:nth-child(3):before {
@@ -121,7 +139,8 @@ body {
 }
 
 @keyframes sk-chase-dot {
-  80%, 100% {
+  80%,
+  100% {
     transform: rotate(360deg);
   }
 }
@@ -130,11 +149,19 @@ body {
   50% {
     transform: scale(0.4);
   }
-  100%, 0% {
-    transform: scale(1.0);
+  100%,
+  0% {
+    transform: scale(1);
   }
 }
 
 .mat-mdc-dialog-content {
   max-height: 100vh !important;
+}
+
+.truncate-cell {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 1px;
+  white-space: nowrap;
 }

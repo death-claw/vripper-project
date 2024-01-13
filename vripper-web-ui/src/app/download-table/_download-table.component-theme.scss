@@ -1,0 +1,18 @@
+@use 'sass:map';
+@use '@angular/material' as mat;
+
+@mixin color($theme) {
+  .row:hover {
+    background-color: mat.get-theme-color($theme, background, hover);
+  }
+
+  .selected.row {
+    background-color: mat.get-theme-color($theme, background, selected-button);
+  }
+}
+
+@mixin theme($theme) {
+  @if mat.theme-has($theme, color) {
+    @include color($theme);
+  }
+}

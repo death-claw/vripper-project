@@ -70,16 +70,16 @@ class DataBroadcast(
 
         eventBus.events.ofType(LogCreateEvent::class.java).map { it.logEntry }
             .subscribe { logCreateEvent ->
-                template.convertAndSend("/topic/logs/new", logCreateEvent)
+                template.convertAndSend("/topic/logs/new", listOf(logCreateEvent))
             }
 
         eventBus.events.ofType(LogUpdateEvent::class.java).map { it.logEntry }
             .subscribe { logUpdateEvent ->
-                template.convertAndSend("/topic/logs/updated", logUpdateEvent)
+                template.convertAndSend("/topic/logs/updated", listOf(logUpdateEvent))
             }
 
         eventBus.events.ofType(LogDeleteEvent::class.java).subscribe {
-            template.convertAndSend("/topic/logs/deleted", it.deleted)
+            template.convertAndSend("/topic/logs/deleted", listOf(it.deleted))
         }
     }
 }
