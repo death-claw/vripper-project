@@ -4,7 +4,6 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
-import { TextFieldModule } from '@angular/cdk/text-field';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { DialogRef } from '@angular/cdk/dialog';
 
@@ -17,7 +16,6 @@ import { DialogRef } from '@angular/cdk/dialog';
     MatButtonModule,
     MatInputModule,
     ReactiveFormsModule,
-    TextFieldModule,
   ],
   templateUrl: './scan.component.html',
   styleUrls: ['./scan.component.scss'],
@@ -38,5 +36,13 @@ export class ScanComponent {
         }
         this.dialogRef.updatePosition();
       });
+  }
+
+  onPaste(event: ClipboardEvent) {
+    event.preventDefault();
+    const oldValue = this.formControl.value || '';
+    this.formControl.setValue(
+      `${oldValue}${event?.clipboardData?.getData('text')}\n`
+    );
   }
 }

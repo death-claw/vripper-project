@@ -2,13 +2,13 @@
 <mat-dialog-content
   class="mat-typography"
   style="min-width: 50vw; min-height: 50vh">
-  <mat-form-field
-    appearance="outline"
-    style="width: 100%; height: calc(100% - 20px); padding-top: 20px">
+  <mat-form-field appearance="outline" style="width: 100%; padding-top: 20px">
     <mat-label>Add new links</mat-label>
     <textarea
       [formControl]="formControl"
-      cdkTextareaAutosize
+      [cdkTextareaAutosize]="true"
+      [cdkAutosizeMinRows]="5"
+      (paste)="onPaste($event)"
       matInput
       name="url"
       placeholder="Put each link in a new line"
