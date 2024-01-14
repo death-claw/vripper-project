@@ -1,0 +1,13 @@
+<h2 mat-dialog-title>Confirmation</h2>
+<mat-dialog-content class='mat-typography' style='min-width: 30vw'>
+  <form>
+    <mat-form-field appearance='outline' style='width: 100%; padding-top: 20px'>
+      <mat-label>Folder name</mat-label>
+      <input [formControl]='formControl' matInput name='folderName' required />
+    </mat-form-field>
+  </form>
+  <mat-dialog-actions align='end'>
+    <button mat-flat-button mat-dialog-close cdkFocusInitial>Cancel</button>
+    <button mat-flat-button color='primary' (click)='confirm()'>Ok</button>
+  </mat-dialog-actions>
+</mat-dialog-content>
