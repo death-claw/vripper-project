@@ -8,6 +8,7 @@ object PostTable : LongIdTable(name = "POST", columnName = "ID") {
     val done = integer("DONE")
     val hosts = varchar("HOSTS", 255)
     val outputPath = varchar("OUTPUT_PATH", 260)
+    val folderName = varchar("FOLDER_NAME", 260)
     val postId = long("POST_ID")
     val status = varchar("STATUS", 15)
     val threadId = long("THREAD_ID")

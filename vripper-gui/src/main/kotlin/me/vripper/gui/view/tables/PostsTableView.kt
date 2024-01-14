@@ -21,6 +21,7 @@ import me.vripper.gui.clipboard.ClipboardService
 import me.vripper.gui.controller.PostController
 import me.vripper.gui.model.PostModel
 import me.vripper.gui.view.*
+import me.vripper.gui.view.popup.RenameView
 import tornadofx.*
 
 class PostsTableView : View() {
@@ -57,7 +58,7 @@ class PostsTableView : View() {
         }
 
         eventBus.events.ofType(PostCreateEvent::class.java).subscribe { postEvents ->
-            val add = postEvents.posts.map { postController.mapper(it) }
+            val add = postEvents.posts.map { postController.mapper(it.id) }
             runLater {
                 tableView.items.addAll(add)
             }
@@ -77,6 +78,8 @@ class PostsTableView : View() {
                     postModel.progress = postController.progress(
                         post.total, post.done
                     )
+                    postModel.path = post.getDownloadFolder()
+                    postModel.folderName = post.folderName
                 }
             }
         }
@@ -116,6 +119,16 @@ class PostsTableView : View() {
                         stopSelected()
                     }
                     graphic = ImageView("pause.png").apply {
+                        fitWidth = 18.0
+                        fitHeight = 18.0
+                    }
+                }
+
+                val renameItem = MenuItem("Rename").apply {
+                    setOnAction {
+                        rename(tableRow.item)
+                    }
+                    graphic = ImageView("edit.png").apply {
                         fitWidth = 18.0
                         fitHeight = 18.0
                     }
@@ -163,7 +176,7 @@ class PostsTableView : View() {
 
                 val contextMenu = ContextMenu()
                 contextMenu.items.addAll(
-                    startItem, stopItem, deleteItem, SeparatorMenuItem(), detailsItem, locationItem, urlItem
+                    startItem, stopItem, renameItem, deleteItem, SeparatorMenuItem(), detailsItem, locationItem, urlItem
                 )
                 tableRow.contextMenuProperty()
                     .bind(tableRow.emptyProperty().map { empty -> if (empty) null else contextMenu })
@@ -281,6 +294,20 @@ class PostsTableView : View() {
                     TextFieldTableCell<PostModel?, Number?>().apply { alignment = Pos.CENTER_LEFT }
                 }
             }
+        }
+    }
+
+    private fun rename(post: PostModel) {
+        find<RenameView>(mapOf(RenameView::postId to post.postId, RenameView::name to post.folderName)).openModal()
+            ?.apply {
+                minWidth = 300.0
+            }
+    }
+
+    fun renameSelected() {
+        val selectedItem = tableView.selectionModel.selectedItem
+        if (selectedItem != null) {
+            rename(selectedItem)
         }
     }
 

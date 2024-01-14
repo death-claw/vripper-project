@@ -10,6 +10,8 @@ export class Post {
     public addedOn: string,
     public rank: number,
     public downloadDirectory: string,
+    public folderName: string,
+    public downloadFolder: string,
     public downloaded: number
   ) {}
 }

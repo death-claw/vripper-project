@@ -23,6 +23,7 @@ class PostDownloadStateRepositoryImpl :
             this[PostTable.rank] = post.rank
             this[PostTable.hosts] = post.hosts.joinToString(delimiter)
             this[PostTable.outputPath] = post.downloadDirectory
+            this[PostTable.folderName] = post.folderName
             this[PostTable.postId] = post.postId
             this[PostTable.threadId] = post.threadId
             this[PostTable.postTitle] = post.postTitle
@@ -90,6 +91,7 @@ class PostDownloadStateRepositoryImpl :
             it[rank] = post.rank
             it[size] = post.size
             it[downloaded] = post.downloaded
+            it[folderName] = post.folderName
         }
     }
 
@@ -102,6 +104,7 @@ class PostDownloadStateRepositoryImpl :
             this[PostTable.rank] = post.rank
             this[PostTable.hosts] = post.hosts.joinToString(delimiter)
             this[PostTable.outputPath] = post.downloadDirectory
+            this[PostTable.folderName] = post.folderName
             this[PostTable.postId] = post.postId
             this[PostTable.threadId] = post.threadId
             this[PostTable.postTitle] = post.postTitle
@@ -171,6 +174,7 @@ class PostDownloadStateRepositoryImpl :
         val hosts =
             resultRow[PostTable.hosts].split(delimiter).dropLastWhile { it.isEmpty() }.toSet()
         val downloadDirectory = resultRow[PostTable.outputPath]
+        val folderName = resultRow[PostTable.folderName]
         val addedOn = resultRow[PostTable.addedAt]
         val rank = resultRow[PostTable.rank]
         val size = resultRow[PostTable.size]
@@ -188,6 +192,7 @@ class PostDownloadStateRepositoryImpl :
             hosts,
             downloadDirectory,
             addedOn,
+            folderName,
             status,
             done,
             rank,

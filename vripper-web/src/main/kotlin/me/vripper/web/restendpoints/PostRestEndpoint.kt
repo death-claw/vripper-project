@@ -3,7 +3,8 @@ package me.vripper.web.restendpoints
 import me.vripper.model.PostItem
 import me.vripper.model.ThreadPostId
 import me.vripper.services.AppEndpointService
-import me.vripper.web.restendpoints.domain.*
+import me.vripper.web.restendpoints.domain.RenameRequest
+import me.vripper.web.restendpoints.domain.ScanRequest
 import me.vripper.web.restendpoints.exceptions.BadRequestException
 import me.vripper.web.restendpoints.exceptions.ServerErrorException
 import org.koin.core.component.KoinComponent
@@ -97,5 +98,11 @@ class PostRestEndpoint : KoinComponent {
     @ResponseStatus(value = HttpStatus.OK)
     fun threadClear() {
         appEndpointService.threadClear()
+    }
+
+    @PostMapping("/post/rename")
+    @ResponseStatus(value = HttpStatus.OK)
+    fun rename(@RequestBody renameRequest: RenameRequest) {
+        appEndpointService.rename(renameRequest.postId, renameRequest.name)
     }
 }

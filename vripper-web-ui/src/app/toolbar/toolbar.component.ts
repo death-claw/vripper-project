@@ -50,6 +50,9 @@ export class ToolbarComponent {
   deleteSelected = new EventEmitter<void>();
 
   @Output()
+  renameSelected = new EventEmitter<void>();
+
+  @Output()
   clearDownload = new EventEmitter<void>();
 
   @Output()
@@ -115,6 +118,10 @@ export class ToolbarComponent {
 
   removeSelectedClick() {
     this.deleteSelected.next();
+  }
+
+  renameSelectedClick() {
+    this.renameSelected.next();
   }
 
   clearDownloadsClick() {

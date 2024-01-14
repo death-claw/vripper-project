@@ -19,6 +19,7 @@ class PostModel(
     addedOn: String,
     order: Int,
     path: String,
+    folderName: String,
     progressCount: String,
     previewList: List<String>
 ) {
@@ -54,6 +55,9 @@ class PostModel(
 
     val pathProperty = SimpleStringProperty(path)
     var path: String by pathProperty
+
+    val folderNameProperty = SimpleStringProperty(folderName)
+    var folderName: String by folderNameProperty
 
     val progressCountProperty = SimpleStringProperty(progressCount)
     var progressCount: String by progressCountProperty

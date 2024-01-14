@@ -9,6 +9,7 @@
     (startSelected)="onStartSelected()"
     (stopSelected)="onStopSelected()"
     (deleteSelected)="onDeleteSelected()"
+    (renameSelected)='onRenameSelected()'
     (clearDownload)="onClearDownloads()"
     (clearLogs)="onClearLogs()"
     (clearThreads)="onClearThreads()"></app-toolbar>
@@ -24,7 +25,8 @@
         </mat-icon>
       </ng-template>
       <app-download-table
-        (selectedChange)="onPostsSelectionChange($event)"
+        (selectedPostsChange)='onPostsSelectionChange($event)'
+        (selectedPostChange)='onPostSelectionChange($event)'
         (rowCountChange)="downloadCount.set($event)"></app-download-table>
     </mat-tab>
     <mat-tab>

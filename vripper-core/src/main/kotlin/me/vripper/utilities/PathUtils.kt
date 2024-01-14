@@ -1,7 +1,13 @@
 package me.vripper.utilities
 
+import me.vripper.exception.RenameException
 import me.vripper.model.Settings
+import java.io.IOException
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import kotlin.io.path.Path
+
 
 object PathUtils {
     private val log by me.vripper.delegate.LoggerDelegate()
@@ -9,7 +15,7 @@ object PathUtils {
 
 
     fun calculateDownloadPath(
-        forum: String, threadTitle: String, postTitle: String, postId: Long, settings: Settings
+        forum: String, threadTitle: String, settings: Settings
     ): Path {
         var downloadDirectory = if (settings.downloadSettings.forumSubDirectory) Path.of(
             settings.downloadSettings.downloadPath, sanitize(forum)
@@ -18,12 +24,27 @@ object PathUtils {
         )
         downloadDirectory =
             if (settings.downloadSettings.threadSubLocation) downloadDirectory.resolve(threadTitle) else downloadDirectory
-        downloadDirectory = downloadDirectory.resolve(
-            if (settings.downloadSettings.appendPostId) "${sanitize(postTitle)}_${postId}" else sanitize(
-                postTitle
-            )
-        )
         return downloadDirectory
+    }
+
+    @Throws(RenameException::class)
+    fun rename(downloadDirectory: String, oldFolder: String, newFolder: String) {
+        val currentDownloadDirectory = Path(downloadDirectory, oldFolder)
+        val newDownloadDirectory = Path(downloadDirectory, sanitize(newFolder))
+        try {
+            Files.move(
+                currentDownloadDirectory,
+                newDownloadDirectory,
+                StandardCopyOption.ATOMIC_MOVE
+            )
+        } catch (e: IOException) {
+            throw RenameException(
+                String.format(
+                    "Failed to move files from %s to %s", currentDownloadDirectory, newDownloadDirectory
+                ),
+                e
+            )
+        }
     }
 
     /**

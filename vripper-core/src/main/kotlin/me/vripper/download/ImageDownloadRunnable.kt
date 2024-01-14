@@ -20,6 +20,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.*
+import kotlin.io.path.Path
 import kotlin.io.path.pathString
 
 class ImageDownloadRunnable(
@@ -43,10 +44,8 @@ class ImageDownloadRunnable(
             image.status = Status.DOWNLOADING
             image.downloaded = 0
             dataTransaction.updateImage(image)
-            val downloadDirectory: String
             synchronized(image.postId.toString().intern()) {
                 val post = dataTransaction.findPostById(context.postId).orElseThrow()
-                downloadDirectory = post.downloadDirectory
                 if (post.status != Status.DOWNLOADING) {
                     post.status = Status.DOWNLOADING
                     dataTransaction.updatePost(post)
@@ -61,13 +60,14 @@ class ImageDownloadRunnable(
             log.debug(
                 "Sanitizing image name from ${downloadedImage.name} to $sanitizedFileName"
             )
-            checkImageTypeAndRename(
-                downloadDirectory, downloadedImage, image.index
-            )
             synchronized(image.postId.toString().intern()) {
+                val post = dataTransaction.findPostById(context.postId).orElseThrow()
+                val downloadDirectory = Path(post.downloadDirectory, post.folderName).pathString
+                checkImageTypeAndRename(
+                    downloadDirectory, downloadedImage, image.index
+                )
                 if (image.downloaded == image.size && image.size > 0) {
                     image.status = Status.FINISHED
-                    val post = dataTransaction.findPostById(context.postId).orElseThrow()
                     post.done += 1
                     post.downloaded += image.size
                     dataTransaction.updatePost(post)
@@ -102,9 +102,7 @@ class ImageDownloadRunnable(
             if (existingExtension.isBlank()) "${downloadedImage.name}.$extension" else downloadedImage.name
         try {
             val downloadDestinationFolder = Path.of(downloadDirectory)
-            synchronized(downloadDestinationFolder.pathString.intern()) {
-                Files.createDirectories(downloadDestinationFolder)
-            }
+            Files.createDirectories(downloadDestinationFolder)
             val image = downloadDestinationFolder.resolve(
                 "${
                     if (settings.downloadSettings.forceOrder) String.format(

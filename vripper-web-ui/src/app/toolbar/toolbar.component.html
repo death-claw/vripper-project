@@ -43,6 +43,13 @@
               <mat-icon>pause</mat-icon>
             </button>
             <button
+              [disabled]='disableSelected()'
+              (click)='renameSelectedClick()'
+              mat-icon-button
+              matTooltip='Rename selected'>
+              <mat-icon>edit</mat-icon>
+            </button>
+              <button
               [disabled]="disableSelected()"
               (click)="removeSelectedClick()"
               mat-icon-button

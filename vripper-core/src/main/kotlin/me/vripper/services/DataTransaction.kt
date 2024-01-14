@@ -7,6 +7,7 @@ import me.vripper.model.ErrorCount
 import me.vripper.model.PostItem
 import me.vripper.repositories.*
 import me.vripper.utilities.PathUtils
+import me.vripper.utilities.PathUtils.sanitize
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 import kotlin.io.path.pathString
@@ -75,10 +76,11 @@ class DataTransaction(
                 downloadDirectory = PathUtils.calculateDownloadPath(
                     postItem.forum,
                     postItem.threadTitle,
-                    postItem.title,
-                    postItem.postId,
                     settingsService.settings
-                ).pathString
+                ).pathString,
+                folderName = if (settingsService.settings.downloadSettings.appendPostId) "${sanitize(postItem.title)}_${postItem.postId}" else sanitize(
+                    postItem.title
+                )
             )
             val images = postItem.imageItemList.mapIndexed { index, imageItem ->
                 Image(
@@ -115,7 +117,7 @@ class DataTransaction(
     }
 
     fun finishPost(postId: Long, automatic: Boolean = false) {
-        val post = findPostsByPostId(postId).orElseThrow()
+        val post = findPostByPostId(postId).orElseThrow()
         val imagesInErrorStatus = findByPostIdAndIsError(post.postId)
         if (imagesInErrorStatus.isNotEmpty()) {
             post.status = Status.ERROR
@@ -239,7 +241,7 @@ class DataTransaction(
         return transaction { imageRepository.countError() }
     }
 
-    fun findPostsByPostId(postId: Long): Optional<Post> {
+    fun findPostByPostId(postId: Long): Optional<Post> {
         return transaction { postDownloadStateRepository.findByPostId(postId) }
     }
 

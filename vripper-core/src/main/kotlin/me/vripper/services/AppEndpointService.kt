@@ -8,9 +8,12 @@ import me.vripper.services.*
 import me.vripper.tasks.AddPostRunnable
 import me.vripper.tasks.ThreadLookupRunnable
 import me.vripper.utilities.GLOBAL_EXECUTOR
+import me.vripper.utilities.PathUtils
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.regex.Pattern
+import kotlin.io.path.Path
+import kotlin.io.path.exists
 
 class AppEndpointService(
     private val downloadService: DownloadService,
@@ -65,7 +68,7 @@ class AppEndpointService(
 
     @Synchronized
     fun restartAll(posIds: List<Long> = listOf()) {
-        downloadService.restartAll(posIds.map { dataTransaction.findPostsByPostId(it) }.filter { it.isPresent }
+        downloadService.restartAll(posIds.map { dataTransaction.findPostByPostId(it) }.filter { it.isPresent }
             .map { it.get() })
     }
 
@@ -139,6 +142,19 @@ class AppEndpointService(
 
     fun logClear() {
         dataTransaction.deleteAllLogs()
+    }
 
+    fun rename(postId: Long, name: String) {
+        CompletableFuture.runAsync({
+            synchronized(postId.toString().intern()) {
+                dataTransaction.findPostByPostId(postId).ifPresent { post ->
+                    if (Path(post.downloadDirectory, post.folderName).exists()) {
+                        PathUtils.rename(post.downloadDirectory, post.folderName, name)
+                    }
+                    post.folderName = name
+                    dataTransaction.updatePost(post)
+                }
+            }
+        }, GLOBAL_EXECUTOR)
     }
 }
