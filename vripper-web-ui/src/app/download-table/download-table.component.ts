@@ -8,7 +8,14 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Post } from '../domain/post.model';
-import { BehaviorSubject, Observable, Subscription, take } from 'rxjs';
+import {
+  BehaviorSubject,
+  EMPTY,
+  mergeMap,
+  Observable,
+  Subscription,
+  take,
+} from 'rxjs';
 import { ApplicationEndpointService } from '../services/application-endpoint.service';
 import {
   Overlay,
@@ -41,6 +48,11 @@ import {
   ConfirmDialogData,
 } from '../confirm/confirm.component';
 import { PostRow } from '../domain/post-row.model';
+import {
+  RenameDialogComponent,
+  RenameDialogData,
+  RenameDialogResult,
+} from '../rename-dialog/rename-dialog.component';
 
 @Component({
   selector: 'app-download-table',
@@ -67,7 +79,9 @@ export class DownloadTableComponent {
   rowCountChange = new EventEmitter<number>();
 
   @Output()
-  selectedChange = new EventEmitter<Post[]>();
+  selectedPostsChange = new EventEmitter<Post[]>();
+  @Output()
+  selectedPostChange = new EventEmitter<Post>();
 
   displayedColumns: string[] = [
     'title',
@@ -100,9 +114,10 @@ export class DownloadTableComponent {
     this.dataSource._dataStream.subscribe(v =>
       this.rowCountChange.emit(v.length)
     );
-    this.selection.changed.subscribe(() =>
-      this.selectedChange.emit(this.selection.selected)
-    );
+    this.selection.changed.subscribe(selectionChange => {
+      this.selectedPostChange.emit(selectionChange.added[0]);
+      this.selectedPostsChange.emit(this.selection.selected);
+    });
     this.breakpointObserver
       .observe([Breakpoints.XSmall, Breakpoints.Small, Breakpoints.Medium])
       .subscribe(result => {
@@ -214,6 +229,29 @@ export class DownloadTableComponent {
     ref.instance.onPostStop = () =>
       this.applicationEndpoint.stopPosts(this.selection.selected).subscribe();
 
+    ref.instance.onPostRename = () => {
+      const dialog: MatDialogRef<RenameDialogComponent, RenameDialogResult> =
+        this.dialog.open<
+          RenameDialogComponent,
+          RenameDialogData,
+          RenameDialogResult
+        >(RenameDialogComponent, {
+          data: { postId: row.postId, name: row.folderName },
+        });
+      dialog
+        .afterClosed()
+        .pipe(
+          mergeMap(result => {
+            if (result) {
+              return this.applicationEndpoint.renamePost(result);
+            } else {
+              return EMPTY;
+            }
+          })
+        )
+        .subscribe();
+    };
+
     ref.instance.onPostDelete = () => {
       const dialog: MatDialogRef<ConfirmComponent, ConfirmDialogData> =
         this.dialog.open<ConfirmComponent, ConfirmDialogData>(
@@ -271,6 +309,8 @@ class PostDataSource extends DataSource<PostRow> {
                 e.addedOn,
                 e.rank,
                 e.downloadDirectory,
+                e.folderName,
+                e.downloadFolder,
                 e.downloaded
               )
           ),
@@ -299,6 +339,7 @@ class PostDataSource extends DataSource<PostRow> {
             rowNode.statusIcon.set(statusIcon(v.status));
             rowNode.progress.set(progress(v.done, v.total));
             rowNode.total2.set(totalFormatter(v.done, v.total, v.downloaded));
+            rowNode.path.set(v.downloadFolder);
           }
         });
       })

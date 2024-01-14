@@ -145,4 +145,9 @@
       <column name="THREAD_ID"/>
     </createIndex>
   </changeSet>
+    <changeSet id="0006" author="vripper">
+        <addColumn tableName="POST">
+            <column name="FOLDER_NAME" type="VARCHAR(260)" afterColumn="OUTPUT_PATH" defaultValue=""/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

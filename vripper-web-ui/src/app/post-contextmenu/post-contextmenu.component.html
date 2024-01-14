@@ -22,6 +22,10 @@
       <mat-icon matListItemIcon>pause</mat-icon>
       <div matListItemTitle>Stop</div>
     </mat-list-item>
+    <mat-list-item (click)='onPostRename(); close()'>
+      <mat-icon matListItemIcon>edit</mat-icon>
+      <div matListItemTitle>Rename</div>
+    </mat-list-item>
     <mat-list-item (click)="onPostDelete(); close()">
       <mat-icon matListItemIcon>delete</mat-icon>
       <div matListItemTitle>Remove</div>

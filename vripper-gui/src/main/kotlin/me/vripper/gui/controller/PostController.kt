@@ -2,7 +2,6 @@ package me.vripper.gui.controller
 
 import kotlinx.coroutines.*
 import me.vripper.entities.Image
-import me.vripper.entities.Post
 import me.vripper.gui.model.PostModel
 import me.vripper.services.AppEndpointService
 import me.vripper.services.DataTransaction
@@ -58,25 +57,26 @@ class PostController : Controller() {
     }
 
     fun findAllPosts(): Deferred<List<PostModel>> {
-        return coroutineScope.async { dataTransaction.findAllPosts().map(::mapper) }
+        return coroutineScope.async { dataTransaction.findAllPosts().map { it.id }.map(::mapper) }
     }
 
-    fun mapper(it: Post): PostModel {
-        val updated = dataTransaction.findPostById(it.id).orElseThrow()
+    fun mapper(id: Long): PostModel {
+        val post = dataTransaction.findPostById(id).orElseThrow()
         return PostModel(
-            updated.postId,
-            updated.postTitle,
-            progress(updated.total, updated.done),
-            updated.status.name,
-            updated.url,
-            updated.done,
-            updated.total,
-            updated.hosts.joinToString(separator = ", "),
-            updated.addedOn.format(dateTimeFormatter),
-            updated.rank + 1,
-            updated.downloadDirectory,
-            progressCount(updated.total, updated.done, updated.downloaded),
-            dataTransaction.findImagesByPostId(updated.postId).map(Image::thumbUrl).take(4)
+            post.postId,
+            post.postTitle,
+            progress(post.total, post.done),
+            post.status.name,
+            post.url,
+            post.done,
+            post.total,
+            post.hosts.joinToString(separator = ", "),
+            post.addedOn.format(dateTimeFormatter),
+            post.rank + 1,
+            post.getDownloadFolder(),
+            post.folderName,
+            progressCount(post.total, post.done, post.downloaded),
+            dataTransaction.findImagesByPostId(post.postId).map(Image::thumbUrl).take(4)
         )
     }
 
@@ -86,5 +86,9 @@ class PostController : Controller() {
 
     fun progress(total: Int, done: Int): Double {
         return if (done == 0 && total == 0) 0.0 else (done.toDouble() / total)
+    }
+
+    fun rename(postId: Long, value: String) {
+        appEndpointService.rename(postId, value)
     }
 }

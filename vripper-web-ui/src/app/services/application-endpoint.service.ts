@@ -219,6 +219,8 @@ export class ApplicationEndpointService {
             element.addedOn,
             element.rank + 1,
             element.downloadDirectory,
+            element.folderName,
+            element.downloadFolder,
             element.downloaded
           );
         });
@@ -240,6 +242,8 @@ export class ApplicationEndpointService {
             element.addedOn,
             element.rank + 1,
             element.downloadDirectory,
+            element.folderName,
+            element.downloadFolder,
             element.downloaded
           );
         });
@@ -369,5 +373,9 @@ export class ApplicationEndpointService {
 
   clearThreads() {
     return this.httpClient.get<void>(this.baseUrl + '/api/grab/clear');
+  }
+
+  renamePost(data: { postId: number; name: string }) {
+    return this.httpClient.post<void>(this.baseUrl + '/api/post/rename', data);
   }
 }

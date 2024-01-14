@@ -50,10 +50,10 @@
     <th *matHeaderCellDef mat-header-cell>Path</th>
     <td
       *matCellDef="let element"
-      [title]="element.downloadDirectory"
+      [title]='element.path()'
       class="truncate-cell"
       mat-cell>
-      {{ element.downloadDirectory }}
+      {{ element.path() }}
     </td>
   </ng-container>
 

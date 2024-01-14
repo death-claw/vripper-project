@@ -6,6 +6,7 @@ export class PostRow extends Post {
   public statusIcon: WritableSignal<string>;
   public progress: WritableSignal<number>;
   public total2: WritableSignal<string>;
+  public path: WritableSignal<string>;
 
   constructor(
     postId: number,
@@ -18,6 +19,8 @@ export class PostRow extends Post {
     addedOn: string,
     rank: number,
     downloadDirectory: string,
+    folderName: string,
+    downloadFolder: string,
     downloaded: number
   ) {
     super(
@@ -31,10 +34,13 @@ export class PostRow extends Post {
       addedOn,
       rank,
       downloadDirectory,
+      folderName,
+      downloadFolder,
       downloaded
     );
     this.statusIcon = signal(statusIcon(status));
     this.progress = signal(progress(done, total));
     this.total2 = signal(totalFormatter(done, total, downloaded));
+    this.path = signal(downloadFolder);
   }
 }

@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, signal, WritableSignal } from '@angular/core';
 import { ToolbarComponent } from './toolbar/toolbar.component';
 import { CommonModule, NgIf } from '@angular/common';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -20,9 +20,14 @@ import {
   ConfirmComponent,
   ConfirmDialogData,
 } from './confirm/confirm.component';
-import { Subject } from 'rxjs';
+import { EMPTY, mergeMap, Subject } from 'rxjs';
 import { RxStompState } from '@stomp/rx-stomp';
 import { StatusBarComponent } from './status-bar/status-bar.component';
+import {
+  RenameDialogComponent,
+  RenameDialogData,
+  RenameDialogResult,
+} from './rename-dialog/rename-dialog.component';
 
 @Component({
   selector: 'app-root',
@@ -49,6 +54,7 @@ export class AppComponent {
   logCount = signal(0);
   tabIndex = signal(0);
 
+  selectedPost: WritableSignal<Post | null> = signal(null);
   selectedPosts = signal([] as Post[]);
   noPostSelected = computed(() => this.selectedPosts().length === 0);
   loading = computed(
@@ -69,6 +75,10 @@ export class AppComponent {
 
   onPostsSelectionChange = (selectedPosts: Post[]) => {
     this.selectedPosts.set(selectedPosts);
+  };
+
+  onPostSelectionChange = (selectedPost: Post) => {
+    this.selectedPost.set(selectedPost);
   };
 
   onStartSelected = () => {
@@ -120,6 +130,39 @@ export class AppComponent {
               .subscribe(() => confirmDialog.close()),
         },
       });
+  };
+
+  onRenameSelected = () => {
+    if (this.selectedPost() == null) {
+      return;
+    }
+    const post = this.selectedPost();
+    if (post?.postId == null || post?.folderName == null) {
+      return;
+    }
+    const dialog: MatDialogRef<RenameDialogComponent, RenameDialogResult> =
+      this.dialog.open<
+        RenameDialogComponent,
+        RenameDialogData,
+        RenameDialogResult
+      >(RenameDialogComponent, {
+        data: {
+          postId: post.postId,
+          name: post.folderName,
+        },
+      });
+    dialog
+      .afterClosed()
+      .pipe(
+        mergeMap(result => {
+          if (result) {
+            return this.applicationEndpoint.renamePost(result);
+          } else {
+            return EMPTY;
+          }
+        })
+      )
+      .subscribe();
   };
 
   onClearDownloads = () => {

@@ -98,6 +98,25 @@ class DownloadActionsView : View() {
                 postsTableView.stopSelected()
             }
         }
+        button("Rename") {
+            setPrefSize(32.0, 32.0)
+            imageview("edit.png") {
+                fitWidth = 32.0
+                fitHeight = 32.0
+            }
+            addClass(Styles.actionBarButton)
+            contentDisplay = ContentDisplay.GRAPHIC_ONLY
+            tooltip("Rename selected [Ctrl+R]")
+            shortcut(KeyCodeCombination(KeyCode.R, KeyCombination.CONTROL_DOWN))
+            enableWhen(
+                postsTableView.tableView.selectionModel.selectedItems.sizeProperty.greaterThan(
+                    0
+                )
+            )
+            action {
+                postsTableView.renameSelected()
+            }
+        }
         button("Delete") {
             setPrefSize(32.0, 32.0)
             imageview("trash.png") {

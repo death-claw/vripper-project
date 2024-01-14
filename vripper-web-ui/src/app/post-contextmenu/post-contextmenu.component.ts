@@ -46,10 +46,8 @@ export class PostContextmenuComponent {
   };
 
   onPostStart!: () => void;
-
   onPostStop!: () => void;
-
+  onPostRename!: () => void;
   onPostDelete!: () => void;
-
   close!: () => void;
 }
