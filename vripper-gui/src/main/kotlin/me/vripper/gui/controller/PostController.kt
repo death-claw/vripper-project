@@ -2,11 +2,12 @@ package me.vripper.gui.controller
 
 import kotlinx.coroutines.*
 import me.vripper.entities.Image
+import me.vripper.entities.Metadata
 import me.vripper.gui.model.PostModel
 import me.vripper.services.AppEndpointService
 import me.vripper.services.DataTransaction
 import me.vripper.utilities.formatSI
-import tornadofx.Controller
+import tornadofx.*
 import java.time.format.DateTimeFormatter
 
 class PostController : Controller() {
@@ -62,6 +63,7 @@ class PostController : Controller() {
 
     fun mapper(id: Long): PostModel {
         val post = dataTransaction.findPostById(id).orElseThrow()
+        val metadata = dataTransaction.findMetadataByPostId(post.postId)
         return PostModel(
             post.postId,
             post.postTitle,
@@ -76,7 +78,8 @@ class PostController : Controller() {
             post.getDownloadFolder(),
             post.folderName,
             progressCount(post.total, post.done, post.downloaded),
-            dataTransaction.findImagesByPostId(post.postId).map(Image::thumbUrl).take(4)
+            dataTransaction.findImagesByPostId(post.postId).map(Image::thumbUrl).take(4),
+            metadata.orElse(Metadata(post.postId, Metadata.Data("", emptyList())))
         )
     }
 

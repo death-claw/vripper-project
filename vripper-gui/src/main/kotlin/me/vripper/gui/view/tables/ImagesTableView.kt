@@ -9,6 +9,9 @@ import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
 import javafx.util.Callback
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.map
 import me.vripper.entities.Image
 import me.vripper.event.EventBus
 import me.vripper.event.ImageEvent
@@ -17,14 +20,11 @@ import me.vripper.gui.model.ImageModel
 import me.vripper.gui.view.ProgressTableCell
 import me.vripper.gui.view.StatusTableCell
 import me.vripper.gui.view.openLink
-import reactor.core.Disposable
 import tornadofx.*
-import java.time.Duration
 
 class ImagesTableView : Fragment("Photos") {
 
     private lateinit var tableView: TableView<ImageModel>
-    private lateinit var eventsSubscription: Disposable
     private val imageController: ImageController by inject()
     private val eventBus: EventBus by di()
     private var items: ObservableList<ImageModel> = FXCollections.observableArrayList()
@@ -47,22 +47,24 @@ class ImagesTableView : Fragment("Photos") {
             }
         }
 
-        eventsSubscription = eventBus.events.ofType(ImageEvent::class.java).map {
-            it.copy(images = it.images.filter { image: Image -> image.postId == postId })
-        }.filter {
-            it.images.isNotEmpty()
-        }.buffer(Duration.ofMillis(175))
-            .subscribe { imageEvent ->
-            runLater {
-                for (image in imageEvent.map { it.images }.flatten().reversed().distinct()) {
-                    val imageModel = items.find { it.id == image.id } ?: continue
+        coroutineScope.launch {
+            eventBus.events.filterIsInstance(ImageEvent::class).map {
+                it.copy(images = it.images.filter { image: Image -> image.postId == postId })
+            }.filter {
+                it.images.isNotEmpty()
+            }.collect { imageEvent ->
+                runLater {
+                    for (image in imageEvent.images) {
+                        val imageModel = items.find { it.id == image.id } ?: continue
 
-                    imageModel.size = image.size
-                    imageModel.status = image.status.name
-                    imageModel.downloaded = image.downloaded
-                    imageModel.progress = imageController.progress(
-                        image.size, image.downloaded
-                    )
+                        imageModel.size = image.size
+                        imageModel.status = image.status.name
+                        imageModel.filename = image.filename
+                        imageModel.downloaded = image.downloaded
+                        imageModel.progress = imageController.progress(
+                            image.size, image.downloaded
+                        )
+                    }
                 }
             }
         }
@@ -83,8 +85,8 @@ class ImagesTableView : Fragment("Photos") {
                 }
                 val contextMenu = ContextMenu()
                 contextMenu.items.addAll(urlItem)
-                tableRow.contextMenuProperty()
-                    .bind(tableRow.emptyProperty().map { empty -> if (empty) null else contextMenu })
+                tableRow.contextMenuProperty().bind(tableRow.emptyProperty()
+                    .map { empty -> if (empty) null else contextMenu })
                 tableRow
             }
             column("Index", ImageModel::indexProperty) {
@@ -120,6 +122,12 @@ class ImagesTableView : Fragment("Photos") {
                     cell as TableCell<ImageModel, Number>
                 }
             }
+            column("Filename", ImageModel::filenameProperty) {
+                prefWidth = 150.0
+                cellFactory = Callback {
+                    TextFieldTableCell<ImageModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
+                }
+            }
             column("Status", ImageModel::statusProperty) {
                 prefWidth = 50.0
                 cellFactory = Callback {
@@ -143,6 +151,5 @@ class ImagesTableView : Fragment("Photos") {
 
     override fun onUndock() {
         coroutineScope.cancel()
-        eventsSubscription.dispose()
     }
 }

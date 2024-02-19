@@ -5,6 +5,7 @@ import javafx.collections.ObservableList
 import javafx.scene.control.*
 import javafx.scene.image.ImageView
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.filterIsInstance
 import me.vripper.event.EventBus
 import me.vripper.event.ThreadClearEvent
 import me.vripper.event.ThreadCreateEvent
@@ -44,22 +45,28 @@ class ThreadTableView : View() {
                 tableView.placeholder = Label("No content in table")
             }
         }
-        eventBus.events.ofType(ThreadCreateEvent::class.java).subscribe {
-            val threadModelMapper = threadController.threadModelMapper(it.thread)
-            runLater {
-                items.add(threadModelMapper)
+        coroutineScope.launch {
+            eventBus.events.filterIsInstance(ThreadCreateEvent::class).collect {
+                val threadModelMapper = threadController.threadModelMapper(it.thread)
+                runLater {
+                    items.add(threadModelMapper)
+                }
             }
         }
 
-        eventBus.events.ofType(ThreadDeleteEvent::class.java).subscribe { event ->
-            runLater {
-                tableView.items.removeIf { it.threadId == event.threadId }
+        coroutineScope.launch {
+            eventBus.events.filterIsInstance(ThreadDeleteEvent::class).collect { event ->
+                runLater {
+                    tableView.items.removeIf { it.threadId == event.threadId }
+                }
             }
         }
 
-        eventBus.events.ofType(ThreadClearEvent::class.java).subscribe {
-            runLater {
-                tableView.items.clear()
+        coroutineScope.launch {
+            eventBus.events.filterIsInstance(ThreadClearEvent::class).collect {
+                runLater {
+                    tableView.items.clear()
+                }
             }
         }
     }
@@ -108,8 +115,8 @@ class ThreadTableView : View() {
 
                 val contextMenu = ContextMenu()
                 contextMenu.items.addAll(selectItem, urlItem, SeparatorMenuItem(), deleteItem)
-                tableRow.contextMenuProperty()
-                    .bind(tableRow.emptyProperty().map { empty -> if (empty) null else contextMenu })
+                tableRow.contextMenuProperty().bind(tableRow.emptyProperty()
+                    .map { empty -> if (empty) null else contextMenu })
                 tableRow
             }
             column("Title", ThreadModel::titleProperty) {
@@ -135,11 +142,12 @@ class ThreadTableView : View() {
     }
 
     private fun selectPosts(threadId: Long) {
-        find<ThreadSelectionTableView>(mapOf(ThreadSelectionTableView::threadId to threadId)).openModal()?.apply {
-            minWidth = 600.0
-            minHeight = 400.0
-            width = 800.0
-            height = 600.0
-        }
+        find<ThreadSelectionTableView>(mapOf(ThreadSelectionTableView::threadId to threadId)).openModal()
+            ?.apply {
+                minWidth = 600.0
+                minHeight = 400.0
+                width = 800.0
+                height = 600.0
+            }
     }
 }

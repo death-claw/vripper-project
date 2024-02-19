@@ -22,6 +22,7 @@ class ImageRepositoryImpl : ImageRepository {
             it[url] = image.url
             it[thumbUrl] = image.thumbUrl
             it[postIdRef] = image.postIdRef
+            it[filename] = image.filename
         }.value
         return image.copy(id = id)
     }
@@ -37,6 +38,7 @@ class ImageRepositoryImpl : ImageRepository {
             this[ImageTable.url] = it.url
             this[ImageTable.thumbUrl] = it.thumbUrl
             this[ImageTable.postIdRef] = it.postIdRef
+            this[ImageTable.filename] = it.filename
         }
     }
 
@@ -98,6 +100,7 @@ class ImageRepositoryImpl : ImageRepository {
             it[status] = image.status.name
             it[downloaded] = image.downloaded
             it[size] = image.size
+            it[filename] = image.filename
         }
     }
 
@@ -113,6 +116,7 @@ class ImageRepositoryImpl : ImageRepository {
             this[ImageTable.url] = it.url
             this[ImageTable.thumbUrl] = it.thumbUrl
             this[ImageTable.postIdRef] = it.postIdRef
+            this[ImageTable.filename] = it.filename
         }
     }
 
@@ -150,6 +154,7 @@ class ImageRepositoryImpl : ImageRepository {
         val total = resultRow[ImageTable.size]
         val status = Status.valueOf(resultRow[ImageTable.status])
         val postIdRef = resultRow[ImageTable.postIdRef]
+        val filename = resultRow[ImageTable.filename]
         return Image(
             id,
             postId,
@@ -160,7 +165,8 @@ class ImageRepositoryImpl : ImageRepository {
             postIdRef,
             total,
             current,
-            status
+            status,
+            filename
         )
     }
 }

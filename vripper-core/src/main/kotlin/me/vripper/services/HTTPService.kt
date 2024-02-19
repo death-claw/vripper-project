@@ -1,6 +1,7 @@
 package me.vripper.services
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.filterIsInstance
 import me.vripper.event.EventBus
 import me.vripper.event.SettingsUpdateEvent
 import org.apache.hc.client5.http.config.ConnectionConfig
@@ -17,7 +18,7 @@ import org.apache.hc.core5.util.TimeValue
 import org.apache.hc.core5.util.Timeout
 
 class HTTPService(
-    val eventBus: EventBus,
+    private val eventBus: EventBus,
     settingsService: SettingsService
 ) {
 
@@ -43,20 +44,22 @@ class HTTPService(
             pcm.closeIdle(TimeValue.ofSeconds(60))
             delay(15000)
         }
-        eventBus
-            .events
-            .ofType(SettingsUpdateEvent::class.java)
-            .subscribe {
-                if (connectionTimeout != it.settings.connectionSettings.timeout) {
-                    connectionTimeout = it.settings.connectionSettings.timeout
-                    client.close()
-                    pcm.close()
-                    buildRequestConfig()
-                    buildConnectionConfig()
-                    buildConnectionPool()
-                    buildClientBuilder()
+        coroutineScope.launch {
+            eventBus
+                .events
+                .filterIsInstance(SettingsUpdateEvent::class)
+                .collect {
+                    if (connectionTimeout != it.settings.connectionSettings.timeout) {
+                        connectionTimeout = it.settings.connectionSettings.timeout
+                        client.close()
+                        pcm.close()
+                        buildRequestConfig()
+                        buildConnectionConfig()
+                        buildConnectionPool()
+                        buildClientBuilder()
+                    }
                 }
-            }
+        }
     }
 
     private fun buildConnectionPool() {

@@ -1,13 +1,12 @@
 package me.vripper.entities
 
-import com.fasterxml.jackson.annotation.JsonFormat
 import java.time.LocalDateTime
 
 data class LogEntry(
     val id: Long = -1,
     val type: Type,
     val status: Status,
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") val time: LocalDateTime = LocalDateTime.now(),
+    val time: LocalDateTime = LocalDateTime.now(),
     val message: String,
 ) {
 

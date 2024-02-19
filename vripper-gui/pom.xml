@@ -29,6 +29,10 @@
             <artifactId>kotlinx-coroutines-core-jvm</artifactId>
         </dependency>
         <dependency>
+          <groupId>org.jetbrains.kotlinx</groupId>
+          <artifactId>kotlinx-serialization-json</artifactId>
+        </dependency>
+      <dependency>
             <artifactId>javafx-base</artifactId>
             <groupId>org.openjfx</groupId>
             <version>${javafx.version}</version>
@@ -119,19 +123,21 @@
                         <goals>
                             <goal>compile</goal>
                         </goals>
-                        <configuration>
-                            <sourceDirs>
-                                <source>src/main/kotlin</source>
-                                <source>target/generated-sources/annotations</source>
-                            </sourceDirs>
-                        </configuration>
                     </execution>
                 </executions>
                 <configuration>
-                    <args>
-                        <arg>-Xjsr305=strict</arg>
-                    </args>
+                  <jvmTarget>1.8</jvmTarget>
+                  <compilerPlugins>
+                    <plugin>kotlinx-serialization</plugin>
+                  </compilerPlugins>
                 </configuration>
+              <dependencies>
+                <dependency>
+                  <groupId>org.jetbrains.kotlin</groupId>
+                  <artifactId>kotlin-maven-serialization</artifactId>
+                  <version>${kotlin.version}</version>
+                </dependency>
+              </dependencies>
             </plugin>
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>

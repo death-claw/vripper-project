@@ -144,14 +144,19 @@ class AppEndpointService(
         dataTransaction.deleteAllLogs()
     }
 
-    fun rename(postId: Long, name: String) {
+    fun rename(postId: Long, newName: String) {
         CompletableFuture.runAsync({
             synchronized(postId.toString().intern()) {
                 dataTransaction.findPostByPostId(postId).ifPresent { post ->
                     if (Path(post.downloadDirectory, post.folderName).exists()) {
-                        PathUtils.rename(post.downloadDirectory, post.folderName, name)
+                        PathUtils.rename(
+                            dataTransaction.findImagesByPostId(postId),
+                            post.downloadDirectory,
+                            post.folderName,
+                            newName
+                        )
                     }
-                    post.folderName = name
+                    post.folderName = PathUtils.sanitize(newName)
                     dataTransaction.updatePost(post)
                 }
             }

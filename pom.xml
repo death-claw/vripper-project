@@ -9,7 +9,7 @@
   <version>${revision}</version>
   <properties>
     <java.version>21</java.version>
-    <kotlin.version>1.9.20</kotlin.version>
+    <kotlin.version>1.9.22</kotlin.version>
     <maven.deploy.skip>false</maven.deploy.skip>
     <timestamp>${maven.build.timestamp}</timestamp>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
@@ -149,6 +149,11 @@
         <artifactId>kotlin-reflect</artifactId>
         <groupId>org.jetbrains.kotlin</groupId>
         <version>${kotlin.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jetbrains.kotlinx</groupId>
+        <artifactId>kotlinx-serialization-json</artifactId>
+        <version>1.6.2</version>
       </dependency>
       <dependency>
         <artifactId>jcl-over-slf4j</artifactId>

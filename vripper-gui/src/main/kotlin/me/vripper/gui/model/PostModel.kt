@@ -1,11 +1,10 @@
 package me.vripper.gui.model
 
-import javafx.beans.property.SimpleDoubleProperty
-import javafx.beans.property.SimpleIntegerProperty
-import javafx.beans.property.SimpleLongProperty
-import javafx.beans.property.SimpleStringProperty
-import tornadofx.getValue
-import tornadofx.setValue
+import javafx.beans.property.*
+import javafx.collections.FXCollections
+import javafx.collections.ObservableList
+import me.vripper.entities.Metadata
+import tornadofx.*
 
 class PostModel(
     postId: Long,
@@ -21,7 +20,8 @@ class PostModel(
     path: String,
     folderName: String,
     progressCount: String,
-    previewList: List<String>
+    previewList: List<String>,
+    metadata: Metadata
 ) {
     val postIdProperty = SimpleLongProperty(postId)
     var postId: Long by postIdProperty
@@ -64,4 +64,11 @@ class PostModel(
 
     val previewListProperty = SimpleStringProperty(previewList.joinToString("|"))
     var previewList: List<String> = previewListProperty.value.split("|")
+
+    val altTitlesProperty =
+        SimpleListProperty(FXCollections.observableArrayList(metadata.data.resolvedNames))
+    var altTitles: ObservableList<String> by altTitlesProperty
+
+    val postedByProperty = SimpleStringProperty(metadata.data.postedBy)
+    var postedby: String by postedByProperty
 }

@@ -12,6 +12,7 @@ open class OnStartupListener : KoinComponent {
     private val retryPolicyService: RetryPolicyService by inject()
     private val vgAuthService: VGAuthService by inject()
     private val downloadSpeedService: DownloadSpeedService by inject()
+    private val metadataService: MetadataService by inject()
 
     open fun run() {
         dataTransaction.setDownloadingToStopped()
@@ -20,5 +21,6 @@ open class OnStartupListener : KoinComponent {
         vgAuthService.init()
         downloadService.init()
         downloadSpeedService.init()
+        metadataService.init()
     }
 }

@@ -8,6 +8,7 @@ object ImageTable : LongIdTable(name = "IMAGE", columnName = "ID") {
     val index = integer("INDEX")
     val postId = long("POST_ID")
     val status = varchar("STATUS", 15)
+    val filename = varchar("FILENAME", 260)
     val size = long("SIZE")
     val url = varchar("URL", 200)
     val thumbUrl = varchar("THUMB_URL", 200)

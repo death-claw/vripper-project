@@ -1,10 +1,12 @@
 package me.vripper.services
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
 import me.vripper.event.EventBus
 import me.vripper.event.SettingsUpdateEvent
 import me.vripper.exception.ValidationException
@@ -13,42 +15,45 @@ import me.vripper.utilities.ApplicationProperties.VRIPPER_DIR
 import org.apache.commons.codec.digest.DigestUtils
 import java.io.FileWriter
 import java.nio.file.*
+import kotlin.io.path.readText
 
 class SettingsService(private val eventBus: EventBus) {
 
     private val log by me.vripper.delegate.LoggerDelegate()
-    private val configPath = VRIPPER_DIR.resolve("config.yml")
+    private val configPath = VRIPPER_DIR.resolve("config.json")
     private val customProxiesPath = VRIPPER_DIR.resolve("proxies.json")
-    private val om = ObjectMapper(YAMLFactory())
     private val proxies: MutableSet<String> = HashSet()
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-
+    private val json = Json {
+        encodeDefaults = true
+        prettyPrint = true
+    }
     var settings = Settings()
 
     init {
-        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .findAndRegisterModules().registerKotlinModule()
-
         init()
     }
 
     private fun init() {
         loadViperProxies()
         restore()
-        eventBus.publishEvent(SettingsUpdateEvent(settings))
+        coroutineScope.launch {
+            eventBus.publishEvent(SettingsUpdateEvent(settings))
+        }
 
     }
 
     private fun loadViperProxies() {
         try {
             SettingsService::class.java.getResourceAsStream("/proxies.json")?.use {
-                val defaultProxies: List<String> = om.readValue(it)
+                val defaultProxies: List<String> = json.decodeFromStream(it)
                 val customProxies: List<String> = if (customProxiesPath.toFile()
                         .exists() && Files.isRegularFile(customProxiesPath)
                 ) {
                     try {
-                        om.readValue(
-                            customProxiesPath.toFile()
+                        json.decodeFromString(
+                            customProxiesPath.readText()
                         )
                     } catch (e: Exception) {
                         emptyList()
@@ -81,36 +86,35 @@ class SettingsService(private val eventBus: EventBus) {
     }
 
     fun newSettings(settings: Settings) {
-        if (settings.viperSettings.login) {
+        check(settings)
+        val viperSettings = if (settings.viperSettings.login) {
             if (this.settings.viperSettings.password != settings.viperSettings.password) {
-                settings.viperSettings.password =
-                    DigestUtils.md5Hex(settings.viperSettings.password)
+                settings.viperSettings.copy(password = DigestUtils.md5Hex(settings.viperSettings.password))
+            } else {
+                settings.viperSettings
             }
         } else {
-            settings.viperSettings.username = ""
-            settings.viperSettings.password = ""
-            settings.viperSettings.thanks = false
-            settings.viperSettings.login = false
+            settings.viperSettings.copy(username = "", password = "", thanks = false, login = false)
         }
-        check(settings)
-        this.settings = settings
+        this.settings = settings.copy(viperSettings = viperSettings)
         save()
-
-        eventBus.publishEvent(SettingsUpdateEvent(settings))
-
+        coroutineScope.launch {
+            eventBus.publishEvent(SettingsUpdateEvent(settings))
+        }
     }
 
     private fun restore() {
         try {
             if (configPath.toFile().exists()) {
-                settings = om.readValue(configPath.toFile())
+                settings = json.decodeFromString(configPath.readText())
             }
         } catch (e: Exception) {
             log.error("Failed restore user settings", e)
             settings = Settings()
         }
         if (!proxies.contains(settings.viperSettings.host)) {
-            settings.viperSettings.host = "https://vipergirls.to"
+            val viperSetting = settings.viperSettings.copy(host = "https://vipergirls.to")
+            settings = settings.copy(viperSettings = viperSetting)
         }
         try {
             check(settings)
@@ -123,9 +127,9 @@ class SettingsService(private val eventBus: EventBus) {
 
     fun save() {
         try {
-            Files.write(
+            Files.writeString(
                 configPath,
-                om.writeValueAsBytes(settings),
+                json.encodeToString(settings),
                 StandardOpenOption.CREATE,
                 StandardOpenOption.WRITE,
                 StandardOpenOption.TRUNCATE_EXISTING,

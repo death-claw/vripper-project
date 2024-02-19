@@ -1,19 +1,11 @@
 package me.vripper.entities
 
-class Metadata {
-    var postIdRef: Long? = null
-    var postId: String? = null
-    var postedBy: String? = null
-    var resolvedNames = emptyList<String>()
+import kotlinx.serialization.Serializable
 
-    companion object {
-        fun from(metadata: Metadata): Metadata {
-            val copy = Metadata()
-            copy.postIdRef = metadata.postIdRef
-            copy.postId = metadata.postId
-            copy.postedBy = metadata.postedBy
-            copy.resolvedNames = metadata.resolvedNames
-            return copy
-        }
-    }
+data class Metadata(val postId: Long, val data: Data) {
+    @Serializable
+    data class Data(
+        val postedBy: String,
+        val resolvedNames: List<String>
+    )
 }

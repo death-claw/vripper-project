@@ -1,6 +1,5 @@
 package me.vripper.entities
 
-import com.fasterxml.jackson.annotation.JsonFormat
 import me.vripper.entities.domain.Status
 import java.time.LocalDateTime
 import kotlin.io.path.Path
@@ -18,7 +17,7 @@ data class Post(
     val total: Int,
     val hosts: Set<String>,
     val downloadDirectory: String,
-    @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss") val addedOn: LocalDateTime = LocalDateTime.now(),
+    val addedOn: LocalDateTime = LocalDateTime.now(),
     var folderName: String,
     var status: Status = Status.STOPPED,
     var done: Int = 0,

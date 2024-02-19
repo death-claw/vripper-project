@@ -2,6 +2,7 @@ package me.vripper.gui.view.tables
 
 import javafx.scene.control.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.filterIsInstance
 import me.vripper.event.EventBus
 import me.vripper.event.LogCreateEvent
 import me.vripper.event.LogDeleteEvent
@@ -41,28 +42,34 @@ class LogTableView : View() {
             }
         }
 
-        eventBus.events.ofType(LogCreateEvent::class.java).subscribe {
-            val logModel = logController.mapper(it.logEntry)
-            runLater {
-                items.add(logModel)
+        coroutineScope.launch {
+            eventBus.events.filterIsInstance(LogCreateEvent::class).collect {
+                val logModel = logController.mapper(it.logEntry)
+                runLater {
+                    items.add(logModel)
+                }
             }
         }
-
-        eventBus.events.ofType(LogUpdateEvent::class.java).subscribe {
-            val logModel = logController.mapper(it.logEntry)
-            val find = items.find { threadModel -> threadModel.id == logModel.id }
-            if (find != null) {
-                runLater {
-                    find.apply {
-                        status = logModel.status
-                        message = logModel.message
+        coroutineScope.launch {
+            eventBus.events.filterIsInstance(LogUpdateEvent::class).collect {
+                val logModel = logController.mapper(it.logEntry)
+                val find = items.find { threadModel -> threadModel.id == logModel.id }
+                if (find != null) {
+                    runLater {
+                        find.apply {
+                            status = logModel.status
+                            message = logModel.message
+                        }
                     }
                 }
             }
         }
-        eventBus.events.ofType(LogDeleteEvent::class.java).subscribe { deleteEvent ->
-            runLater {
-                items.items.removeIf { it.id in deleteEvent.deleted }
+
+        coroutineScope.launch {
+            eventBus.events.filterIsInstance(LogDeleteEvent::class).collect { deleteEvent ->
+                runLater {
+                    items.items.removeIf { it.id in deleteEvent.deleted }
+                }
             }
         }
     }

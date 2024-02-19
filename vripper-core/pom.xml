@@ -44,10 +44,6 @@
             <artifactId>koin-core-jvm</artifactId>
         </dependency>
         <dependency>
-            <artifactId>jackson-module-kotlin</artifactId>
-            <groupId>com.fasterxml.jackson.module</groupId>
-        </dependency>
-        <dependency>
             <artifactId>h2</artifactId>
             <groupId>com.h2database</groupId>
         </dependency>
@@ -72,18 +68,6 @@
             <groupId>com.github.ben-manes.caffeine</groupId>
         </dependency>
         <dependency>
-            <artifactId>jackson-databind</artifactId>
-            <groupId>com.fasterxml.jackson.core</groupId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-        </dependency>
-        <dependency>
             <artifactId>commons-codec</artifactId>
             <groupId>commons-codec</groupId>
         </dependency>
@@ -100,10 +84,14 @@
             <groupId>com.mattbertolini</groupId>
             <scope>runtime</scope>
         </dependency>
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-core</artifactId>
-        </dependency>
+        <!--        <dependency>-->
+        <!--            <groupId>io.projectreactor</groupId>-->
+        <!--            <artifactId>reactor-core</artifactId>-->
+        <!--        </dependency>-->
+      <dependency>
+        <groupId>org.jetbrains.kotlinx</groupId>
+        <artifactId>kotlinx-serialization-json</artifactId>
+      </dependency>
     </dependencies>
 
     <build>
@@ -121,14 +109,21 @@
                         <goals>
                             <goal>compile</goal>
                         </goals>
-                        <configuration>
-                            <sourceDirs>
-                                <source>src/main/kotlin</source>
-                                <source>target/generated-sources/annotations</source>
-                            </sourceDirs>
-                        </configuration>
                     </execution>
                 </executions>
+              <configuration>
+                <jvmTarget>1.8</jvmTarget>
+                <compilerPlugins>
+                  <plugin>kotlinx-serialization</plugin>
+                </compilerPlugins>
+              </configuration>
+              <dependencies>
+                <dependency>
+                  <groupId>org.jetbrains.kotlin</groupId>
+                  <artifactId>kotlin-maven-serialization</artifactId>
+                  <version>${kotlin.version}</version>
+                </dependency>
+              </dependencies>
             </plugin>
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>

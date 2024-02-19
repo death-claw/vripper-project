@@ -12,11 +12,10 @@ import javafx.util.Callback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
+import me.vripper.event.*
 import me.vripper.event.EventBus
-import me.vripper.event.PostCreateEvent
-import me.vripper.event.PostDeleteEvent
-import me.vripper.event.PostUpdateEvent
 import me.vripper.gui.clipboard.ClipboardService
 import me.vripper.gui.controller.PostController
 import me.vripper.gui.model.PostModel
@@ -57,39 +56,59 @@ class PostsTableView : View() {
             }
         }
 
-        eventBus.events.ofType(PostCreateEvent::class.java).subscribe { postEvents ->
-            val add = postEvents.posts.map { postController.mapper(it.id) }
-            runLater {
-                tableView.items.addAll(add)
-            }
-        }
-
-        eventBus.events.ofType(PostUpdateEvent::class.java).subscribe { postEvents ->
-            runLater {
-                for (post in postEvents.posts) {
-                    val postModel = items.find { it.postId == post.postId } ?: continue
-
-                    postModel.status = post.status.name
-                    postModel.progressCount = postController.progressCount(
-                        post.total, post.done, post.downloaded
-                    )
-                    postModel.order = post.rank + 1
-                    postModel.done = post.done
-                    postModel.progress = postController.progress(
-                        post.total, post.done
-                    )
-                    postModel.path = post.getDownloadFolder()
-                    postModel.folderName = post.folderName
+        coroutineScope.launch {
+            eventBus.events.filterIsInstance(PostCreateEvent::class).collect { postEvents ->
+                val add = postEvents.posts.map { postController.mapper(it.id) }
+                runLater {
+                    tableView.items.addAll(add)
                 }
             }
         }
 
-        eventBus.events.ofType(PostDeleteEvent::class.java).subscribe { postEvents ->
-            runLater {
-                postEvents.postIds.forEach {
-                    items.removeIf { p -> p.postId == it }
+        coroutineScope.launch {
+            eventBus.events.filterIsInstance(PostUpdateEvent::class).collect { postEvents ->
+                runLater {
+                    for (post in postEvents.posts) {
+                        val postModel = items.find { it.postId == post.postId } ?: continue
+
+                        postModel.status = post.status.name
+                        postModel.progressCount = postController.progressCount(
+                            post.total, post.done, post.downloaded
+                        )
+                        postModel.order = post.rank + 1
+                        postModel.done = post.done
+                        postModel.progress = postController.progress(
+                            post.total, post.done
+                        )
+                        postModel.path = post.getDownloadFolder()
+                        postModel.folderName = post.folderName
+                    }
                 }
             }
+        }
+
+        coroutineScope.launch {
+            eventBus.events.filterIsInstance(PostDeleteEvent::class).collect { postEvents ->
+                runLater {
+                    postEvents.postIds.forEach {
+                        items.removeIf { p -> p.postId == it }
+                    }
+                }
+            }
+        }
+        coroutineScope.launch {
+            eventBus.events.filterIsInstance(MetadataUpdateEvent::class)
+                .collect { metadataUpdateEvent ->
+                    runLater {
+                        val postModel =
+                            items.find { it.postId == metadataUpdateEvent.metadata.postId }
+                                ?: return@runLater
+
+                        postModel.altTitles =
+                            FXCollections.observableArrayList(metadataUpdateEvent.metadata.data.resolvedNames)
+                        postModel.postedby = metadataUpdateEvent.metadata.data.postedBy
+                    }
+                }
         }
     }
 
@@ -176,10 +195,17 @@ class PostsTableView : View() {
 
                 val contextMenu = ContextMenu()
                 contextMenu.items.addAll(
-                    startItem, stopItem, renameItem, deleteItem, SeparatorMenuItem(), detailsItem, locationItem, urlItem
+                    startItem,
+                    stopItem,
+                    renameItem,
+                    deleteItem,
+                    SeparatorMenuItem(),
+                    detailsItem,
+                    locationItem,
+                    urlItem
                 )
-                tableRow.contextMenuProperty()
-                    .bind(tableRow.emptyProperty().map { empty -> if (empty) null else contextMenu })
+                tableRow.contextMenuProperty().bind(tableRow.emptyProperty()
+                    .map { empty -> if (empty) null else contextMenu })
                 tableRow
             }
             column("Preview", PostModel::previewListProperty) {
@@ -287,6 +313,12 @@ class PostsTableView : View() {
                     TextFieldTableCell<PostModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
                 }
             }
+            column("Posted By", PostModel::postedByProperty) {
+                prefWidth = 100.0
+                cellFactory = Callback {
+                    TextFieldTableCell<PostModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
+                }
+            }
             column("Order", PostModel::orderProperty) {
                 prefWidth = 50.0
                 sortOrder.add(this)
@@ -298,10 +330,15 @@ class PostsTableView : View() {
     }
 
     private fun rename(post: PostModel) {
-        find<RenameView>(mapOf(RenameView::postId to post.postId, RenameView::name to post.folderName)).openModal()
-            ?.apply {
-                minWidth = 300.0
-            }
+        find<RenameView>(
+            mapOf(
+                RenameView::postId to post.postId,
+                RenameView::name to post.folderName,
+                RenameView::altTitles to post.altTitles
+            )
+        ).openModal()?.apply {
+            minWidth = 450.0
+        }
     }
 
     fun renameSelected() {
@@ -336,8 +373,8 @@ class PostsTableView : View() {
 
     private fun openPhotos(postId: Long) {
         find<ImagesTableView>(mapOf(ImagesTableView::postId to postId)).openModal()?.apply {
-            minWidth = 600.0
-            minHeight = 400.0
+            minWidth = 800.0
+            minHeight = 600.0
         }
     }
 }

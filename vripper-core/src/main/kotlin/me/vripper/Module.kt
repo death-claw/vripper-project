@@ -55,6 +55,9 @@ val coreModule = module {
     single<AppEndpointService> {
         AppEndpointService(get(), get(), get(), get())
     }
+    single<MetadataService> {
+        MetadataService(get(), get(), get(), get())
+    }
     single {
         AcidimgHost(get(), get(), get())
     } bind Host::class

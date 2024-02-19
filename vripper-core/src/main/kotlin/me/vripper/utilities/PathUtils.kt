@@ -1,5 +1,6 @@
 package me.vripper.utilities
 
+import me.vripper.entities.Image
 import me.vripper.exception.RenameException
 import me.vripper.model.Settings
 import java.io.IOException
@@ -7,6 +8,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import kotlin.io.path.Path
+import kotlin.io.path.listDirectoryEntries
 
 
 object PathUtils {
@@ -28,15 +30,32 @@ object PathUtils {
     }
 
     @Throws(RenameException::class)
-    fun rename(downloadDirectory: String, oldFolder: String, newFolder: String) {
+    fun rename(
+        imageList: List<Image>,
+        downloadDirectory: String,
+        oldFolder: String,
+        newFolder: String
+    ) {
         val currentDownloadDirectory = Path(downloadDirectory, oldFolder)
         val newDownloadDirectory = Path(downloadDirectory, sanitize(newFolder))
+        if (currentDownloadDirectory == newDownloadDirectory) {
+            return
+        }
         try {
-            Files.move(
-                currentDownloadDirectory,
-                newDownloadDirectory,
-                StandardCopyOption.ATOMIC_MOVE
-            )
+            Files.createDirectories(newDownloadDirectory)
+            imageList.filter { it.filename.isNotBlank() }.forEach {
+                Files.move(
+                    currentDownloadDirectory.resolve(it.filename),
+                    newDownloadDirectory.resolve(it.filename),
+                    StandardCopyOption.ATOMIC_MOVE
+                )
+            }
+            if (currentDownloadDirectory.listDirectoryEntries().isEmpty()) {
+                try {
+                    Files.delete(currentDownloadDirectory)
+                } catch (ignored: Exception) {
+                }
+            }
         } catch (e: IOException) {
             throw RenameException(
                 String.format(

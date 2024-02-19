@@ -2,12 +2,13 @@ package me.vripper.gui.clipboard
 
 import javafx.scene.input.Clipboard
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.filterIsInstance
 import me.vripper.event.EventBus
 import me.vripper.event.SettingsUpdateEvent
 import me.vripper.model.Settings
 import me.vripper.services.AppEndpointService
 import me.vripper.services.SettingsService
-import tornadofx.runLater
+import tornadofx.*
 
 class ClipboardService(
     private val appEndpointService: AppEndpointService,
@@ -19,8 +20,10 @@ class ClipboardService(
     private var pollJob: Job? = null
 
     fun init() {
-        eventBus.events.ofType(SettingsUpdateEvent::class.java).subscribe {
-            run(it.settings)
+        coroutineScope.launch {
+            eventBus.events.filterIsInstance(SettingsUpdateEvent::class).collect {
+                run(it.settings)
+            }
         }
         run(settingsService.settings)
     }

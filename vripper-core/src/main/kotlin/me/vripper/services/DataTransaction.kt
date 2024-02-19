@@ -1,5 +1,9 @@
 package me.vripper.services
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import me.vripper.entities.*
 import me.vripper.entities.domain.Status
 import me.vripper.event.*
@@ -22,33 +26,45 @@ class DataTransaction(
     private val eventBus: EventBus,
 ) {
 
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     private fun save(posts: List<Post>): List<Post> {
         return transaction { postDownloadStateRepository.save(posts) }
     }
 
     fun updatePosts(posts: List<Post>) {
         transaction { postDownloadStateRepository.update(posts) }
-        eventBus.publishEvent(PostUpdateEvent(posts))
+        coroutineScope.launch {
+            eventBus.publishEvent(PostUpdateEvent(posts))
+        }
     }
 
     fun updatePost(post: Post) {
         transaction { postDownloadStateRepository.update(post) }
-        eventBus.publishEvent(PostUpdateEvent(listOf(post)))
+        coroutineScope.launch {
+            eventBus.publishEvent(PostUpdateEvent(listOf(post)))
+        }
     }
 
     fun save(thread: Thread) {
         val savedThread = transaction { threadRepository.save(thread) }
-        eventBus.publishEvent(ThreadCreateEvent(savedThread))
+        coroutineScope.launch {
+            eventBus.publishEvent(ThreadCreateEvent(savedThread))
+        }
     }
 
     fun updateImages(images: List<Image>) {
         transaction { imageRepository.update(images) }
-        eventBus.publishEvent(ImageEvent(images))
+        coroutineScope.launch {
+            eventBus.publishEvent(ImageEvent(images))
+        }
     }
 
     fun updateImage(image: Image) {
         transaction { imageRepository.update(image) }
-        eventBus.publishEvent(ImageEvent(listOf(image)))
+        coroutineScope.launch {
+            eventBus.publishEvent(ImageEvent(listOf(image)))
+        }
     }
 
     fun exists(postId: Long): Boolean {
@@ -104,7 +120,9 @@ class DataTransaction(
             }
             savedPosts
         }
-        eventBus.publishEvent(PostCreateEvent(savedPosts))
+        coroutineScope.launch {
+            eventBus.publishEvent(PostCreateEvent(savedPosts))
+        }
         return savedPosts
     }
 
@@ -146,21 +164,25 @@ class DataTransaction(
     private fun remove(postIds: List<Long>) {
 
         transaction {
+            metadataRepository.deleteAllByPostId(postIds)
             imageRepository.deleteAllByPostId(postIds)
             postDownloadStateRepository.deleteAll(postIds)
             sortPostsByRank()
         }
 
-
-        eventBus.publishEvent(PostDeleteEvent(postIds = postIds))
-        eventBus.publishEvent(ErrorCountEvent(ErrorCount(countImagesInError())))
+        coroutineScope.launch {
+            eventBus.publishEvent(PostDeleteEvent(postIds = postIds))
+        }
+        coroutineScope.launch {
+            eventBus.publishEvent(ErrorCountEvent(ErrorCount(countImagesInError())))
+        }
     }
 
     fun removeThread(threadId: Long) {
         transaction { threadRepository.deleteByThreadId(threadId) }
-
-        eventBus.publishEvent(ThreadDeleteEvent(threadId))
-
+        coroutineScope.launch {
+            eventBus.publishEvent(ThreadDeleteEvent(threadId))
+        }
     }
 
     fun clearCompleted(): List<Long> {
@@ -181,17 +203,18 @@ class DataTransaction(
         transaction { imageRepository.stopByPostIdAndIsNotCompleted(postId) }
     }
 
-    @Synchronized
-    fun setMetadata(post: Post, metadata: Metadata) {
-        if (metadataRepository.findByPostId(post.postId).isEmpty) {
-            metadata.postIdRef = post.id
-            metadataRepository.save(metadata)
+    fun saveMetadata(metadata: Metadata) {
+        transaction { metadataRepository.save(metadata) }
+        coroutineScope.launch {
+            eventBus.publishEvent(MetadataUpdateEvent(metadata))
         }
     }
 
     fun clearQueueLinks() {
         transaction { threadRepository.deleteAll() }
-        eventBus.publishEvent(ThreadClearEvent())
+        coroutineScope.launch {
+            eventBus.publishEvent(ThreadClearEvent())
+        }
     }
 
     @Synchronized
@@ -255,14 +278,20 @@ class DataTransaction(
             val deleted = logRepository.deleteOldest()
             Pair(saved, deleted)
         }
-        eventBus.publishEvent(LogCreateEvent(pair.first))
-        eventBus.publishEvent(LogDeleteEvent(pair.second))
+        coroutineScope.launch {
+            eventBus.publishEvent(LogCreateEvent(pair.first))
+        }
+        coroutineScope.launch {
+            eventBus.publishEvent(LogDeleteEvent(pair.second))
+        }
         return pair.first
     }
 
     fun updateLog(logEntry: LogEntry) {
         transaction { logRepository.update(logEntry) }
-        eventBus.publishEvent(LogUpdateEvent(logEntry))
+        coroutineScope.launch {
+            eventBus.publishEvent(LogUpdateEvent(logEntry))
+        }
     }
 
     fun deleteAllLogs() {
@@ -275,5 +304,9 @@ class DataTransaction(
 
     fun findAllNonCompletedPostIds(): List<Long> {
         return transaction { postDownloadStateRepository.findAllNonCompletedPostIds() }
+    }
+
+    fun findMetadataByPostId(postId: Long): Optional<Metadata> {
+        return transaction { metadataRepository.findByPostId(postId) }
     }
 }
