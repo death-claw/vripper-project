@@ -1,17 +1,14 @@
 package me.vripper.event
 
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Sinks
-import reactor.core.scheduler.Scheduler
-import reactor.core.scheduler.Schedulers
-import java.util.concurrent.Executors
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 object EventBus {
 
-    private val scheduler: Scheduler = Schedulers.fromExecutor(Executors.newSingleThreadExecutor())
-    private val _events = Sinks.many().multicast().onBackpressureBuffer<Any>()
-    val events: Flux<Any> = _events.asFlux().publishOn(scheduler)
-    fun publishEvent(event: Any) {
-        _events.emitNext(event) { _, _ -> true }
+    private val _events = MutableSharedFlow<Any>()
+    val events = _events.asSharedFlow()
+
+    suspend fun publishEvent(event: Any) {
+        _events.emit(event)
     }
 }

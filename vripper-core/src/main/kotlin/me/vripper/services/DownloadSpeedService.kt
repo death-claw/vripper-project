@@ -1,6 +1,7 @@
 package me.vripper.services
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.filterIsInstance
 import me.vripper.event.DownloadSpeedEvent
 import me.vripper.event.EventBus
 import me.vripper.event.QueueStateEvent
@@ -21,7 +22,8 @@ class DownloadSpeedService(
 
     fun init() {
         coroutineScope.launch {
-            eventBus.events.ofType(QueueStateEvent::class.java).subscribe {
+            eventBus.events.filterIsInstance(QueueStateEvent::class).collect {
+                coroutineContext.ensureActive()
                 if (it.queueState.running + it.queueState.remaining > 0) {
                     if (job == null || job?.isActive == false) {
                         job = coroutineScope.launch {

@@ -145,9 +145,24 @@
       <column name="THREAD_ID"/>
     </createIndex>
   </changeSet>
-    <changeSet id="0006" author="vripper">
-        <addColumn tableName="POST">
-            <column name="FOLDER_NAME" type="VARCHAR(260)" afterColumn="OUTPUT_PATH" defaultValue=""/>
-        </addColumn>
-    </changeSet>
+  <changeSet id="0006" author="vripper">
+    <addColumn tableName="POST">
+      <column name="FOLDER_NAME" type="VARCHAR(260)" afterColumn="OUTPUT_PATH" defaultValue=""/>
+    </addColumn>
+  </changeSet>
+  <changeSet author="vripper" id="0007">
+    <createTable tableName="METADATA">
+      <column name="POST_ID" type="BIGINT">
+        <constraints unique="true" nullable="false"/>
+      </column>
+      <column name="DATA" type="VARCHAR">
+        <constraints nullable="true"/>
+      </column>
+    </createTable>
+  </changeSet>
+  <changeSet author="vripper" id="0008">
+    <addColumn tableName="IMAGE">
+      <column name="FILENAME" type="VARCHAR(260)" afterColumn="STATUS" defaultValue=""/>
+    </addColumn>
+  </changeSet>
 </databaseChangeLog>

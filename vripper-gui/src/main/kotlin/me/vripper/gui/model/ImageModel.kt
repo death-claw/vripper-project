@@ -5,8 +5,7 @@ import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleLongProperty
 import javafx.beans.property.SimpleStringProperty
 import me.vripper.utilities.formatSI
-import tornadofx.getValue
-import tornadofx.setValue
+import tornadofx.*
 
 class ImageModel(
     id: Long,
@@ -15,7 +14,8 @@ class ImageModel(
     progress: Double,
     status: String,
     size: Long,
-    downloaded: Long
+    downloaded: Long,
+    filename: String
 ) {
 
     val idProperty = SimpleLongProperty(id)
@@ -32,6 +32,9 @@ class ImageModel(
 
     val statusProperty = SimpleStringProperty(status)
     var status: String by statusProperty
+
+    val filenameProperty = SimpleStringProperty(filename)
+    var filename: String by filenameProperty
 
     val sizeProperty = SimpleStringProperty(size.formatSI())
     var size = size

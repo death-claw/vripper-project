@@ -1,6 +1,6 @@
 package me.vripper.download
 
-import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.*
 import me.vripper.entities.Image
 import me.vripper.entities.LogEntry
 import me.vripper.entities.Post
@@ -37,6 +37,7 @@ class DownloadService(
     private val pending: MutableMap<Byte, MutableList<ImageDownloadRunnable>> = mutableMapOf()
     private val lock = ReentrantLock()
     private val condition = lock.newCondition()
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     fun init() {
         Thread.ofVirtual().name("Download Loop").unstarted(Runnable {
@@ -166,7 +167,8 @@ class DownloadService(
                 pending.values.forEach { pending ->
                     pending.removeIf { it.context.image.postId == postId }
                 }
-                running.values.flatten().filter { p: ImageDownloadRunnable -> p.context.image.postId == postId }
+                running.values.flatten()
+                    .filter { p: ImageDownloadRunnable -> p.context.image.postId == postId }
                     .forEach { obj: ImageDownloadRunnable -> obj.stop() }
             }
             postIds.forEach {
@@ -220,7 +222,9 @@ class DownloadService(
     private fun scheduleForDownload(imageDownloadRunnable: ImageDownloadRunnable) {
         log.debug("Scheduling a job for ${imageDownloadRunnable.context.image.url}")
         CompletableFuture.runAsync({
-            eventBus.publishEvent(QueueStateEvent(QueueState(runningCount(), pendingCount())))
+            coroutineScope.launch {
+                eventBus.publishEvent(QueueStateEvent(QueueState(runningCount(), pendingCount())))
+            }
             Failsafe.with<Any, RetryPolicy<Any>>(retryPolicyService.buildRetryPolicyForDownload())
                 .onFailure {
                     try {
@@ -243,14 +247,18 @@ class DownloadService(
                     dataTransaction.updateImage(image)
                 }.onComplete {
                     afterJobFinish(imageDownloadRunnable)
-                    eventBus.publishEvent(
-                        QueueStateEvent(
-                            QueueState(
-                                runningCount(), pendingCount()
+                    coroutineScope.launch {
+                        eventBus.publishEvent(
+                            QueueStateEvent(
+                                QueueState(
+                                    runningCount(), pendingCount()
+                                )
                             )
                         )
-                    )
-                    eventBus.publishEvent(ErrorCountEvent(ErrorCount(dataTransaction.countImagesInError())))
+                    }
+                    coroutineScope.launch {
+                        eventBus.publishEvent(ErrorCountEvent(ErrorCount(dataTransaction.countImagesInError())))
+                    }
                     log.debug(
                         "Finished downloading ${imageDownloadRunnable.context.image.url}"
                     )

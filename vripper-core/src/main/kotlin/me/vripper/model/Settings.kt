@@ -1,42 +1,49 @@
 package me.vripper.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Settings(
-    var connectionSettings: ConnectionSettings = ConnectionSettings(),
-    var downloadSettings: DownloadSettings = DownloadSettings(),
-    var viperSettings: ViperSettings = ViperSettings(),
-    var systemSettings: SystemSettings = SystemSettings()
+    val connectionSettings: ConnectionSettings = ConnectionSettings(),
+    val downloadSettings: DownloadSettings = DownloadSettings(),
+    val viperSettings: ViperSettings = ViperSettings(),
+    val systemSettings: SystemSettings = SystemSettings()
 )
 
+@Serializable
 data class ViperSettings(
-    var login: Boolean = false,
-    var username: String = "",
-    var password: String = "",
-    var thanks: Boolean = false,
-    var host: String = "https://vipergirls.to",
+    val login: Boolean = false,
+    val username: String = "",
+    val password: String = "",
+    val thanks: Boolean = false,
+    val host: String = "https://vipergirls.to",
 )
 
+@Serializable
 data class DownloadSettings(
-    var downloadPath: String = System.getProperty("user.home"),
-    var autoStart: Boolean = true,
-    var autoQueueThreshold: Int = 1,
-    var forceOrder: Boolean = false,
-    var forumSubDirectory: Boolean = false,
-    var threadSubLocation: Boolean = false,
-    var clearCompleted: Boolean = false,
-    var appendPostId: Boolean = false
+    val downloadPath: String = System.getProperty("user.home"),
+    val autoStart: Boolean = true,
+    val autoQueueThreshold: Int = 1,
+    val forceOrder: Boolean = false,
+    val forumSubDirectory: Boolean = false,
+    val threadSubLocation: Boolean = false,
+    val clearCompleted: Boolean = false,
+    val appendPostId: Boolean = false
 )
 
+@Serializable
 data class ConnectionSettings(
-    var maxConcurrentPerHost: Int = 2,
-    var maxGlobalConcurrent: Int = 0,
-    var timeout: Long = 30,
-    var maxAttempts: Int = 3,
+    val maxConcurrentPerHost: Int = 2,
+    val maxGlobalConcurrent: Int = 0,
+    val timeout: Long = 30,
+    val maxAttempts: Int = 3,
 )
 
+@Serializable
 data class SystemSettings(
-    var tempPath: String = System.getProperty("java.io.tmpdir"),
-    var cachePath: String = System.getProperty("java.io.tmpdir"),
-    var enableClipboardMonitoring: Boolean = false,
-    var clipboardPollingRate: Int = 500,
-    var maxEventLog: Int = 1_000,
+    val tempPath: String = System.getProperty("java.io.tmpdir"),
+    val cachePath: String = System.getProperty("java.io.tmpdir"),
+    val enableClipboardMonitoring: Boolean = false,
+    val clipboardPollingRate: Int = 500,
+    val maxEventLog: Int = 1_000,
 )

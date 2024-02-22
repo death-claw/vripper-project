@@ -4,7 +4,7 @@ import me.vripper.gui.controller.SettingsController
 import me.vripper.gui.model.settings.ConnectionSettingsModel
 import tornadofx.*
 
-class ConnectionSettingsView : View("Connection settings") {
+class ConnectionSettingsView : View("Connection Settings") {
     private val settingsController: SettingsController by inject()
     val connectionSettingsModel = ConnectionSettingsModel()
 

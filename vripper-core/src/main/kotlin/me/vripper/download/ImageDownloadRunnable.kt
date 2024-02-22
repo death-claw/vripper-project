@@ -10,8 +10,9 @@ import me.vripper.host.Host
 import me.vripper.host.ImageMimeType
 import me.vripper.model.Settings
 import me.vripper.services.*
-import me.vripper.utilities.PathUtils
 import me.vripper.utilities.PathUtils.getExtension
+import me.vripper.utilities.PathUtils.getFileNameWithoutExtension
+import me.vripper.utilities.PathUtils.sanitize
 import net.jodah.failsafe.function.CheckedRunnable
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -56,10 +57,6 @@ class ImageDownloadRunnable(
             val downloadedImage = host.downloadInternal(image.url, context)
             log.debug("Resolved name for ${image.url}: ${downloadedImage.name}")
             log.debug("Downloaded image {} to {}", image.url, downloadedImage.path)
-            val sanitizedFileName = PathUtils.sanitize(downloadedImage.name)
-            log.debug(
-                "Sanitizing image name from ${downloadedImage.name} to $sanitizedFileName"
-            )
             synchronized(image.postId.toString().intern()) {
                 val post = dataTransaction.findPostById(context.postId).orElseThrow()
                 val downloadDirectory = Path(post.downloadDirectory, post.folderName).pathString
@@ -91,6 +88,7 @@ class ImageDownloadRunnable(
         downloadDirectory: String, downloadedImage: DownloadedImage, index: Int
     ) {
         val existingExtension = getExtension(downloadedImage.name).lowercase()
+        val fileNameWithoutExtension = getFileNameWithoutExtension(downloadedImage.name)
         val extension = when (downloadedImage.type) {
             ImageMimeType.IMAGE_BMP -> "BMP"
             ImageMimeType.IMAGE_GIF -> "GIF"
@@ -99,18 +97,22 @@ class ImageDownloadRunnable(
             ImageMimeType.IMAGE_WEBP -> "WEBP"
         }
         val filename =
-            if (existingExtension.isBlank()) "${downloadedImage.name}.$extension" else downloadedImage.name
+            if (existingExtension.isBlank()) "${sanitize(downloadedImage.name)}.$extension" else "${
+                sanitize(
+                    fileNameWithoutExtension
+                )
+            }.$extension"
         try {
             val downloadDestinationFolder = Path.of(downloadDirectory)
             Files.createDirectories(downloadDestinationFolder)
-            val image = downloadDestinationFolder.resolve(
-                "${
-                    if (settings.downloadSettings.forceOrder) String.format(
-                        "%03d_", index + 1
-                    ) else ""
-                }$filename"
-            )
-            Files.copy(downloadedImage.path, image, StandardCopyOption.REPLACE_EXISTING)
+            val finalFilename = "${
+                if (settings.downloadSettings.forceOrder) String.format(
+                    "%03d_", index + 1
+                ) else ""
+            }$filename"
+            image.filename = finalFilename
+            val imageDownloadPath = downloadDestinationFolder.resolve(finalFilename)
+            Files.copy(downloadedImage.path, imageDownloadPath, StandardCopyOption.REPLACE_EXISTING)
         } catch (e: Exception) {
             throw HostException("Failed to rename the image", e)
         } finally {

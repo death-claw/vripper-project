@@ -13,6 +13,7 @@ data class Image(
     var size: Long = -1,
     var downloaded: Long = 0,
     var status: Status = Status.STOPPED,
+    var filename: String = "",
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

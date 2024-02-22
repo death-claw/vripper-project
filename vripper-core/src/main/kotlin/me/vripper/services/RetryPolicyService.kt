@@ -1,5 +1,10 @@
 package me.vripper.services
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.launch
 import me.vripper.event.EventBus
 import me.vripper.event.SettingsUpdateEvent
 import net.jodah.failsafe.RetryPolicy
@@ -11,14 +16,16 @@ class RetryPolicyService(
 ) {
     private val log by me.vripper.delegate.LoggerDelegate()
     private var maxAttempts: Int = settingsService.settings.connectionSettings.maxAttempts
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     fun init() {
-        eventBus.events.ofType(SettingsUpdateEvent::class.java).subscribe {
-            if (maxAttempts != it.settings.connectionSettings.maxAttempts) {
-                maxAttempts = it.settings.connectionSettings.maxAttempts
+        coroutineScope.launch {
+            eventBus.events.filterIsInstance(SettingsUpdateEvent::class).collect {
+                if (maxAttempts != it.settings.connectionSettings.maxAttempts) {
+                    maxAttempts = it.settings.connectionSettings.maxAttempts
+                }
             }
         }
-
     }
 
     fun <T> buildRetryPolicyForDownload(): RetryPolicy<T> {

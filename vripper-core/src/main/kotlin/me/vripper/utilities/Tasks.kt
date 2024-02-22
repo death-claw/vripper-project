@@ -1,5 +1,9 @@
 package me.vripper.utilities
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import me.vripper.event.EventBus
 import me.vripper.event.LoadingTasks
 import org.koin.core.component.KoinComponent
@@ -9,11 +13,14 @@ object Tasks : KoinComponent {
 
     private val eventBus: EventBus by inject()
     private var current = 0
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @Synchronized
     fun increment() {
         if (current == 0) {
-            eventBus.publishEvent(LoadingTasks(true))
+            coroutineScope.launch {
+                eventBus.publishEvent(LoadingTasks(true))
+            }
         }
         current += 1
     }
@@ -22,7 +29,9 @@ object Tasks : KoinComponent {
     fun decrement() {
         current -= 1
         if (current == 0) {
-            eventBus.publishEvent(LoadingTasks(false))
+            coroutineScope.launch {
+                eventBus.publishEvent(LoadingTasks(false))
+            }
         }
     }
 }

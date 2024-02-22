@@ -1,6 +1,10 @@
 package me.vripper.web.wsendpoints
 
 import jakarta.annotation.PostConstruct
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.time.sample
 import me.vripper.event.*
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -14,72 +18,110 @@ class DataBroadcast(
 ) : KoinComponent {
 
     private val eventBus: EventBus by inject()
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    @OptIn(FlowPreview::class)
     @PostConstruct
     private fun run() {
-        eventBus.events.ofType(PostCreateEvent::class.java).subscribe { events ->
-            template.convertAndSend("/topic/posts/new", events.posts)
-        }
-        eventBus.events.ofType(PostUpdateEvent::class.java).subscribe { events ->
-            template.convertAndSend("/topic/posts/updated", events.posts)
-        }
-        eventBus.events.ofType(PostDeleteEvent::class.java).subscribe { events ->
-            template.convertAndSend("/topic/posts/deleted", events.postIds)
-        }
-
-        eventBus.events.ofType(QueueStateEvent::class.java).subscribe {
-            template.convertAndSend("/topic/queue-state", it.queueState)
-        }
-
-        eventBus.events.ofType(DownloadSpeedEvent::class.java).subscribe {
-            template.convertAndSend("/topic/download-speed", it.downloadSpeed)
-        }
-
-        eventBus.events.ofType(VGUserLoginEvent::class.java).subscribe {
-            template.convertAndSend("/topic/vg-username", it.username)
-        }
-
-        eventBus.events.ofType(ErrorCountEvent::class.java).subscribe {
-            template.convertAndSend("/topic/error-count", it.errorCount)
-        }
-
-        eventBus.events.ofType(LoadingTasks::class.java).sample(Duration.ofMillis(500)).subscribe {
-            template.convertAndSend("/topic/loading", it.loading)
-        }
-
-        eventBus.events.ofType(ImageEvent::class.java).buffer(Duration.ofMillis(500)).subscribe { events ->
-            events.reversed().map { it.images }.flatten().distinct().groupBy { it.postId }
-                .forEach {
-                    template.convertAndSend("/topic/images/${it.key}", it.value)
+        coroutineScope.launch {
+            coroutineScope.launch {
+                eventBus.events.filterIsInstance(PostCreateEvent::class).collect { events ->
+                    template.convertAndSend("/topic/posts/new", events.posts)
                 }
-        }
-
-        eventBus.events.ofType(ThreadCreateEvent::class.java).map { listOf(it.thread) }
-            .subscribe { events ->
-                template.convertAndSend("/topic/threads", events)
             }
 
-        eventBus.events.ofType(ThreadDeleteEvent::class.java).map { listOf(it.threadId) }
-            .subscribe {
-                template.convertAndSend("/topic/threads/deleted", it)
+            coroutineScope.launch {
+                eventBus.events.filterIsInstance(PostUpdateEvent::class).collect { events ->
+                    template.convertAndSend("/topic/posts/updated", events.posts)
+                }
             }
 
-        eventBus.events.ofType(ThreadClearEvent::class.java).map { listOf(true) }.subscribe {
-            template.convertAndSend("/topic/threads/deletedAll", it)
-        }
-
-        eventBus.events.ofType(LogCreateEvent::class.java).map { it.logEntry }
-            .subscribe { logCreateEvent ->
-                template.convertAndSend("/topic/logs/new", listOf(logCreateEvent))
+            coroutineScope.launch {
+                eventBus.events.filterIsInstance(PostDeleteEvent::class).collect { events ->
+                    template.convertAndSend("/topic/posts/deleted", events.postIds)
+                }
             }
 
-        eventBus.events.ofType(LogUpdateEvent::class.java).map { it.logEntry }
-            .subscribe { logUpdateEvent ->
-                template.convertAndSend("/topic/logs/updated", listOf(logUpdateEvent))
+            coroutineScope.launch {
+                eventBus.events.filterIsInstance(QueueStateEvent::class).collect {
+                    template.convertAndSend("/topic/queue-state", it.queueState)
+                }
             }
 
-        eventBus.events.ofType(LogDeleteEvent::class.java).subscribe {
-            template.convertAndSend("/topic/logs/deleted", listOf(it.deleted))
+            coroutineScope.launch {
+                eventBus.events.filterIsInstance(DownloadSpeedEvent::class).collect {
+                    template.convertAndSend("/topic/download-speed", it.downloadSpeed)
+                }
+            }
+
+            coroutineScope.launch {
+                eventBus.events.filterIsInstance(VGUserLoginEvent::class).collect {
+                    template.convertAndSend("/topic/vg-username", it.username)
+                }
+            }
+
+            coroutineScope.launch {
+                eventBus.events.filterIsInstance(ErrorCountEvent::class).collect {
+                    template.convertAndSend("/topic/error-count", it.errorCount)
+                }
+            }
+
+            coroutineScope.launch {
+                eventBus.events.filterIsInstance(LoadingTasks::class).sample(Duration.ofMillis(500))
+                    .collect {
+                        template.convertAndSend("/topic/loading", it.loading)
+                    }
+            }
+
+            coroutineScope.launch {
+                eventBus.events.filterIsInstance(ImageEvent::class).collect { events ->
+                    events.images.groupBy { it.postId }.forEach {
+                        template.convertAndSend("/topic/images/${it.key}", it.value)
+                    }
+                }
+            }
+
+            coroutineScope.launch {
+                eventBus.events.filterIsInstance(ThreadCreateEvent::class).map { listOf(it.thread) }
+                    .collect { events ->
+                        template.convertAndSend("/topic/threads", events)
+                    }
+            }
+
+            coroutineScope.launch {
+                eventBus.events.filterIsInstance(ThreadDeleteEvent::class)
+                    .map { listOf(it.threadId) }
+                    .collect {
+                        template.convertAndSend("/topic/threads/deleted", it)
+                    }
+            }
+
+            coroutineScope.launch {
+                eventBus.events.filterIsInstance(ThreadClearEvent::class).map { listOf(true) }
+                    .collect {
+                        template.convertAndSend("/topic/threads/deletedAll", it)
+                    }
+            }
+
+            coroutineScope.launch {
+                eventBus.events.filterIsInstance(LogCreateEvent::class).map { it.logEntry }
+                    .collect { logCreateEvent ->
+                        template.convertAndSend("/topic/logs/new", listOf(logCreateEvent))
+                    }
+            }
+
+            coroutineScope.launch {
+                eventBus.events.filterIsInstance(LogUpdateEvent::class).map { it.logEntry }
+                    .collect { logUpdateEvent ->
+                        template.convertAndSend("/topic/logs/updated", listOf(logUpdateEvent))
+                    }
+            }
+
+            coroutineScope.launch {
+                eventBus.events.filterIsInstance(LogDeleteEvent::class).collect {
+                    template.convertAndSend("/topic/logs/deleted", listOf(it.deleted))
+                }
+            }
         }
     }
 }

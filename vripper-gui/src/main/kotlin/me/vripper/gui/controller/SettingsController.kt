@@ -6,7 +6,7 @@ import me.vripper.gui.model.settings.SystemSettingsModel
 import me.vripper.gui.model.settings.ViperSettingsModel
 import me.vripper.model.*
 import me.vripper.services.SettingsService
-import tornadofx.Controller
+import tornadofx.*
 
 class SettingsController : Controller() {
 
@@ -34,31 +34,32 @@ class SettingsController : Controller() {
         viperSettingsModel: ViperSettingsModel,
         systemSettingsModel: SystemSettingsModel
     ) {
-        settingsService.newSettings(Settings().apply {
-            downloadSettings = DownloadSettings(
-                downloadSettingsModel.downloadPath,
-                downloadSettingsModel.autoStart,
-                downloadSettingsModel.autoQueueThreshold,
-                downloadSettingsModel.forceOrder,
-                downloadSettingsModel.forumSubfolder,
-                downloadSettingsModel.threadSubLocation,
-                downloadSettingsModel.clearCompleted,
-                downloadSettingsModel.appendPostId
-            )
-            connectionSettings = ConnectionSettings(
-                connectionSettingsModel.maxThreads,
-                connectionSettingsModel.maxTotalThreads,
-                connectionSettingsModel.timeout,
-                connectionSettingsModel.maxAttempts,
-            )
-            viperSettings = ViperSettings(
-                viperSettingsModel.login,
-                viperSettingsModel.username,
-                viperSettingsModel.password,
-                viperSettingsModel.thanks,
-                viperSettingsModel.host,
-            )
-            systemSettings =
+        settingsService.newSettings(
+            Settings(
+                downloadSettings = DownloadSettings(
+                    downloadSettingsModel.downloadPath,
+                    downloadSettingsModel.autoStart,
+                    downloadSettingsModel.autoQueueThreshold,
+                    downloadSettingsModel.forceOrder,
+                    downloadSettingsModel.forumSubfolder,
+                    downloadSettingsModel.threadSubLocation,
+                    downloadSettingsModel.clearCompleted,
+                    downloadSettingsModel.appendPostId
+                ),
+                connectionSettings = ConnectionSettings(
+                    connectionSettingsModel.maxThreads,
+                    connectionSettingsModel.maxTotalThreads,
+                    connectionSettingsModel.timeout,
+                    connectionSettingsModel.maxAttempts,
+                ),
+                viperSettings = ViperSettings(
+                    viperSettingsModel.login,
+                    viperSettingsModel.username,
+                    viperSettingsModel.password,
+                    viperSettingsModel.thanks,
+                    viperSettingsModel.host,
+                ),
+                systemSettings =
                 SystemSettings(
                     systemSettingsModel.tempPath,
                     systemSettingsModel.cachePath,
@@ -66,8 +67,8 @@ class SettingsController : Controller() {
                     if (systemSettingsModel.pollingRate.isBlank()) 500 else systemSettingsModel.pollingRate.toInt(),
                     systemSettingsModel.logEntries.toInt()
                 )
-        })
-
+            )
+        )
     }
 
     fun getProxies(): List<String> {

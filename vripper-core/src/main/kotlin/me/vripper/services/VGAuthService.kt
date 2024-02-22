@@ -1,5 +1,10 @@
 package me.vripper.services
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.launch
 import me.vripper.entities.Post
 import me.vripper.event.EventBus
 import me.vripper.event.SettingsUpdateEvent
@@ -18,8 +23,11 @@ import org.apache.hc.core5.http.message.BasicNameValuePair
 import java.util.concurrent.CompletableFuture
 
 class VGAuthService(
-    private val cm: HTTPService, private val settingsService: SettingsService, private val eventBus: EventBus
+    private val cm: HTTPService,
+    private val settingsService: SettingsService,
+    private val eventBus: EventBus
 ) {
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val log by me.vripper.delegate.LoggerDelegate()
     val context: HttpClientContext = HttpClientContext.create()
     var loggedUser = ""
@@ -28,8 +36,10 @@ class VGAuthService(
 
     fun init() {
         context.cookieStore = BasicCookieStore()
-        eventBus.events.ofType(SettingsUpdateEvent::class.java).subscribe {
-            authenticate(it.settings)
+        coroutineScope.launch {
+            eventBus.events.filterIsInstance(SettingsUpdateEvent::class).collect {
+                authenticate(it.settings)
+            }
         }
         authenticate(settingsService.settings)
     }
@@ -40,7 +50,9 @@ class VGAuthService(
             log.debug("Authentication option is disabled")
             context.cookieStore.clear()
             loggedUser = ""
-            eventBus.publishEvent(VGUserLoginEvent(loggedUser))
+            coroutineScope.launch {
+                eventBus.publishEvent(VGUserLoginEvent(loggedUser))
+            }
 
             return
         }
@@ -51,24 +63,26 @@ class VGAuthService(
             context.cookieStore.clear()
             loggedUser = ""
 
-            eventBus.publishEvent(VGUserLoginEvent(loggedUser))
+            coroutineScope.launch {
+                eventBus.publishEvent(VGUserLoginEvent(loggedUser))
+            }
 
             return
         }
         val postAuth = HttpPost(settings.viperSettings.host + "/login.php?do=login").also {
-                it.entity = UrlEncodedFormEntity(
-                    listOf(
-                        BasicNameValuePair("vb_login_username", username),
-                        BasicNameValuePair("cookieuser", "1"),
-                        BasicNameValuePair("do", "login"),
-                        BasicNameValuePair("vb_login_md5password", password)
-                    )
+            it.entity = UrlEncodedFormEntity(
+                listOf(
+                    BasicNameValuePair("vb_login_username", username),
+                    BasicNameValuePair("cookieuser", "1"),
+                    BasicNameValuePair("do", "login"),
+                    BasicNameValuePair("vb_login_md5password", password)
                 )
-                it.addHeader("Referer", settings.viperSettings.host)
-                it.addHeader(
-                    "Host", settings.viperSettings.host.replace("https://", "").replace("http://", "")
-                )
-            }
+            )
+            it.addHeader("Referer", settings.viperSettings.host)
+            it.addHeader(
+                "Host", settings.viperSettings.host.replace("https://", "").replace("http://", "")
+            )
+        }
 
         try {
             cm.client.execute(postAuth, context) { response ->
@@ -81,7 +95,8 @@ class VGAuthService(
             if (context.cookieStore.cookies.stream().map { obj: Cookie -> obj.name }
                     .noneMatch { e: String -> e == "vg_userid" }) {
                 log.error(
-                    "Failed to authenticate user with {}, missing vg_userid cookie", settings.viperSettings.host
+                    "Failed to authenticate user with {}, missing vg_userid cookie",
+                    settings.viperSettings.host
                 )
                 return
             }
@@ -89,7 +104,9 @@ class VGAuthService(
             context.cookieStore.clear()
             loggedUser = ""
 
-            eventBus.publishEvent(VGUserLoginEvent(loggedUser))
+            coroutineScope.launch {
+                eventBus.publishEvent(VGUserLoginEvent(loggedUser))
+            }
 
             log.error(
                 "Failed to authenticate user with " + settings.viperSettings.host, e
@@ -100,11 +117,14 @@ class VGAuthService(
         loggedUser = username
         log.info(String.format("Authenticated: %s", username))
 
-        eventBus.publishEvent(VGUserLoginEvent(loggedUser))
-
+        coroutineScope.launch {
+            eventBus.publishEvent(VGUserLoginEvent(loggedUser))
+        }
     }
 
     fun leaveThanks(post: Post) {
-        CompletableFuture.runAsync(LeaveThanksRunnable(post, authenticated, context), GLOBAL_EXECUTOR)
+        CompletableFuture.runAsync(
+            LeaveThanksRunnable(post, authenticated, context), GLOBAL_EXECUTOR
+        )
     }
 }

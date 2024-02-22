@@ -28,64 +28,28 @@ class AddPostRunnable(private val items: List<ThreadPostId>) : KoinComponent, Ru
     private val retryPolicyService: RetryPolicyService by inject()
     private val downloadService: DownloadService by inject()
     private val cacheService: ThreadCacheService by inject()
-//    private val logEntry: LogEntry
-
-    init {
-//        logEntry = dataTransaction.saveLog(
-//            LogEntry(
-//                type = LogEntry.Type.POST, status = PENDING, message = "Processing $link"
-//            )
-//        )
-    }
+    private val metadataService: MetadataService by inject()
 
     override fun run() {
         try {
             Tasks.increment()
             val toProcess = mutableListOf<PostItem>()
             for ((threadId, postId) in items) {
-//                dataTransaction.updateLog(logEntry.copy(status = PROCESSING))
                 if (dataTransaction.exists(postId)) {
                     log.warn(String.format("skipping %s, already loaded", postId))
                     continue
                 }
 
                 val threadItem = cacheService[threadId]
-//                val postItem: PostItem = try {
                 val postItem: PostItem =
                     threadItem.postItemList.find { it.postId == postId } ?: parse(postId, threadId)
-//                } catch (e: PostParseException) {
-//                    val error = String.format("parsing failed for gallery %s", link)
-//                    log.error(error, e)
-//                    dataTransaction.updateLog(
-//                        logEntry.copy(
-//                            status = ERROR, message = """
-//                    $error
-//                    ${e.formatToString()}
-//                    """.trimIndent()
-//                        )
-//                    )
-//                    return@map
-//                }
-//                if (postItem.imageItemList.isEmpty()) {
-//                    val error = "Post $link contains no images to download"
-//                    log.error(error)
-//                    dataTransaction.updateLog(logEntry.copy(status = ERROR, message = error))
-//                    return@map
-//                }
-
-
-//                dataTransaction.updateLog(
-//                    logEntry.copy(
-//                        status = DONE, message = String.format(
-//                            "Post $link has been successfully added to download queue"
-//                        )
-//                    )
-//                )
                 toProcess.add(postItem)
             }
 
             val posts = dataTransaction.newPosts(toProcess.toList())
-//            metadataService.startFetchingMetadata(post)
+            posts.forEach {
+                metadataService.fetchMetadata(it.postId)
+            }
             if (settingsService.settings.downloadSettings.autoStart) {
                 log.debug("Auto start downloads option is enabled")
                 downloadService.restartAll(posts)
@@ -93,14 +57,6 @@ class AddPostRunnable(private val items: List<ThreadPostId>) : KoinComponent, Ru
         } catch (e: Exception) {
             val error = String.format("Error when adding galleries")
             log.error(error, e)
-//            dataTransaction.updateLog(
-//                logEntry.copy(
-//                    status = ERROR, message = """
-//                $error
-//                ${e.formatToString()}
-//                """.trimIndent()
-//                )
-//            )
         } finally {
             Tasks.decrement()
         }
