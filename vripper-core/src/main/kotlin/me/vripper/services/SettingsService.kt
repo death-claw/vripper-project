@@ -99,7 +99,7 @@ class SettingsService(private val eventBus: EventBus) {
         this.settings = settings.copy(viperSettings = viperSettings)
         save()
         coroutineScope.launch {
-            eventBus.publishEvent(SettingsUpdateEvent(settings))
+            eventBus.publishEvent(SettingsUpdateEvent(this@SettingsService.settings))
         }
     }
 
