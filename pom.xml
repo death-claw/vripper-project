@@ -9,14 +9,30 @@
   <version>${revision}</version>
   <properties>
     <java.version>21</java.version>
-    <kotlin.version>1.9.22</kotlin.version>
     <maven.deploy.skip>false</maven.deploy.skip>
     <timestamp>${maven.build.timestamp}</timestamp>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <revision>5.2.0</revision>
+    <revision>5.3.0</revision>
+    <kotlin.version>1.9.22</kotlin.version>
+    <slf4j.version>2.0.12</slf4j.version>
+    <logback.version>1.5.0</logback.version>
+    <kotlinx-coroutines.version>1.8.0</kotlinx-coroutines.version>
+    <exposed.version>0.47.0</exposed.version>
+    <snakeyaml.version>2.0</snakeyaml.version>
+    <koin.version>3.5.3</koin.version>
+    <h2.version>2.2.224</h2.version>
+    <htmlcleaner.version>2.29</htmlcleaner.version>
+    <failsafe.version>2.4.4</failsafe.version>
+    <caffeine.version>3.1.8</caffeine.version>
+    <jna-platform.version>5.14.0</jna-platform.version>
+    <kotlinx-serialization-json.version>1.6.2</kotlinx-serialization-json.version>
+    <httpclient5.version>5.3.1</httpclient5.version>
+    <commons-codec.version>1.16.1</commons-codec.version>
+    <liquibase-core.version>4.26.0</liquibase-core.version>
+    <liquibase-slf4j.version>5.0.0</liquibase-slf4j.version>
   </properties>
   <build>
     <plugins>
@@ -56,9 +72,19 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
         <artifactId>logback-classic</artifactId>
         <groupId>ch.qos.logback</groupId>
-        <version>1.4.12</version>
+        <version>${logback.version}</version>
+      </dependency>
+      <dependency>
+        <artifactId>logback-core</artifactId>
+        <groupId>ch.qos.logback</groupId>
+        <version>${logback.version}</version>
       </dependency>
       <dependency>
         <artifactId>kotlin-stdlib</artifactId>
@@ -68,82 +94,52 @@
       <dependency>
         <groupId>org.jetbrains.kotlinx</groupId>
         <artifactId>kotlinx-coroutines-core-jvm</artifactId>
-        <version>1.7.3</version>
+        <version>${kotlinx-coroutines.version}</version>
       </dependency>
       <dependency>
         <groupId>org.jetbrains.exposed</groupId>
         <artifactId>exposed-jdbc</artifactId>
-        <version>0.41.1</version>
+        <version>${exposed.version}</version>
       </dependency>
       <dependency>
         <groupId>org.jetbrains.exposed</groupId>
         <artifactId>exposed-java-time</artifactId>
-        <version>0.41.1</version>
+        <version>${exposed.version}</version>
       </dependency>
       <dependency>
         <groupId>org.yaml</groupId>
         <artifactId>snakeyaml</artifactId>
-        <version>2.0</version>
-      </dependency>
-      <dependency>
-        <groupId>io.projectreactor</groupId>
-        <artifactId>reactor-core</artifactId>
-        <version>3.5.10</version>
+        <version>${snakeyaml.version}</version>
       </dependency>
       <dependency>
         <groupId>io.insert-koin</groupId>
         <artifactId>koin-core-jvm</artifactId>
-        <version>3.4.2</version>
-      </dependency>
-      <dependency>
-        <artifactId>jackson-module-kotlin</artifactId>
-        <groupId>com.fasterxml.jackson.module</groupId>
-        <version>2.15.2</version>
+        <version>${koin.version}</version>
       </dependency>
       <dependency>
         <artifactId>h2</artifactId>
         <groupId>com.h2database</groupId>
-        <version>2.2.224</version>
-      </dependency>
-      <dependency>
-        <artifactId>httpclient</artifactId>
-        <groupId>org.apache.httpcomponents</groupId>
-        <version>4.5.14</version>
+        <version>${h2.version}</version>
       </dependency>
       <dependency>
         <artifactId>htmlcleaner</artifactId>
         <groupId>net.sourceforge.htmlcleaner</groupId>
-        <version>2.26</version>
+        <version>${htmlcleaner.version}</version>
       </dependency>
       <dependency>
         <artifactId>failsafe</artifactId>
         <groupId>net.jodah</groupId>
-        <version>2.4.4</version>
+        <version>${failsafe.version}</version>
       </dependency>
       <dependency>
         <artifactId>caffeine</artifactId>
         <groupId>com.github.ben-manes.caffeine</groupId>
-        <version>3.1.8</version>
-      </dependency>
-      <dependency>
-        <artifactId>jackson-databind</artifactId>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <version>2.15.2</version>
-      </dependency>
-      <dependency>
-        <groupId>com.fasterxml.jackson.dataformat</groupId>
-        <artifactId>jackson-dataformat-yaml</artifactId>
-        <version>2.15.2</version>
-      </dependency>
-      <dependency>
-        <groupId>com.fasterxml.jackson.datatype</groupId>
-        <artifactId>jackson-datatype-jsr310</artifactId>
-        <version>2.15.2</version>
+        <version>${caffeine.version}</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna-platform</artifactId>
-        <version>5.13.0</version>
+        <version>${jna-platform.version}</version>
       </dependency>
       <dependency>
         <artifactId>kotlin-reflect</artifactId>
@@ -153,32 +149,32 @@
       <dependency>
         <groupId>org.jetbrains.kotlinx</groupId>
         <artifactId>kotlinx-serialization-json</artifactId>
-        <version>1.6.2</version>
+        <version>${kotlinx-serialization-json.version}</version>
       </dependency>
       <dependency>
         <artifactId>jcl-over-slf4j</artifactId>
         <groupId>org.slf4j</groupId>
-        <version>1.7.32</version>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <artifactId>httpclient5</artifactId>
         <groupId>org.apache.httpcomponents.client5</groupId>
-        <version>5.2.1</version>
+        <version>${httpclient5.version}</version>
       </dependency>
       <dependency>
         <artifactId>commons-codec</artifactId>
         <groupId>commons-codec</groupId>
-        <version>1.16.0</version>
+        <version>${commons-codec.version}</version>
       </dependency>
       <dependency>
         <artifactId>liquibase-core</artifactId>
         <groupId>org.liquibase</groupId>
-        <version>4.24.0</version>
+        <version>${liquibase-core.version}</version>
       </dependency>
       <dependency>
         <artifactId>liquibase-slf4j</artifactId>
         <groupId>com.mattbertolini</groupId>
-        <version>5.0.0</version>
+        <version>${liquibase-slf4j.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -105,7 +105,7 @@ class ImageRepositoryImpl : ImageRepository {
     }
 
     override fun update(images: List<Image>) {
-        ImageTable.batchReplace(images, shouldReturnGeneratedValues = false) {
+        ImageTable.batchUpsert(images, shouldReturnGeneratedValues = false) {
             this[ImageTable.id] = it.id
             this[ImageTable.downloaded] = it.downloaded
             this[ImageTable.host] = it.host

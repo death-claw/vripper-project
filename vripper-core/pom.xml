@@ -16,8 +16,16 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
             <artifactId>logback-classic</artifactId>
             <groupId>ch.qos.logback</groupId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
         </dependency>
         <dependency>
             <artifactId>kotlin-stdlib</artifactId>

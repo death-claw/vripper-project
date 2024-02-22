@@ -212,6 +212,15 @@ class PostsTableView : View() {
                 prefWidth = 50.0
                 cellFactory = Callback {
                     val cell = PreviewTableCell<PostModel>()
+                    cell.onMouseExited = EventHandler {
+                        preview?.hide()
+                    }
+                    cell.onMouseMoved = EventHandler {
+                        preview?.previewPopup?.apply {
+                            x = it.screenX + 20
+                            y = it.screenY + 10
+                        }
+                    }
                     cell.onMouseEntered = EventHandler { mouseEvent ->
                         preview?.hide()
                         if (cell.tableRow.item != null && cell.tableRow.item.previewList.isNotEmpty()) {
@@ -219,15 +228,6 @@ class PostsTableView : View() {
                             preview?.previewPopup?.apply {
                                 x = mouseEvent.screenX + 20
                                 y = mouseEvent.screenY + 10
-                            }
-                            cell.onMouseMoved = EventHandler {
-                                preview?.previewPopup?.apply {
-                                    x = it.screenX + 20
-                                    y = it.screenY + 10
-                                }
-                            }
-                            cell.onMouseExited = EventHandler {
-                                preview?.hide()
                             }
                         }
                     }

@@ -96,7 +96,7 @@ class PostDownloadStateRepositoryImpl :
     }
 
     override fun update(posts: List<Post>) {
-        PostTable.batchReplace(posts, shouldReturnGeneratedValues = false) { post ->
+        PostTable.batchUpsert(posts, shouldReturnGeneratedValues = false) { post ->
             this[PostTable.id] = post.id
             this[PostTable.status] = post.status.name
             this[PostTable.done] = post.done

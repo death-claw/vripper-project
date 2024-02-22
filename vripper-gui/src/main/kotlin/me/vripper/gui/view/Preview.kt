@@ -1,6 +1,5 @@
 package me.vripper.gui.view
 
-import javafx.event.EventHandler
 import javafx.scene.control.ProgressIndicator
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
@@ -18,7 +17,6 @@ class Preview(private val owner: Stage, private val images: List<String>) {
 
     private val log by LoggerDelegate()
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var previewLoadJob: Job? = null
     val previewPopup = Popup()
 
     init {
@@ -28,13 +26,12 @@ class Preview(private val owner: Stage, private val images: List<String>) {
     }
 
     fun hide() {
-        previewLoadJob?.cancel()
         coroutineScope.cancel()
         previewPopup.hide()
     }
 
     private fun show() {
-        previewLoadJob = coroutineScope.launch(Dispatchers.Default) {
+        coroutineScope.launch(Dispatchers.Default) {
             yield()
             val imageViewList = images.map {
                 withTimeout(10_000L) {
@@ -46,9 +43,6 @@ class Preview(private val owner: Stage, private val images: List<String>) {
             yield()
             runLater {
                 val hBox = HBox()
-                hBox.onMouseEntered = EventHandler {
-                    hide()
-                }
                 imageViewList.forEach { hBox.add(it) }
                 previewPopup.content.clear()
                 previewPopup.content.add(hBox)
