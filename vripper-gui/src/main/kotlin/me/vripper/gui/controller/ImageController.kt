@@ -3,7 +3,7 @@ package me.vripper.gui.controller
 import me.vripper.entities.Image
 import me.vripper.gui.model.ImageModel
 import me.vripper.services.DataTransaction
-import tornadofx.*
+import tornadofx.Controller
 
 class ImageController : Controller() {
 
@@ -22,7 +22,8 @@ class ImageController : Controller() {
             it.status.name,
             it.size,
             it.downloaded,
-            it.filename
+            it.filename,
+            it.thumbUrl
         )
     }
 

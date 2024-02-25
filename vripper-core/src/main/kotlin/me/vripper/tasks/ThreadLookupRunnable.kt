@@ -1,7 +1,7 @@
 package me.vripper.tasks
 
 import me.vripper.entities.LogEntry
-import me.vripper.entities.LogEntry.Status.*
+import me.vripper.entities.LogEntry.Status.ERROR
 import me.vripper.entities.Thread
 import me.vripper.model.Settings
 import me.vripper.model.ThreadItem
@@ -25,27 +25,15 @@ class ThreadLookupRunnable(private val threadId: Long, private val settings: Set
     private val threadCacheService by inject<ThreadCacheService>()
     private val appEndpointService by inject<AppEndpointService>()
     private val link: String = "${settingsService.settings.viperSettings.host}/threads/$threadId"
-    private val logEntry: LogEntry
-
-    init {
-        logEntry = dataTransaction.saveLog(
-            LogEntry(
-                type = LogEntry.Type.THREAD,
-                status = LogEntry.Status.PENDING,
-                message = "Processing multi-post link $link"
-            )
-        )
-    }
 
     override fun run() {
         try {
             Tasks.increment()
-            dataTransaction.updateLog(logEntry.copy(status = PROCESSING))
             if (dataTransaction.findThreadByThreadId(threadId).isEmpty) {
                 val threadLookupResult = threadCacheService[threadId]
                 if (threadLookupResult.postItemList.isEmpty()) {
                     val message = "Nothing found for $link"
-                    dataTransaction.updateLog(logEntry.copy(status = ERROR, message = message))
+                    dataTransaction.saveLog(LogEntry(type = LogEntry.Type.THREAD, status = ERROR, message = message))
                     return
                 }
                 dataTransaction.save(
@@ -56,27 +44,16 @@ class ThreadLookupRunnable(private val threadId: Long, private val settings: Set
                         total = threadLookupResult.postItemList.size
                     )
                 )
-                dataTransaction.updateLog(
-                    logEntry.copy(
-                        status = DONE,
-                        message = "Thread scan completed, found ${threadLookupResult.postItemList.size} posts"
-                    )
-                )
                 autostart(threadLookupResult)
             } else {
                 log.info("Link $link is already loaded")
-                dataTransaction.updateLog(
-                    logEntry.copy(
-                        status = DONE, message = "$link has already been scanned"
-                    )
-                )
             }
         } catch (e: Exception) {
-            val error = "Error when adding multi-post link $link"
+            val error = "Error when processing $link"
             log.error(error, e)
-            dataTransaction.updateLog(
-                logEntry.copy(
-                    status = ERROR, message = """
+            dataTransaction.saveLog(
+                LogEntry(
+                    type = LogEntry.Type.THREAD, status = ERROR, message = """
                 $error
                 ${e.formatToString()}
                 """.trimIndent()

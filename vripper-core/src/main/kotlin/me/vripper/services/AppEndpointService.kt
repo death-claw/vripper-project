@@ -1,6 +1,7 @@
 package me.vripper.services
 
 import me.vripper.download.DownloadService
+import me.vripper.entities.LogEntry
 import me.vripper.exception.PostParseException
 import me.vripper.model.PostItem
 import me.vripper.model.ThreadPostId
@@ -34,6 +35,13 @@ class AppEndpointService(
         for (link in urlList) {
             log.debug("Starting to process thread: $link")
             if (!link.startsWith(settingsService.settings.viperSettings.host)) {
+                dataTransaction.saveLog(
+                    LogEntry(
+                        type = LogEntry.Type.SCAN,
+                        status = LogEntry.Status.ERROR,
+                        message = "Invalid link $link, only links starting with ${settingsService.settings.viperSettings.host} can be scanned"
+                    )
+                )
                 continue
             }
             var threadId: Long
@@ -61,6 +69,13 @@ class AppEndpointService(
                 }
             } else {
                 log.error("Cannot retrieve thread id from URL $link")
+                dataTransaction.saveLog(
+                    LogEntry(
+                        type = LogEntry.Type.SCAN,
+                        status = LogEntry.Status.ERROR,
+                        message = "Invalid link $link, link is missing the threadId"
+                    )
+                )
                 continue
             }
         }

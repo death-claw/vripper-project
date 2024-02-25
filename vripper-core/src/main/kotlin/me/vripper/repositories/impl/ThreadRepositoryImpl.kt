@@ -19,6 +19,13 @@ class ThreadRepositoryImpl : ThreadRepository {
         return thread.copy(id = id)
     }
 
+    override fun update(thread: Thread) {
+        ThreadTable.update({ ThreadTable.id eq thread.id }) {
+            it[title] = thread.title
+            it[total] = thread.total
+        }
+    }
+
     override fun findByThreadId(threadId: Long): Optional<Thread> {
         val result = ThreadTable.select {
             ThreadTable.threadId eq threadId

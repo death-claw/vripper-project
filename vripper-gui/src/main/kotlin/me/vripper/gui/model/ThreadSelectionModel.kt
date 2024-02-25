@@ -1,7 +1,10 @@
 package me.vripper.gui.model
 
 import javafx.beans.property.SimpleIntegerProperty
+import javafx.beans.property.SimpleListProperty
 import javafx.beans.property.SimpleStringProperty
+import javafx.collections.FXCollections
+import javafx.collections.ObservableList
 import tornadofx.getValue
 import tornadofx.setValue
 
@@ -26,6 +29,6 @@ class ThreadSelectionModel(
     val hostsProperty = SimpleStringProperty(hosts.joinToString(", ") { "${it.first} (${it.second})" })
     var hosts: String by hostsProperty
 
-    val previewListProperty = SimpleStringProperty(previewList.joinToString("|"))
-    var previewList: List<String> = previewListProperty.value.split("|")
+    val previewListProperty = SimpleListProperty(FXCollections.observableArrayList(previewList))
+    var previewList: ObservableList<String> by previewListProperty
 }

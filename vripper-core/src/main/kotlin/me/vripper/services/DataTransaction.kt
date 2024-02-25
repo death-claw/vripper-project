@@ -53,6 +53,13 @@ class DataTransaction(
         }
     }
 
+    fun update(thread: Thread) {
+        transaction { threadRepository.update(thread) }
+        coroutineScope.launch {
+            eventBus.publishEvent(ThreadUpdateEvent(thread))
+        }
+    }
+
     fun updateImages(images: List<Image>) {
         transaction { imageRepository.update(images) }
         coroutineScope.launch {

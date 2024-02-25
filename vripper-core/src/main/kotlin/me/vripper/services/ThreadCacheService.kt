@@ -36,4 +36,8 @@ class ThreadCacheService(val eventBus: EventBus) {
     operator fun get(threadId: Long): ThreadItem {
         return cache[threadId] ?: throw NoSuchElementException("$threadId does not exist")
     }
+
+    fun getIfPresent(threadId: Long): ThreadItem? {
+        return cache.getIfPresent(threadId)
+    }
 }

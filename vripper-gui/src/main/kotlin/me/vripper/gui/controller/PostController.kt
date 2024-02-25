@@ -7,7 +7,7 @@ import me.vripper.gui.model.PostModel
 import me.vripper.services.AppEndpointService
 import me.vripper.services.DataTransaction
 import me.vripper.utilities.formatSI
-import tornadofx.*
+import tornadofx.Controller
 import java.time.format.DateTimeFormatter
 
 class PostController : Controller() {
@@ -57,12 +57,16 @@ class PostController : Controller() {
         }
     }
 
-    fun findAllPosts(): Deferred<List<PostModel>> {
-        return coroutineScope.async { dataTransaction.findAllPosts().map { it.id }.map(::mapper) }
+    fun find(postId: Long): Deferred<PostModel> {
+        return coroutineScope.async { mapper(postId) }
     }
 
-    fun mapper(id: Long): PostModel {
-        val post = dataTransaction.findPostById(id).orElseThrow()
+    fun findAllPosts(): Deferred<List<PostModel>> {
+        return coroutineScope.async { dataTransaction.findAllPosts().map { it.postId }.map(::mapper) }
+    }
+
+    fun mapper(postId: Long): PostModel {
+        val post = dataTransaction.findPostByPostId(postId).orElseThrow()
         val metadata = dataTransaction.findMetadataByPostId(post.postId)
         return PostModel(
             post.postId,

@@ -1,6 +1,6 @@
 package me.vripper.gui
 
-import me.vripper.gui.clipboard.ClipboardService
+import me.vripper.gui.services.ClipboardService
 import org.koin.dsl.module
 
 val guiModule = module {

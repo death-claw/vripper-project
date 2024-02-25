@@ -4,7 +4,8 @@ import javafx.beans.property.*
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import me.vripper.entities.Metadata
-import tornadofx.*
+import tornadofx.getValue
+import tornadofx.setValue
 
 class PostModel(
     postId: Long,
@@ -62,8 +63,8 @@ class PostModel(
     val progressCountProperty = SimpleStringProperty(progressCount)
     var progressCount: String by progressCountProperty
 
-    val previewListProperty = SimpleStringProperty(previewList.joinToString("|"))
-    var previewList: List<String> = previewListProperty.value.split("|")
+    val previewListProperty = SimpleListProperty(FXCollections.observableArrayList(previewList))
+    var previewList: ObservableList<String> by previewListProperty
 
     val altTitlesProperty =
         SimpleListProperty(FXCollections.observableArrayList(metadata.data.resolvedNames))

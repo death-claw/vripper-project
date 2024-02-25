@@ -1,7 +1,7 @@
 package me.vripper.tasks
 
 import me.vripper.entities.LogEntry
-import me.vripper.entities.LogEntry.Status.*
+import me.vripper.entities.LogEntry.Status.ERROR
 import me.vripper.entities.Post
 import me.vripper.services.DataTransaction
 import me.vripper.services.HTTPService
@@ -24,47 +24,14 @@ class LeaveThanksRunnable(
     private val cm: HTTPService by inject()
     private val settingsService: SettingsService by inject()
     private val dataTransaction: DataTransaction by inject()
-    private val logEntry: LogEntry
-
-    init {
-        logEntry = dataTransaction.saveLog(
-            LogEntry(
-                type = LogEntry.Type.THANKS,
-                status = PENDING,
-                message = "Leaving thanks for ${post.url}"
-            )
-        )
-    }
 
     override fun run() {
         try {
             Tasks.increment()
-            dataTransaction.updateLog(logEntry.copy(status = PROCESSING))
-            if (!settingsService.settings.viperSettings.login) {
-                dataTransaction.updateLog(
-                    logEntry.copy(
-                        status = DONE,
-                        message = "Will not send a like for ${post.url}\nAuthentication with ViperGirls option is disabled"
-                    )
-                )
+            if (!settingsService.settings.viperSettings.login || !authenticated) {
                 return
             }
             if (!settingsService.settings.viperSettings.thanks) {
-                dataTransaction.updateLog(
-                    logEntry.copy(
-                        status = DONE,
-                        message = "Will not send a like for ${post.url}\nLeave thanks option is disabled"
-                    )
-                )
-                return
-            }
-            if (!authenticated) {
-                dataTransaction.updateLog(
-                    logEntry.copy(
-                        status = DONE,
-                        message = "Will not send a like for ${post.url}\nYou are not authenticated"
-                    )
-                )
                 return
             }
 
@@ -86,13 +53,12 @@ class LeaveThanksRunnable(
                     )
                 }
             cm.client.execute(postThanks, context) { }
-            dataTransaction.updateLog(logEntry.copy(status = DONE))
         } catch (e: Exception) {
             val error = "Failed to leave a thanks for $post"
             log.error(error, e)
-            dataTransaction.updateLog(
-                logEntry.copy(
-                    status = ERROR, message = """
+            dataTransaction.saveLog(
+                LogEntry(
+                    type = LogEntry.Type.THANKS, status = ERROR, message = """
                 $error
                 ${e.formatToString()}
                 """.trimIndent()

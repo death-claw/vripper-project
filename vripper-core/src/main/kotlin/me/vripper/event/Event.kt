@@ -11,6 +11,7 @@ data class PostUpdateEvent(val posts: List<Post>)
 data class PostDeleteEvent(val postIds: List<Long>)
 data class ImageEvent(val images: List<Image>)
 data class ThreadCreateEvent(val thread: Thread)
+data class ThreadUpdateEvent(val thread: Thread)
 data class ThreadDeleteEvent(val threadId: Long)
 class ThreadClearEvent
 data class VGUserLoginEvent(val username: String)

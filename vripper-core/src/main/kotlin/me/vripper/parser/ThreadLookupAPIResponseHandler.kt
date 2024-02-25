@@ -78,7 +78,7 @@ class ThreadLookupAPIResponseHandler : KoinComponent, DefaultHandler() {
                         postCounter,
                         postTitle,
                         imageItemList.size,
-                        "${settingsService.settings.viperSettings.host}/threads/?p=$postId&viewfull=1#post$postId",
+                        "${settingsService.settings.viperSettings.host}/threads/$threadId?p=$postId&viewfull=1#post$postId",
                         hostMap.toMap().map { Pair(it.key.hostName, it.value) },
                         securityToken,
                         forum,
