@@ -38,8 +38,8 @@ The following hosts are supported:
 * pixroute.to  
 * vipr.im  
 
-## Instructions for Jar
-You need Java 17+, you can download from https://adoptium.net/
+## Instructions to run from Jar file
+You need Java 21+, you can download from https://adoptium.net/
 
 Download the latest jar file from the Release page, open a command prompt and run the jar file using the following command
 
@@ -56,16 +56,16 @@ Application data (application logs, settings and persisted data) is stored in th
 
 ## How to build
 
-You need JDK 17 and a recent version of maven 3.6.1+
+You need JDK 21 and a recent version of maven 3.8.x+
 
-To build run the following:
+To build, run the following command:
 
     mvn clean install
 
 Build artifact is located under
 
-    vripper-project\vripper-gui\target\vripper-gui-{{version}}.jar
+    vripper-project\vripper-gui\target\vripper-gui-{{version}}-jar-with-dependencies.jar
 
 Copy the artifact into any other folder and run:
 
-    java -jar vripper-gui-{{version}}.jar
+    java -jar vripper-gui-{{version}}-jar-with-dependencies.jar
