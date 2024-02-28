@@ -35,7 +35,7 @@ data class DownloadSettings(
 data class ConnectionSettings(
     val maxConcurrentPerHost: Int = 2,
     val maxGlobalConcurrent: Int = 0,
-    val timeout: Long = 30,
+    val timeout: Int = 30,
     val maxAttempts: Int = 3,
 )
 

@@ -1,5 +1,6 @@
 package me.vripper.gui.components.fragments
 
+import atlantafx.base.theme.Styles
 import javafx.beans.property.SimpleStringProperty
 import javafx.geometry.Pos
 import javafx.scene.control.TextArea
@@ -22,10 +23,8 @@ class AddLinksFragment : Fragment("Add thread links") {
             bind(textAreaProperty)
         }
         button("Scan") {
-            imageview("search.png") {
-                fitWidth = 18.0
-                fitHeight = 18.0
-            }
+            isDefaultButton
+            addClass(Styles.ACCENT)
             disableWhen(textAreaProperty.isEmpty)
             action {
                 postController.scan(textAreaProperty.value)

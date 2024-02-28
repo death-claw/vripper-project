@@ -3,7 +3,6 @@ package me.vripper.gui.components.views
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.scene.control.*
-import javafx.scene.image.ImageView
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filterIsInstance
 import me.vripper.event.EventBus
@@ -16,6 +15,8 @@ import me.vripper.gui.controller.ThreadController
 import me.vripper.gui.controller.WidgetsController
 import me.vripper.gui.model.ThreadModel
 import me.vripper.gui.utils.openLink
+import org.kordamp.ikonli.feather.Feather
+import org.kordamp.ikonli.javafx.FontIcon
 import tornadofx.*
 
 class ThreadTableView : View() {
@@ -100,30 +101,21 @@ class ThreadTableView : View() {
                     setOnAction {
                         selectPosts(tableRow.item.threadId)
                     }
-                    graphic = ImageView("popup.png").apply {
-                        fitWidth = 18.0
-                        fitHeight = 18.0
-                    }
+                    graphic = FontIcon.of(Feather.MENU)
                 }
 
                 val urlItem = MenuItem("Open link").apply {
                     setOnAction {
                         openLink(tableRow.item.link)
                     }
-                    graphic = ImageView("open-in-browser.png").apply {
-                        fitWidth = 18.0
-                        fitHeight = 18.0
-                    }
+                    graphic = FontIcon.of(Feather.LINK)
                 }
 
                 val deleteItem = MenuItem("Delete").apply {
                     setOnAction {
                         deleteSelected()
                     }
-                    graphic = ImageView("trash.png").apply {
-                        fitWidth = 18.0
-                        fitHeight = 18.0
-                    }
+                    graphic = FontIcon.of(Feather.TRASH)
                 }
 
                 val contextMenu = ContextMenu()
@@ -133,7 +125,7 @@ class ThreadTableView : View() {
                 tableRow
             }
             contextMenu = ContextMenu()
-            contextMenu.items.add(MenuItem("Setup columns").apply {
+            contextMenu.items.addAll(MenuItem("Setup columns").apply {
                 setOnAction {
                     find<ColumnSelectionFragment>(
                         mapOf(
@@ -151,9 +143,19 @@ class ThreadTableView : View() {
                         )
                     ).openModal()
                 }
-                graphic = ImageView("columns.png").apply {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
+                graphic = FontIcon.of(Feather.COLUMNS)
+            }, SeparatorMenuItem(), MenuItem("Clear", FontIcon.of(Feather.TRASH_2)).apply {
+                setOnAction {
+                    confirm(
+                        "",
+                        "Confirm removal of all threads",
+                        ButtonType.YES,
+                        ButtonType.NO,
+                        owner = primaryStage,
+                        title = "Clean threads"
+                    ) {
+                        threadController.clearAll()
+                    }
                 }
             })
             column("Title", ThreadModel::titleProperty) {
@@ -173,10 +175,12 @@ class ThreadTableView : View() {
     fun deleteSelected() {
         val threadIdList = tableView.selectionModel.selectedItems.map { it.threadId }
         confirm(
-            "Clean threads",
-            "Confirm removal of ${threadIdList.size} thread${if (threadIdList.size > 1) "s" else ""}",
+            "",
+            "Confirm removal of ${threadIdList.size} thread${if (threadIdList.size > 1) "s" else ""}?",
             ButtonType.YES,
-            ButtonType.NO
+            ButtonType.NO,
+            owner = primaryStage,
+            title = "Clean threads"
         ) {
             threadController.delete(threadIdList)
         }

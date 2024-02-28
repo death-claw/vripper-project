@@ -1,14 +1,20 @@
 package me.vripper.gui.components.views
 
+import atlantafx.base.theme.CupertinoDark
+import atlantafx.base.theme.CupertinoLight
+import javafx.application.Application
 import javafx.geometry.Orientation
 import javafx.scene.control.SplitPane
-import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
 import kotlinx.coroutines.*
+import me.vripper.gui.components.fragments.ActionBarFragment
 import me.vripper.gui.components.fragments.PostInfoPanelFragment
+import me.vripper.gui.components.fragments.StatusBarFragment
+import me.vripper.gui.controller.GlobalStateController
 import me.vripper.gui.controller.MainController
 import me.vripper.gui.controller.WidgetsController
+import me.vripper.gui.listener.GuiStartupLister
 import me.vripper.gui.model.PostModel
 import tornadofx.*
 
@@ -18,34 +24,34 @@ class AppView : View() {
     private val mainController: MainController by inject()
     private val postsTableView: PostsTableView by inject()
     private val menuBarView: MenuBarView by inject()
-    private val actionBarView: ActionBarView by inject()
-    private val statusBarView: StatusBarView by inject()
     private val mainView: MainView by inject()
     private val widgetsController: WidgetsController by inject()
+    private val globalStateController: GlobalStateController by inject()
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var infoPanelView = HBox()
     private var splitpane: SplitPane
     private var lastSelectedInfoPanelTab = 0
 
     init {
         title = "VRipper ${mainController.version}"
-        setPostIdToInfoPanelView(null)
         with(root) {
+            style {
+                fontFamily = "Inter"
+            }
             add(menuBarView)
             if (widgetsController.currentSettings.visibleToolbarPanel) {
-                add(actionBarView)
+                add(find<ActionBarFragment>())
             }
             splitpane = splitpane {
                 add(mainView)
                 if (widgetsController.currentSettings.visibleInfoPanel) {
-                    add(infoPanelView)
+                    add(buildInfoPanel(null))
                     setDividerPositions(widgetsController.currentSettings.infoPanelDividerPosition)
                 }
                 orientation = Orientation.VERTICAL
                 vboxConstraints { vGrow = Priority.ALWAYS }
             }
             if (widgetsController.currentSettings.visibleStatusBarPanel) {
-                add(statusBarView)
+                add(find<StatusBarFragment>())
             }
             prefWidth = widgetsController.currentSettings.width
             prefHeight = widgetsController.currentSettings.height
@@ -53,6 +59,8 @@ class AppView : View() {
     }
 
     override fun onDock() {
+        globalStateController.init()
+        GuiStartupLister().run()
         coroutineScope.launch {
             var lastDividerPosition = widgetsController.currentSettings.infoPanelDividerPosition
             while (isActive) {
@@ -68,62 +76,64 @@ class AppView : View() {
             }
         }
         postsTableView.tableView.selectionModel.selectedItemProperty().onChange {
-            setPostIdToInfoPanelView(it)
+            if (widgetsController.currentSettings.visibleInfoPanel) {
+                splitpane.items.removeIf { it.id == "postinfo_panel" }
+                splitpane.add(buildInfoPanel(it))
+                splitpane.setDividerPositions(widgetsController.currentSettings.infoPanelDividerPosition)
+            }
         }
         mainView.root.selectionModel.selectedIndexProperty().onChange {
             if (it == 0 && widgetsController.currentSettings.visibleInfoPanel) {
                 val selectedItem = postsTableView.tableView.selectedItem
-                setPostIdToInfoPanelView(selectedItem)
-                splitpane.add(infoPanelView)
+                splitpane.add(buildInfoPanel(selectedItem))
                 splitpane.setDividerPositions(widgetsController.currentSettings.infoPanelDividerPosition)
             } else {
-                splitpane.items.remove(infoPanelView)
-                infoPanelView.clear()
+                splitpane.items.removeIf { it.id == "postinfo_panel" }
             }
         }
         widgetsController.currentSettings.visibleInfoPanelProperty.onChange {
             if (mainView.root.selectionModel.selectedIndex != 0) return@onChange
             if (it) {
                 val selectedItem = postsTableView.tableView.selectedItem
-                setPostIdToInfoPanelView(selectedItem)
-                splitpane.add(infoPanelView)
+                splitpane.add(buildInfoPanel(selectedItem))
                 splitpane.setDividerPositions(widgetsController.currentSettings.infoPanelDividerPosition)
             } else {
-                splitpane.items.remove(infoPanelView)
-                infoPanelView.clear()
+                splitpane.items.removeIf { it.id == "postinfo_panel" }
             }
         }
-        widgetsController.currentSettings.visibleToolbarPanelProperty.onChange {
+        widgetsController.currentSettings.visibleToolbarPanelProperty.onChange { it ->
             if (it) {
-                root.children.add(1, actionBarView.root)
+                root.children.add(1, find<ActionBarFragment>().root)
             } else {
-                root.children.remove(actionBarView.root)
+                root.children.removeIf { it.id == "action_toolbar" }
             }
         }
-        widgetsController.currentSettings.visibleStatusBarPanelProperty.onChange {
+        widgetsController.currentSettings.visibleStatusBarPanelProperty.onChange { it ->
             if (it) {
-                root.children.add(statusBarView.root)
+                root.children.add(find<StatusBarFragment>().root)
             } else {
-                root.children.remove(statusBarView.root)
+                root.children.removeIf { it.id == "statusbar" }
+            }
+        }
+        widgetsController.currentSettings.darkModeProperty.onChange {
+            if (it) {
+                Application.setUserAgentStylesheet(CupertinoDark().userAgentStylesheet)
+            } else {
+                Application.setUserAgentStylesheet(CupertinoLight().userAgentStylesheet)
             }
         }
     }
 
-    private fun setPostIdToInfoPanelView(it: PostModel?) {
-        if (!widgetsController.currentSettings.visibleInfoPanel) {
-            return
-        }
+    private fun buildInfoPanel(it: PostModel?): PostInfoPanelFragment {
         val postInfoPanelFragment = find<PostInfoPanelFragment>()
         if (it != null) {
             postInfoPanelFragment.setPostId(it.postId)
         }
-        postInfoPanelFragment.root.hgrow = Priority.ALWAYS
         postInfoPanelFragment.root.selectionModel.select(lastSelectedInfoPanelTab)
         postInfoPanelFragment.root.selectionModel.selectedIndexProperty().onChange {
             lastSelectedInfoPanelTab = it
         }
-        infoPanelView.clear()
-        infoPanelView.add(postInfoPanelFragment)
+        return postInfoPanelFragment
     }
 
     override fun onUndock() {

@@ -35,13 +35,6 @@ class AppEndpointService(
         for (link in urlList) {
             log.debug("Starting to process thread: $link")
             if (!link.startsWith(settingsService.settings.viperSettings.host)) {
-                dataTransaction.saveLog(
-                    LogEntry(
-                        type = LogEntry.Type.SCAN,
-                        status = LogEntry.Status.ERROR,
-                        message = "Invalid link $link, only links starting with ${settingsService.settings.viperSettings.host} can be scanned"
-                    )
-                )
                 continue
             }
             var threadId: Long

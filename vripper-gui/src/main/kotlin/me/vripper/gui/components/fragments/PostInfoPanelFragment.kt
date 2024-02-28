@@ -1,6 +1,5 @@
 package me.vripper.gui.components.fragments
 
-import javafx.scene.image.ImageView
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
@@ -10,6 +9,8 @@ import me.vripper.event.EventBus
 import me.vripper.event.PostUpdateEvent
 import me.vripper.gui.controller.PostController
 import me.vripper.gui.model.PostModel
+import org.kordamp.ikonli.feather.Feather
+import org.kordamp.ikonli.javafx.FontIcon
 import tornadofx.*
 
 class PostInfoPanelFragment : Fragment() {
@@ -25,12 +26,10 @@ class PostInfoPanelFragment : Fragment() {
 
     init {
         with(root) {
+            id = "postinfo_panel"
             tabClosingPolicy = javafx.scene.control.TabPane.TabClosingPolicy.UNAVAILABLE
             tab("General") {
-                graphic = ImageView("info.png").apply {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
-                }
+                graphic = FontIcon(Feather.INFO)
                 scrollpane {
                     form {
                         fieldset {
@@ -73,10 +72,7 @@ class PostInfoPanelFragment : Fragment() {
                 }
             }
             tab("Photos") {
-                graphic = ImageView("details.png").apply {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
-                }
+                graphic = FontIcon(Feather.IMAGE)
                 add(imagesTableFragment)
             }
         }

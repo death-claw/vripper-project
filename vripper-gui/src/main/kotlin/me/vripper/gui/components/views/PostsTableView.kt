@@ -6,7 +6,6 @@ import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.control.cell.TextFieldTableCell
-import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
 import javafx.util.Callback
 import kotlinx.coroutines.CoroutineScope
@@ -29,6 +28,8 @@ import me.vripper.gui.services.ClipboardService
 import me.vripper.gui.utils.Preview
 import me.vripper.gui.utils.openFileDirectory
 import me.vripper.gui.utils.openLink
+import org.kordamp.ikonli.feather.Feather
+import org.kordamp.ikonli.javafx.FontIcon
 import tornadofx.*
 
 class PostsTableView : View() {
@@ -128,60 +129,42 @@ class PostsTableView : View() {
                     setOnAction {
                         startSelected()
                     }
-                    graphic = ImageView("play.png").apply {
-                        fitWidth = 18.0
-                        fitHeight = 18.0
-                    }
+                    graphic = FontIcon.of(Feather.PLAY)
                 }
 
                 val stopItem = MenuItem("Stop").apply {
                     setOnAction {
                         stopSelected()
                     }
-                    graphic = ImageView("pause.png").apply {
-                        fitWidth = 18.0
-                        fitHeight = 18.0
-                    }
+                    graphic = FontIcon.of(Feather.SQUARE)
                 }
 
                 val renameItem = MenuItem("Rename").apply {
                     setOnAction {
                         rename(tableRow.item)
                     }
-                    graphic = ImageView("edit.png").apply {
-                        fitWidth = 18.0
-                        fitHeight = 18.0
-                    }
+                    graphic = FontIcon.of(Feather.EDIT)
                 }
 
                 val deleteItem = MenuItem("Delete").apply {
                     setOnAction {
                         deleteSelected()
                     }
-                    graphic = ImageView("trash.png").apply {
-                        fitWidth = 18.0
-                        fitHeight = 18.0
-                    }
+                    graphic = FontIcon.of(Feather.TRASH)
                 }
 
                 val locationItem = MenuItem("Open containing folder").apply {
                     setOnAction {
                         openFileDirectory(tableRow.item.path)
                     }
-                    graphic = ImageView("file-explorer.png").apply {
-                        fitWidth = 18.0
-                        fitHeight = 18.0
-                    }
+                    graphic = FontIcon.of(Feather.FOLDER)
                 }
 
                 val urlItem = MenuItem("Open link").apply {
                     setOnAction {
                         openLink(tableRow.item.url)
                     }
-                    graphic = ImageView("open-in-browser.png").apply {
-                        fitWidth = 18.0
-                        fitHeight = 18.0
-                    }
+                    graphic = FontIcon.of(Feather.LINK)
                 }
 
                 val contextMenu = ContextMenu()
@@ -193,15 +176,15 @@ class PostsTableView : View() {
                 tableRow
             }
             contextMenu = ContextMenu()
-            contextMenu.items.addAll(MenuItem(
-                "Add links",
-                ImageView("plus.png").apply { fitWidth = 18.0; fitHeight = 18.0 }).apply {
+            contextMenu.items.addAll(MenuItem("Add links").apply {
+                graphic = FontIcon.of(Feather.PLUS)
                 action {
                     find<AddLinksFragment>().apply {
                         input.clear()
                     }.openModal()
                 }
             }, SeparatorMenuItem(), MenuItem("Setup columns").apply {
+                graphic = FontIcon.of(Feather.COLUMNS)
                 setOnAction {
                     find<ColumnSelectionFragment>(
                         mapOf(
@@ -237,14 +220,10 @@ class PostsTableView : View() {
                         )
                     ).openModal()
                 }
-                graphic = ImageView("columns.png").apply {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
-                }
             })
             column("Preview", PostModel::previewListProperty) {
                 visibleProperty().bind(widgetsController.currentSettings.postsColumnsModel.previewProperty)
-                prefWidth = 50.0
+                prefWidth = 100.0
                 cellFactory = Callback {
                     val cell = PreviewTableCell<PostModel>()
                     cell.onMouseExited = EventHandler {
@@ -320,7 +299,7 @@ class PostsTableView : View() {
             }
             column("Status", PostModel::statusProperty) {
                 visibleProperty().bind(widgetsController.currentSettings.postsColumnsModel.statusProperty)
-                prefWidth = 50.0
+                prefWidth = 100.0
                 cellFactory = Callback {
                     StatusTableCell<PostModel>()
                 }
@@ -348,14 +327,14 @@ class PostsTableView : View() {
             }
             column("Added On", PostModel::addedOnProperty) {
                 visibleProperty().bind(widgetsController.currentSettings.postsColumnsModel.addedOnProperty)
-                prefWidth = 100.0
+                prefWidth = 125.0
                 cellFactory = Callback {
                     TextFieldTableCell<PostModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
                 }
             }
             column("Order", PostModel::orderProperty) {
                 visibleProperty().bind(widgetsController.currentSettings.postsColumnsModel.orderProperty)
-                prefWidth = 50.0
+                prefWidth = 100.0
                 sortOrder.add(this)
                 cellFactory = Callback {
                     TextFieldTableCell<PostModel?, Number?>().apply { alignment = Pos.CENTER_LEFT }
@@ -386,10 +365,12 @@ class PostsTableView : View() {
     fun deleteSelected() {
         val postIdList = tableView.selectionModel.selectedItems.map { it.postId }
         confirm(
-            "Remove posts",
-            "Confirm removal of ${postIdList.size} post${if (postIdList.size > 1) "s" else ""}",
+            "",
+            "Confirm removal of ${postIdList.size} post${if (postIdList.size > 1) "s" else ""}?",
             ButtonType.YES,
-            ButtonType.NO
+            ButtonType.NO,
+            owner = primaryStage,
+            title = "Remove posts"
         ) {
             postController.delete(postIdList)
             tableView.items.removeIf { postIdList.contains(it.postId) }

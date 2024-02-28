@@ -6,7 +6,7 @@ import me.vripper.gui.model.settings.SystemSettingsModel
 import me.vripper.gui.model.settings.ViperSettingsModel
 import me.vripper.model.*
 import me.vripper.services.SettingsService
-import tornadofx.*
+import tornadofx.Controller
 
 class SettingsController : Controller() {
 
@@ -64,8 +64,8 @@ class SettingsController : Controller() {
                     systemSettingsModel.tempPath,
                     systemSettingsModel.cachePath,
                     systemSettingsModel.enable,
-                    if (systemSettingsModel.pollingRate.isBlank()) 500 else systemSettingsModel.pollingRate.toInt(),
-                    systemSettingsModel.logEntries.toInt()
+                    systemSettingsModel.pollingRate,
+                    systemSettingsModel.logEntries
                 )
             )
         )

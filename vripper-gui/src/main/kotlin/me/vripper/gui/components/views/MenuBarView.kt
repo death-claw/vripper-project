@@ -5,10 +5,7 @@ import javafx.scene.control.ButtonType
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyCodeCombination
 import javafx.scene.input.KeyCombination
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import me.vripper.gui.VripperGuiApplication
 import me.vripper.gui.components.fragments.AboutFragment
 import me.vripper.gui.components.fragments.AddLinksFragment
@@ -18,6 +15,8 @@ import me.vripper.gui.controller.PostController
 import me.vripper.gui.controller.WidgetsController
 import me.vripper.gui.utils.openLink
 import me.vripper.utilities.ApplicationProperties
+import org.kordamp.ikonli.feather.Feather
+import org.kordamp.ikonli.javafx.FontIcon
 import tornadofx.*
 
 class MenuBarView : View() {
@@ -25,21 +24,14 @@ class MenuBarView : View() {
     private val globalStateController: GlobalStateController by inject()
     private val postController: PostController by inject()
     private val postsTableView: PostsTableView by inject()
-    private val downloadActiveProperty = SimpleBooleanProperty(true)
+    private val downloadActiveProperty = SimpleBooleanProperty(false)
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val widgetsController: WidgetsController by inject()
-
-    init {
-        downloadActiveProperty.bind(globalStateController.globalState.runningProperty.greaterThan(0))
-    }
 
     override val root = menubar {
         menu("File") {
             item("Add links", KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN)).apply {
-                graphic = imageview("plus.png") {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
-                }
+                graphic = FontIcon.of(Feather.PLUS)
                 action {
                     find<AddLinksFragment>().apply {
                         input.clear()
@@ -48,30 +40,22 @@ class MenuBarView : View() {
             }
             separator()
             item("Start All", KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN)).apply {
-                graphic = imageview("end.png") {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
-                }
+                graphic = FontIcon.of(Feather.SKIP_FORWARD)
                 disableWhen(downloadActiveProperty)
                 action {
                     postController.startAll()
                 }
             }
             item("Stop All", KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN)).apply {
-                graphic = imageview("stop.png") {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
-                }
+                graphic = FontIcon.of(Feather.SQUARE)
                 disableWhen(downloadActiveProperty.not())
                 action {
                     postController.stopAll()
                 }
             }
+            separator()
             item("Start", KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN)).apply {
-                graphic = imageview("play.png") {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
-                }
+                graphic = FontIcon.of(Feather.PLAY)
                 enableWhen(
                     postsTableView.tableView.selectionModel.selectedItems.sizeProperty.greaterThan(
                         0
@@ -82,10 +66,7 @@ class MenuBarView : View() {
                 }
             }
             item("Stop", KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN)).apply {
-                graphic = imageview("pause.png") {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
-                }
+                graphic = FontIcon.of(Feather.SQUARE)
                 enableWhen(
                     postsTableView.tableView.selectionModel.selectedItems.sizeProperty.greaterThan(
                         0
@@ -96,10 +77,7 @@ class MenuBarView : View() {
                 }
             }
             item("Rename", KeyCodeCombination(KeyCode.R, KeyCombination.CONTROL_DOWN)).apply {
-                graphic = imageview("edit.png") {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
-                }
+                graphic = FontIcon.of(Feather.EDIT)
                 enableWhen(
                     postsTableView.tableView.selectionModel.selectedItems.sizeProperty.greaterThan(
                         0
@@ -110,10 +88,7 @@ class MenuBarView : View() {
                 }
             }
             item("Delete", KeyCodeCombination(KeyCode.DELETE)).apply {
-                graphic = imageview("trash.png") {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
-                }
+                graphic = FontIcon.of(Feather.TRASH)
                 enableWhen(
                     postsTableView.tableView.selectionModel.selectedItems.sizeProperty.greaterThan(
                         0
@@ -124,13 +99,15 @@ class MenuBarView : View() {
                 }
             }
             item("Clear", KeyCodeCombination(KeyCode.DELETE, KeyCombination.CONTROL_DOWN)).apply {
-                graphic = imageview("broom.png") {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
-                }
+                graphic = FontIcon.of(Feather.TRASH_2)
                 action {
                     confirm(
-                        "Clean finished posts", "Confirm removal of finished posts", ButtonType.YES, ButtonType.NO
+                        "",
+                        "Confirm removal of finished posts?",
+                        ButtonType.YES,
+                        ButtonType.NO,
+                        owner = primaryStage,
+                        title = "Clean finished posts"
                     ) {
                         coroutineScope.launch {
                             val clearPosts = postController.clearPosts().await()
@@ -145,23 +122,17 @@ class MenuBarView : View() {
             }
             separator()
             item("Settings", KeyCodeCombination(KeyCode.S)).apply {
-                graphic = imageview("settings.png") {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
-                }
+                graphic = FontIcon.of(Feather.SETTINGS)
                 action {
                     find<SettingsFragment>().openModal()?.apply {
-                        minWidth = 600.0
+                        minWidth = 700.0
                         minHeight = 400.0
                     }
                 }
             }
             separator()
             item("Exit", KeyCodeCombination(KeyCode.X, KeyCombination.CONTROL_DOWN)).apply {
-                graphic = imageview("close.png") {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
-                }
+                graphic = FontIcon.of(Feather.X_SQUARE)
                 action {
                     VripperGuiApplication.APP_INSTANCE.stop()
                 }
@@ -175,22 +146,26 @@ class MenuBarView : View() {
                 "Info Panel", KeyCodeCombination(KeyCode.F7)
             ).bind(widgetsController.currentSettings.visibleInfoPanelProperty)
             checkmenuitem(
-                "Status bar", KeyCodeCombination(KeyCode.F8)
+                "Status Bar", KeyCodeCombination(KeyCode.F8)
             ).bind(widgetsController.currentSettings.visibleStatusBarPanelProperty)
+            checkmenuitem(
+                "Dark mode"
+            ).bind(widgetsController.currentSettings.darkModeProperty)
         }
         menu("Help") {
             item("Check for updates").apply {
-                imageview("available-updates.png") { fitWidth = 18.0; fitHeight = 18.0 }
+                graphic = FontIcon.of(Feather.REFRESH_CCW)
                 action {
                     val latestVersion = ApplicationProperties.latestVersion()
                     val currentVersion = ApplicationProperties.VERSION
 
                     if (latestVersion > currentVersion) {
                         information(
-                            header = "Please update to the latest version of VRipper v$latestVersion",
-                            content = "Do you want to go to the release page ?",
+                            header = "",
+                            content = "A newer version of VRipper is available \nLatest version is $latestVersion\nDo you want to go to the release page?",
                             title = "VRipper updates",
                             buttons = arrayOf(ButtonType.YES, ButtonType.NO),
+                            owner = primaryStage,
                         ) {
                             if (it == ButtonType.YES) {
                                 openLink("https://github.com/death-claw/vripper-project/releases/tag/$latestVersion")
@@ -198,16 +173,17 @@ class MenuBarView : View() {
                         }
                     } else {
                         information(
-                            header = "No updates have been found",
+                            header = "",
                             content = "You are running the latest version of VRipper.",
-                            title = "VRipper updates"
+                            title = "VRipper updates",
+                            owner = primaryStage
                         )
                     }
                 }
             }
             separator()
             item("About").apply {
-                imageview("about.png") { fitWidth = 18.0; fitHeight = 18.0 }
+                graphic = FontIcon.of(Feather.INFO)
                 action {
                     find<AboutFragment>().openModal()?.apply {
                         this.minWidth = 550.0
@@ -216,5 +192,13 @@ class MenuBarView : View() {
                 }
             }
         }
+    }
+
+    override fun onDock() {
+        downloadActiveProperty.bind(globalStateController.globalState.runningProperty.greaterThan(0))
+    }
+
+    override fun onUndock() {
+        coroutineScope.cancel()
     }
 }

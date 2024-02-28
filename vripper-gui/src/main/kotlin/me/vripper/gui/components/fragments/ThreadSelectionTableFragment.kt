@@ -1,12 +1,14 @@
 package me.vripper.gui.components.fragments
 
+import atlantafx.base.theme.Styles
 import javafx.beans.property.SimpleStringProperty
 import javafx.event.EventHandler
+import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.control.cell.TextFieldTableCell
-import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
+import javafx.scene.layout.Priority
 import javafx.util.Callback
 import kotlinx.coroutines.*
 import me.vripper.gui.components.cells.PreviewTableCell
@@ -15,6 +17,8 @@ import me.vripper.gui.controller.WidgetsController
 import me.vripper.gui.model.ThreadSelectionModel
 import me.vripper.gui.utils.Preview
 import me.vripper.gui.utils.openLink
+import org.kordamp.ikonli.feather.Feather
+import org.kordamp.ikonli.javafx.FontIcon
 import tornadofx.*
 
 class ThreadSelectionTableFragment : Fragment("Thread") {
@@ -44,12 +48,12 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
         coroutineScope.cancel()
     }
 
-    override val root = vbox(alignment = Pos.CENTER_RIGHT) {
-        form {
-            fieldset {
-                field("Search") {
-                    textfield(searchInput)
-                }
+    override val root = vbox(alignment = Pos.CENTER_RIGHT, spacing = 15.0) {
+        hbox(spacing = 5, alignment = Pos.BASELINE_LEFT) {
+            padding = Insets(10.0, 5.0, 0.0, 5.0)
+            textfield(searchInput) {
+                promptText = "Search"
+                hgrow = Priority.ALWAYS
             }
         }
 
@@ -69,10 +73,7 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
                     setOnAction {
                         openLink(tableRow.item.url)
                     }
-                    graphic = ImageView("open-in-browser.png").apply {
-                        fitWidth = 18.0
-                        fitHeight = 18.0
-                    }
+                    graphic = FontIcon.of(Feather.LINK)
                 }
                 val contextMenu = ContextMenu()
                 contextMenu.items.addAll(urlItem)
@@ -111,12 +112,10 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
                         )
                     ).openModal()
                 }
-                graphic = ImageView("columns.png").apply {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
-                }
+                graphic = FontIcon.of(Feather.COLUMNS)
             })
             column("Preview", ThreadSelectionModel::previewListProperty) {
+                prefWidth = 100.0
                 visibleProperty().bind(widgetsController.currentSettings.threadSelectionColumnsModel.previewProperty)
                 cellFactory = Callback {
                     val cell = PreviewTableCell<ThreadSelectionModel>()
@@ -143,6 +142,7 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
                 }
             }
             column("Post Index", ThreadSelectionModel::indexProperty) {
+                prefWidth = 100.0
                 visibleProperty().bind(widgetsController.currentSettings.threadSelectionColumnsModel.indexProperty)
                 sortOrder.add(this)
                 cellFactory = Callback {
@@ -164,6 +164,7 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
                 }
             }
             column("Hosts", ThreadSelectionModel::hostsProperty) {
+                prefWidth = 100.0
                 visibleProperty().bind(widgetsController.currentSettings.threadSelectionColumnsModel.hostsProperty)
                 cellFactory = Callback {
                     TextFieldTableCell<ThreadSelectionModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
@@ -174,10 +175,9 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
             right {
                 padding = insets(top = 0, right = 5, bottom = 5, left = 5)
                 button("Download") {
-                    imageview("download.png") {
-                        fitWidth = 18.0
-                        fitHeight = 18.0
-                    }
+                    graphic = FontIcon.of(Feather.DOWNLOAD)
+                    addClass(Styles.ACCENT)
+                    isDefaultButton = true
                     tooltip("Download selected posts")
                     enableWhen { tableView.selectionModel.selectedItems.sizeProperty.greaterThan(0) }
                     action {

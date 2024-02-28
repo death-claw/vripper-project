@@ -1,10 +1,12 @@
 package me.vripper.gui.components.cells
 
+import atlantafx.base.theme.Styles
 import javafx.geometry.Pos
 import javafx.scene.control.TableCell
 import javafx.scene.control.Tooltip
-import javafx.scene.image.ImageView
 import me.vripper.entities.domain.Status
+import org.kordamp.ikonli.feather.Feather
+import org.kordamp.ikonli.javafx.FontIcon
 
 class StatusTableCell<T> : TableCell<T, String>() {
 
@@ -22,13 +24,11 @@ class StatusTableCell<T> : TableCell<T, String>() {
         val status = Status.valueOf(item)
         tooltip = Tooltip(status.stringValue)
         graphic = when (status) {
-            Status.PENDING -> ImageView("pending.png").apply { fitWidth = 25.0; fitHeight = 25.0 }
-            Status.DOWNLOADING -> ImageView("below.png").apply { fitWidth = 25.0; fitHeight = 25.0 }
-            Status.FINISHED -> ImageView("ok.png").apply { fitWidth = 25.0; fitHeight = 25.0 }
-            Status.ERROR -> ImageView("error.png").apply { fitWidth = 25.0; fitHeight = 25.0 }
-            Status.STOPPED -> ImageView("pause-round.png").apply {
-                fitWidth = 25.0; fitHeight = 25.0
-            }
+            Status.PENDING -> FontIcon.of(Feather.CLOCK)
+            Status.DOWNLOADING -> FontIcon.of(Feather.DOWNLOAD).apply { styleClass.add(Styles.ACCENT) }
+            Status.FINISHED -> FontIcon.of(Feather.CHECK).apply { styleClass.add(Styles.SUCCESS) }
+            Status.ERROR -> FontIcon.of(Feather.ALERT_TRIANGLE).apply { styleClass.add(Styles.DANGER) }
+            Status.STOPPED -> FontIcon.of(Feather.PAUSE)
         }
     }
 }

@@ -6,7 +6,6 @@ import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.control.cell.TextFieldTableCell
-import javafx.scene.image.ImageView
 import javafx.scene.input.MouseButton
 import javafx.util.Callback
 import kotlinx.coroutines.*
@@ -14,8 +13,10 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import me.vripper.entities.Image
+import me.vripper.entities.domain.Status
 import me.vripper.event.EventBus
 import me.vripper.event.ImageEvent
+import me.vripper.event.StoppedEvent
 import me.vripper.gui.components.cells.PreviewTableCell
 import me.vripper.gui.components.cells.ProgressTableCell
 import me.vripper.gui.components.cells.StatusTableCell
@@ -24,6 +25,8 @@ import me.vripper.gui.controller.WidgetsController
 import me.vripper.gui.model.ImageModel
 import me.vripper.gui.utils.Preview
 import me.vripper.gui.utils.openLink
+import org.kordamp.ikonli.feather.Feather
+import org.kordamp.ikonli.javafx.FontIcon
 import tornadofx.*
 
 class ImagesTableFragment : Fragment("Photos") {
@@ -68,6 +71,18 @@ class ImagesTableFragment : Fragment("Photos") {
                 }
             }
         }
+
+        coroutineScope.launch {
+            eventBus.events.filterIsInstance(StoppedEvent::class).collect { stoppedEvent ->
+                runLater {
+                    items.forEach { imageModel ->
+                        if (imageModel.status != Status.FINISHED.name) {
+                            imageModel.status = Status.STOPPED.name
+                        }
+                    }
+                }
+            }
+        }
     }
 
     override fun onDock() {
@@ -84,10 +99,7 @@ class ImagesTableFragment : Fragment("Photos") {
                     setOnAction {
                         openLink(tableRow.item.url)
                     }
-                    graphic = ImageView("open-in-browser.png").apply {
-                        fitWidth = 18.0
-                        fitHeight = 18.0
-                    }
+                    graphic = FontIcon.of(Feather.LINK)
                 }
                 val contextMenu = ContextMenu()
                 contextMenu.items.addAll(urlItem)
@@ -137,14 +149,11 @@ class ImagesTableFragment : Fragment("Photos") {
                         )
                     ).openModal()
                 }
-                graphic = ImageView("columns.png").apply {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
-                }
+                graphic = FontIcon.of(Feather.COLUMNS)
             })
             column("Preview", ImageModel::thumbUrlProperty) {
                 visibleProperty().bind(widgetsController.currentSettings.imagesColumnsModel.previewProperty)
-                prefWidth = 50.0
+                prefWidth = 100.0
                 cellFactory = Callback {
                     val cell = PreviewTableCell<ImageModel>()
                     cell.onMouseExited = EventHandler {
@@ -171,7 +180,7 @@ class ImagesTableFragment : Fragment("Photos") {
             }
             column("Index", ImageModel::indexProperty) {
                 visibleProperty().bind(widgetsController.currentSettings.imagesColumnsModel.indexProperty)
-                prefWidth = 50.0
+                prefWidth = 100.0
                 sortOrder.add(this)
                 cellFactory = Callback {
                     TextFieldTableCell<ImageModel?, Number?>().apply { alignment = Pos.CENTER_LEFT }
@@ -214,7 +223,7 @@ class ImagesTableFragment : Fragment("Photos") {
             }
             column("Status", ImageModel::statusProperty) {
                 visibleProperty().bind(widgetsController.currentSettings.imagesColumnsModel.statusProperty)
-                prefWidth = 50.0
+                prefWidth = 100.0
                 cellFactory = Callback {
                     StatusTableCell()
                 }
@@ -228,7 +237,7 @@ class ImagesTableFragment : Fragment("Photos") {
             }
             column("Downloaded", ImageModel::downloadedProperty) {
                 visibleProperty().bind(widgetsController.currentSettings.imagesColumnsModel.downloadedProperty)
-                prefWidth = 75.0
+                prefWidth = 125.0
                 cellFactory = Callback {
                     TextFieldTableCell<ImageModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
                 }

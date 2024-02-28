@@ -1,4 +1,4 @@
-package me.vripper.gui.components.views
+package me.vripper.gui.components.fragments
 
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.geometry.Orientation
@@ -7,34 +7,38 @@ import javafx.scene.control.ContentDisplay
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyCodeCombination
 import javafx.scene.input.KeyCombination
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import me.vripper.gui.Styles
+import kotlinx.coroutines.*
+import me.vripper.gui.components.views.PostsTableView
 import me.vripper.gui.controller.GlobalStateController
 import me.vripper.gui.controller.PostController
+import org.kordamp.ikonli.feather.Feather
+import org.kordamp.ikonli.javafx.FontIcon
 import tornadofx.*
 
-class DownloadActionsView : View() {
+class ActionBarFragment : Fragment() {
 
+    private val downloadActiveProperty = SimpleBooleanProperty(true)
     private val postController: PostController by inject()
     private val globalStateController: GlobalStateController by inject()
     private val postsTableView: PostsTableView by inject()
-    private val downloadActiveProperty = SimpleBooleanProperty(true)
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    init {
-        downloadActiveProperty.bind(globalStateController.globalState.runningProperty.greaterThan(0))
-    }
-
-    override val root = hbox {
-        button("Start All") {
-            imageview("end.png") {
-                fitWidth = 32.0
-                fitHeight = 32.0
+    override val root = toolbar {
+        id = "action_toolbar"
+        padding = insets(all = 5)
+        button("Add links", FontIcon.of(Feather.PLUS)) {
+            contentDisplay = ContentDisplay.GRAPHIC_ONLY
+            tooltip("Add links [Ctrl+L]")
+            shortcut(KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN))
+            action {
+                find<AddLinksFragment>().apply {
+                    input.clear()
+                }.openModal()
             }
-            addClass(Styles.actionBarButton)
+        }
+        separator(Orientation.VERTICAL)
+
+        button("Start All", FontIcon.of(Feather.SKIP_FORWARD)) {
             contentDisplay = ContentDisplay.GRAPHIC_ONLY
             tooltip("Start downloads [Ctrl+S]")
             shortcut(KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN))
@@ -43,13 +47,7 @@ class DownloadActionsView : View() {
                 postController.startAll()
             }
         }
-        button("Stop All") {
-            setPrefSize(32.0, 32.0)
-            imageview("stop.png") {
-                fitWidth = 32.0
-                fitHeight = 32.0
-            }
-            addClass(Styles.actionBarButton)
+        button("Stop All", FontIcon.of(Feather.SQUARE)) {
             contentDisplay = ContentDisplay.GRAPHIC_ONLY
             tooltip("Stops all running downloads [Ctrl+Q]")
             shortcut(KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN))
@@ -59,13 +57,7 @@ class DownloadActionsView : View() {
             }
         }
         separator(Orientation.VERTICAL)
-        button("Start") {
-            setPrefSize(32.0, 32.0)
-            imageview("play.png") {
-                fitWidth = 32.0
-                fitHeight = 32.0
-            }
-            addClass(Styles.actionBarButton)
+        button("Start", FontIcon.of(Feather.PLAY)) {
             contentDisplay = ContentDisplay.GRAPHIC_ONLY
             tooltip("Start downloads for selected [Ctrl+Shift+S]")
             shortcut(KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN))
@@ -78,13 +70,7 @@ class DownloadActionsView : View() {
                 postsTableView.startSelected()
             }
         }
-        button("Stop") {
-            setPrefSize(32.0, 32.0)
-            imageview("pause.png") {
-                fitWidth = 32.0
-                fitHeight = 32.0
-            }
-            addClass(Styles.actionBarButton)
+        button("Stop", FontIcon.of(Feather.SQUARE)) {
             contentDisplay = ContentDisplay.GRAPHIC_ONLY
             tooltip("Stop downloads for selected [Ctrl+Shift+Q]")
             shortcut(KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN))
@@ -97,13 +83,7 @@ class DownloadActionsView : View() {
                 postsTableView.stopSelected()
             }
         }
-        button("Rename") {
-            setPrefSize(32.0, 32.0)
-            imageview("edit.png") {
-                fitWidth = 32.0
-                fitHeight = 32.0
-            }
-            addClass(Styles.actionBarButton)
+        button("Rename", FontIcon.of(Feather.EDIT)) {
             contentDisplay = ContentDisplay.GRAPHIC_ONLY
             tooltip("Rename selected [Ctrl+R]")
             shortcut(KeyCodeCombination(KeyCode.R, KeyCombination.CONTROL_DOWN))
@@ -116,13 +96,7 @@ class DownloadActionsView : View() {
                 postsTableView.renameSelected()
             }
         }
-        button("Delete") {
-            setPrefSize(32.0, 32.0)
-            imageview("trash.png") {
-                fitWidth = 32.0
-                fitHeight = 32.0
-            }
-            addClass(Styles.actionBarButton)
+        button("Delete", FontIcon.of(Feather.TRASH)) {
             contentDisplay = ContentDisplay.GRAPHIC_ONLY
             tooltip("Delete selected posts [Del]")
             shortcut(KeyCodeCombination(KeyCode.DELETE))
@@ -136,18 +110,19 @@ class DownloadActionsView : View() {
             }
         }
         separator(Orientation.VERTICAL)
-        button("Clear") {
-            setPrefSize(32.0, 32.0)
-            imageview("broom.png") {
-                fitWidth = 32.0
-                fitHeight = 32.0
-            }
-            addClass(Styles.actionBarButton)
+        button("Clear", FontIcon.of(Feather.TRASH_2)) {
             contentDisplay = ContentDisplay.GRAPHIC_ONLY
             tooltip("Clear all finished downloads [Ctrl+Del]")
             shortcut(KeyCodeCombination(KeyCode.DELETE, KeyCombination.CONTROL_DOWN))
             action {
-                confirm("Clean finished posts", "Confirm removal of finished posts", ButtonType.YES, ButtonType.NO) {
+                confirm(
+                    "",
+                    "Confirm removal of finished posts?",
+                    ButtonType.YES,
+                    ButtonType.NO,
+                    owner = primaryStage,
+                    title = "Clean finished posts"
+                ) {
                     coroutineScope.launch {
                         val clearPosts = postController.clearPosts().await()
                         coroutineScope.launch {
@@ -159,5 +134,25 @@ class DownloadActionsView : View() {
                 }
             }
         }
+
+        button("Settings", FontIcon.of(Feather.SETTINGS)) {
+            contentDisplay = ContentDisplay.GRAPHIC_ONLY
+            tooltip("Open settings menu [S]")
+            shortcut(KeyCodeCombination(KeyCode.S))
+            action {
+                find<SettingsFragment>().openModal()?.apply {
+                    minWidth = 700.0
+                    minHeight = 400.0
+                }
+            }
+        }
+    }
+
+    override fun onDock() {
+        downloadActiveProperty.bind(globalStateController.globalState.runningProperty.greaterThan(0))
+    }
+
+    override fun onUndock() {
+        coroutineScope.cancel()
     }
 }

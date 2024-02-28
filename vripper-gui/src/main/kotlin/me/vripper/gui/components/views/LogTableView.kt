@@ -1,7 +1,6 @@
 package me.vripper.gui.components.views
 
 import javafx.scene.control.*
-import javafx.scene.image.ImageView
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filterIsInstance
 import me.vripper.event.EventBus
@@ -13,6 +12,8 @@ import me.vripper.gui.components.fragments.LogMessageFragment
 import me.vripper.gui.controller.LogController
 import me.vripper.gui.controller.WidgetsController
 import me.vripper.gui.model.LogModel
+import org.kordamp.ikonli.feather.Feather
+import org.kordamp.ikonli.javafx.FontIcon
 import tornadofx.*
 
 class LogTableView : View() {
@@ -91,34 +92,41 @@ class LogTableView : View() {
                 tableRow
             }
             contextMenu = ContextMenu()
-            contextMenu.items.add(MenuItem("Setup columns").apply {
+            contextMenu.items.addAll(MenuItem("Setup columns").apply {
                 setOnAction {
                     find<ColumnSelectionFragment>(
                         mapOf(
                             ColumnSelectionFragment::map to mapOf(
                                 Pair(
-                                    "Time",
-                                    widgetsController.currentSettings.logsColumnsModel.timeProperty
+                                    "Time", widgetsController.currentSettings.logsColumnsModel.timeProperty
                                 ),
                                 Pair(
-                                    "Type",
-                                    widgetsController.currentSettings.logsColumnsModel.typeProperty
+                                    "Type", widgetsController.currentSettings.logsColumnsModel.typeProperty
                                 ),
                                 Pair(
-                                    "Status",
-                                    widgetsController.currentSettings.logsColumnsModel.statusProperty
+                                    "Status", widgetsController.currentSettings.logsColumnsModel.statusProperty
                                 ),
                                 Pair(
-                                    "Message",
-                                    widgetsController.currentSettings.logsColumnsModel.messageProperty
+                                    "Message", widgetsController.currentSettings.logsColumnsModel.messageProperty
                                 ),
                             )
                         )
                     ).openModal()
                 }
-                graphic = ImageView("columns.png").apply {
-                    fitWidth = 18.0
-                    fitHeight = 18.0
+                graphic = FontIcon.of(Feather.COLUMNS)
+            }, SeparatorMenuItem(), MenuItem("Clear", FontIcon.of(Feather.TRASH_2)).apply {
+                setOnAction {
+                    confirm(
+                        "",
+                        "Are you sure you want to clear the logs",
+                        ButtonType.YES,
+                        ButtonType.NO,
+                        owner = primaryStage,
+                        title = "Clear logs"
+                    ) {
+                        logController.clear()
+                        items.clear()
+                    }
                 }
             })
             column("Time", LogModel::timeProperty) {
