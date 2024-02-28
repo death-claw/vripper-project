@@ -68,6 +68,6 @@ class ImageVenueHost(
 
     companion object {
         private const val CONTINUE_BUTTON_XPATH = "//a[@title='Continue to ImageVenue']"
-        private const val IMG_XPATH = "//a[@data-toggle='full']/img"
+        private const val IMG_XPATH = "//a[@data-toggle='full']/img[@id='main-image']"
     }
 }
