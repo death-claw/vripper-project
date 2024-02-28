@@ -8,6 +8,7 @@ import me.vripper.entities.domain.Status
 import me.vripper.event.ErrorCountEvent
 import me.vripper.event.EventBus
 import me.vripper.event.QueueStateEvent
+import me.vripper.event.StoppedEvent
 import me.vripper.host.Host
 import me.vripper.model.ErrorCount
 import me.vripper.model.QueueState
@@ -74,6 +75,9 @@ class DownloadService(
             stopInternal(postIds)
         } else {
             stopAll()
+        }
+        coroutineScope.launch {
+            eventBus.publishEvent(StoppedEvent(postIds))
         }
     }
 

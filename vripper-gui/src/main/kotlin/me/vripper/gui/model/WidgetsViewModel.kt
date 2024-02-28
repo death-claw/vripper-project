@@ -10,6 +10,7 @@ class WidgetsViewModel(
     visibleInfoPanel: Boolean,
     visibleToolbarPanel: Boolean,
     visibleStatusBarPanel: Boolean,
+    darkMode: Boolean,
     infoPanelDividerPosition: Double,
     width: Double,
     height: Double,
@@ -30,6 +31,9 @@ class WidgetsViewModel(
 
     val infoPanelDividerPositionProperty = SimpleDoubleProperty(infoPanelDividerPosition)
     var infoPanelDividerPosition: Double by infoPanelDividerPositionProperty
+
+    val darkModeProperty = SimpleBooleanProperty(darkMode)
+    var darkMode: Boolean by darkModeProperty
 
     val widthProperty = SimpleDoubleProperty(width)
     var width: Double by widthProperty

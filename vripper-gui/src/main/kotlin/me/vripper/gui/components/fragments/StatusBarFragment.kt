@@ -1,15 +1,16 @@
-package me.vripper.gui.components.views
+package me.vripper.gui.components.fragments
 
 import javafx.geometry.Orientation
 import javafx.geometry.Pos
 import me.vripper.gui.controller.GlobalStateController
 import tornadofx.*
 
-class StatusBarView : View("Status bar") {
+class StatusBarFragment : Fragment("Status bar") {
 
     private val globalStateController: GlobalStateController by inject()
 
     override val root = borderpane {
+        id = "statusbar"
         left {
             hbox {
                 text(globalStateController.globalState.loggedUserProperty.map { "Logged in as: $it" }) {
@@ -38,9 +39,5 @@ class StatusBarView : View("Status bar") {
                 alignment = Pos.CENTER_RIGHT
             }
         }
-    }
-
-    override fun onDock() {
-        globalStateController.init()
     }
 }

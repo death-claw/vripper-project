@@ -108,6 +108,21 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>io.github.mkpaz</groupId>
+            <artifactId>atlantafx-base</artifactId>
+            <version>2.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-javafx</artifactId>
+            <version>12.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-feather-pack</artifactId>
+            <version>12.3.1</version>
+        </dependency>
+        <dependency>
             <artifactId>vripper-core</artifactId>
             <groupId>me.vripper</groupId>
             <version>${revision}</version>

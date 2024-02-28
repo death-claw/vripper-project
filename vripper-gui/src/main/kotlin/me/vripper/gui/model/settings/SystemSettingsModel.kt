@@ -1,6 +1,7 @@
 package me.vripper.gui.model.settings
 
 import javafx.beans.property.SimpleBooleanProperty
+import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleStringProperty
 import tornadofx.getValue
 import tornadofx.setValue
@@ -12,12 +13,12 @@ class SystemSettingsModel {
     val cachePathProperty = SimpleStringProperty()
     var cachePath: String by cachePathProperty
 
-    val logEntriesProperty = SimpleStringProperty()
-    var logEntries: String by logEntriesProperty
+    val logEntriesProperty = SimpleIntegerProperty()
+    var logEntries: Int by logEntriesProperty
 
     val enableProperty = SimpleBooleanProperty()
     var enable: Boolean by enableProperty
 
-    val pollingRateProperty = SimpleStringProperty()
-    var pollingRate: String by pollingRateProperty
+    val pollingRateProperty = SimpleIntegerProperty()
+    var pollingRate: Int by pollingRateProperty
 }

@@ -6,6 +6,7 @@ import javafx.scene.text.FontWeight
 import me.vripper.gui.utils.openLink
 import me.vripper.utilities.ApplicationProperties
 import tornadofx.*
+import kotlin.io.path.pathString
 
 class AboutFragment : Fragment("About") {
 
@@ -37,6 +38,18 @@ class AboutFragment : Fragment("About") {
                     }
                 }
 
+            }
+            tab("System") {
+                form {
+                    fieldset {
+                        field("Application data folder") {
+                            textfield {
+                                text = ApplicationProperties.VRIPPER_DIR.pathString
+                                isEditable = false
+                            }
+                        }
+                    }
+                }
             }
             tab("License") {
                 textarea(
@@ -716,7 +729,9 @@ the library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.  But first, please read
 <https://www.gnu.org/licenses/why-not-lgpl.html>.
                 """.trimIndent()
-                )
+                ).apply {
+                    isEditable = false
+                }
             }
         }
     }

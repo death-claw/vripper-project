@@ -26,3 +26,4 @@ data class LogUpdateEvent(val logEntry: LogEntry)
 data class LogDeleteEvent(val deleted: List<Long>)
 
 data class LoadingTasks(val loading: Boolean)
+data class StoppedEvent(val postIds: List<Long>)

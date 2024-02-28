@@ -1,20 +1,20 @@
 package me.vripper.gui.components.fragments
 
+import atlantafx.base.controls.ToggleSwitch
+import atlantafx.base.util.IntegerStringConverter
+import javafx.scene.control.Spinner
 import me.vripper.gui.controller.SettingsController
 import me.vripper.gui.model.settings.SystemSettingsModel
 import tornadofx.*
 
 class SystemSettingsFragment : Fragment("System Settings") {
     private val settingsController: SettingsController by inject()
+    private val systemSettings = settingsController.findSystemSettings()
     val systemSettingsModel = SystemSettingsModel()
 
     override fun onDock() {
-        val systemSettings = settingsController.findSystemSettings()
         systemSettingsModel.tempPath = systemSettings.tempPath
         systemSettingsModel.cachePath = systemSettings.cachePath
-        systemSettingsModel.enable = systemSettings.enableClipboardMonitoring
-        systemSettingsModel.pollingRate = systemSettings.clipboardPollingRate.toString()
-        systemSettingsModel.logEntries = systemSettings.maxEventLog.toString()
     }
 
     override val root = vbox {
@@ -47,24 +47,27 @@ class SystemSettingsFragment : Fragment("System Settings") {
                     }
                 }
                 field("Max log entries") {
-                    textfield(systemSettingsModel.logEntriesProperty) {
-                        filterInput { it.controlNewText.isInt() }
-                    }
+                    add(Spinner<Int>(10, 10000, systemSettings.maxEventLog).apply {
+                        systemSettingsModel.logEntriesProperty.bind(valueProperty())
+                        isEditable = true
+                        IntegerStringConverter.createFor(this)
+                    })
                 }
                 fieldset {
                     field("Clipboard monitoring") {
-                        checkbox {
-                            bind(systemSettingsModel.enableProperty)
-                        }
+                        add(ToggleSwitch().apply {
+                            isSelected = systemSettings.enableClipboardMonitoring
+                            systemSettingsModel.enableProperty.bind(selectedProperty())
+                        })
                     }
                     fieldset {
                         visibleWhen(systemSettingsModel.enableProperty)
                         field("Polling rate (ms)") {
-                            textfield(systemSettingsModel.pollingRateProperty) {
-                                filterInput {
-                                    it.controlNewText.isInt()
-                                }
-                            }
+                            add(Spinner<Int>(500, Int.MAX_VALUE, systemSettings.clipboardPollingRate).apply {
+                                systemSettingsModel.pollingRateProperty.bind(valueProperty())
+                                isEditable = true
+                                IntegerStringConverter.createFor(this)
+                            })
                         }
                     }
                 }

@@ -1,5 +1,6 @@
 package me.vripper.gui.components.fragments
 
+import atlantafx.base.controls.ToggleSwitch
 import javafx.collections.FXCollections
 import me.vripper.gui.controller.SettingsController
 import me.vripper.gui.model.settings.ViperSettingsModel
@@ -7,14 +8,13 @@ import tornadofx.*
 
 class ViperSettingsFragment : Fragment("Viper Settings") {
     private val settingsController: SettingsController by inject()
+    private val proxies = FXCollections.observableArrayList<String>()
+    private val viperGirlsSettings = settingsController.findViperGirlsSettings()
     val viperSettingsModel = ViperSettingsModel()
-    val proxies = FXCollections.observableArrayList<String>()
 
     override fun onDock() {
         proxies.clear()
         proxies.addAll(settingsController.getProxies())
-        val viperGirlsSettings = settingsController.findViperGirlsSettings()
-        viperSettingsModel.login = viperGirlsSettings.login
         viperSettingsModel.username = viperGirlsSettings.username
         viperSettingsModel.password = viperGirlsSettings.password
         viperSettingsModel.thanks = viperGirlsSettings.thanks
@@ -28,9 +28,10 @@ class ViperSettingsFragment : Fragment("Viper Settings") {
                     combobox(viperSettingsModel.hostProperty, proxies)
                 }
                 field("Enable ViperGirls Authentication") {
-                    checkbox {
-                        bind(viperSettingsModel.loginProperty)
-                    }
+                    add(ToggleSwitch().apply {
+                        isSelected = viperGirlsSettings.login
+                        viperSettingsModel.loginProperty.bind(selectedProperty())
+                    })
                 }
                 fieldset {
                     visibleWhen(viperSettingsModel.loginProperty)

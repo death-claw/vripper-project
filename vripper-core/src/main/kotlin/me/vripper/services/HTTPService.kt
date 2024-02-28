@@ -33,7 +33,7 @@ class HTTPService(
     private lateinit var rc: RequestConfig
     private lateinit var cc: ConnectionConfig
     lateinit var client: CloseableHttpClient
-    private var connectionTimeout: Long = settingsService.settings.connectionSettings.timeout
+    private var connectionTimeout = settingsService.settings.connectionSettings.timeout
 
     fun init() {
         buildRequestConfig()
@@ -74,15 +74,15 @@ class HTTPService(
 
     private fun buildRequestConfig() {
         rc = RequestConfig.custom()
-            .setConnectionRequestTimeout(Timeout.ofSeconds(connectionTimeout))
+            .setConnectionRequestTimeout(Timeout.ofSeconds(connectionTimeout.toLong()))
             .setCookieSpec(StandardCookieSpec.RELAXED)
             .build()
     }
 
     private fun buildConnectionConfig() {
         cc = ConnectionConfig.custom()
-            .setConnectTimeout(Timeout.ofSeconds(connectionTimeout))
-            .setSocketTimeout(Timeout.ofSeconds(connectionTimeout))
+            .setConnectTimeout(Timeout.ofSeconds(connectionTimeout.toLong()))
+            .setSocketTimeout(Timeout.ofSeconds(connectionTimeout.toLong()))
             .setTimeToLive(TimeValue.ofMinutes(10))
             .build()
     }

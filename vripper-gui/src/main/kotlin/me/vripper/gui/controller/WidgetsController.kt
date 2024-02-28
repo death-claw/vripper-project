@@ -74,6 +74,7 @@ class WidgetsController : Controller() {
         val visibleInfoPanel: Boolean = true,
         val visibleToolbarPanel: Boolean = true,
         val visibleStatusBarPanel: Boolean = true,
+        val darkMode: Boolean = false,
         val infoPanelDividerPosition: Double = 0.7,
         val width: Double = 1366.0,
         val height: Double = 768.0,
@@ -89,6 +90,7 @@ class WidgetsController : Controller() {
             it.visibleInfoPanel,
             it.visibleToolbarPanel,
             it.visibleStatusBarPanel,
+            it.darkMode,
             it.infoPanelDividerPosition,
             it.width,
             it.height,
@@ -108,6 +110,9 @@ class WidgetsController : Controller() {
             update()
         }
         currentSettings.visibleStatusBarPanelProperty.onChange {
+            update()
+        }
+        currentSettings.darkModeProperty.onChange {
             update()
         }
         currentSettings.postsColumnsModel.previewProperty.onChange {
@@ -206,6 +211,7 @@ class WidgetsController : Controller() {
                 widgetsSettings.visibleInfoPanel,
                 widgetsSettings.visibleToolbarPanel,
                 widgetsSettings.visibleStatusBarPanel,
+                widgetsSettings.darkMode,
                 widgetsSettings.infoPanelDividerPosition,
                 widgetsSettings.width,
                 widgetsSettings.height,
@@ -231,6 +237,7 @@ class WidgetsController : Controller() {
                     currentSettings.visibleInfoPanel,
                     currentSettings.visibleToolbarPanel,
                     currentSettings.visibleStatusBarPanel,
+                    currentSettings.darkMode,
                     currentSettings.infoPanelDividerPosition,
                     currentSettings.width,
                     currentSettings.height,
