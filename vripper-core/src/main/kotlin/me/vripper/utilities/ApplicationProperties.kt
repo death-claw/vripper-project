@@ -15,7 +15,7 @@ import kotlin.io.path.Path
 import kotlin.io.path.pathString
 
 object ApplicationProperties : KoinComponent {
-    const val VERSION: String = "5.3.0"
+    const val VERSION: String = "5.4.0"
     private const val BASE_DIR_NAME: String = "vripper"
     private val portable = System.getProperty("vripper.portable", "true").toBoolean()
     private val BASE_DIR: String = getBaseDir()
