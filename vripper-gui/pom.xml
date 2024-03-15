@@ -29,6 +29,10 @@
             <artifactId>kotlinx-coroutines-core-jvm</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-coroutines-javafx</artifactId>
+        </dependency>
+        <dependency>
           <groupId>org.jetbrains.kotlinx</groupId>
           <artifactId>kotlinx-serialization-json</artifactId>
         </dependency>
@@ -127,11 +131,42 @@
             <groupId>me.vripper</groupId>
             <version>${revision}</version>
         </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-kotlin-stub</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-protobuf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-kotlin</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty-shaded</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
         <sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>
         <testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>version</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>version</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
@@ -173,27 +208,32 @@
                 </configuration>
             </plugin>
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <mainClass>me.vripper.gui.VripperGuiApplicationKt</mainClass>
-                        </manifest>
-                    </archive>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                </configuration>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.3.0</version>
                 <executions>
                     <execution>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <id>make-assembly</id>
                         <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>me.vripper.gui.VripperGuiApplicationKt</mainClass>
+                                    <manifestEntries>
+                                        <Implementation-Version>${project.version}</Implementation-Version>
+                                        <Main-Class>me.vripper.gui.VripperGuiApplicationKt</Main-Class>
+                                    </manifestEntries>
+                                </transformer>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                        </configuration>
                     </execution>
                 </executions>
-                <groupId>org.apache.maven.plugins</groupId>
             </plugin>
         </plugins>
     </build>

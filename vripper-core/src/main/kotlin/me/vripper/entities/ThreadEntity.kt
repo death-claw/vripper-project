@@ -1,6 +1,6 @@
 package me.vripper.entities
 
-data class Thread(
+data class ThreadEntity(
     val id: Long = -1,
     val title: String,
     val link: String,
@@ -11,7 +11,7 @@ data class Thread(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as Thread
+        other as ThreadEntity
 
         return threadId == other.threadId
     }

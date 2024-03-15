@@ -35,7 +35,7 @@ class HTTPService(
     lateinit var client: CloseableHttpClient
     private var connectionTimeout = settingsService.settings.connectionSettings.timeout
 
-    fun init() {
+    init {
         buildRequestConfig()
         buildConnectionConfig()
         buildConnectionPool()

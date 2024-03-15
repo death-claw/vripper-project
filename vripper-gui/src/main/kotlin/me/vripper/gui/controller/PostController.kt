@@ -1,73 +1,61 @@
 package me.vripper.gui.controller
 
-import kotlinx.coroutines.*
-import me.vripper.entities.Image
-import me.vripper.entities.Metadata
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import me.vripper.delegate.LoggerDelegate
 import me.vripper.gui.model.PostModel
-import me.vripper.services.AppEndpointService
-import me.vripper.services.DataTransaction
+import me.vripper.model.Post
+import me.vripper.services.IAppEndpointService
 import me.vripper.utilities.formatSI
 import tornadofx.Controller
 import java.time.format.DateTimeFormatter
 
 class PostController : Controller() {
 
-    private val dataTransaction: DataTransaction by di()
-    private val appEndpointService: AppEndpointService by di()
+    private val logger by LoggerDelegate()
     private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss")
-    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    fun scan(postLinks: String) {
-        coroutineScope.launch {
-            appEndpointService.scanLinks(postLinks)
-        }
+    lateinit var appEndpointService: IAppEndpointService
+
+    suspend fun scan(postLinks: String) {
+        appEndpointService.scanLinks(postLinks)
     }
 
-    fun start(postIdList: List<Long>) {
-        coroutineScope.launch {
-            appEndpointService.restartAll(postIdList)
-        }
+    suspend fun start(postIdList: List<Long>) {
+        appEndpointService.restartAll(postIdList)
     }
 
-    fun startAll() {
-        coroutineScope.launch {
-            appEndpointService.restartAll()
-        }
+    suspend fun startAll() {
+        appEndpointService.restartAll()
     }
 
-    fun delete(postIdList: List<Long>) {
-        coroutineScope.launch {
-            appEndpointService.remove(postIdList)
-        }
+    suspend fun delete(postIdList: List<Long>) {
+        appEndpointService.remove(postIdList)
     }
 
-    fun stop(postIdList: List<Long>) {
-        coroutineScope.launch {
-            appEndpointService.stopAll(postIdList)
-        }
+    suspend fun stop(postIdList: List<Long>) {
+        appEndpointService.stopAll(postIdList)
     }
 
-    fun clearPosts(): Deferred<List<Long>> {
-        return coroutineScope.async { appEndpointService.clearCompleted() }
+    suspend fun clearPosts(): List<Long> {
+        return appEndpointService.clearCompleted()
     }
 
-    fun stopAll() {
-        coroutineScope.launch {
-            appEndpointService.stopAll()
-        }
+    suspend fun stopAll() {
+        appEndpointService.stopAll()
     }
 
-    fun find(postId: Long): Deferred<PostModel> {
-        return coroutineScope.async { mapper(postId) }
+    suspend fun find(postId: Long): PostModel {
+        return mapper(appEndpointService.findPost(postId))
     }
 
-    fun findAllPosts(): Deferred<List<PostModel>> {
-        return coroutineScope.async { dataTransaction.findAllPosts().map { it.postId }.map(::mapper) }
+    suspend fun findAllPosts(): List<PostModel> {
+        return appEndpointService.findAllPosts().map(::mapper)
     }
 
-    fun mapper(postId: Long): PostModel {
-        val post = dataTransaction.findPostByPostId(postId).orElseThrow()
-        val metadata = dataTransaction.findMetadataByPostId(post.postId)
+    private fun mapper(post: Post): PostModel {
         return PostModel(
             post.postId,
             post.postTitle,
@@ -82,8 +70,9 @@ class PostController : Controller() {
             post.getDownloadFolder(),
             post.folderName,
             progressCount(post.total, post.done, post.downloaded),
-            dataTransaction.findImagesByPostId(post.postId).map(Image::thumbUrl).take(4),
-            metadata.orElse(Metadata(post.postId, Metadata.Data("", emptyList())))
+            post.previews,
+            post.resolvedNames,
+            post.postedBy
         )
     }
 
@@ -95,7 +84,34 @@ class PostController : Controller() {
         return if (done == 0 && total == 0) 0.0 else (done.toDouble() / total)
     }
 
-    fun rename(postId: Long, value: String) {
+    suspend fun rename(postId: Long, value: String) {
         appEndpointService.rename(postId, value)
     }
+
+    fun onNewPosts() =
+        appEndpointService.onNewPosts().catch {
+            logger.error("gRPC error", it)
+            currentCoroutineContext().cancel(null)
+        }.map { post ->
+            mapper(post)
+        }
+
+    fun onUpdatePosts() =
+        appEndpointService.onUpdatePosts().catch {
+            logger.error("gRPC error", it)
+            currentCoroutineContext().cancel(null)
+        }
+
+    fun onDeletePosts() =
+        appEndpointService.onDeletePosts().catch {
+            logger.error("gRPC error", it)
+            currentCoroutineContext().cancel(null)
+        }
+
+    fun onUpdateMetadata() =
+        appEndpointService.onUpdateMetadata().catch {
+            logger.error("gRPC error", it)
+            currentCoroutineContext().cancel(null)
+        }
+
 }

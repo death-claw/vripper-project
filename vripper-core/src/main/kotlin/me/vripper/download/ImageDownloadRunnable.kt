@@ -1,7 +1,7 @@
 package me.vripper.download
 
 import kotlinx.coroutines.*
-import me.vripper.entities.Image
+import me.vripper.entities.ImageEntity
 import me.vripper.entities.domain.Status
 import me.vripper.exception.DownloadException
 import me.vripper.exception.HostException
@@ -25,14 +25,14 @@ import kotlin.io.path.Path
 import kotlin.io.path.pathString
 
 class ImageDownloadRunnable(
-    private val image: Image, val postRank: Int, private val settings: Settings
+    private val imageEntity: ImageEntity, val postRank: Int, private val settings: Settings
 ) : KoinComponent, CheckedRunnable {
     private val log by me.vripper.delegate.LoggerDelegate()
 
     private val dataTransaction: DataTransaction by inject()
     private val hosts: List<Host> = getKoin().getAll()
 
-    val context: ImageDownloadContext = ImageDownloadContext(image, settings)
+    val context: ImageDownloadContext = ImageDownloadContext(imageEntity, settings)
     private var stopped: Boolean
         get() = context.stopped
         set(value) {
@@ -42,43 +42,43 @@ class ImageDownloadRunnable(
     @Throws(DownloadException::class)
     fun download() {
         try {
-            image.status = Status.DOWNLOADING
-            image.downloaded = 0
-            dataTransaction.updateImage(image)
-            synchronized(image.postId.toString().intern()) {
+            imageEntity.status = Status.DOWNLOADING
+            imageEntity.downloaded = 0
+            dataTransaction.updateImage(imageEntity)
+            synchronized(imageEntity.postId.toString().intern()) {
                 val post = dataTransaction.findPostById(context.postId).orElseThrow()
                 if (post.status != Status.DOWNLOADING) {
                     post.status = Status.DOWNLOADING
                     dataTransaction.updatePost(post)
                 }
             }
-            log.debug("Getting image url and name from ${image.url} using ${image.host}")
-            val host = hosts.first { it.isSupported(image.url) }
-            val downloadedImage = host.downloadInternal(image.url, context)
-            log.debug("Resolved name for ${image.url}: ${downloadedImage.name}")
-            log.debug("Downloaded image {} to {}", image.url, downloadedImage.path)
-            synchronized(image.postId.toString().intern()) {
+            log.debug("Getting image url and name from ${imageEntity.url} using ${imageEntity.host}")
+            val host = hosts.first { it.isSupported(imageEntity.url) }
+            val downloadedImage = host.downloadInternal(imageEntity.url, context)
+            log.debug("Resolved name for ${imageEntity.url}: ${downloadedImage.name}")
+            log.debug("Downloaded image {} to {}", imageEntity.url, downloadedImage.path)
+            synchronized(imageEntity.postId.toString().intern()) {
                 val post = dataTransaction.findPostById(context.postId).orElseThrow()
                 val downloadDirectory = Path(post.downloadDirectory, post.folderName).pathString
                 checkImageTypeAndRename(
-                    downloadDirectory, downloadedImage, image.index
+                    downloadDirectory, downloadedImage, imageEntity.index
                 )
-                if (image.downloaded == image.size && image.size > 0) {
-                    image.status = Status.FINISHED
+                if (imageEntity.downloaded == imageEntity.size && imageEntity.size > 0) {
+                    imageEntity.status = Status.FINISHED
                     post.done += 1
-                    post.downloaded += image.size
+                    post.downloaded += imageEntity.size
                     dataTransaction.updatePost(post)
                 } else {
-                    image.status = Status.ERROR
+                    imageEntity.status = Status.ERROR
                 }
-                dataTransaction.updateImage(image)
+                dataTransaction.updateImage(imageEntity)
             }
         } catch (e: Exception) {
             if (stopped) {
                 return
             }
-            image.status = Status.ERROR
-            dataTransaction.updateImage(image)
+            imageEntity.status = Status.ERROR
+            dataTransaction.updateImage(imageEntity)
             throw DownloadException(e)
         }
     }
@@ -110,7 +110,7 @@ class ImageDownloadRunnable(
                     "%03d_", index + 1
                 ) else ""
             }$filename"
-            image.filename = finalFilename
+            imageEntity.filename = finalFilename
             val imageDownloadPath = downloadDestinationFolder.resolve(finalFilename)
             Files.copy(downloadedImage.path, imageDownloadPath, StandardCopyOption.REPLACE_EXISTING)
         } catch (e: Exception) {
@@ -138,11 +138,11 @@ class ImageDownloadRunnable(
         if (this === other) return true
         if (other == null || javaClass != other.javaClass) return false
         val that = other as ImageDownloadRunnable
-        return image.id == that.image.id
+        return imageEntity.id == that.imageEntity.id
     }
 
     override fun hashCode(): Int {
-        return Objects.hash(image.id)
+        return Objects.hash(imageEntity.id)
     }
 
     fun stop() {

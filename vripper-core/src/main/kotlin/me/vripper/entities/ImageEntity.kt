@@ -2,7 +2,7 @@ package me.vripper.entities
 
 import me.vripper.entities.domain.Status
 
-data class Image(
+data class ImageEntity(
     val id: Long = -1,
     val postId: Long,
     val url: String,
@@ -19,7 +19,7 @@ data class Image(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as Image
+        other as ImageEntity
 
         if (url != other.url) return false
 

@@ -1,34 +1,165 @@
 package me.vripper.gui.components.views
 
+import atlantafx.base.theme.Styles
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.scene.control.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.filterIsInstance
-import me.vripper.event.EventBus
-import me.vripper.event.ThreadClearEvent
-import me.vripper.event.ThreadCreateEvent
-import me.vripper.event.ThreadDeleteEvent
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.javafx.asFlow
 import me.vripper.gui.components.fragments.ColumnSelectionFragment
 import me.vripper.gui.components.fragments.ThreadSelectionTableFragment
 import me.vripper.gui.controller.ThreadController
 import me.vripper.gui.controller.WidgetsController
+import me.vripper.gui.event.GuiEventBus
 import me.vripper.gui.model.ThreadModel
 import me.vripper.gui.utils.openLink
+import me.vripper.services.IAppEndpointService
 import org.kordamp.ikonli.feather.Feather
 import org.kordamp.ikonli.javafx.FontIcon
 import tornadofx.*
 
 class ThreadTableView : View() {
 
+    private val coroutineScope = CoroutineScope(SupervisorJob())
     private val threadController: ThreadController by inject()
     private val widgetsController: WidgetsController by inject()
-    private val eventBus: EventBus by di()
-    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    lateinit var tableView: TableView<ThreadModel>
-    private var items: ObservableList<ThreadModel> = FXCollections.observableArrayList()
+    private val localAppEndpointService: IAppEndpointService by di("localAppEndpointService")
+    private val remoteAppEndpointService: IAppEndpointService by di("remoteAppEndpointService")
+    private val tableView: TableView<ThreadModel>
+    private val items: ObservableList<ThreadModel> = FXCollections.observableArrayList()
+    private val jobs = mutableListOf<Job>()
+
+    override val root = vbox {}
 
     init {
+        coroutineScope.launch {
+            GuiEventBus.events.collect { event ->
+                when (event) {
+                    is GuiEventBus.LocalSession -> {
+                        threadController.appEndpointService = localAppEndpointService
+                        connect()
+                    }
+
+                    is GuiEventBus.RemoteSession -> {
+                        threadController.appEndpointService = remoteAppEndpointService
+                        connect()
+                    }
+
+                    is GuiEventBus.ChangingSession -> {
+                        jobs.forEach { it.cancel() }
+                        jobs.clear()
+                    }
+                }
+            }
+        }
+
+        with(root) {
+            tableView = tableview(items) {
+                addClass(Styles.DENSE, Styles.STRIPED)
+                selectionModel.selectionMode = SelectionMode.MULTIPLE
+                setRowFactory {
+                    val tableRow = TableRow<ThreadModel>()
+
+                    tableRow.setOnMouseClicked {
+                        if (it.clickCount == 2 && tableRow.item != null) {
+                            selectPosts(tableRow.item.threadId)
+                        }
+                    }
+
+                    val selectItem = MenuItem("Select posts").apply {
+                        setOnAction {
+                            selectPosts(tableRow.item.threadId)
+                        }
+                        graphic = FontIcon.of(Feather.MENU)
+                    }
+
+                    val urlItem = MenuItem("Open link").apply {
+                        setOnAction {
+                            openLink(tableRow.item.link)
+                        }
+                        graphic = FontIcon.of(Feather.LINK)
+                    }
+
+                    val deleteItem = MenuItem("Delete").apply {
+                        setOnAction {
+                            deleteSelected()
+                        }
+                        graphic = FontIcon.of(Feather.TRASH)
+                    }
+
+                    val contextMenu = ContextMenu()
+                    contextMenu.items.addAll(selectItem, urlItem, SeparatorMenuItem(), deleteItem)
+                    tableRow.contextMenuProperty()
+                        .bind(tableRow.emptyProperty().map { empty -> if (empty) null else contextMenu })
+                    tableRow
+                }
+                contextMenu = ContextMenu()
+                contextMenu.items.addAll(MenuItem("Setup columns").apply {
+                    setOnAction {
+                        find<ColumnSelectionFragment>(
+                            mapOf(
+                                ColumnSelectionFragment::map to mapOf(
+                                    Pair(
+                                        "Title", widgetsController.currentSettings.threadsColumnsModel.titleProperty
+                                    ),
+                                    Pair(
+                                        "URL", widgetsController.currentSettings.threadsColumnsModel.linkProperty
+                                    ),
+                                    Pair(
+                                        "Count", widgetsController.currentSettings.threadsColumnsModel.countProperty
+                                    ),
+                                )
+                            )
+                        ).openModal()
+                    }
+                    graphic = FontIcon.of(Feather.COLUMNS)
+                }, SeparatorMenuItem(), MenuItem("Clear", FontIcon.of(Feather.TRASH_2)).apply {
+                    setOnAction {
+                        confirm(
+                            "",
+                            "Confirm removal of all threads",
+                            ButtonType.YES,
+                            ButtonType.NO,
+                            owner = primaryStage,
+                            title = "Clean threads"
+                        ) {
+                            coroutineScope.launch {
+                                threadController.clearAll()
+                            }
+                        }
+                    }
+                })
+                column("Title", ThreadModel::titleProperty) {
+                    visibleProperty().bind(widgetsController.currentSettings.threadsColumnsModel.titleProperty)
+                    prefWidth = widgetsController.currentSettings.threadsColumnsWidthModel.title
+                    coroutineScope.launch {
+                        widthProperty().asFlow().debounce(200).collect {
+                            widgetsController.currentSettings.threadsColumnsWidthModel.title = it as Double
+                        }
+                    }
+                }
+                column("URL", ThreadModel::linkProperty) {
+                    visibleProperty().bind(widgetsController.currentSettings.threadsColumnsModel.linkProperty)
+                    prefWidth = widgetsController.currentSettings.threadsColumnsWidthModel.link
+                    coroutineScope.launch {
+                        widthProperty().asFlow().debounce(200).collect {
+                            widgetsController.currentSettings.threadsColumnsWidthModel.link = it as Double
+                        }
+                    }
+                }
+                column("Count", ThreadModel::totalProperty) {
+                    visibleProperty().bind(widgetsController.currentSettings.threadsColumnsModel.countProperty)
+                    prefWidth = widgetsController.currentSettings.threadsColumnsWidthModel.count
+                    coroutineScope.launch {
+                        widthProperty().asFlow().debounce(200).collect {
+                            widgetsController.currentSettings.threadsColumnsWidthModel.count = it as Double
+                        }
+                    }
+                }
+            }
+        }
+
         titleProperty.bind(items.sizeProperty.map {
             if (it.toLong() > 0) {
                 "Threads (${it.toLong()})"
@@ -36,143 +167,57 @@ class ThreadTableView : View() {
                 "Threads"
             }
         })
-    }
-
-    override fun onDock() {
         tableView.prefHeightProperty().bind(root.heightProperty())
         tableView.placeholder = Label("Loading")
+    }
+
+    fun connect() {
         coroutineScope.launch {
-            val list = coroutineScope.async {
+            val list = async {
                 threadController.findAll()
             }.await()
             runLater {
+                items.clear()
                 items.addAll(list)
                 tableView.placeholder = Label("No content in table")
             }
         }
         coroutineScope.launch {
-            eventBus.events.filterIsInstance(ThreadCreateEvent::class).collect {
-                val threadModelMapper = threadController.threadModelMapper(it.thread)
+            threadController.onNewThread().collect {
                 runLater {
-                    items.add(threadModelMapper)
+                    items.add(it)
                 }
             }
-        }
+        }.also { jobs.add(it) }
 
         coroutineScope.launch {
-            eventBus.events.filterIsInstance(ThreadCreateEvent::class).collect {
-                val threadModelMapper = threadController.threadModelMapper(it.thread)
+            threadController.onUpdateThread().collect { thread ->
                 runLater {
-                    items.add(threadModelMapper)
+                    val threadModel = items.find { it.threadId == thread.threadId } ?: return@runLater
+                    threadModel.total = thread.total
+                    threadModel.title = thread.title
                 }
             }
-        }
+        }.also { jobs.add(it) }
 
         coroutineScope.launch {
-            eventBus.events.filterIsInstance(ThreadDeleteEvent::class).collect { event ->
+            threadController.onDeleteThread().collect { threadId ->
                 runLater {
-                    tableView.items.removeIf { it.threadId == event.threadId }
+                    tableView.items.removeIf { it.threadId == threadId }
                 }
             }
-        }
+        }.also { jobs.add(it) }
 
         coroutineScope.launch {
-            eventBus.events.filterIsInstance(ThreadClearEvent::class).collect {
+            threadController.onClearThreads().collect {
                 runLater {
                     tableView.items.clear()
                 }
             }
-        }
+        }.also { jobs.add(it) }
     }
 
-    override val root = vbox {
-        tableView = tableview(items) {
-            selectionModel.selectionMode = SelectionMode.MULTIPLE
-            setRowFactory {
-                val tableRow = TableRow<ThreadModel>()
-
-                tableRow.setOnMouseClicked {
-                    if (it.clickCount == 2 && tableRow.item != null) {
-                        selectPosts(tableRow.item.threadId)
-                    }
-                }
-
-                val selectItem = MenuItem("Select posts").apply {
-                    setOnAction {
-                        selectPosts(tableRow.item.threadId)
-                    }
-                    graphic = FontIcon.of(Feather.MENU)
-                }
-
-                val urlItem = MenuItem("Open link").apply {
-                    setOnAction {
-                        openLink(tableRow.item.link)
-                    }
-                    graphic = FontIcon.of(Feather.LINK)
-                }
-
-                val deleteItem = MenuItem("Delete").apply {
-                    setOnAction {
-                        deleteSelected()
-                    }
-                    graphic = FontIcon.of(Feather.TRASH)
-                }
-
-                val contextMenu = ContextMenu()
-                contextMenu.items.addAll(selectItem, urlItem, SeparatorMenuItem(), deleteItem)
-                tableRow.contextMenuProperty()
-                    .bind(tableRow.emptyProperty().map { empty -> if (empty) null else contextMenu })
-                tableRow
-            }
-            contextMenu = ContextMenu()
-            contextMenu.items.addAll(MenuItem("Setup columns").apply {
-                setOnAction {
-                    find<ColumnSelectionFragment>(
-                        mapOf(
-                            ColumnSelectionFragment::map to mapOf(
-                                Pair(
-                                    "Title", widgetsController.currentSettings.threadsColumnsModel.titleProperty
-                                ),
-                                Pair(
-                                    "URL", widgetsController.currentSettings.threadsColumnsModel.linkProperty
-                                ),
-                                Pair(
-                                    "Count", widgetsController.currentSettings.threadsColumnsModel.countProperty
-                                ),
-                            )
-                        )
-                    ).openModal()
-                }
-                graphic = FontIcon.of(Feather.COLUMNS)
-            }, SeparatorMenuItem(), MenuItem("Clear", FontIcon.of(Feather.TRASH_2)).apply {
-                setOnAction {
-                    confirm(
-                        "",
-                        "Confirm removal of all threads",
-                        ButtonType.YES,
-                        ButtonType.NO,
-                        owner = primaryStage,
-                        title = "Clean threads"
-                    ) {
-                        threadController.clearAll()
-                    }
-                }
-            })
-            column("Title", ThreadModel::titleProperty) {
-                visibleProperty().bind(widgetsController.currentSettings.threadsColumnsModel.titleProperty)
-                prefWidth = 350.0
-            }
-            column("URL", ThreadModel::linkProperty) {
-                visibleProperty().bind(widgetsController.currentSettings.threadsColumnsModel.linkProperty)
-                prefWidth = 350.0
-            }
-            column("Count", ThreadModel::totalProperty) {
-                visibleProperty().bind(widgetsController.currentSettings.threadsColumnsModel.countProperty)
-            }
-        }
-    }
-
-    fun deleteSelected() {
+    private fun deleteSelected() {
         val threadIdList = tableView.selectionModel.selectedItems.map { it.threadId }
         confirm(
             "",
@@ -182,7 +227,9 @@ class ThreadTableView : View() {
             owner = primaryStage,
             title = "Clean threads"
         ) {
-            threadController.delete(threadIdList)
+            coroutineScope.launch {
+                threadController.delete(threadIdList)
+            }
         }
     }
 

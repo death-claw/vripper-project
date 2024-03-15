@@ -6,7 +6,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import me.vripper.entities.Metadata
+import me.vripper.entities.MetadataEntity
 import me.vripper.exception.DownloadException
 import me.vripper.exception.VripperException
 import me.vripper.utilities.HtmlUtils
@@ -46,7 +46,7 @@ class MetadataService(
                         )
                     }.build())
 
-                val metadata = httpService.client.execute(httpGet, vgAuthService.context) {
+                val metadataEntity = httpService.client.execute(httpGet, vgAuthService.context) {
                     if (it.code / 100 != 2) {
                         throw DownloadException("Unexpected response code '${it.code}' for $httpGet")
                     }
@@ -68,9 +68,9 @@ class MetadataService(
                         document, java.lang.String.format("//div[@id='post_message_%s']", postId)
                     ) ?: throw VripperException("Unable to locate post content")
                     val titles = findTitleInContent(node)
-                    Metadata(postId, Metadata.Data(postedBy, titles))
+                    MetadataEntity(postId, MetadataEntity.Data(postedBy, titles))
                 }
-                dataTransaction.saveMetadata(metadata)
+                dataTransaction.saveMetadata(metadataEntity)
             }
         }
     }

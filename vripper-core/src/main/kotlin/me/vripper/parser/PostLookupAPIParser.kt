@@ -1,9 +1,8 @@
 package me.vripper.parser
 
-import me.vripper.entities.LogEntry
+import me.vripper.entities.LogEntryEntity
 import me.vripper.exception.DownloadException
 import me.vripper.exception.PostParseException
-import me.vripper.model.PostItem
 import me.vripper.services.*
 import me.vripper.utilities.Tasks
 import me.vripper.utilities.formatToString
@@ -42,8 +41,8 @@ class PostLookupAPIParser(private val threadId: Long, private val postId: Long) 
                     "parsing failed for thread $threadId, post $postId", it.failure
                 )
                 dataTransaction.saveLog(
-                    LogEntry(
-                        type = LogEntry.Type.POST, status = LogEntry.Status.ERROR, message = """
+                    LogEntryEntity(
+                        type = LogEntryEntity.Type.POST, status = LogEntryEntity.Status.ERROR, message = """
                     Failed to process thread $threadId, post $postId
                     ${it.failure.formatToString()}
                     """.trimIndent()

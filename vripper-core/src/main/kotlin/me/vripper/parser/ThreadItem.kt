@@ -1,4 +1,4 @@
-package me.vripper.model
+package me.vripper.parser
 
 data class ThreadItem(
     val threadId: Long,

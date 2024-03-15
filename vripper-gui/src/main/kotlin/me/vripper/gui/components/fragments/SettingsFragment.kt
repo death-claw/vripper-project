@@ -6,6 +6,10 @@ import javafx.scene.control.Alert
 import javafx.scene.control.TabPane
 import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import me.vripper.exception.ValidationException
 import me.vripper.gui.controller.SettingsController
 import org.kordamp.ikonli.feather.Feather
@@ -16,7 +20,7 @@ import tornadofx.*
 class SettingsFragment : Fragment("Settings") {
 
     private val settingsController: SettingsController by inject()
-
+    private val coroutineScope = CoroutineScope(SupervisorJob())
     private val downloadSettingsFragment: DownloadSettingsFragment = find()
     private val connectionSettingsFragment: ConnectionSettingsFragment = find()
     private val viperSettingsFragment: ViperSettingsFragment = find()
@@ -52,21 +56,28 @@ class SettingsFragment : Fragment("Settings") {
                     addClass(Styles.ACCENT)
                     isDefaultButton = true
                     action {
-                        try {
-                            settingsController.saveNewSettings(
-                                downloadSettingsFragment.downloadSettingsModel,
-                                connectionSettingsFragment.connectionSettingsModel,
-                                viperSettingsFragment.viperSettingsModel,
-                                systemSettingsFragment.systemSettingsModel
-                            )
-                            close()
-                        } catch (e: ValidationException) {
-                            alert(Alert.AlertType.ERROR, "Invalid settings", e.message)
+                        coroutineScope.launch {
+                            try {
+                                settingsController.saveNewSettings(
+                                    downloadSettingsFragment.downloadSettingsModel,
+                                    connectionSettingsFragment.connectionSettingsModel,
+                                    viperSettingsFragment.viperSettingsModel,
+                                    systemSettingsFragment.systemSettingsModel
+                                )
+                                runLater {
+                                    close()
+                                }
+                            } catch (e: ValidationException) {
+                                alert(Alert.AlertType.ERROR, "Invalid settings", e.message)
+                            }
                         }
-
                     }
                 }
             }
         }
+    }
+
+    override fun onUndock() {
+        coroutineScope.cancel()
     }
 }

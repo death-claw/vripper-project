@@ -13,10 +13,10 @@ class PreviewTableCell<T> : TableCell<T, ObservableList<String>>() {
 
     override fun updateItem(item: ObservableList<String>?, empty: Boolean) {
         super.updateItem(item, empty)
-        if (!empty) {
-            graphic = FontIcon.of(Feather.IMAGE)
+        graphic = if (!empty) {
+            FontIcon.of(Feather.IMAGE)
         } else {
-            graphic = null
+            null
         }
     }
 }

@@ -1,9 +1,6 @@
 package me.vripper.parser
 
 import me.vripper.host.Host
-import me.vripper.model.ImageItem
-import me.vripper.model.PostItem
-import me.vripper.model.ThreadItem
 import me.vripper.services.SettingsService
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject

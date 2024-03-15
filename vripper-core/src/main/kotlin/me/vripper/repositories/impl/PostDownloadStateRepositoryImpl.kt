@@ -1,6 +1,6 @@
 package me.vripper.repositories.impl
 
-import me.vripper.entities.Post
+import me.vripper.entities.PostEntity
 import me.vripper.entities.domain.Status
 import me.vripper.repositories.PostDownloadStateRepository
 import me.vripper.tables.PostTable
@@ -15,8 +15,8 @@ class PostDownloadStateRepositoryImpl :
 
     private val delimiter = ";"
 
-    override fun save(posts: List<Post>): List<Post> {
-        return PostTable.batchInsert(posts, shouldReturnGeneratedValues = true) { post ->
+    override fun save(postEntities: List<PostEntity>): List<PostEntity> {
+        return PostTable.batchInsert(postEntities, shouldReturnGeneratedValues = true) { post ->
             this[PostTable.status] = post.status.name
             this[PostTable.done] = post.done
             this[PostTable.total] = post.total
@@ -37,7 +37,7 @@ class PostDownloadStateRepositoryImpl :
         }.map(::transform)
     }
 
-    override fun findByPostId(postId: Long): Optional<Post> {
+    override fun findByPostId(postId: Long): Optional<PostEntity> {
         val result = PostTable.select {
             PostTable.postId eq postId
         }.map(::transform)
@@ -54,7 +54,7 @@ class PostDownloadStateRepositoryImpl :
         }.map { it[PostTable.postId] }
     }
 
-    override fun findById(id: Long): Optional<Post> {
+    override fun findById(id: Long): Optional<PostEntity> {
         val result = PostTable.select {
             PostTable.id eq id
         }.map { transform(it) }
@@ -66,7 +66,7 @@ class PostDownloadStateRepositoryImpl :
         }
     }
 
-    override fun findAll(): List<Post> {
+    override fun findAll(): List<PostEntity> {
         return PostTable.selectAll().map { transform(it) }
     }
 
@@ -84,19 +84,19 @@ class PostDownloadStateRepositoryImpl :
         return PostTable.deleteWhere { PostTable.postId eq postId }
     }
 
-    override fun update(post: Post) {
-        PostTable.update({ PostTable.id eq post.id }) {
-            it[status] = post.status.name
-            it[done] = post.done
-            it[rank] = post.rank
-            it[size] = post.size
-            it[downloaded] = post.downloaded
-            it[folderName] = post.folderName
+    override fun update(postEntity: PostEntity) {
+        PostTable.update({ PostTable.id eq postEntity.id }) {
+            it[status] = postEntity.status.name
+            it[done] = postEntity.done
+            it[rank] = postEntity.rank
+            it[size] = postEntity.size
+            it[downloaded] = postEntity.downloaded
+            it[folderName] = postEntity.folderName
         }
     }
 
-    override fun update(posts: List<Post>) {
-        PostTable.batchUpsert(posts, shouldReturnGeneratedValues = false) { post ->
+    override fun update(postEntities: List<PostEntity>) {
+        PostTable.batchUpsert(postEntities, shouldReturnGeneratedValues = false) { post ->
             this[PostTable.id] = post.id
             this[PostTable.status] = post.status.name
             this[PostTable.done] = post.done
@@ -144,7 +144,9 @@ class PostDownloadStateRepositoryImpl :
                 it.execute()
             }
 
-        conn.prepareStatement("TRUNCATE TABLE POSTS_DELETE")
+        conn.prepareStatement("TRUNCATE TABLE POSTS_DELETE").use {
+            it.execute()
+        }
     }
 
     override fun stopAll() {
@@ -159,7 +161,7 @@ class PostDownloadStateRepositoryImpl :
         }.map { it[PostTable.postId] }
     }
 
-    private fun transform(resultRow: ResultRow): Post {
+    private fun transform(resultRow: ResultRow): PostEntity {
         val id = resultRow[PostTable.id].value
         val status = Status.valueOf(resultRow[PostTable.status])
         val postId = resultRow[PostTable.postId]
@@ -179,7 +181,7 @@ class PostDownloadStateRepositoryImpl :
         val rank = resultRow[PostTable.rank]
         val size = resultRow[PostTable.size]
         val downloaded = resultRow[PostTable.downloaded]
-        return Post(
+        return PostEntity(
             id,
             postTitle,
             threadTitle,

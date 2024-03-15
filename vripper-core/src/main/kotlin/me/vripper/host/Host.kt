@@ -95,7 +95,7 @@ abstract class Host(
             ".tmp"
         )
         return Files.newOutputStream(tempImage).use { fos ->
-            val image = context.image
+            val image = context.imageEntity
             synchronized(image.postId.toString().intern()) {
                 val post = dataTransaction.findPostById(context.postId).orElseThrow()
                 val size = if (image.size < 0) {
@@ -155,7 +155,8 @@ abstract class Host(
         context: ImageDownloadContext,
         transformer: (ClassicHttpResponse) -> T
     ): T {
-        val httpGet = HttpGet(url).also { it.addHeader("Referer", context.image.url) }.also { context.requests.add(it) }
+        val httpGet =
+            HttpGet(url).also { it.addHeader("Referer", context.imageEntity.url) }.also { context.requests.add(it) }
         log.debug(String.format("Requesting %s", url))
         return httpService.client.execute(httpGet, context.httpContext) {
             if (it.code / 100 != 2) {

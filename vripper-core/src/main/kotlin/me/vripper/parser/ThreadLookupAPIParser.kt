@@ -1,9 +1,8 @@
 package me.vripper.parser
 
-import me.vripper.entities.LogEntry
+import me.vripper.entities.LogEntryEntity
 import me.vripper.exception.DownloadException
 import me.vripper.exception.PostParseException
-import me.vripper.model.ThreadItem
 import me.vripper.services.*
 import me.vripper.utilities.Tasks
 import me.vripper.utilities.formatToString
@@ -45,8 +44,8 @@ class ThreadLookupAPIParser(private val threadId: Long) : KoinComponent {
                     it.failure
                 )
                 dataTransaction.saveLog(
-                    LogEntry(
-                        type = LogEntry.Type.THREAD, status = LogEntry.Status.ERROR, message = """
+                    LogEntryEntity(
+                        type = LogEntryEntity.Type.THREAD, status = LogEntryEntity.Status.ERROR, message = """
                     Failed to process thread $threadId
                     ${it.failure.formatToString()}
                     """.trimIndent()

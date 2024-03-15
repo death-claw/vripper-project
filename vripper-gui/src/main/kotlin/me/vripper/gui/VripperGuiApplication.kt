@@ -4,19 +4,16 @@ import atlantafx.base.theme.CupertinoDark
 import atlantafx.base.theme.CupertinoLight
 import javafx.application.Application
 import javafx.scene.image.Image
-import javafx.scene.text.Font
 import javafx.stage.Stage
 import javafx.stage.WindowEvent
 import kotlinx.coroutines.*
 import me.vripper.gui.components.views.LoadingView
 import me.vripper.gui.controller.WidgetsController
-import me.vripper.gui.event.ApplicationInitialized
+import me.vripper.gui.event.GuiEventBus
 import me.vripper.listeners.AppLock
-import me.vripper.utilities.ApplicationProperties.VRIPPER_DIR
-import me.vripper.utilities.DbUtils
-import org.jetbrains.exposed.sql.Database
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
+import org.koin.core.qualifier.named
 import tornadofx.App
 import tornadofx.DIContainer
 import tornadofx.FX
@@ -26,18 +23,17 @@ import kotlin.system.exitProcess
 
 class VripperGuiApplication : App(
     LoadingView::class
-) { //The application class must be a TornadoFX application, and it must have the main view
+) {
 
     private var initialized = false
     private val widgetsController: WidgetsController by inject()
-    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val coroutineScope = CoroutineScope(SupervisorJob())
 
     init {
         APP_INSTANCE = this
     }
 
     override fun start(stage: Stage) {
-        Font.loadFont(this.javaClass.getResource("/Inter.ttf")!!.toExternalForm(), 12.0)
         if (widgetsController.currentSettings.darkMode) {
             setUserAgentStylesheet(CupertinoDark().userAgentStylesheet)
         } else {
@@ -74,8 +70,6 @@ class VripperGuiApplication : App(
             }
         }
         stage.addEventFilter(WindowEvent.WINDOW_SHOWN) {
-            Database.connect("jdbc:h2:file:$VRIPPER_DIR/vripper;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=30000;")
-            DbUtils.update()
             startKoin {
                 modules(modules)
             }
@@ -83,9 +77,15 @@ class VripperGuiApplication : App(
                 object : DIContainer {
                     override fun <T : Any> getInstance(type: KClass<T>): T =
                         GlobalContext.get().get(type)
+
+                    override fun <T : Any> getInstance(type: KClass<T>, name: String): T =
+                        GlobalContext.get().get(type, named(name))
+
                 }
-            fire(ApplicationInitialized)
-            initialized = true
+            coroutineScope.launch {
+                GuiEventBus.publishEvent(GuiEventBus.ApplicationInitialized)
+                initialized = true
+            }
         }
         super.start(stage)
     }
@@ -102,6 +102,7 @@ class VripperGuiApplication : App(
 }
 
 fun main(args: Array<String>) {
+    System.setProperty("prism.lcdtext", "false");
     AppLock.exclusiveLock()
     Application.launch(VripperGuiApplication::class.java, *args)
 }

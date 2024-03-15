@@ -11,6 +11,8 @@ import javafx.scene.input.MouseButton
 import javafx.scene.layout.Priority
 import javafx.util.Callback
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.javafx.asFlow
 import me.vripper.gui.components.cells.PreviewTableCell
 import me.vripper.gui.controller.ThreadController
 import me.vripper.gui.controller.WidgetsController
@@ -20,6 +22,7 @@ import me.vripper.gui.utils.openLink
 import org.kordamp.ikonli.feather.Feather
 import org.kordamp.ikonli.javafx.FontIcon
 import tornadofx.*
+import kotlin.io.path.Path
 
 class ThreadSelectionTableFragment : Fragment("Thread") {
 
@@ -37,7 +40,7 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
         tableView.prefHeightProperty().bind(root.heightProperty())
         tableView.placeholder = Label("Loading")
         coroutineScope.launch {
-            val list = threadController.grab(threadId).await()
+            val list = async { threadController.grab(threadId) }.await()
             runLater {
                 items.addAll(list)
             }
@@ -58,14 +61,19 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
         }
 
         tableView = tableview(items) {
+            addClass(Styles.DENSE, Styles.STRIPED)
             selectionModel.selectionMode = SelectionMode.MULTIPLE
             setRowFactory {
                 val tableRow = TableRow<ThreadSelectionModel>()
 
                 tableRow.setOnMouseClicked {
                     if (it.button.equals(MouseButton.PRIMARY) && it.clickCount == 2 && tableRow.item != null) {
-                        threadController.download(listOf(tableRow.item))
-                        close()
+                        coroutineScope.launch {
+                            async { threadController.download(listOf(tableRow.item)) }.await()
+                            runLater {
+                                close()
+                            }
+                        }
                     }
                 }
 
@@ -131,7 +139,11 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
                     cell.onMouseEntered = EventHandler { mouseEvent ->
                         preview?.hide()
                         if (cell.tableRow.item != null && cell.tableRow.item.previewList.isNotEmpty()) {
-                            preview = Preview(currentStage!!, cell.tableRow.item.previewList)
+                            preview = Preview(
+                                currentStage!!,
+                                cell.tableRow.item.previewList,
+                                Path(widgetsController.currentSettings.cachePath)
+                            )
                             preview?.previewPopup?.apply {
                                 x = mouseEvent.screenX + 20
                                 y = mouseEvent.screenY + 10
@@ -142,7 +154,12 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
                 }
             }
             column("Post Index", ThreadSelectionModel::indexProperty) {
-                prefWidth = 100.0
+                prefWidth = widgetsController.currentSettings.threadSelectionColumnsWidthModel.index
+                coroutineScope.launch {
+                    widthProperty().asFlow().debounce(200).collect {
+                        widgetsController.currentSettings.threadSelectionColumnsWidthModel.index = it as Double
+                    }
+                }
                 visibleProperty().bind(widgetsController.currentSettings.threadSelectionColumnsModel.indexProperty)
                 sortOrder.add(this)
                 cellFactory = Callback {
@@ -151,20 +168,35 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
             }
             column("Title", ThreadSelectionModel::titleProperty) {
                 visibleProperty().bind(widgetsController.currentSettings.threadSelectionColumnsModel.titleProperty)
-                prefWidth = 200.0
+                prefWidth = widgetsController.currentSettings.threadSelectionColumnsWidthModel.title
+                coroutineScope.launch {
+                    widthProperty().asFlow().debounce(200).collect {
+                        widgetsController.currentSettings.threadSelectionColumnsWidthModel.title = it as Double
+                    }
+                }
                 cellFactory = Callback {
                     TextFieldTableCell<ThreadSelectionModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
                 }
             }
             column("URL", ThreadSelectionModel::urlProperty) {
                 visibleProperty().bind(widgetsController.currentSettings.threadSelectionColumnsModel.linkProperty)
-                prefWidth = 200.0
+                prefWidth = widgetsController.currentSettings.threadSelectionColumnsWidthModel.link
+                coroutineScope.launch {
+                    widthProperty().asFlow().debounce(200).collect {
+                        widgetsController.currentSettings.threadSelectionColumnsWidthModel.link = it as Double
+                    }
+                }
                 cellFactory = Callback {
                     TextFieldTableCell<ThreadSelectionModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
                 }
             }
             column("Hosts", ThreadSelectionModel::hostsProperty) {
-                prefWidth = 100.0
+                prefWidth = widgetsController.currentSettings.threadSelectionColumnsWidthModel.hosts
+                coroutineScope.launch {
+                    widthProperty().asFlow().debounce(200).collect {
+                        widgetsController.currentSettings.threadSelectionColumnsWidthModel.hosts = it as Double
+                    }
+                }
                 visibleProperty().bind(widgetsController.currentSettings.threadSelectionColumnsModel.hostsProperty)
                 cellFactory = Callback {
                     TextFieldTableCell<ThreadSelectionModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
@@ -181,8 +213,12 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
                     tooltip("Download selected posts")
                     enableWhen { tableView.selectionModel.selectedItems.sizeProperty.greaterThan(0) }
                     action {
-                        threadController.download(tableView.selectionModel.selectedItems)
-                        close()
+                        coroutineScope.launch {
+                            async { threadController.download(tableView.selectionModel.selectedItems) }.await()
+                            runLater {
+                                close()
+                            }
+                        }
                     }
                 }
             }

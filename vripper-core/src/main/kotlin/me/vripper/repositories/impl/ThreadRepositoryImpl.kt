@@ -1,6 +1,6 @@
 package me.vripper.repositories.impl
 
-import me.vripper.entities.Thread
+import me.vripper.entities.ThreadEntity
 import me.vripper.repositories.ThreadRepository
 import me.vripper.tables.ThreadTable
 import org.jetbrains.exposed.sql.*
@@ -9,24 +9,24 @@ import java.util.*
 
 class ThreadRepositoryImpl : ThreadRepository {
 
-    override fun save(thread: Thread): Thread {
+    override fun save(threadEntity: ThreadEntity): ThreadEntity {
         val id = ThreadTable.insertAndGetId {
-            it[title] = thread.title
-            it[total] = thread.total
-            it[url] = thread.link
-            it[threadId] = thread.threadId
+            it[title] = threadEntity.title
+            it[total] = threadEntity.total
+            it[url] = threadEntity.link
+            it[threadId] = threadEntity.threadId
         }.value
-        return thread.copy(id = id)
+        return threadEntity.copy(id = id)
     }
 
-    override fun update(thread: Thread) {
-        ThreadTable.update({ ThreadTable.id eq thread.id }) {
-            it[title] = thread.title
-            it[total] = thread.total
+    override fun update(threadEntity: ThreadEntity) {
+        ThreadTable.update({ ThreadTable.id eq threadEntity.id }) {
+            it[title] = threadEntity.title
+            it[total] = threadEntity.total
         }
     }
 
-    override fun findByThreadId(threadId: Long): Optional<Thread> {
+    override fun findByThreadId(threadId: Long): Optional<ThreadEntity> {
         val result = ThreadTable.select {
             ThreadTable.threadId eq threadId
         }.map(this::transform)
@@ -37,11 +37,11 @@ class ThreadRepositoryImpl : ThreadRepository {
         }
     }
 
-    override fun findAll(): List<Thread> {
+    override fun findAll(): List<ThreadEntity> {
         return ThreadTable.selectAll().map(this::transform)
     }
 
-    override fun findById(id: Long): Optional<Thread> {
+    override fun findById(id: Long): Optional<ThreadEntity> {
         val result = ThreadTable.select {
             ThreadTable.id eq id
         }.map(this::transform)
@@ -60,12 +60,12 @@ class ThreadRepositoryImpl : ThreadRepository {
         ThreadTable.deleteAll()
     }
 
-    private fun transform(resultRow: ResultRow): Thread {
+    private fun transform(resultRow: ResultRow): ThreadEntity {
         val id = resultRow[ThreadTable.id].value
         val title = resultRow[ThreadTable.title]
         val url = resultRow[ThreadTable.url]
         val threadId = resultRow[ThreadTable.threadId]
         val total = resultRow[ThreadTable.total]
-        return Thread(id, title, url, threadId, total)
+        return ThreadEntity(id, title, url, threadId, total)
     }
 }

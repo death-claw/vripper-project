@@ -26,13 +26,13 @@ class DataBroadcast(
         coroutineScope.launch {
             coroutineScope.launch {
                 eventBus.events.filterIsInstance(PostCreateEvent::class).collect { events ->
-                    template.convertAndSend("/topic/posts/new", events.posts)
+                    template.convertAndSend("/topic/posts/new", events.postEntities)
                 }
             }
 
             coroutineScope.launch {
                 eventBus.events.filterIsInstance(PostUpdateEvent::class).collect { events ->
-                    template.convertAndSend("/topic/posts/updated", events.posts)
+                    template.convertAndSend("/topic/posts/updated", events.postEntities)
                 }
             }
 
@@ -75,14 +75,14 @@ class DataBroadcast(
 
             coroutineScope.launch {
                 eventBus.events.filterIsInstance(ImageEvent::class).collect { events ->
-                    events.images.groupBy { it.postId }.forEach {
+                    events.imageEntities.groupBy { it.postId }.forEach {
                         template.convertAndSend("/topic/images/${it.key}", it.value)
                     }
                 }
             }
 
             coroutineScope.launch {
-                eventBus.events.filterIsInstance(ThreadCreateEvent::class).map { listOf(it.thread) }
+                eventBus.events.filterIsInstance(ThreadCreateEvent::class).map { listOf(it.threadEntity) }
                     .collect { events ->
                         template.convertAndSend("/topic/threads", events)
                     }
@@ -104,14 +104,14 @@ class DataBroadcast(
             }
 
             coroutineScope.launch {
-                eventBus.events.filterIsInstance(LogCreateEvent::class).map { it.logEntry }
+                eventBus.events.filterIsInstance(LogCreateEvent::class).map { it.logEntryEntity }
                     .collect { logCreateEvent ->
                         template.convertAndSend("/topic/logs/new", listOf(logCreateEvent))
                     }
             }
 
             coroutineScope.launch {
-                eventBus.events.filterIsInstance(LogUpdateEvent::class).map { it.logEntry }
+                eventBus.events.filterIsInstance(LogUpdateEvent::class).map { it.logEntryEntity }
                     .collect { logUpdateEvent ->
                         template.convertAndSend("/topic/logs/updated", listOf(logUpdateEvent))
                     }

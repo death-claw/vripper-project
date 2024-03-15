@@ -1,16 +1,16 @@
-import { Component, EventEmitter, Inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MatButtonModule } from '@angular/material/button';
-import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
-import { ApplicationEndpointService } from '../services/application-endpoint.service';
-import { PostItem } from '../domain/post-item.model';
-import { DialogRef } from '@angular/cdk/dialog';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatTableModule } from '@angular/material/table';
-import { DataSource, SelectionModel } from '@angular/cdk/collections';
-import { Thread } from '../domain/thread.model';
-import { BehaviorSubject, finalize, Observable } from 'rxjs';
-import { isDisplayed } from '../utils/utils';
+import {Component, EventEmitter, Inject, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {MatButtonModule} from '@angular/material/button';
+import {MAT_DIALOG_DATA, MatDialogModule} from '@angular/material/dialog';
+import {ApplicationEndpointService} from '../services/application-endpoint.service';
+import {PostItem} from '../domain/post-item.model';
+import {DialogRef} from '@angular/cdk/dialog';
+import {MatCheckboxModule} from '@angular/material/checkbox';
+import {MatTableModule} from '@angular/material/table';
+import {DataSource, SelectionModel} from '@angular/cdk/collections';
+import {Thread} from '../domain/thread.model';
+import {BehaviorSubject, finalize, Observable} from 'rxjs';
+import {isDisplayed} from '../utils/utils';
 
 export interface ThreadDialogData {
   threadId: number;
@@ -92,10 +92,6 @@ export class ThreadSelectionComponent {
   downloadSelected() {
     this.download(this.selection.selected);
   }
-
-  formatHosts = (hosts: [{ first: string; second: number }]): string => {
-    return hosts.map(v => `${v.first} (${v.second})`).join(', ');
-  };
 
   private download = (items: PostItem[]) => {
     this.applicationEndpoint.download(items).subscribe(() => {

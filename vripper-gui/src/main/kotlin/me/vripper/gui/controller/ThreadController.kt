@@ -1,26 +1,27 @@
 package me.vripper.gui.controller
 
-import kotlinx.coroutines.*
-import me.vripper.entities.Thread
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import me.vripper.delegate.LoggerDelegate
+import me.vripper.entities.ThreadEntity
 import me.vripper.gui.model.ThreadModel
 import me.vripper.gui.model.ThreadSelectionModel
 import me.vripper.model.ThreadPostId
-import me.vripper.services.AppEndpointService
-import me.vripper.services.DataTransaction
+import me.vripper.services.IAppEndpointService
 import org.koin.core.component.KoinComponent
 import tornadofx.Controller
 
 class ThreadController : KoinComponent, Controller() {
+    private val logger by LoggerDelegate()
+    lateinit var appEndpointService: IAppEndpointService
 
-    private val dataTransaction by di<DataTransaction>()
-    private val appEndpointService: AppEndpointService by di()
-    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    fun findAll(): List<ThreadModel> {
-        return dataTransaction.findAllThreads().map(::threadModelMapper)
+    suspend fun findAll(): List<ThreadModel> {
+        return appEndpointService.findAllThreads().map(::threadModelMapper)
     }
 
-    fun threadModelMapper(it: Thread): ThreadModel {
+    private fun threadModelMapper(it: ThreadEntity): ThreadModel {
         return ThreadModel(
             it.title,
             it.link,
@@ -29,15 +30,15 @@ class ThreadController : KoinComponent, Controller() {
         )
     }
 
-    fun delete(threadIdList: List<Long>) {
+    suspend fun delete(threadIdList: List<Long>) {
         appEndpointService.threadRemove(threadIdList)
     }
 
-    fun clearAll() {
+    suspend fun clearAll() {
         appEndpointService.threadClear()
     }
 
-    fun grab(threadId: Long): Deferred<List<ThreadSelectionModel>> = coroutineScope.async {
+    suspend fun grab(threadId: Long): List<ThreadSelectionModel> =
         appEndpointService.grab(threadId).map { postItem ->
             ThreadSelectionModel(
                 postItem.number,
@@ -46,17 +47,37 @@ class ThreadController : KoinComponent, Controller() {
                 postItem.hosts,
                 postItem.postId,
                 postItem.threadId,
-                postItem.imageItemList.take(4).map { it.thumbLink }
+                postItem.previews.take(4)
             )
         }
-    }
 
-    fun download(selectedItems: List<ThreadSelectionModel>) {
+
+    suspend fun download(selectedItems: List<ThreadSelectionModel>) {
         appEndpointService.download(selectedItems.map {
             ThreadPostId(
                 it.threadId,
                 it.postId
             )
         })
+    }
+
+    fun onNewThread() = appEndpointService.onNewThread().map(::threadModelMapper).catch {
+        logger.error("gRPC error", it)
+        currentCoroutineContext().cancel(null)
+    }
+
+    fun onUpdateThread() = appEndpointService.onUpdateThread().catch {
+        logger.error("gRPC error", it)
+        currentCoroutineContext().cancel(null)
+    }
+
+    fun onDeleteThread() = appEndpointService.onDeleteThread().catch {
+        logger.error("gRPC error", it)
+        currentCoroutineContext().cancel(null)
+    }
+
+    fun onClearThreads() = appEndpointService.onClearThreads().catch {
+        logger.error("gRPC error", it)
+        currentCoroutineContext().cancel(null)
     }
 }

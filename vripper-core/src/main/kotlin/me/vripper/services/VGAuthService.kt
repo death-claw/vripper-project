@@ -5,7 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
-import me.vripper.entities.Post
+import me.vripper.entities.PostEntity
 import me.vripper.event.EventBus
 import me.vripper.event.SettingsUpdateEvent
 import me.vripper.event.VGUserLoginEvent
@@ -34,7 +34,7 @@ class VGAuthService(
 
     private var authenticated = false
 
-    fun init() {
+    init {
         context.cookieStore = BasicCookieStore()
         coroutineScope.launch {
             eventBus.events.filterIsInstance(SettingsUpdateEvent::class).collect {
@@ -122,9 +122,9 @@ class VGAuthService(
         }
     }
 
-    fun leaveThanks(post: Post) {
+    fun leaveThanks(postEntity: PostEntity) {
         CompletableFuture.runAsync(
-            LeaveThanksRunnable(post, authenticated, context), GLOBAL_EXECUTOR
+            LeaveThanksRunnable(postEntity, authenticated, context), GLOBAL_EXECUTOR
         )
     }
 }

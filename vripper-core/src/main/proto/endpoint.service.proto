@@ -1,0 +1,114 @@
+syntax = "proto3";
+option java_package = "me.vripper.proto";
+import "post.proto";
+import "posts.proto";
+import "image.proto";
+import "images.proto";
+import "metadata.proto";
+import "log.proto";
+import "logs.proto";
+import "thread.proto";
+import "threads.proto";
+import "settings.proto";
+
+message EmptyRequest {}
+message EmptyResponse {}
+message Links {
+  string links = 1;
+}
+message IdList {
+  repeated int64 ids = 1;
+}
+message Id {
+  int64 id = 1;
+}
+message DownloadSpeed {
+  int64 speed = 1;
+}
+message VGUser {
+  string user = 1;
+}
+message QueueState {
+  int32 running = 1;
+  int32 remaining = 2;
+}
+message ErrorCount {
+  int32 count = 1;
+}
+message TasksRunning {
+  bool running = 1;
+}
+message Rename {
+  int64 postId = 1;
+  string name = 2;
+}
+message PostSelection {
+  int64 threadId = 1;
+  string threadTitle = 2;
+  int64 postId = 3;
+  int32 number = 4;
+  string title = 5;
+  int32 imageCount = 6;
+  string url = 7;
+  string hosts = 8;
+  string forum = 10;
+  repeated string previews = 11;
+}
+message PostSelectionList {
+  repeated PostSelection postSelectionList = 1;
+}
+message ThreadPostId {
+  int64 threadId = 1;
+  int64 postId = 2;
+}
+message ThreadPostIdList {
+  repeated ThreadPostId threadPostIdList = 1;
+}
+message ProxyList {
+  repeated string proxies = 1;
+}
+message LoggedInUser {
+  string user = 1;
+}
+
+service EndpointService {
+  rpc scanLinks (Links) returns (EmptyResponse) {}
+  rpc onNewPosts (EmptyRequest) returns (stream Post) {}
+  rpc onUpdatePosts (EmptyRequest) returns (stream Post) {}
+  rpc onDeletePosts (EmptyRequest) returns (stream Id) {}
+  rpc findAllPosts (EmptyRequest) returns (Posts) {}
+  rpc restartAll (IdList) returns (EmptyResponse) {}
+  rpc stopAll (IdList) returns (EmptyResponse) {}
+  rpc findPost (Id) returns (Post) {}
+  rpc findImagesByPostId (Id) returns (Images) {}
+  rpc onUpdateImages (Id) returns (stream Image) {}
+  rpc onDownloadSpeed (EmptyRequest) returns (stream DownloadSpeed) {}
+  rpc onVGUserUpdate (EmptyRequest) returns (stream VGUser) {}
+  rpc onQueueStateUpdate (EmptyRequest) returns (stream QueueState) {}
+  rpc onErrorCountUpdate (EmptyRequest) returns (stream ErrorCount) {}
+  rpc onTasksRunning (EmptyRequest) returns (stream TasksRunning) {}
+  rpc onUpdateMetadata (EmptyRequest) returns (stream Metadata) {}
+  rpc remove (IdList) returns (EmptyResponse) {}
+  rpc clearCompleted (EmptyRequest) returns (IdList) {}
+  rpc rename (Rename) returns (EmptyResponse) {}
+  rpc onStopped (EmptyRequest) returns (stream Id) {}
+  rpc logClear (EmptyRequest) returns (EmptyResponse) {}
+  rpc findAllLogs (EmptyRequest) returns (Logs) {}
+  rpc onNewLog (EmptyRequest) returns (stream Log) {}
+  rpc onUpdateLog (EmptyRequest) returns (stream Log) {}
+  rpc onDeleteLogs (EmptyRequest) returns (stream Id) {}
+  rpc onNewThread (EmptyRequest) returns (stream Thread) {}
+  rpc onUpdateThread (EmptyRequest) returns (stream Thread) {}
+  rpc onDeleteThread (EmptyRequest) returns (stream Id) {}
+  rpc onClearThreads (EmptyRequest) returns (stream EmptyResponse) {}
+  rpc findAllThreads (EmptyRequest) returns (Threads) {}
+  rpc threadRemove (IdList) returns (EmptyResponse) {}
+  rpc threadClear (EmptyRequest) returns (EmptyResponse) {}
+  rpc grab (Id) returns (PostSelectionList) {}
+  rpc download (ThreadPostIdList) returns (EmptyResponse) {}
+  rpc getSettings (EmptyRequest) returns (Settings) {}
+  rpc saveSettings (Settings) returns (EmptyResponse) {}
+  rpc getProxies (EmptyRequest) returns (ProxyList) {}
+  rpc onUpdateSettings (EmptyRequest) returns (stream Settings) {}
+  rpc loggedInUser (EmptyRequest) returns (LoggedInUser) {}
+}
