@@ -81,21 +81,17 @@ class SessionFragment : Fragment("Change Session") {
                             when ((selectedToggle as RadioButton).id) {
                                 "localSession" -> {
                                     coroutineScope.launch {
-                                        if (!widgetsController.currentSettings.localSession) {
-                                            runLater {
-                                                disableConfirm.set(true)
-                                                message.set("Starting...")
-                                            }
-                                            widgetsController.currentSettings.localSession = true
-                                            DatabaseManager.connect()
-                                            GuiEventBus.publishEvent(GuiEventBus.ChangingSession)
-                                            grpcEndpointService.disconnect()
-                                            GuiEventBus.publishEvent(GuiEventBus.LocalSession)
-                                            runLater {
-                                                component.replaceWith(find<AppView>())
-                                            }
-                                        }
                                         runLater {
+                                            disableConfirm.set(true)
+                                            message.set("Starting...")
+                                        }
+                                        widgetsController.currentSettings.localSession = true
+                                        DatabaseManager.connect()
+                                        GuiEventBus.publishEvent(GuiEventBus.ChangingSession)
+                                        grpcEndpointService.disconnect()
+                                        GuiEventBus.publishEvent(GuiEventBus.LocalSession)
+                                        runLater {
+                                            component.replaceWith(find<AppView>())
                                             close()
                                         }
                                     }
