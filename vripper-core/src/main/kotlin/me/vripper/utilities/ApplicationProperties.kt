@@ -15,7 +15,8 @@ import kotlin.io.path.pathString
 
 object ApplicationProperties {
     val VERSION: String =
-        ApplicationProperties.javaClass.getResourceAsStream("/version")?.reader()?.readText() ?: "undefined"
+        ApplicationProperties.javaClass.getResourceAsStream("/version")
+            ?.use { inputStream -> inputStream.reader().use { it.readText() } } ?: "undefined"
     private const val BASE_DIR_NAME: String = "vripper"
     private val portable = System.getProperty("vripper.portable", "true").toBoolean()
     private val BASE_DIR: String = getBaseDir()

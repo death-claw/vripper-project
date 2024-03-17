@@ -228,6 +228,9 @@ class GrpcEndpointService : IAppEndpointService {
     override suspend fun loggedInUser(): String =
         endpointServiceCoroutineStub!!.loggedInUser(EmptyRequest.getDefaultInstance()).user
 
+    override suspend fun getVersion(): String =
+        endpointServiceCoroutineStub!!.getVersion(EmptyRequest.getDefaultInstance()).version
+
     private fun mapper(settings: SettingsOuterClass.Settings): Settings =
         Settings(
             viperSettings = ViperSettings(

@@ -121,11 +121,12 @@ class StatusBarView : View("Status bar") {
                 while (isActive) {
                     if (grpcEndpointService.connectionState() != ConnectivityState.READY) {
                         runLater {
-                            remoteText.set("Unable to connect to")
+                            remoteText.set("Unable to connect to ${widgetsController.currentSettings.remoteSessionModel.host}:${widgetsController.currentSettings.remoteSessionModel.port}")
                         }
                     } else {
+                        val version = grpcEndpointService.getVersion()
                         runLater {
-                            remoteText.set("Connected to")
+                            remoteText.set("Connected to ${widgetsController.currentSettings.remoteSessionModel.host}:${widgetsController.currentSettings.remoteSessionModel.port} v$version")
                         }
                     }
                     delay(5000)
@@ -138,7 +139,7 @@ class StatusBarView : View("Status bar") {
         id = "statusbar"
         left {
             hbox {
-                label(remoteText.map { "$it ${widgetsController.currentSettings.remoteSessionModel.host}:${widgetsController.currentSettings.remoteSessionModel.port}" }) {
+                label(remoteText) {
                     visibleWhen { widgetsController.currentSettings.localSessionProperty.not() }
                 }
                 separator(Orientation.VERTICAL) {

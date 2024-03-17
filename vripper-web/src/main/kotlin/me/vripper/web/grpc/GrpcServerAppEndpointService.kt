@@ -218,6 +218,9 @@ class GrpcServerAppEndpointService : EndpointServiceGrpcKt.EndpointServiceCorout
     override suspend fun loggedInUser(request: EmptyRequest): LoggedInUser =
         LoggedInUser.newBuilder().setUser(appEndpointService.loggedInUser()).build()
 
+    override suspend fun getVersion(request: EmptyRequest): Version =
+        Version.newBuilder().setVersion(appEndpointService.getVersion()).build()
+
     private fun mapper(settings: Settings): SettingsOuterClass.Settings {
         val viperSettings = with(SettingsOuterClass.ViperSettings.newBuilder()) {
             login = settings.viperSettings.login

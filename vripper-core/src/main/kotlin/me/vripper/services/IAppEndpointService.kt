@@ -43,4 +43,5 @@ interface IAppEndpointService {
     suspend fun getProxies(): List<String>
     fun onUpdateSettings(): Flow<Settings>
     suspend fun loggedInUser(): String
+    suspend fun getVersion(): String
 }

@@ -70,6 +70,9 @@ message ProxyList {
 message LoggedInUser {
   string user = 1;
 }
+message Version {
+  string version = 1;
+}
 
 service EndpointService {
   rpc scanLinks (Links) returns (EmptyResponse) {}
@@ -111,4 +114,5 @@ service EndpointService {
   rpc getProxies (EmptyRequest) returns (ProxyList) {}
   rpc onUpdateSettings (EmptyRequest) returns (stream Settings) {}
   rpc loggedInUser (EmptyRequest) returns (LoggedInUser) {}
+  rpc getVersion (EmptyRequest) returns (Version) {}
 }

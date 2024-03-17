@@ -12,6 +12,7 @@ import me.vripper.exception.PostParseException
 import me.vripper.model.*
 import me.vripper.tasks.AddPostRunnable
 import me.vripper.tasks.ThreadLookupRunnable
+import me.vripper.utilities.ApplicationProperties
 import me.vripper.utilities.GLOBAL_EXECUTOR
 import me.vripper.utilities.PathUtils
 import java.time.Duration
@@ -250,10 +251,9 @@ class AppEndpointService(
         return dataTransaction.findImagesByPostId(postId)
     }
 
-    override fun onUpdateImages(postId: Long): Flow<Image> =
-        EventBus.events.filterIsInstance(ImageEvent::class).map {
-            it.imageEntities.filter { imageEntity: Image -> imageEntity.postId == postId }
-        }.filter { it.isNotEmpty() }.flatMapConcat { it.asFlow() }
+    override fun onUpdateImages(postId: Long): Flow<Image> = EventBus.events.filterIsInstance(ImageEvent::class).map {
+        it.imageEntities.filter { imageEntity: Image -> imageEntity.postId == postId }
+    }.filter { it.isNotEmpty() }.flatMapConcat { it.asFlow() }
 
 
     override fun onStopped(): Flow<Long> =
@@ -264,20 +264,17 @@ class AppEndpointService(
         return dataTransaction.findAllLogs()
     }
 
-    override fun onNewLog() =
-        EventBus.events.filterIsInstance(LogCreateEvent::class).map { it.logEntryEntity }
+    override fun onNewLog() = EventBus.events.filterIsInstance(LogCreateEvent::class).map { it.logEntryEntity }
 
 
-    override fun onUpdateLog() =
-        EventBus.events.filterIsInstance(LogUpdateEvent::class).map {
-            it.logEntryEntity
-        }
+    override fun onUpdateLog() = EventBus.events.filterIsInstance(LogUpdateEvent::class).map {
+        it.logEntryEntity
+    }
 
 
-    override fun onDeleteLogs(): Flow<Long> =
-        EventBus.events.filterIsInstance(LogDeleteEvent::class).flatMapConcat {
-            it.deleted.asFlow()
-        }
+    override fun onDeleteLogs(): Flow<Long> = EventBus.events.filterIsInstance(LogDeleteEvent::class).flatMapConcat {
+        it.deleted.asFlow()
+    }
 
 
     override fun onNewThread(): Flow<Thread> =
@@ -292,8 +289,7 @@ class AppEndpointService(
         EventBus.events.filterIsInstance(ThreadDeleteEvent::class).map { it.threadId }
 
 
-    override fun onClearThreads(): Flow<Unit> =
-        EventBus.events.filterIsInstance(ThreadClearEvent::class).map { }
+    override fun onClearThreads(): Flow<Unit> = EventBus.events.filterIsInstance(ThreadClearEvent::class).map { }
 
 
     override suspend fun findAllThreads(): List<Thread> {
@@ -325,5 +321,7 @@ class AppEndpointService(
         EventBus.events.filterIsInstance(SettingsUpdateEvent::class).map { it.settings }
 
     override suspend fun loggedInUser(): String = vgAuthService.loggedUser
+
+    override suspend fun getVersion(): String = ApplicationProperties.VERSION
 
 }
