@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import me.vripper.event.EventBus
 import me.vripper.event.SettingsUpdateEvent
-import me.vripper.model.ThreadItem
+import me.vripper.parser.ThreadItem
 import me.vripper.parser.ThreadLookupAPIParser
 import java.util.*
 import java.util.concurrent.ExecutionException

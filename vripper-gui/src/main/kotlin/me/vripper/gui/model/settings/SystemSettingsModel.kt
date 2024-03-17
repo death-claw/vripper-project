@@ -10,9 +10,6 @@ class SystemSettingsModel {
     val tempPathProperty = SimpleStringProperty()
     var tempPath: String by tempPathProperty
 
-    val cachePathProperty = SimpleStringProperty()
-    var cachePath: String by cachePathProperty
-
     val logEntriesProperty = SimpleIntegerProperty()
     var logEntries: Int by logEntriesProperty
 

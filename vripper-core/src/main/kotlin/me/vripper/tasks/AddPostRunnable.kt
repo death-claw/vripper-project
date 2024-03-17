@@ -1,8 +1,8 @@
 package me.vripper.tasks
 
 import me.vripper.download.DownloadService
-import me.vripper.model.PostItem
 import me.vripper.model.ThreadPostId
+import me.vripper.parser.PostItem
 import me.vripper.parser.PostLookupAPIParser
 import me.vripper.services.DataTransaction
 import me.vripper.services.MetadataService

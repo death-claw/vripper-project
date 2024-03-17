@@ -1,11 +1,12 @@
 package me.vripper.tasks
 
-import me.vripper.entities.LogEntry
-import me.vripper.entities.LogEntry.Status.ERROR
-import me.vripper.entities.Thread
+import kotlinx.coroutines.runBlocking
+import me.vripper.entities.LogEntryEntity
+import me.vripper.entities.LogEntryEntity.Status.ERROR
+import me.vripper.entities.ThreadEntity
 import me.vripper.model.Settings
-import me.vripper.model.ThreadItem
 import me.vripper.model.ThreadPostId
+import me.vripper.parser.ThreadItem
 import me.vripper.services.AppEndpointService
 import me.vripper.services.DataTransaction
 import me.vripper.services.SettingsService
@@ -33,11 +34,17 @@ class ThreadLookupRunnable(private val threadId: Long, private val settings: Set
                 val threadLookupResult = threadCacheService[threadId]
                 if (threadLookupResult.postItemList.isEmpty()) {
                     val message = "Nothing found for $link"
-                    dataTransaction.saveLog(LogEntry(type = LogEntry.Type.THREAD, status = ERROR, message = message))
+                    dataTransaction.saveLog(
+                        LogEntryEntity(
+                            type = LogEntryEntity.Type.THREAD,
+                            status = ERROR,
+                            message = message
+                        )
+                    )
                     return
                 }
                 dataTransaction.save(
-                    Thread(
+                    ThreadEntity(
                         title = threadLookupResult.title,
                         link = link,
                         threadId = threadId,
@@ -52,8 +59,8 @@ class ThreadLookupRunnable(private val threadId: Long, private val settings: Set
             val error = "Error when processing $link"
             log.error(error, e)
             dataTransaction.saveLog(
-                LogEntry(
-                    type = LogEntry.Type.THREAD, status = ERROR, message = """
+                LogEntryEntity(
+                    type = LogEntryEntity.Type.THREAD, status = ERROR, message = """
                 $error
                 ${e.formatToString()}
                 """.trimIndent()
@@ -66,7 +73,9 @@ class ThreadLookupRunnable(private val threadId: Long, private val settings: Set
 
     private fun autostart(lookupResult: ThreadItem) {
         if (lookupResult.postItemList.size <= settings.downloadSettings.autoQueueThreshold) {
-            appEndpointService.threadRemove(listOf(lookupResult.threadId))
+            runBlocking {
+                appEndpointService.threadRemove(listOf(lookupResult.threadId))
+            }
             CompletableFuture.runAsync(
                 AddPostRunnable(
                     lookupResult.postItemList.map { ThreadPostId(it.threadId, it.postId) }

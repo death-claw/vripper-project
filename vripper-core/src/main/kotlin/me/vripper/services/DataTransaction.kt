@@ -8,7 +8,7 @@ import me.vripper.entities.*
 import me.vripper.entities.domain.Status
 import me.vripper.event.*
 import me.vripper.model.ErrorCount
-import me.vripper.model.PostItem
+import me.vripper.parser.PostItem
 import me.vripper.repositories.*
 import me.vripper.utilities.PathUtils
 import me.vripper.utilities.PathUtils.sanitize
@@ -28,49 +28,49 @@ class DataTransaction(
 
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    private fun save(posts: List<Post>): List<Post> {
-        return transaction { postDownloadStateRepository.save(posts) }
+    private fun save(postEntities: List<PostEntity>): List<PostEntity> {
+        return transaction { postDownloadStateRepository.save(postEntities) }
     }
 
-    fun updatePosts(posts: List<Post>) {
-        transaction { postDownloadStateRepository.update(posts) }
+    fun updatePosts(postEntities: List<PostEntity>) {
+        transaction { postDownloadStateRepository.update(postEntities) }
         coroutineScope.launch {
-            eventBus.publishEvent(PostUpdateEvent(posts))
+            eventBus.publishEvent(PostUpdateEvent(postEntities))
         }
     }
 
-    fun updatePost(post: Post) {
-        transaction { postDownloadStateRepository.update(post) }
+    fun updatePost(postEntity: PostEntity) {
+        transaction { postDownloadStateRepository.update(postEntity) }
         coroutineScope.launch {
-            eventBus.publishEvent(PostUpdateEvent(listOf(post)))
+            eventBus.publishEvent(PostUpdateEvent(listOf(postEntity)))
         }
     }
 
-    fun save(thread: Thread) {
-        val savedThread = transaction { threadRepository.save(thread) }
+    fun save(threadEntity: ThreadEntity) {
+        val savedThread = transaction { threadRepository.save(threadEntity) }
         coroutineScope.launch {
             eventBus.publishEvent(ThreadCreateEvent(savedThread))
         }
     }
 
-    fun update(thread: Thread) {
-        transaction { threadRepository.update(thread) }
+    fun update(threadEntity: ThreadEntity) {
+        transaction { threadRepository.update(threadEntity) }
         coroutineScope.launch {
-            eventBus.publishEvent(ThreadUpdateEvent(thread))
+            eventBus.publishEvent(ThreadUpdateEvent(threadEntity))
         }
     }
 
-    fun updateImages(images: List<Image>) {
-        transaction { imageRepository.update(images) }
+    fun updateImages(imageEntities: List<ImageEntity>) {
+        transaction { imageRepository.update(imageEntities) }
         coroutineScope.launch {
-            eventBus.publishEvent(ImageEvent(images))
+            eventBus.publishEvent(ImageEvent(imageEntities))
         }
     }
 
-    fun updateImage(image: Image) {
-        transaction { imageRepository.update(image) }
+    fun updateImage(imageEntity: ImageEntity) {
+        transaction { imageRepository.update(imageEntity) }
         coroutineScope.launch {
-            eventBus.publishEvent(ImageEvent(listOf(image)))
+            eventBus.publishEvent(ImageEvent(listOf(imageEntity)))
         }
     }
 
@@ -79,13 +79,13 @@ class DataTransaction(
     }
 
     @Synchronized
-    fun newPosts(postItems: List<PostItem>): List<Post> {
+    fun newPosts(postItems: List<PostItem>): List<PostEntity> {
         var queuePosition = transaction {
             getQueuePosition()?.plus(1) ?: 0
         }
 
         val posts = postItems.associate { postItem ->
-            val post = Post(
+            val postEntity = PostEntity(
                 postTitle = postItem.title,
                 url = postItem.url,
                 token = postItem.securityToken,
@@ -105,8 +105,8 @@ class DataTransaction(
                     postItem.title
                 )
             )
-            val images = postItem.imageItemList.mapIndexed { index, imageItem ->
-                Image(
+            val imageEntities = postItem.imageItemList.mapIndexed { index, imageItem ->
+                ImageEntity(
                     postId = postItem.postId,
                     url = imageItem.mainLink,
                     thumbUrl = imageItem.thumbLink,
@@ -114,7 +114,7 @@ class DataTransaction(
                     index = index,
                 )
             }
-            Pair(post, images)
+            Pair(postEntity, imageEntities)
         }
 
 
@@ -137,8 +137,8 @@ class DataTransaction(
         return postDownloadStateRepository.findMaxRank()
     }
 
-    private fun save(images: List<Image>) {
-        transaction { imageRepository.save(images) }
+    private fun save(imageEntities: List<ImageEntity>) {
+        transaction { imageRepository.save(imageEntities) }
     }
 
     fun finishPost(postId: Long, automatic: Boolean = false) {
@@ -163,7 +163,7 @@ class DataTransaction(
         }
     }
 
-    private fun findByPostIdAndIsError(postId: Long): List<Image> {
+    private fun findByPostIdAndIsError(postId: Long): List<ImageEntity> {
         return transaction { imageRepository.findByPostIdAndIsError(postId) }
 
     }
@@ -202,7 +202,7 @@ class DataTransaction(
         if (postIds.isNotEmpty()) {
             remove(postIds)
         } else {
-            remove(findAllPosts().map(Post::postId))
+            remove(findAllPosts().map(PostEntity::postId))
         }
     }
 
@@ -210,10 +210,10 @@ class DataTransaction(
         transaction { imageRepository.stopByPostIdAndIsNotCompleted(postId) }
     }
 
-    fun saveMetadata(metadata: Metadata) {
-        transaction { metadataRepository.save(metadata) }
+    fun saveMetadata(metadataEntity: MetadataEntity) {
+        transaction { metadataRepository.save(metadataEntity) }
         coroutineScope.launch {
-            eventBus.publishEvent(MetadataUpdateEvent(metadata))
+            eventBus.publishEvent(MetadataUpdateEvent(metadataEntity))
         }
     }
 
@@ -226,44 +226,44 @@ class DataTransaction(
 
     @Synchronized
     fun sortPostsByRank() {
-        val posts = findAllPosts().sortedWith(Comparator.comparing(Post::addedOn))
-        for (i in posts.indices) {
-            posts[i].rank = i
+        val postEntities = findAllPosts().sortedWith(Comparator.comparing(PostEntity::addedOn))
+        for (i in postEntities.indices) {
+            postEntities[i].rank = i
         }
-        updatePosts(posts)
+        updatePosts(postEntities)
     }
 
     fun setDownloadingToStopped() {
         transaction { postDownloadStateRepository.setDownloadingToStopped() }
     }
 
-    fun findAllPosts(): List<Post> {
+    fun findAllPosts(): List<PostEntity> {
         return transaction { postDownloadStateRepository.findAll() }
     }
 
-    fun findPostById(id: Long): Optional<Post> {
+    fun findPostById(id: Long): Optional<PostEntity> {
         return transaction { postDownloadStateRepository.findById(id) }
     }
 
-    fun findImagesByPostId(postId: Long): List<Image> {
+    fun findImagesByPostId(postId: Long): List<ImageEntity> {
         return transaction { imageRepository.findByPostId(postId) }
     }
 
-    fun findImageById(id: Long): Optional<Image> {
+    fun findImageById(id: Long): Optional<ImageEntity> {
         return transaction { imageRepository.findById(id) }
     }
 
-    fun findAllThreads(): List<Thread> {
+    fun findAllThreads(): List<ThreadEntity> {
         return transaction { threadRepository.findAll() }
     }
 
-    fun findThreadById(id: Long): Optional<Thread> {
+    fun findThreadById(id: Long): Optional<ThreadEntity> {
         return transaction {
             threadRepository.findById(id)
         }
     }
 
-    fun findByPostIdAndIsNotCompleted(postId: Long): List<Image> {
+    fun findByPostIdAndIsNotCompleted(postId: Long): List<ImageEntity> {
         return transaction { imageRepository.findByPostIdAndIsNotCompleted(postId) }
     }
 
@@ -271,17 +271,17 @@ class DataTransaction(
         return transaction { imageRepository.countError() }
     }
 
-    fun findPostByPostId(postId: Long): Optional<Post> {
+    fun findPostByPostId(postId: Long): Optional<PostEntity> {
         return transaction { postDownloadStateRepository.findByPostId(postId) }
     }
 
-    fun findThreadByThreadId(threadId: Long): Optional<Thread> {
+    fun findThreadByThreadId(threadId: Long): Optional<ThreadEntity> {
         return transaction { threadRepository.findByThreadId(threadId) }
     }
 
-    fun saveLog(logEntry: LogEntry): LogEntry {
+    fun saveLog(logEntryEntity: LogEntryEntity): LogEntryEntity {
         val pair = transaction {
-            val saved = logRepository.save(logEntry)
+            val saved = logRepository.save(logEntryEntity)
             val deleted = logRepository.deleteOldest()
             Pair(saved, deleted)
         }
@@ -294,10 +294,10 @@ class DataTransaction(
         return pair.first
     }
 
-    fun updateLog(logEntry: LogEntry) {
-        transaction { logRepository.update(logEntry) }
+    fun updateLog(logEntryEntity: LogEntryEntity) {
+        transaction { logRepository.update(logEntryEntity) }
         coroutineScope.launch {
-            eventBus.publishEvent(LogUpdateEvent(logEntry))
+            eventBus.publishEvent(LogUpdateEvent(logEntryEntity))
         }
     }
 
@@ -305,7 +305,7 @@ class DataTransaction(
         transaction { logRepository.deleteAll() }
     }
 
-    fun findAllLogs(): List<LogEntry> {
+    fun findAllLogs(): List<LogEntryEntity> {
         return transaction { logRepository.findAll() }
     }
 
@@ -313,7 +313,7 @@ class DataTransaction(
         return transaction { postDownloadStateRepository.findAllNonCompletedPostIds() }
     }
 
-    fun findMetadataByPostId(postId: Long): Optional<Metadata> {
+    fun findMetadataByPostId(postId: Long): Optional<MetadataEntity> {
         return transaction { metadataRepository.findByPostId(postId) }
     }
 }

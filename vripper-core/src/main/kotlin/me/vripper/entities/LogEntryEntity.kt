@@ -2,7 +2,7 @@ package me.vripper.entities
 
 import java.time.LocalDateTime
 
-data class LogEntry(
+data class LogEntryEntity(
     val id: Long = -1,
     val type: Type,
     val status: Status,

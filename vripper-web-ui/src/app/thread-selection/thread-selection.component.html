@@ -55,10 +55,10 @@
       <th *matHeaderCellDef mat-header-cell>URL</th>
       <td
         *matCellDef="let element"
-        [title]="formatHosts(element.hosts)"
+        [title]="element.hosts"
         class="truncate-cell"
         mat-cell>
-        {{ formatHosts(element.hosts) }}
+        {{ element.hosts }}
       </td>
     </ng-container>
 

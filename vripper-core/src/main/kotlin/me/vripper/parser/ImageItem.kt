@@ -1,4 +1,4 @@
-package me.vripper.model
+package me.vripper.parser
 
 import me.vripper.host.Host
 

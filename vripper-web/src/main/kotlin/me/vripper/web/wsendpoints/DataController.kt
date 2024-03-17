@@ -1,9 +1,9 @@
 package me.vripper.web.wsendpoints
 
-import me.vripper.entities.Image
-import me.vripper.entities.LogEntry
-import me.vripper.entities.Post
-import me.vripper.entities.Thread
+import me.vripper.entities.ImageEntity
+import me.vripper.entities.LogEntryEntity
+import me.vripper.entities.PostEntity
+import me.vripper.entities.ThreadEntity
 import me.vripper.model.DownloadSpeed
 import me.vripper.model.ErrorCount
 import me.vripper.model.QueueState
@@ -41,22 +41,22 @@ class DataController : KoinComponent {
     }
 
     @SubscribeMapping("/posts/new")
-    fun posts(): Collection<Post> {
+    fun posts(): Collection<PostEntity> {
         return dataTransaction.findAllPosts()
     }
 
     @SubscribeMapping("/images/{postId}")
-    fun postsDetails(@DestinationVariable("postId") postId: Long): List<Image> {
+    fun postsDetails(@DestinationVariable("postId") postId: Long): List<ImageEntity> {
         return dataTransaction.findImagesByPostId(postId)
     }
 
     @SubscribeMapping("/threads")
-    fun queued(): List<Thread> {
+    fun queued(): List<ThreadEntity> {
         return dataTransaction.findAllThreads()
     }
 
     @SubscribeMapping("/logs/new")
-    fun events(): List<LogEntry> {
+    fun events(): List<LogEntryEntity> {
         return dataTransaction.findAllLogs()
     }
 }

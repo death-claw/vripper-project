@@ -42,7 +42,6 @@ data class ConnectionSettings(
 @Serializable
 data class SystemSettings(
     val tempPath: String = System.getProperty("java.io.tmpdir"),
-    val cachePath: String = System.getProperty("java.io.tmpdir"),
     val enableClipboardMonitoring: Boolean = false,
     val clipboardPollingRate: Int = 500,
     val maxEventLog: Int = 1_000,

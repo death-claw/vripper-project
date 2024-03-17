@@ -12,7 +12,7 @@ class ThreadSelectionModel(
     index: Int,
     title: String,
     url: String,
-    hosts: List<Pair<String, Int>>,
+    hosts: String,
     val postId: Long,
     val threadId: Long,
     previewList: List<String>
@@ -26,7 +26,7 @@ class ThreadSelectionModel(
     val urlProperty = SimpleStringProperty(url)
     var url: String by urlProperty
 
-    val hostsProperty = SimpleStringProperty(hosts.joinToString(", ") { "${it.first} (${it.second})" })
+    val hostsProperty = SimpleStringProperty(hosts)
     var hosts: String by hostsProperty
 
     val previewListProperty = SimpleListProperty(FXCollections.observableArrayList(previewList))

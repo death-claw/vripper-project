@@ -6,6 +6,7 @@ import me.vripper.host.*
 import me.vripper.repositories.*
 import me.vripper.repositories.impl.*
 import me.vripper.services.*
+import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
@@ -52,9 +53,15 @@ val coreModule = module {
     single<DownloadSpeedService> {
         DownloadSpeedService(get())
     }
+
     single<AppEndpointService> {
-        AppEndpointService(get(), get(), get(), get())
+        AppEndpointService(get(), get(), get(), get(), get())
     }
+
+    single((named("localAppEndpointService"))) {
+        AppEndpointService(get(), get(), get(), get(), get())
+    } bind IAppEndpointService::class
+
     single<MetadataService> {
         MetadataService(get(), get(), get(), get())
     }

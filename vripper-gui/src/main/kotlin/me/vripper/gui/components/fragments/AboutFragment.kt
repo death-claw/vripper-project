@@ -3,12 +3,15 @@ package me.vripper.gui.components.fragments
 import javafx.geometry.Insets
 import javafx.scene.control.TabPane
 import javafx.scene.text.FontWeight
+import me.vripper.gui.controller.WidgetsController
 import me.vripper.gui.utils.openLink
 import me.vripper.utilities.ApplicationProperties
 import tornadofx.*
 import kotlin.io.path.pathString
 
 class AboutFragment : Fragment("About") {
+
+    private val widgetsController: WidgetsController by inject()
 
     override val root = tabpane()
 
@@ -46,6 +49,19 @@ class AboutFragment : Fragment("About") {
                             textfield {
                                 text = ApplicationProperties.VRIPPER_DIR.pathString
                                 isEditable = false
+                            }
+                        }
+                        field("Previews Path") {
+                            textfield(widgetsController.currentSettings.cachePathProperty) {
+                                isEditable = false
+                            }
+                            button("Browse") {
+                                action {
+                                    val directory = chooseDirectory(title = "Select previews folder")
+                                    if (directory != null) {
+                                        widgetsController.currentSettings.cachePathProperty.set(directory.path)
+                                    }
+                                }
                             }
                         }
                     }

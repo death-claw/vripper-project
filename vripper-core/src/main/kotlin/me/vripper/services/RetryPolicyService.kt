@@ -18,7 +18,7 @@ class RetryPolicyService(
     private var maxAttempts: Int = settingsService.settings.connectionSettings.maxAttempts
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    fun init() {
+    init {
         coroutineScope.launch {
             eventBus.events.filterIsInstance(SettingsUpdateEvent::class).collect {
                 if (maxAttempts != it.settings.connectionSettings.maxAttempts) {

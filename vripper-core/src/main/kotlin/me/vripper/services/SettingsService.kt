@@ -28,6 +28,7 @@ class SettingsService(private val eventBus: EventBus) {
     private val json = Json {
         encodeDefaults = true
         prettyPrint = true
+        ignoreUnknownKeys = true
     }
     var settings = Settings()
 
@@ -125,7 +126,7 @@ class SettingsService(private val eventBus: EventBus) {
         save()
     }
 
-    fun save() {
+    private fun save() {
         try {
             Files.writeString(
                 configPath,

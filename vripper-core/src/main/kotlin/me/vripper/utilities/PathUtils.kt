@@ -1,6 +1,6 @@
 package me.vripper.utilities
 
-import me.vripper.entities.Image
+import me.vripper.entities.ImageEntity
 import me.vripper.exception.RenameException
 import me.vripper.model.Settings
 import java.io.IOException
@@ -31,7 +31,7 @@ object PathUtils {
 
     @Throws(RenameException::class)
     fun rename(
-        imageList: List<Image>,
+        imageEntityList: List<ImageEntity>,
         downloadDirectory: String,
         oldFolder: String,
         newFolder: String
@@ -43,7 +43,7 @@ object PathUtils {
         }
         try {
             Files.createDirectories(newDownloadDirectory)
-            imageList.filter { it.filename.isNotBlank() }.forEach {
+            imageEntityList.filter { it.filename.isNotBlank() }.forEach {
                 Files.move(
                     currentDownloadDirectory.resolve(it.filename),
                     newDownloadDirectory.resolve(it.filename),

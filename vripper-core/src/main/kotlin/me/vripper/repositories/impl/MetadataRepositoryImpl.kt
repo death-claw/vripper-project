@@ -2,7 +2,7 @@ package me.vripper.repositories.impl
 
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import me.vripper.entities.Metadata
+import me.vripper.entities.MetadataEntity
 import me.vripper.repositories.MetadataRepository
 import me.vripper.tables.MetadataTable
 import org.jetbrains.exposed.sql.ResultRow
@@ -16,16 +16,16 @@ import java.util.*
 
 class MetadataRepositoryImpl: MetadataRepository {
 
-    override fun save(metadata: Metadata): Metadata {
+    override fun save(metadataEntity: MetadataEntity): MetadataEntity {
         MetadataTable.insert {
-            it[postId] = metadata.postId
-            it[data] = Json.encodeToString(metadata.data)
+            it[postId] = metadataEntity.postId
+            it[data] = Json.encodeToString(metadataEntity.data)
         }
 
-        return metadata
+        return metadataEntity
     }
 
-    override fun findByPostId(postId: Long): Optional<Metadata> {
+    override fun findByPostId(postId: Long): Optional<MetadataEntity> {
 
         val result = MetadataTable.select {
             MetadataTable.postId eq postId
@@ -38,10 +38,10 @@ class MetadataRepositoryImpl: MetadataRepository {
         }
     }
 
-    private fun transform(row: ResultRow): Metadata {
+    private fun transform(row: ResultRow): MetadataEntity {
         val id = row[MetadataTable.postId]
-        val data = Json.decodeFromString(row[MetadataTable.data]) as Metadata.Data
-        return Metadata(id, data)
+        val data = Json.decodeFromString(row[MetadataTable.data]) as MetadataEntity.Data
+        return MetadataEntity(id, data)
     }
 
     override fun deleteByPostId(postId: Long): Int {
@@ -68,6 +68,8 @@ class MetadataRepositoryImpl: MetadataRepository {
                 it.execute()
             }
 
-        conn.prepareStatement("TRUNCATE TABLE METADATA_DELETE")
+        conn.prepareStatement("TRUNCATE TABLE METADATA_DELETE").use {
+            it.execute()
+        }
     }
 }

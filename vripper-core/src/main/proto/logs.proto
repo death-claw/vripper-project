@@ -1,0 +1,7 @@
+syntax = "proto3";
+option java_package = "me.vripper.proto";
+import "log.proto";
+
+message Logs {
+  repeated Log logs = 1;
+}
