@@ -3,7 +3,7 @@
 This is my spin for a cross-platform gallery ripper for [vipergirls.to](https://vipergirls.to).
 
 
-![1Jw0oq8h_o](https://github.com/UncleRoger33/vripper-project/assets/66418211/80b44389-7620-4e05-8696-4b62fa626b1b)
+![GitHub Image](/image.png)
 
 
 ## Requirements
