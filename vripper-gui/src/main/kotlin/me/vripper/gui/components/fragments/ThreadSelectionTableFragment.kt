@@ -61,7 +61,7 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
         }
 
         tableView = tableview(items) {
-            addClass(Styles.DENSE, Styles.STRIPED)
+            addClass(Styles.DENSE)
             selectionModel.selectionMode = SelectionMode.MULTIPLE
             setRowFactory {
                 val tableRow = TableRow<ThreadSelectionModel>()

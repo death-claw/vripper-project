@@ -71,7 +71,7 @@ class ImagesTableView : View("Photos") {
         }
         with(root) {
             tableView = tableview(items) {
-                addClass(Styles.DENSE, Styles.STRIPED)
+                addClass(Styles.DENSE)
                 setRowFactory {
                     val tableRow = TableRow<ImageModel>()
                     val urlItem = MenuItem("Open link").apply {

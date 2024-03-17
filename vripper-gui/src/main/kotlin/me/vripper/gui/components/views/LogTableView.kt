@@ -55,7 +55,7 @@ class LogTableView : View() {
 
         with(root) {
             tableView = tableview(items) {
-                addClass(Styles.DENSE, Styles.STRIPED)
+                addClass(Styles.DENSE)
                 selectionModel.selectionMode = SelectionMode.SINGLE
                 setRowFactory {
                     val tableRow = TableRow<LogModel>()
