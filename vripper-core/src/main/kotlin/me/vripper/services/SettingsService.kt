@@ -57,6 +57,7 @@ class SettingsService(private val eventBus: EventBus) {
                             customProxiesPath.readText()
                         )
                     } catch (e: Exception) {
+                        e.printStackTrace()
                         emptyList()
                     }
                 } else {

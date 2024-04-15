@@ -18,8 +18,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.util.concurrent.CompletableFuture
 
-class ThreadLookupRunnable(private val threadId: Long, private val settings: Settings) :
-    KoinComponent, Runnable {
+class ThreadLookupRunnable(private val threadId: Long, private val settings: Settings) : KoinComponent, Runnable {
     private val log by me.vripper.delegate.LoggerDelegate()
     private val dataTransaction by inject<DataTransaction>()
     private val settingsService by inject<SettingsService>()
@@ -32,28 +31,39 @@ class ThreadLookupRunnable(private val threadId: Long, private val settings: Set
             Tasks.increment()
             if (dataTransaction.findThreadByThreadId(threadId).isEmpty) {
                 val threadLookupResult = threadCacheService[threadId]
-                if (threadLookupResult.postItemList.isEmpty()) {
-                    val message = "Nothing found for $link"
+                if (threadLookupResult.error.isNotBlank()) {
                     dataTransaction.saveLog(
                         LogEntryEntity(
                             type = LogEntryEntity.Type.THREAD,
-                            status = ERROR,
-                            message = message
+                            status = LogEntryEntity.Status.ERROR,
+                            message = "Error loading $link: ${threadLookupResult.error}"
                         )
                     )
                     return
                 }
-                dataTransaction.save(
-                    ThreadEntity(
-                        title = threadLookupResult.title,
-                        link = link,
-                        threadId = threadId,
-                        total = threadLookupResult.postItemList.size
+                if (threadLookupResult.postItemList.isEmpty()) {
+                    dataTransaction.saveLog(
+                        LogEntryEntity(
+                            type = LogEntryEntity.Type.THREAD,
+                            status = LogEntryEntity.Status.ERROR,
+                            message = "Nothing found for $link"
+                        )
                     )
-                )
-                autostart(threadLookupResult)
-            } else {
-                log.info("Link $link is already loaded")
+                    return
+                }
+                try {
+                    dataTransaction.save(
+                        ThreadEntity(
+                            title = threadLookupResult.title,
+                            link = link,
+                            threadId = threadId,
+                            total = threadLookupResult.postItemList.size
+                        )
+                    )
+                    autostart(threadLookupResult)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         } catch (e: Exception) {
             val error = "Error when processing $link"
@@ -76,12 +86,11 @@ class ThreadLookupRunnable(private val threadId: Long, private val settings: Set
             runBlocking {
                 appEndpointService.threadRemove(listOf(lookupResult.threadId))
             }
-            CompletableFuture.runAsync(
-                AddPostRunnable(
-                    lookupResult.postItemList.map { ThreadPostId(it.threadId, it.postId) }
-                ),
-                GLOBAL_EXECUTOR
-            )
+            CompletableFuture.runAsync(AddPostRunnable(lookupResult.postItemList.map {
+                ThreadPostId(
+                    it.threadId, it.postId
+                )
+            }), GLOBAL_EXECUTOR)
         }
     }
 }

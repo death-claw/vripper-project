@@ -1,8 +1,10 @@
 package me.vripper.gui.components.views
 
+import javafx.collections.FXCollections
 import javafx.scene.control.TabPane
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterIsInstance
 import me.vripper.delegate.LoggerDelegate
 import me.vripper.gui.controller.PostController
@@ -110,7 +112,16 @@ class PostInfoView : View() {
             return
         }
         coroutineScope.launch {
-            val model = async { postController.find(postId) }.await()
+            val model: PostModel? = async {
+                try {
+                    postController.find(postId)
+                } catch (e: Exception) {
+                    null
+                }
+            }.await()
+            if (model == null) {
+                return@launch
+            }
             runLater {
                 postModel.apply {
                     this.postId = model.postId
@@ -136,6 +147,8 @@ class PostInfoView : View() {
             postController.onUpdatePosts().catch {
                 logger.error("gRPC error", it)
                 currentCoroutineContext().cancel(null)
+            }.filter {
+                it.postId == postModel.postId
             }.collect { post ->
                 runLater {
                     postModel.status = post.status.stringValue.lowercase().replaceFirstChar { it.uppercase() }
@@ -149,6 +162,20 @@ class PostInfoView : View() {
                     )
                     postModel.path = post.getDownloadFolder()
                     postModel.folderName = post.folderName
+                }
+            }
+        }.also { jobs.add(it) }
+
+        coroutineScope.launch {
+            postController.onUpdateMetadata().catch {
+                logger.error("gRPC error", it)
+                currentCoroutineContext().cancel(null)
+            }.filter {
+                it.postId == postModel.postId
+            }.collect {
+                runLater {
+                    postModel.altTitles = FXCollections.observableArrayList(it.data.resolvedNames)
+                    postModel.postedBy = it.data.postedBy
                 }
             }
         }.also { jobs.add(it) }

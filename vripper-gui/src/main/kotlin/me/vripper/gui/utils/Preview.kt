@@ -89,7 +89,7 @@ class Preview(owner: Stage, private val images: List<String>, private val cacheP
                     }
                 }
             } catch (e: Exception) {
-                log.warn("Failed to load preview $url")
+                e.printStackTrace()
                 null
             }
         }

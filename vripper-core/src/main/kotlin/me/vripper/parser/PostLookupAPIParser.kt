@@ -24,7 +24,7 @@ class PostLookupAPIParser(private val threadId: Long, private val postId: Long) 
     private val dataTransaction: DataTransaction by inject()
 
     @Throws(PostParseException::class)
-    fun parse(): PostItem {
+    fun parse(): ThreadItem? {
         log.debug("Parsing post $postId")
         val httpGet =
             HttpGet(URIBuilder("${settingsService.settings.viperSettings.host}/vr.php").also {
@@ -58,7 +58,7 @@ class PostLookupAPIParser(private val threadId: Long, private val postId: Long) 
                     }
                     factory.newSAXParser()
                         .parse(response.entity.content, threadLookupAPIResponseHandler)
-                    threadLookupAPIResponseHandler.result.postItemList.first()
+                    threadLookupAPIResponseHandler.result
                 }
             })
         } catch (e: Exception) {

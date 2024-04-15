@@ -95,8 +95,13 @@ class GrpcServerAppEndpointService : EndpointServiceGrpcKt.EndpointServiceCorout
         return IdList.newBuilder().addAllIds(appEndpointService.clearCompleted()).build()
     }
 
-    override suspend fun rename(request: EndpointServiceOuterClass.Rename): EmptyResponse {
+    override suspend fun rename(request: Rename): EmptyResponse {
         appEndpointService.rename(request.postId, request.name)
+        return EmptyResponse.getDefaultInstance()
+    }
+
+    override suspend fun renameToFirst(request: RenameToFirst): EmptyResponse {
+        appEndpointService.renameToFirst(request.postIdsList)
         return EmptyResponse.getDefaultInstance()
     }
 

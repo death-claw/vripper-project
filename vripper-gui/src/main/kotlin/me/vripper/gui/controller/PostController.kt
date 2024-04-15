@@ -88,6 +88,10 @@ class PostController : Controller() {
         appEndpointService.rename(postId, value)
     }
 
+    suspend fun renameToFirst(postIds: List<Long>) {
+        appEndpointService.renameToFirst(postIds)
+    }
+
     fun onNewPosts() =
         appEndpointService.onNewPosts().catch {
             logger.error("gRPC error", it)

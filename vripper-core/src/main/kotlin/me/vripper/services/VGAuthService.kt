@@ -115,7 +115,6 @@ class VGAuthService(
         }
         authenticated = true
         loggedUser = username
-        log.info(String.format("Authenticated: %s", username))
 
         coroutineScope.launch {
             eventBus.publishEvent(VGUserLoginEvent(loggedUser))

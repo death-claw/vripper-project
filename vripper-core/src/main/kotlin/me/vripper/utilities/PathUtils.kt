@@ -53,7 +53,8 @@ object PathUtils {
             if (currentDownloadDirectory.listDirectoryEntries().isEmpty()) {
                 try {
                     Files.delete(currentDownloadDirectory)
-                } catch (ignored: Exception) {
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         } catch (e: IOException) {

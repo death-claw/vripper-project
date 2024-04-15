@@ -131,6 +131,19 @@ class ActionBarView : View() {
                     postsTableView.renameSelected()
                 }
             }
+            button("Bulk rename", FontIcon.of(Feather.EDIT_3)) {
+                contentDisplay = ContentDisplay.GRAPHIC_ONLY
+                tooltip("Bulk rename selected [Ctrl+Shift+R]")
+                shortcut(KeyCodeCombination(KeyCode.R, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN))
+                enableWhen(
+                    postsTableView.tableView.selectionModel.selectedItems.sizeProperty.greaterThan(
+                        0
+                    )
+                )
+                action {
+                    postsTableView.bulkRenameSelected()
+                }
+            }
             button("Delete", FontIcon.of(Feather.TRASH)) {
                 contentDisplay = ContentDisplay.GRAPHIC_ONLY
                 tooltip("Delete selected posts [Del]")

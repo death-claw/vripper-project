@@ -8,7 +8,6 @@ import org.xml.sax.Attributes
 import org.xml.sax.helpers.DefaultHandler
 
 class ThreadLookupAPIResponseHandler : KoinComponent, DefaultHandler() {
-    private val log by me.vripper.delegate.LoggerDelegate()
     private val supportedHosts: List<Host> = getKoin().getAll()
     private val settingsService: SettingsService by inject()
     private var error: String = ""
@@ -17,13 +16,13 @@ class ThreadLookupAPIResponseHandler : KoinComponent, DefaultHandler() {
     private val imageItemList: MutableList<ImageItem> = mutableListOf()
     private lateinit var threadItem: ThreadItem
     private var threadId: Long = -1
-    private lateinit var threadTitle: String
-    private lateinit var forum: String
-    private lateinit var securityToken: String
+    private var threadTitle: String = ""
+    private var forum: String = ""
+    private var securityToken: String = ""
     private var postId: Long = -1
-    private lateinit var postTitle: String
-    private var postCounter: Int = 0
+    private var postTitle: String = ""
 
+    private var postCounter: Int = 0
     val result: ThreadItem
         get() = threadItem
 
@@ -89,6 +88,6 @@ class ThreadLookupAPIResponseHandler : KoinComponent, DefaultHandler() {
     }
 
     override fun endDocument() {
-        threadItem = ThreadItem(threadId, threadTitle, securityToken, forum, postItemList.toList())
+        threadItem = ThreadItem(threadId, threadTitle, securityToken, forum, postItemList.toList(), error)
     }
 }

@@ -98,6 +98,13 @@ class PostsTableView : View() {
                         graphic = FontIcon.of(Feather.EDIT)
                     }
 
+                    val bulkRenameItem = MenuItem("Bulk rename").apply {
+                        setOnAction {
+                            bulkRenameSelected()
+                        }
+                        graphic = FontIcon.of(Feather.EDIT_3)
+                    }
+
                     val deleteItem = MenuItem("Delete").apply {
                         setOnAction {
                             deleteSelected()
@@ -122,7 +129,14 @@ class PostsTableView : View() {
 
                     val contextMenu = ContextMenu()
                     contextMenu.items.addAll(
-                        startItem, stopItem, renameItem, deleteItem, SeparatorMenuItem(), locationItem, urlItem
+                        startItem,
+                        stopItem,
+                        renameItem,
+                        bulkRenameItem,
+                        deleteItem,
+                        SeparatorMenuItem(),
+                        locationItem,
+                        urlItem
                     )
                     tableRow.contextMenuProperty()
                         .bind(tableRow.emptyProperty().map { empty -> if (empty) null else contextMenu })
@@ -427,6 +441,13 @@ class PostsTableView : View() {
         val selectedItem = tableView.selectionModel.selectedItem
         if (selectedItem != null) {
             rename(selectedItem)
+        }
+    }
+
+    fun bulkRenameSelected() {
+        val selectedItems = tableView.selectionModel.selectedItems
+        coroutineScope.launch {
+            postController.renameToFirst(selectedItems.map { it.postId })
         }
     }
 

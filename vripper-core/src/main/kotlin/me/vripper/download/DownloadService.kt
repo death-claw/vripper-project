@@ -105,7 +105,6 @@ class DownloadService(
                     continue
                 }
                 if (isPending(post.postId)) {
-                    log.warn("Cannot restart, jobs are currently running for post id $posts")
                     continue
                 }
                 toProcess[post] = images

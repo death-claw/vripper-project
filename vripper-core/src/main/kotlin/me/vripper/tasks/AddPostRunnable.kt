@@ -1,6 +1,9 @@
 package me.vripper.tasks
 
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.withPermit
 import me.vripper.download.DownloadService
+import me.vripper.entities.LogEntryEntity
 import me.vripper.model.ThreadPostId
 import me.vripper.parser.PostItem
 import me.vripper.parser.PostLookupAPIParser
@@ -8,6 +11,7 @@ import me.vripper.services.DataTransaction
 import me.vripper.services.MetadataService
 import me.vripper.services.SettingsService
 import me.vripper.services.ThreadCacheService
+import me.vripper.utilities.RequestLimit
 import me.vripper.utilities.Tasks
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -26,25 +30,66 @@ class AddPostRunnable(private val items: List<ThreadPostId>) : KoinComponent, Ru
             val toProcess = mutableListOf<PostItem>()
             for ((threadId, postId) in items) {
                 if (dataTransaction.exists(postId)) {
-                    log.warn(String.format("skipping %s, already loaded", postId))
                     continue
                 }
 
-                val threadItem = threadCacheService.getIfPresent(threadId)
-                val postItem: PostItem =
-                    threadItem?.postItemList?.find { it.postId == postId } ?: PostLookupAPIParser(
-                        threadId,
-                        postId
-                    ).parse()
+                val link =
+                    "https://${settingsService.settings.viperSettings.host}/threads/$threadId?p=$postId&viewfull=1#post$postId"
+
+                val cachedThread = threadCacheService.getIfPresent(threadId)
+                val threadItem = cachedThread ?: runBlocking {
+                    RequestLimit.semaphore.withPermit {
+                        PostLookupAPIParser(
+                            threadId, postId
+                        ).parse()
+                    }
+                }
+
+                if (threadItem == null) {
+                    dataTransaction.saveLog(
+                        LogEntryEntity(
+                            type = LogEntryEntity.Type.POST,
+                            status = LogEntryEntity.Status.ERROR,
+                            message = "Failed to load $link"
+                        )
+                    )
+                    continue
+                } else {
+                    if (threadItem.error.isNotBlank()) {
+                        dataTransaction.saveLog(
+                            LogEntryEntity(
+                                type = LogEntryEntity.Type.POST,
+                                status = LogEntryEntity.Status.ERROR,
+                                message = "Error loading $link: ${threadItem.error}"
+                            )
+                        )
+                        continue
+                    } else if (threadItem.postItemList.isEmpty()) {
+                        dataTransaction.saveLog(
+                            LogEntryEntity(
+                                type = LogEntryEntity.Type.POST,
+                                status = LogEntryEntity.Status.ERROR,
+                                message = "Nothing found for $link"
+                            )
+                        )
+                        continue
+                    }
+                }
+
+                val postItem = threadItem.postItemList.first()
                 toProcess.add(postItem)
             }
 
-            val posts = dataTransaction.newPosts(toProcess.toList())
+            val posts = try {
+                dataTransaction.newPosts(toProcess.toList())
+            } catch (e: Exception) {
+                e.printStackTrace()
+                emptyList()
+            }
             posts.forEach {
                 metadataService.fetchMetadata(it.postId)
             }
             if (settingsService.settings.downloadSettings.autoStart) {
-                log.debug("Auto start downloads option is enabled")
                 downloadService.restartAll(posts)
             }
         } catch (e: Exception) {

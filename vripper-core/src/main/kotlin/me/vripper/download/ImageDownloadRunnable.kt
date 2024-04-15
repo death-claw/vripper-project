@@ -118,10 +118,7 @@ class ImageDownloadRunnable(
         } finally {
             try {
                 Files.delete(downloadedImage.path)
-            } catch (e: IOException) {
-                log.warn(
-                    "Failed to delete temporary file ${downloadedImage.path}"
-                )
+            } catch (_: IOException) {
             }
         }
     }

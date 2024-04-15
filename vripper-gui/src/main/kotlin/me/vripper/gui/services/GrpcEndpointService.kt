@@ -58,6 +58,10 @@ class GrpcEndpointService : IAppEndpointService {
         )
     }
 
+    override suspend fun renameToFirst(postIds: List<Long>) {
+        endpointServiceCoroutineStub!!.renameToFirst(RenameToFirst.newBuilder().addAllPostIds(postIds).build())
+    }
+
     override fun onNewPosts(): Flow<Post> =
         endpointServiceCoroutineStub!!.onNewPosts(EmptyRequest.getDefaultInstance()).map { mapper(it) }
 
@@ -153,7 +157,6 @@ class GrpcEndpointService : IAppEndpointService {
     override fun onDownloadSpeed(): Flow<Long> =
         endpointServiceCoroutineStub!!.onDownloadSpeed(EmptyRequest.getDefaultInstance()).map { it.speed }
 
-
     override fun onVGUserUpdate(): Flow<String> =
         endpointServiceCoroutineStub!!.onVGUserUpdate(EmptyRequest.getDefaultInstance()).map { it.user }
 
@@ -169,7 +172,6 @@ class GrpcEndpointService : IAppEndpointService {
 
     override suspend fun getSettings(): Settings =
         mapper(endpointServiceCoroutineStub!!.getSettings(EmptyRequest.getDefaultInstance()))
-
 
     override suspend fun saveSettings(settings: Settings) {
         val viperSettings = with(SettingsOuterClass.ViperSettings.newBuilder()) {

@@ -1,8 +1,6 @@
 package me.vripper.services
 
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.time.sample
 import me.vripper.download.DownloadService
 import me.vripper.entities.LogEntryEntity
@@ -17,9 +15,12 @@ import me.vripper.utilities.GLOBAL_EXECUTOR
 import me.vripper.utilities.PathUtils
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.locks.ReentrantLock
 import java.util.regex.Pattern
+import kotlin.concurrent.withLock
 import kotlin.io.path.Path
 import kotlin.io.path.exists
+import kotlin.jvm.optionals.getOrNull
 
 class AppEndpointService(
     private val downloadService: DownloadService,
@@ -30,12 +31,11 @@ class AppEndpointService(
 ) : IAppEndpointService {
     private val log by me.vripper.delegate.LoggerDelegate()
 
-    private val semaphore = Semaphore(1)
+    private val lock = ReentrantLock()
 
     override suspend fun scanLinks(postLinks: String) {
-        semaphore.withPermit {
+        lock.withLock {
             if (postLinks.isBlank()) {
-                log.warn("Nothing to scan")
                 return
             }
             val urlList = postLinks.split(Pattern.compile("\\r?\\n")).dropLastWhile { it.isEmpty() }.map { it.trim() }
@@ -82,12 +82,11 @@ class AppEndpointService(
     }
 
     override suspend fun restartAll(posIds: List<Long>) {
-        semaphore.withPermit {
+        lock.withLock {
             downloadService.restartAll(posIds.map { dataTransaction.findPostByPostId(it) }.filter { it.isPresent }
                 .map { it.get() })
         }
     }
-
 
     override suspend fun download(posts: List<ThreadPostId>) {
         CompletableFuture.runAsync(
@@ -96,26 +95,26 @@ class AppEndpointService(
     }
 
     override suspend fun stopAll(postIdList: List<Long>) {
-        semaphore.withPermit {
+        lock.withLock {
             downloadService.stop(postIdList)
         }
     }
 
     override suspend fun remove(postIdList: List<Long>) {
-        semaphore.withPermit {
+        lock.withLock {
             downloadService.stop(postIdList)
             dataTransaction.removeAll(postIdList)
         }
     }
 
     override suspend fun clearCompleted(): List<Long> {
-        semaphore.withPermit {
+        lock.withLock {
             return dataTransaction.clearCompleted()
         }
     }
 
     override suspend fun grab(threadId: Long): List<PostSelection> {
-        semaphore.withPermit {
+        lock.withLock {
             return try {
                 val thread = dataTransaction.findThreadByThreadId(threadId).orElseThrow {
                     PostParseException(
@@ -160,7 +159,7 @@ class AppEndpointService(
     }
 
     override suspend fun threadRemove(threadIdList: List<Long>) {
-        semaphore.withPermit {
+        lock.withLock {
             threadIdList.forEach {
                 dataTransaction.removeThread(it)
             }
@@ -168,13 +167,25 @@ class AppEndpointService(
     }
 
     override suspend fun threadClear() {
-        semaphore.withPermit {
+        lock.withLock {
             dataTransaction.clearQueueLinks()
         }
     }
 
     override suspend fun logClear() {
-        dataTransaction.deleteAllLogs()
+        lock.withLock {
+            dataTransaction.deleteAllLogs()
+        }
+    }
+
+    override suspend fun renameToFirst(postIds: List<Long>) {
+        postIds.forEach { postId ->
+            dataTransaction
+                .findMetadataByPostId(postId)
+                .map { it.data.resolvedNames }
+                .filter { it.isNotEmpty() }
+                .getOrNull()?.let { rename(postId, it.first()) }
+        }
     }
 
     override suspend fun rename(postId: Long, newName: String) {

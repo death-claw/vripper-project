@@ -165,4 +165,8 @@
       <column name="FILENAME" type="VARCHAR(260)" afterColumn="STATUS" defaultValue=""/>
     </addColumn>
   </changeSet>
+  <changeSet id="0009" author="vripper">
+    <addUniqueConstraint tableName="POST" columnNames="POST_ID" constraintName="POST__POST_ID_UQ"/>
+    <addUniqueConstraint tableName="THREAD" columnNames="THREAD_ID" constraintName="THREAD__THREAD_ID_UQ"/>
+  </changeSet>
 </databaseChangeLog>

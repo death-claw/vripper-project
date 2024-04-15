@@ -42,6 +42,9 @@ message Rename {
   int64 postId = 1;
   string name = 2;
 }
+message RenameToFirst {
+  repeated int64 postIds = 1;
+}
 message PostSelection {
   int64 threadId = 1;
   string threadTitle = 2;
@@ -94,6 +97,7 @@ service EndpointService {
   rpc remove (IdList) returns (EmptyResponse) {}
   rpc clearCompleted (EmptyRequest) returns (IdList) {}
   rpc rename (Rename) returns (EmptyResponse) {}
+  rpc renameToFirst (RenameToFirst) returns (EmptyResponse) {}
   rpc onStopped (EmptyRequest) returns (stream Id) {}
   rpc logClear (EmptyRequest) returns (EmptyResponse) {}
   rpc findAllLogs (EmptyRequest) returns (Logs) {}

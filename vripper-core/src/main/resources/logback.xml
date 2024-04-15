@@ -1,28 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-  <appender class="ch.qos.logback.core.ConsoleAppender" name="STDOUT">
-    <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-    </encoder>
-  </appender>
+    <appender class="ch.qos.logback.core.ConsoleAppender" name="STDOUT">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
 
-  <appender class="ch.qos.logback.core.rolling.RollingFileAppender"
-    name="FILE">
-    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-      <Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
-      </Pattern>
-    </encoder>
-    <file>${VRIPPER_DIR}/vripper.log</file>
-    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-      <fileNamePattern>${VRIPPER_DIR}/vripper.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
-      <maxFileSize>10MB</maxFileSize>
-      <maxHistory>7</maxHistory>
-      <totalSizeCap>1GB</totalSizeCap>
-    </rollingPolicy>
-  </appender>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender"
+              name="FILE">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+            </Pattern>
+        </encoder>
+        <file>${VRIPPER_DIR}/vripper.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${VRIPPER_DIR}/vripper.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
 
-  <root level="INFO">
-    <appender-ref ref="STDOUT"/>
-    <appender-ref ref="FILE"/>
-  </root>
+    <logger name="Exposed" level="OFF"/>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
+    </root>
 </configuration>

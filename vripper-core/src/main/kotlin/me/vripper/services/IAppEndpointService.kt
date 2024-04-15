@@ -44,4 +44,5 @@ interface IAppEndpointService {
     fun onUpdateSettings(): Flow<Settings>
     suspend fun loggedInUser(): String
     suspend fun getVersion(): String
+    suspend fun renameToFirst(postIds: List<Long>)
 }
