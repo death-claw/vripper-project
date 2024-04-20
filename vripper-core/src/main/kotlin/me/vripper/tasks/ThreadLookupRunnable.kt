@@ -1,13 +1,10 @@
 package me.vripper.tasks
 
-import kotlinx.coroutines.runBlocking
 import me.vripper.entities.LogEntryEntity
 import me.vripper.entities.LogEntryEntity.Status.ERROR
 import me.vripper.entities.ThreadEntity
 import me.vripper.model.Settings
 import me.vripper.model.ThreadPostId
-import me.vripper.parser.ThreadItem
-import me.vripper.services.AppEndpointService
 import me.vripper.services.DataTransaction
 import me.vripper.services.SettingsService
 import me.vripper.services.ThreadCacheService
@@ -23,7 +20,6 @@ class ThreadLookupRunnable(private val threadId: Long, private val settings: Set
     private val dataTransaction by inject<DataTransaction>()
     private val settingsService by inject<SettingsService>()
     private val threadCacheService by inject<ThreadCacheService>()
-    private val appEndpointService by inject<AppEndpointService>()
     private val link: String = "${settingsService.settings.viperSettings.host}/threads/$threadId"
 
     override fun run() {
@@ -51,18 +47,26 @@ class ThreadLookupRunnable(private val threadId: Long, private val settings: Set
                     )
                     return
                 }
-                try {
-                    dataTransaction.save(
-                        ThreadEntity(
-                            title = threadLookupResult.title,
-                            link = link,
-                            threadId = threadId,
-                            total = threadLookupResult.postItemList.size
+
+                if (threadLookupResult.postItemList.size <= settings.downloadSettings.autoQueueThreshold) {
+                    CompletableFuture.runAsync(AddPostRunnable(threadLookupResult.postItemList.map {
+                        ThreadPostId(
+                            it.threadId, it.postId
                         )
-                    )
-                    autostart(threadLookupResult)
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                    }), GLOBAL_EXECUTOR)
+                } else {
+                    try {
+                        dataTransaction.save(
+                            ThreadEntity(
+                                title = threadLookupResult.title,
+                                link = link,
+                                threadId = threadId,
+                                total = threadLookupResult.postItemList.size
+                            )
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -78,19 +82,6 @@ class ThreadLookupRunnable(private val threadId: Long, private val settings: Set
             )
         } finally {
             Tasks.decrement()
-        }
-    }
-
-    private fun autostart(lookupResult: ThreadItem) {
-        if (lookupResult.postItemList.size <= settings.downloadSettings.autoQueueThreshold) {
-            runBlocking {
-                appEndpointService.threadRemove(listOf(lookupResult.threadId))
-            }
-            CompletableFuture.runAsync(AddPostRunnable(lookupResult.postItemList.map {
-                ThreadPostId(
-                    it.threadId, it.postId
-                )
-            }), GLOBAL_EXECUTOR)
         }
     }
 }
