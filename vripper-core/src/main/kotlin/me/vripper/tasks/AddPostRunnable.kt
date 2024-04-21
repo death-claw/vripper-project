@@ -76,7 +76,17 @@ class AddPostRunnable(private val items: List<ThreadPostId>) : KoinComponent, Ru
                     }
                 }
 
-                val postItem = threadItem.postItemList.first()
+                val postItem = threadItem.postItemList.firstOrNull { it.postId == postId }
+                if (postItem == null) {
+                    dataTransaction.saveLog(
+                        LogEntryEntity(
+                            type = LogEntryEntity.Type.POST,
+                            status = LogEntryEntity.Status.ERROR,
+                            message = "Unable to load $link"
+                        )
+                    )
+                    continue
+                }
                 toProcess.add(postItem)
             }
 
