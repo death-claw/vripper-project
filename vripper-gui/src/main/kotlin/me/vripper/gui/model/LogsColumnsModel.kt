@@ -6,18 +6,22 @@ import tornadofx.setValue
 
 class LogsColumnsModel(
     time: Boolean,
-    type: Boolean,
-    status: Boolean,
+    threadName: Boolean,
+    loggerName: Boolean,
+    levelString: Boolean,
     message: Boolean,
 ) {
     val timeProperty = SimpleBooleanProperty(time)
     var time: Boolean by timeProperty
 
-    val typeProperty = SimpleBooleanProperty(type)
-    var type: Boolean by typeProperty
+    val threadNameProperty = SimpleBooleanProperty(threadName)
+    var threadName: Boolean by threadNameProperty
 
-    val statusProperty = SimpleBooleanProperty(status)
-    var status: Boolean by statusProperty
+    val loggerNameProperty = SimpleBooleanProperty(loggerName)
+    var loggerName: Boolean by loggerNameProperty
+
+    val levelStringProperty = SimpleBooleanProperty(levelString)
+    var levelString: Boolean by levelStringProperty
 
     val messageProperty = SimpleBooleanProperty(message)
     var message: Boolean by messageProperty

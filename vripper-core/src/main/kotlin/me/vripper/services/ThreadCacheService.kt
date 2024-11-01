@@ -4,17 +4,14 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.LoadingCache
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.sync.withPermit
 import me.vripper.event.EventBus
 import me.vripper.event.SettingsUpdateEvent
-import me.vripper.parser.ThreadItem
-import me.vripper.parser.ThreadLookupAPIParser
-import me.vripper.utilities.RequestLimit
-import java.util.*
+import me.vripper.vgapi.ThreadItem
+import me.vripper.vgapi.ThreadLookupAPIParser
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 
-class ThreadCacheService(val eventBus: EventBus) {
+internal class ThreadCacheService(val eventBus: EventBus) {
 
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -29,9 +26,7 @@ class ThreadCacheService(val eventBus: EventBus) {
     private val cache: LoadingCache<Long, ThreadItem> =
         Caffeine.newBuilder().expireAfterWrite(20, TimeUnit.MINUTES).build { threadId ->
             runBlocking {
-                RequestLimit.semaphore.withPermit {
-                    ThreadLookupAPIParser(threadId).parse()
-                }
+                ThreadLookupAPIParser(threadId).parse()
             }
         }
 

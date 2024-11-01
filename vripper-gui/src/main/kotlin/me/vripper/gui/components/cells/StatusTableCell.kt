@@ -4,7 +4,7 @@ import atlantafx.base.theme.Styles
 import javafx.geometry.Pos
 import javafx.scene.control.TableCell
 import javafx.scene.control.Tooltip
-import me.vripper.entities.domain.Status
+import me.vripper.entities.Status
 import org.kordamp.ikonli.feather.Feather
 import org.kordamp.ikonli.javafx.FontIcon
 

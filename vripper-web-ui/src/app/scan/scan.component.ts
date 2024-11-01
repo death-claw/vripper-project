@@ -1,15 +1,14 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MatDialogModule } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { MatInputModule } from '@angular/material/input';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { DialogRef } from '@angular/cdk/dialog';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatInputModule } from '@angular/material/input';
 
 @Component({
   selector: 'app-scan',
-  standalone: true,
   imports: [
     CommonModule,
     MatDialogModule,
@@ -18,7 +17,8 @@ import { DialogRef } from '@angular/cdk/dialog';
     ReactiveFormsModule,
   ],
   templateUrl: './scan.component.html',
-  styleUrls: ['./scan.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
 })
 export class ScanComponent {
   formControl = new FormControl<string>('');
@@ -28,7 +28,7 @@ export class ScanComponent {
   ) {
     breakpointObserver
       .observe(Breakpoints.HandsetPortrait)
-      .subscribe(result => {
+      .subscribe((result) => {
         if (result.matches) {
           this.dialogRef.updateSize('100vw', '80vh');
         } else {

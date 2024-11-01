@@ -11,8 +11,9 @@ import me.vripper.event.SettingsUpdateEvent
 import me.vripper.event.VGUserLoginEvent
 import me.vripper.exception.VripperException
 import me.vripper.model.Settings
-import me.vripper.tasks.LeaveThanksRunnable
-import me.vripper.utilities.GLOBAL_EXECUTOR
+import me.vripper.tasks.LeaveThanksTask
+import me.vripper.utilities.GlobalScopeCoroutine
+import me.vripper.utilities.LoggerDelegate
 import org.apache.hc.client5.http.classic.methods.HttpPost
 import org.apache.hc.client5.http.cookie.BasicCookieStore
 import org.apache.hc.client5.http.cookie.Cookie
@@ -20,15 +21,14 @@ import org.apache.hc.client5.http.entity.UrlEncodedFormEntity
 import org.apache.hc.client5.http.protocol.HttpClientContext
 import org.apache.hc.core5.http.io.entity.EntityUtils
 import org.apache.hc.core5.http.message.BasicNameValuePair
-import java.util.concurrent.CompletableFuture
 
-class VGAuthService(
+internal class VGAuthService(
     private val cm: HTTPService,
     private val settingsService: SettingsService,
     private val eventBus: EventBus
 ) {
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val log by me.vripper.delegate.LoggerDelegate()
+    private val log by LoggerDelegate()
     val context: HttpClientContext = HttpClientContext.create()
     var loggedUser = ""
 
@@ -122,8 +122,8 @@ class VGAuthService(
     }
 
     fun leaveThanks(postEntity: PostEntity) {
-        CompletableFuture.runAsync(
-            LeaveThanksRunnable(postEntity, authenticated, context), GLOBAL_EXECUTOR
-        )
+        GlobalScopeCoroutine.launch {
+            LeaveThanksTask(postEntity, authenticated, context).run()
+        }
     }
 }

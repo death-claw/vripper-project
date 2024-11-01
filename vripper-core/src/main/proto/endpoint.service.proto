@@ -6,7 +6,6 @@ import "image.proto";
 import "images.proto";
 import "metadata.proto";
 import "log.proto";
-import "logs.proto";
 import "thread.proto";
 import "threads.proto";
 import "settings.proto";
@@ -76,6 +75,9 @@ message LoggedInUser {
 message Version {
   string version = 1;
 }
+message DBMigrationResponse {
+  string message = 1;
+}
 
 service EndpointService {
   rpc scanLinks (Links) returns (EmptyResponse) {}
@@ -87,7 +89,8 @@ service EndpointService {
   rpc stopAll (IdList) returns (EmptyResponse) {}
   rpc findPost (Id) returns (Post) {}
   rpc findImagesByPostId (Id) returns (Images) {}
-  rpc onUpdateImages (Id) returns (stream Image) {}
+  rpc onUpdateImagesByPostId (Id) returns (stream Image) {}
+  rpc onUpdateImages (EmptyRequest) returns (stream Image) {}
   rpc onDownloadSpeed (EmptyRequest) returns (stream DownloadSpeed) {}
   rpc onVGUserUpdate (EmptyRequest) returns (stream VGUser) {}
   rpc onQueueStateUpdate (EmptyRequest) returns (stream QueueState) {}
@@ -99,11 +102,7 @@ service EndpointService {
   rpc rename (Rename) returns (EmptyResponse) {}
   rpc renameToFirst (RenameToFirst) returns (EmptyResponse) {}
   rpc onStopped (EmptyRequest) returns (stream Id) {}
-  rpc logClear (EmptyRequest) returns (EmptyResponse) {}
-  rpc findAllLogs (EmptyRequest) returns (Logs) {}
   rpc onNewLog (EmptyRequest) returns (stream Log) {}
-  rpc onUpdateLog (EmptyRequest) returns (stream Log) {}
-  rpc onDeleteLogs (EmptyRequest) returns (stream Id) {}
   rpc onNewThread (EmptyRequest) returns (stream Thread) {}
   rpc onUpdateThread (EmptyRequest) returns (stream Thread) {}
   rpc onDeleteThread (EmptyRequest) returns (stream Id) {}
@@ -119,4 +118,6 @@ service EndpointService {
   rpc onUpdateSettings (EmptyRequest) returns (stream Settings) {}
   rpc loggedInUser (EmptyRequest) returns (LoggedInUser) {}
   rpc getVersion (EmptyRequest) returns (Version) {}
+  rpc dbMigration (EmptyRequest) returns (DBMigrationResponse) {}
+  rpc initLogger (EmptyRequest) returns (EmptyResponse) {}
 }

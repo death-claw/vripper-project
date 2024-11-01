@@ -1,16 +1,17 @@
-import { Component } from '@angular/core';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { CommonModule, NgIf } from '@angular/common';
-import { ApplicationEndpointService } from '../services/application-endpoint.service';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { MatDividerModule } from '@angular/material/divider';
 import { DownloadSpeedPipe } from '../pipes/download-speed.pipe';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { ApplicationEndpointService } from '../services/application-endpoint.service';
 
 @Component({
   selector: 'app-status-bar',
-  standalone: true,
   imports: [CommonModule, NgIf, MatDividerModule, DownloadSpeedPipe],
   templateUrl: './status-bar.component.html',
   styleUrls: ['./status-bar.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
 })
 export class StatusBarComponent {
   handsetPortrait$ = this.breakpointObserver.observe(

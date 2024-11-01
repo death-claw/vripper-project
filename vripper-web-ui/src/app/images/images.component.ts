@@ -1,19 +1,19 @@
-import { Component, Inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { BehaviorSubject, Observable, Subscription } from 'rxjs';
-import { ApplicationEndpointService } from '../services/application-endpoint.service';
-import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
-import { Image } from '../domain/image.model';
-import { MatButtonModule } from '@angular/material/button';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { DataSource, SelectionModel } from '@angular/cdk/collections';
 import { DialogRef } from '@angular/cdk/dialog';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { CommonModule } from '@angular/common';
+import { Component, Inject, signal } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
-import { isDisplayed, progress, statusIcon } from '../utils/utils';
-import { DataSource, SelectionModel } from '@angular/cdk/collections';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import { ImageRow } from '../domain/image-row.model';
+import { Image } from '../domain/image.model';
+import { ApplicationEndpointService } from '../services/application-endpoint.service';
+import { isDisplayed, progress, statusIcon } from '../utils/utils';
 
 export interface ImageDialogData {
   postId: number;
@@ -21,7 +21,6 @@ export interface ImageDialogData {
 
 @Component({
   selector: 'app-images',
-  standalone: true,
   imports: [
     CommonModule,
     MatDialogModule,
@@ -33,6 +32,7 @@ export interface ImageDialogData {
   ],
   templateUrl: './images.component.html',
   styleUrls: ['./images.component.scss'],
+  standalone: true,
 })
 export class ImagesComponent {
   displayedColumns: string[] = ['index', 'url', 'progress', 'status'];
@@ -55,7 +55,7 @@ export class ImagesComponent {
   ) {
     breakpointObserver
       .observe([Breakpoints.XSmall, Breakpoints.Small, Breakpoints.Medium])
-      .subscribe(result => {
+      .subscribe((result) => {
         if (result.matches) {
           this.columnsToDisplay.set(['index', 'progress', 'status']);
         } else {
@@ -92,9 +92,9 @@ class ImageDataSource extends DataSource<ImageRow> {
       this.applicationEndpoint
         .postDetails$(this.postId)
         .subscribe((e: Image[]) => {
-          e.forEach(image => {
+          e.forEach((image) => {
             const rowNode = this._dataStream.value.find(
-              d => d.url === image.url
+              (d) => d.url === image.url
             );
             if (rowNode == null) {
               this._dataStream.next([
@@ -120,6 +120,6 @@ class ImageDataSource extends DataSource<ImageRow> {
   }
 
   disconnect(): void {
-    this.subscriptions.forEach(e => e.unsubscribe());
+    this.subscriptions.forEach((e) => e.unsubscribe());
   }
 }

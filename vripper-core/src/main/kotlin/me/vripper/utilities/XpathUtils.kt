@@ -6,7 +6,7 @@ import org.w3c.dom.NodeList
 import javax.xml.xpath.XPathConstants
 import javax.xml.xpath.XPathFactory
 
-object XpathUtils {
+internal object XpathUtils {
     private val xpath = XPathFactory.newInstance().newXPath()
 
     @Throws(XpathException::class)

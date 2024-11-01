@@ -1,14 +1,17 @@
 package me.vripper.web.restendpoints
 
+import kotlinx.coroutines.runBlocking
 import me.vripper.model.PostSelection
 import me.vripper.model.ThreadPostId
-import me.vripper.services.AppEndpointService
+import me.vripper.services.IAppEndpointService
+import me.vripper.utilities.LoggerDelegate
 import me.vripper.web.restendpoints.domain.RenameRequest
 import me.vripper.web.restendpoints.domain.ScanRequest
 import me.vripper.web.restendpoints.exceptions.BadRequestException
 import me.vripper.web.restendpoints.exceptions.ServerErrorException
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.koin.core.qualifier.named
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
@@ -16,67 +19,67 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api")
 class PostRestEndpoint : KoinComponent {
 
-    private val log by me.vripper.delegate.LoggerDelegate()
-    private val appEndpointService: AppEndpointService by inject()
+    private val log by LoggerDelegate()
+    private val appEndpointService: IAppEndpointService by inject(named("localAppEndpointService"))
 
     @PostMapping("/post")
     @ResponseStatus(code = HttpStatus.OK)
-    suspend fun scan(@RequestBody scanRequest: ScanRequest) {
+    fun scan(@RequestBody scanRequest: ScanRequest) {
         if (scanRequest.links.isNullOrBlank()) {
             log.error("Cannot process empty requests")
             throw BadRequestException("Cannot process empty requests")
         }
-        appEndpointService.scanLinks(scanRequest.links)
+        runBlocking { appEndpointService.scanLinks(scanRequest.links) }
     }
 
     @PostMapping("/post/restart")
     @ResponseStatus(value = HttpStatus.OK)
-    suspend fun start(@RequestBody postIds: List<Long>) {
-        appEndpointService.restartAll(postIds)
+    fun start(@RequestBody postIds: List<Long>) {
+        runBlocking { appEndpointService.restartAll(postIds) }
     }
 
     @PostMapping("/post/add")
     @ResponseStatus(value = HttpStatus.OK)
-    suspend fun download(@RequestBody posts: List<ThreadPostId>) {
-        appEndpointService.download(posts)
+    fun download(@RequestBody posts: List<ThreadPostId>) {
+        runBlocking { appEndpointService.download(posts) }
     }
 
     @PostMapping("/post/restart/all")
     @ResponseStatus(value = HttpStatus.OK)
-    suspend fun startAll() {
-        appEndpointService.restartAll()
+    fun startAll() {
+        runBlocking { appEndpointService.restartAll() }
     }
 
     @PostMapping("/post/stop")
     @ResponseStatus(value = HttpStatus.OK)
-    suspend fun stop(@RequestBody postIds: List<Long>) {
-        appEndpointService.stopAll(postIds)
+    fun stop(@RequestBody postIds: List<Long>) {
+        runBlocking { appEndpointService.stopAll(postIds) }
     }
 
     @PostMapping("/post/stop/all")
     @ResponseStatus(value = HttpStatus.OK)
-    suspend fun stopAll() {
-        appEndpointService.stopAll()
+    fun stopAll() {
+        runBlocking { appEndpointService.stopAll() }
     }
 
     @PostMapping("/post/remove")
     @ResponseStatus(value = HttpStatus.OK)
-    suspend fun remove(@RequestBody postIds: List<Long>): List<Long> {
-        appEndpointService.remove(postIds)
+    fun remove(@RequestBody postIds: List<Long>): List<Long> {
+        runBlocking { appEndpointService.remove(postIds) }
         return postIds
     }
 
     @PostMapping("/post/clear/all")
     @ResponseStatus(value = HttpStatus.OK)
-    suspend fun clearAll(): List<Long> {
-        return appEndpointService.clearCompleted()
+    fun clearAll(): List<Long> {
+        return runBlocking { appEndpointService.clearCompleted() }
     }
 
     @GetMapping("/grab/{threadId}")
     @ResponseStatus(value = HttpStatus.OK)
-    suspend fun grab(@PathVariable("threadId") threadId: Long): List<PostSelection> {
+    fun grab(@PathVariable("threadId") threadId: Long): List<PostSelection> {
         return try {
-            appEndpointService.grab(threadId)
+            runBlocking { appEndpointService.grab(threadId) }
         } catch (e: Exception) {
             throw ServerErrorException(
                 String.format(
@@ -90,19 +93,19 @@ class PostRestEndpoint : KoinComponent {
 
     @PostMapping("/grab/remove")
     @ResponseStatus(value = HttpStatus.OK)
-    suspend fun grabRemove(@RequestBody threadIds: List<Long>) {
-        appEndpointService.threadRemove(threadIds)
+    fun grabRemove(@RequestBody threadIds: List<Long>) {
+        runBlocking { appEndpointService.threadRemove(threadIds) }
     }
 
     @GetMapping("/grab/clear")
     @ResponseStatus(value = HttpStatus.OK)
-    suspend fun threadClear() {
-        appEndpointService.threadClear()
+    fun threadClear() {
+        runBlocking { appEndpointService.threadClear() }
     }
 
     @PostMapping("/post/rename")
     @ResponseStatus(value = HttpStatus.OK)
-    suspend fun rename(@RequestBody renameRequest: RenameRequest) {
-        appEndpointService.rename(renameRequest.postId, renameRequest.name)
+    fun rename(@RequestBody renameRequest: RenameRequest) {
+        runBlocking { appEndpointService.rename(renameRequest.postId, renameRequest.name) }
     }
 }

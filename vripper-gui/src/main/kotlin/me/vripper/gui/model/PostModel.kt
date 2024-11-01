@@ -22,7 +22,8 @@ class PostModel(
     progressCount: String,
     previewList: List<String>,
     altTitles: List<String>,
-    postedBy: String
+    postedBy: String,
+    val threadId: Long
 ) {
     val postIdProperty = SimpleLongProperty(postId)
     var postId: Long by postIdProperty

@@ -1,6 +1,5 @@
 package me.vripper.gui.components.views
 
-import io.grpc.ConnectivityState
 import javafx.scene.control.ProgressIndicator.INDETERMINATE_PROGRESS
 import javafx.scene.effect.DropShadow
 import kotlinx.coroutines.*
@@ -9,63 +8,60 @@ import me.vripper.gui.VripperGuiApplication
 import me.vripper.gui.components.fragments.SessionFragment
 import me.vripper.gui.controller.WidgetsController
 import me.vripper.gui.event.GuiEventBus
-import me.vripper.gui.services.DatabaseManager
+import me.vripper.gui.listener.GuiStartupLister
 import me.vripper.gui.services.GrpcEndpointService
+import me.vripper.gui.utils.Watcher
+import me.vripper.utilities.DatabaseManager
 import tornadofx.*
 
 class LoadingView : View("VRipper") {
 
     private val widgetsController: WidgetsController by inject()
     private val grpcEndpointService: GrpcEndpointService by di("remoteAppEndpointService")
-    private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob())
+    private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override val root = borderpane {}
 
     init {
         coroutineScope.launch {
             GuiEventBus.events.filterIsInstance(GuiEventBus.ApplicationInitialized::class).collect {
-                runLater {
-                    if (widgetsController.currentSettings.firstRun) {
-                        widgetsController.currentSettings.firstRun = false
-                        val sessionView = find<SessionFragment>(mapOf(SessionFragment::component to this@LoadingView))
-                        sessionView.openModal().also {
-                            it?.setOnCloseRequest {
-                                VripperGuiApplication.APP_INSTANCE.stop()
-                            }
+                if (widgetsController.currentSettings.localSession) {
+                    DatabaseManager.connect()
+                    GuiStartupLister().run()
+                    runLater {
+                        replaceWith(find<AppView>())
+                    }
+                } else {
+                    grpcEndpointService.connect(
+                        widgetsController.currentSettings.remoteSessionModel.host,
+                        widgetsController.currentSettings.remoteSessionModel.port
+                    )
+                    repeat(10) {
+                        if (grpcEndpointService.ready()) {
+                            return@repeat
                         }
-                    } else {
-                        if (widgetsController.currentSettings.localSession) {
-                            DatabaseManager.connect()
-                            replaceWith(find<AppView>())
-                        } else {
-                            grpcEndpointService.connect(
-                                widgetsController.currentSettings.remoteSessionModel.host,
-                                widgetsController.currentSettings.remoteSessionModel.port
-                            )
-
-                            coroutineScope.launch {
-                                repeat(10) {
-                                    if (grpcEndpointService.connectionState() == ConnectivityState.READY) {
-                                        runLater {
-                                            replaceWith(find<AppView>())
-                                        }
-                                        cancel()
-                                    }
-                                    delay(333)
-                                }
-                                runLater {
-                                    val sessionView = find<SessionFragment>(
-                                        mapOf(SessionFragment::component to this@LoadingView)
-                                    )
-                                    sessionView.openModal().also {
-                                        it?.setOnCloseRequest {
-                                            VripperGuiApplication.APP_INSTANCE.stop()
-                                        }
-                                    }
+                        delay(333)
+                    }
+                    runLater {
+                        replaceWith(find<AppView>())
+                        runBlocking {
+                            GuiEventBus.publishEvent(GuiEventBus.RemoteSessionFailure)
+                        }
+                    }
+                    if (!grpcEndpointService.ready()) {
+                        val sessionView = find<SessionFragment>()
+                        runLater {
+                            sessionView.openModal().also {
+                                it?.setOnCloseRequest {
+                                    VripperGuiApplication.APP_INSTANCE.stop()
                                 }
                             }
                         }
                     }
+                }
+
+                if (it.args.isNotEmpty()) {
+                    Watcher.notify(it.args[0])
                 }
             }
         }

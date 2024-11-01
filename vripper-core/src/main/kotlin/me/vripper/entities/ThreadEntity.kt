@@ -1,5 +1,8 @@
 package me.vripper.entities
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class ThreadEntity(
     val id: Long = -1,
     val title: String,

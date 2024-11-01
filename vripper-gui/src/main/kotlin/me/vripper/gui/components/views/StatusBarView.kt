@@ -1,6 +1,5 @@
 package me.vripper.gui.components.views
 
-import io.grpc.ConnectivityState
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleStringProperty
@@ -8,12 +7,11 @@ import javafx.geometry.Orientation
 import javafx.geometry.Pos
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.catch
-import me.vripper.delegate.LoggerDelegate
 import me.vripper.gui.controller.WidgetsController
 import me.vripper.gui.event.GuiEventBus
-import me.vripper.gui.services.GrpcEndpointService
-import me.vripper.services.AppEndpointService
+import me.vripper.gui.utils.ActiveUICoroutines
 import me.vripper.services.IAppEndpointService
+import me.vripper.utilities.LoggerDelegate
 import me.vripper.utilities.formatSI
 import tornadofx.*
 
@@ -21,8 +19,8 @@ class StatusBarView : View("Status bar") {
     private val logger by LoggerDelegate()
     private val widgetsController: WidgetsController by inject()
     private val coroutineScope = CoroutineScope(SupervisorJob())
-    private val grpcEndpointService: GrpcEndpointService by di("remoteAppEndpointService")
-    private val localEndpointService: AppEndpointService by di("localAppEndpointService")
+    private val grpcEndpointService: IAppEndpointService by di("remoteAppEndpointService")
+    private val localEndpointService: IAppEndpointService by di("localAppEndpointService")
     private val remoteText = SimpleStringProperty()
     private val loggedUser = SimpleStringProperty()
     private val tasksRunning = SimpleBooleanProperty(false)
@@ -30,11 +28,18 @@ class StatusBarView : View("Status bar") {
     private val running = SimpleIntegerProperty(0)
     private val pending = SimpleIntegerProperty(0)
     private val error = SimpleIntegerProperty(0)
-    private val jobs = mutableListOf<Job>()
 
     init {
         coroutineScope.launch {
             GuiEventBus.events.collect { event ->
+                runLater {
+                    tasksRunning.set(false)
+                    downloadSpeed.set(0L.formatSI())
+                    running.set(0)
+                    pending.set(0)
+                    error.set(0)
+                }
+
                 when (event) {
                     is GuiEventBus.LocalSession -> {
                         connect(localEndpointService)
@@ -44,9 +49,18 @@ class StatusBarView : View("Status bar") {
                         connect(grpcEndpointService)
                     }
 
+                    is GuiEventBus.RemoteSessionFailure -> {
+                        runLater {
+                            remoteText.set("Unable to connect to ${widgetsController.currentSettings.remoteSessionModel.host}:${widgetsController.currentSettings.remoteSessionModel.port}")
+                        }
+                    }
+
                     is GuiEventBus.ChangingSession -> {
-                        jobs.forEach { it.cancel() }
-                        jobs.clear()
+                        ActiveUICoroutines.statusBar.forEach { it.cancelAndJoin() }
+                        ActiveUICoroutines.statusBar.clear()
+                        runLater {
+                            remoteText.set("Connecting to ${widgetsController.currentSettings.remoteSessionModel.host}:${widgetsController.currentSettings.remoteSessionModel.port}")
+                        }
                     }
                 }
             }
@@ -70,7 +84,7 @@ class StatusBarView : View("Status bar") {
                     loggedUser.set(it)
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.statusBar.add(it) }
 
         coroutineScope.launch {
             endpointService.onTasksRunning().catch {
@@ -81,7 +95,7 @@ class StatusBarView : View("Status bar") {
                     tasksRunning.set(it)
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.statusBar.add(it) }
 
         coroutineScope.launch {
             endpointService.onDownloadSpeed().catch {
@@ -89,10 +103,10 @@ class StatusBarView : View("Status bar") {
                 currentCoroutineContext().cancel(null)
             }.collect {
                 runLater {
-                    downloadSpeed.set(it.formatSI())
+                    downloadSpeed.set(it.speed.formatSI())
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.statusBar.add(it) }
 
         coroutineScope.launch {
             endpointService.onQueueStateUpdate().catch {
@@ -104,7 +118,7 @@ class StatusBarView : View("Status bar") {
                     pending.set(it.remaining)
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.statusBar.add(it) }
 
         coroutineScope.launch {
             endpointService.onErrorCountUpdate().catch {
@@ -112,26 +126,27 @@ class StatusBarView : View("Status bar") {
                 currentCoroutineContext().cancel(null)
             }.collect {
                 runLater {
-                    error.set(it)
+                    error.set(it.count)
                 }
             }
-        }.also { jobs.add(it) }
-        if (!widgetsController.currentSettings.localSession) {
+        }.also { ActiveUICoroutines.statusBar.add(it) }
+        if (widgetsController.currentSettings.localSession) {
+            runLater {
+                remoteText.set("")
+            }
+        } else {
             coroutineScope.launch {
-                while (isActive) {
-                    if (grpcEndpointService.connectionState() != ConnectivityState.READY) {
-                        runLater {
-                            remoteText.set("Unable to connect to ${widgetsController.currentSettings.remoteSessionModel.host}:${widgetsController.currentSettings.remoteSessionModel.port}")
-                        }
-                    } else {
-                        val version = grpcEndpointService.getVersion()
-                        runLater {
-                            remoteText.set("Connected to ${widgetsController.currentSettings.remoteSessionModel.host}:${widgetsController.currentSettings.remoteSessionModel.port} v$version")
-                        }
+                if (grpcEndpointService.ready()) {
+                    val version = grpcEndpointService.getVersion()
+                    runLater {
+                        remoteText.set("Connected to ${widgetsController.currentSettings.remoteSessionModel.host}:${widgetsController.currentSettings.remoteSessionModel.port} v$version")
                     }
-                    delay(5000)
+                } else {
+                    runLater {
+                        remoteText.set("Unable to connect to ${widgetsController.currentSettings.remoteSessionModel.host}:${widgetsController.currentSettings.remoteSessionModel.port}")
+                    }
                 }
-            }.also { jobs.add(it) }
+            }
         }
     }
 
@@ -140,11 +155,13 @@ class StatusBarView : View("Status bar") {
         left {
             hbox {
                 label(remoteText) {
+                    managedProperty().bind(visibleProperty())
                     visibleWhen { widgetsController.currentSettings.localSessionProperty.not() }
                 }
                 separator(Orientation.VERTICAL) {
+                    managedProperty().bind(visibleProperty())
                     visibleWhen {
-                        widgetsController.currentSettings.localSessionProperty.not().and(loggedUser.isNotBlank())
+                        widgetsController.currentSettings.localSessionProperty.not().and(remoteText.isNotBlank())
                     }
                 }
                 label(loggedUser.map { "Logged in as: $it" }) {

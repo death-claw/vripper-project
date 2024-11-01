@@ -11,6 +11,7 @@ open class OnStartupListener : KoinComponent {
 
     open fun run() {
         dataTransaction.setDownloadingToStopped()
+        dataTransaction.stopImagesByPostIdAndIsNotCompleted()
         metadataService.init()
     }
 }

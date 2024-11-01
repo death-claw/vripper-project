@@ -6,18 +6,22 @@ import tornadofx.setValue
 
 class LogsColumnsWidthModel(
     time: Double,
-    type: Double,
-    status: Double,
+    threadName: Double,
+    loggerName: Double,
+    levelString: Double,
     message: Double,
 ) {
     val timeProperty = SimpleDoubleProperty(time)
     var time: Double by timeProperty
 
-    val typeProperty = SimpleDoubleProperty(type)
-    var type: Double by typeProperty
+    val threadNameProperty = SimpleDoubleProperty(threadName)
+    var threadName: Double by threadNameProperty
 
-    val statusProperty = SimpleDoubleProperty(status)
-    var status: Double by statusProperty
+    val loggerNameProperty = SimpleDoubleProperty(loggerName)
+    var loggerName: Double by loggerNameProperty
+
+    val levelStringProperty = SimpleDoubleProperty(levelString)
+    var levelString: Double by levelStringProperty
 
     val messageProperty = SimpleDoubleProperty(message)
     var message: Double by messageProperty

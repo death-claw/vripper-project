@@ -2,6 +2,7 @@ package me.vripper.entities
 
 import kotlinx.serialization.Serializable
 
+@Serializable
 data class MetadataEntity(val postId: Long, val data: Data) {
     @Serializable
     data class Data(

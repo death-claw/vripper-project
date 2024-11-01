@@ -1,22 +1,14 @@
 package me.vripper.entities
 
-import java.time.LocalDateTime
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class LogEntryEntity(
-    val id: Long = -1,
-    val type: Type,
-    val status: Status,
-    val time: LocalDateTime = LocalDateTime.now(),
-    val message: String,
-) {
-
-    enum class Type(val stringValue: String) {
-        POST("Post"), THREAD("Thread"), THANKS("Thanks"), METADATA("Metadata"), SCAN("Scan"), DOWNLOAD(
-            "Download"
-        )
-    }
-
-    enum class Status(val stringValue: String) {
-        PENDING("Pending"), PROCESSING("Processing"), DONE("Done"), ERROR("Error")
-    }
-}
+    val sequence: Long,
+    val timestamp: String,
+    val threadName: String,
+    val loggerName: String,
+    val levelString: String,
+    val formattedMessage: String,
+    val throwable: String,
+)

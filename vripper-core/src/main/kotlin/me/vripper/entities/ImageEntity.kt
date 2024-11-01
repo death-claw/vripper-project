@@ -1,7 +1,8 @@
 package me.vripper.entities
 
-import me.vripper.entities.domain.Status
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class ImageEntity(
     val id: Long = -1,
     val postId: Long,

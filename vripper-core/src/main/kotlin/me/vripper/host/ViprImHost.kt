@@ -4,17 +4,18 @@ import me.vripper.download.ImageDownloadContext
 import me.vripper.exception.HostException
 import me.vripper.exception.XpathException
 import me.vripper.services.*
+import me.vripper.utilities.LoggerDelegate
 import me.vripper.utilities.XpathUtils
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import java.util.*
 
-class ViprImHost(
+internal class ViprImHost(
     httpService: HTTPService,
     dataTransaction: DataTransaction,
     downloadSpeedService: DownloadSpeedService,
 ) : Host("vipr.im", 15, httpService, dataTransaction, downloadSpeedService) {
-    private val log by me.vripper.delegate.LoggerDelegate()
+    private val log by LoggerDelegate()
 
     @Throws(HostException::class)
     override fun resolve(

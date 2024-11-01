@@ -1,29 +1,33 @@
 package me.vripper.gui.model
 
-import javafx.beans.property.SimpleLongProperty
 import javafx.beans.property.SimpleStringProperty
 import tornadofx.getValue
 import tornadofx.setValue
 
 class LogModel(
-    id: Long,
-    type: String,
-    status: String,
-    time: String,
-    message: String
+    val sequence: Long,
+    timestamp: String,
+    threadName: String,
+    loggerName: String,
+    levelString: String,
+    formattedMessage: String,
+    throwable: String
 ) {
-    val idProperty = SimpleLongProperty(id)
-    var id: Long by idProperty
+    val timestampProperty = SimpleStringProperty(timestamp)
+    var timestamp: String by timestampProperty
 
-    val typeProperty = SimpleStringProperty(type)
-    var type: String by typeProperty
+    val threadNameProperty = SimpleStringProperty(threadName)
+    var threadName: String by threadNameProperty
 
-    val statusProperty = SimpleStringProperty(status)
-    var status: String by statusProperty
+    val loggerNameProperty = SimpleStringProperty(loggerName)
+    var loggerName: String by loggerNameProperty
 
-    val timeProperty = SimpleStringProperty(time)
-    var time: String by timeProperty
+    val levelStringProperty = SimpleStringProperty(levelString)
+    var levelString: String by levelStringProperty
 
-    val messageProperty = SimpleStringProperty(message)
-    var message: String by messageProperty
+    val formattedMessageProperty = SimpleStringProperty(formattedMessage)
+    var formattedMessage: String by formattedMessageProperty
+
+    val throwableProperty = SimpleStringProperty(throwable)
+    var throwable: String by throwableProperty
 }

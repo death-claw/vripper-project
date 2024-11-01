@@ -5,10 +5,11 @@ import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import me.vripper.entities.LogEntryEntity
 import me.vripper.entities.MetadataEntity
-import me.vripper.entities.domain.Status
+import me.vripper.entities.Status
 import me.vripper.model.*
+import me.vripper.model.DownloadSpeed
+import me.vripper.model.ErrorCount
 import me.vripper.model.PostSelection
 import me.vripper.model.QueueState
 import me.vripper.model.ThreadPostId
@@ -88,30 +89,23 @@ class GrpcEndpointService : IAppEndpointService {
         ).imagesList.map(::mapper)
 
 
-    override fun onUpdateImages(postId: Long): Flow<Image> =
-        endpointServiceCoroutineStub!!.onUpdateImages(Id.newBuilder().setId(postId).build()).map(::mapper)
+    override fun onUpdateImagesByPostId(postId: Long): Flow<Image> =
+        endpointServiceCoroutineStub!!.onUpdateImagesByPostId(Id.newBuilder().setId(postId).build()).map(::mapper)
+
+    override fun onUpdateImages(): Flow<Image> =
+        endpointServiceCoroutineStub!!.onUpdateImages(EmptyRequest.getDefaultInstance()).map(::mapper)
 
 
     override fun onStopped(): Flow<Long> =
         endpointServiceCoroutineStub!!.onStopped(EmptyRequest.getDefaultInstance()).map { it.id }
 
 
-    override suspend fun logClear() {
-        endpointServiceCoroutineStub!!.logClear(EmptyRequest.getDefaultInstance())
-    }
-
-    override suspend fun findAllLogs(): List<LogEntry> =
-        endpointServiceCoroutineStub!!.findAllLogs(EmptyRequest.getDefaultInstance()).logsList.map { mapper(it) }
-
-
     override fun onNewLog(): Flow<LogEntry> =
         endpointServiceCoroutineStub!!.onNewLog(EmptyRequest.getDefaultInstance()).map { mapper(it) }
 
-    override fun onUpdateLog(): Flow<LogEntry> =
-        endpointServiceCoroutineStub!!.onUpdateLog(EmptyRequest.getDefaultInstance()).map { mapper(it) }
-
-    override fun onDeleteLogs(): Flow<Long> =
-        endpointServiceCoroutineStub!!.onDeleteLogs(EmptyRequest.getDefaultInstance()).map { it.id }
+    override suspend fun initLogger() {
+        endpointServiceCoroutineStub!!.initLogger(EmptyRequest.getDefaultInstance())
+    }
 
     override fun onNewThread() =
         endpointServiceCoroutineStub!!.onNewThread(EmptyRequest.getDefaultInstance()).map { mapper(it) }
@@ -154,8 +148,9 @@ class GrpcEndpointService : IAppEndpointService {
         )
     }
 
-    override fun onDownloadSpeed(): Flow<Long> =
-        endpointServiceCoroutineStub!!.onDownloadSpeed(EmptyRequest.getDefaultInstance()).map { it.speed }
+    override fun onDownloadSpeed(): Flow<DownloadSpeed> =
+        endpointServiceCoroutineStub!!.onDownloadSpeed(EmptyRequest.getDefaultInstance())
+            .map { DownloadSpeed(it.speed) }
 
     override fun onVGUserUpdate(): Flow<String> =
         endpointServiceCoroutineStub!!.onVGUserUpdate(EmptyRequest.getDefaultInstance()).map { it.user }
@@ -164,8 +159,9 @@ class GrpcEndpointService : IAppEndpointService {
         endpointServiceCoroutineStub!!.onQueueStateUpdate(EmptyRequest.getDefaultInstance())
             .map { QueueState(it.running, it.remaining) }
 
-    override fun onErrorCountUpdate(): Flow<Int> =
-        endpointServiceCoroutineStub!!.onErrorCountUpdate(EmptyRequest.getDefaultInstance()).map { it.count }
+    override fun onErrorCountUpdate(): Flow<ErrorCount> =
+        endpointServiceCoroutineStub!!.onErrorCountUpdate(EmptyRequest.getDefaultInstance())
+            .map { ErrorCount(it.count) }
 
     override fun onTasksRunning(): Flow<Boolean> =
         endpointServiceCoroutineStub!!.onTasksRunning(EmptyRequest.getDefaultInstance()).map { it.running }
@@ -232,6 +228,10 @@ class GrpcEndpointService : IAppEndpointService {
 
     override suspend fun getVersion(): String =
         endpointServiceCoroutineStub!!.getVersion(EmptyRequest.getDefaultInstance()).version
+
+    override suspend fun dbMigration(): String =
+        endpointServiceCoroutineStub!!.dbMigration(EmptyRequest.getDefaultInstance()).message
+
 
     private fun mapper(settings: SettingsOuterClass.Settings): Settings =
         Settings(
@@ -318,11 +318,13 @@ class GrpcEndpointService : IAppEndpointService {
 
     private fun mapper(logEntry: Log): LogEntry {
         return LogEntry(
-            logEntry.id,
-            LogEntryEntity.Type.valueOf(logEntry.type),
-            LogEntryEntity.Status.valueOf(logEntry.status),
-            LocalDateTime.parse(logEntry.time, DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-            logEntry.message
+            logEntry.sequence,
+            logEntry.timestamp,
+            logEntry.threadName,
+            logEntry.loggerName,
+            logEntry.levelString,
+            logEntry.formattedMessage,
+            logEntry.throwable,
         )
     }
 
@@ -357,8 +359,16 @@ class GrpcEndpointService : IAppEndpointService {
     }
 
     fun disconnect() {
-        channel?.shutdownNow()
+        try {
+            channel?.shutdownNow()
+        } catch (_: Exception) {
+
+        }
     }
 
     fun connectionState(): ConnectivityState = channel?.getState(true) ?: ConnectivityState.SHUTDOWN
+
+    override fun ready(): Boolean {
+        return connectionState() == ConnectivityState.READY
+    }
 }

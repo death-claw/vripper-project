@@ -1,7 +1,8 @@
 <h2 mat-dialog-title>Settings</h2>
 <mat-dialog-content
   class="mat-typography"
-  style="min-width: 50vw; min-height: 50vh">
+  style="min-width: 50vw; min-height: 50vh"
+>
   <mat-tab-group animationDuration="0ms" dynamicHeight="true">
     <mat-tab label="Download">
       <form
@@ -13,14 +14,16 @@
           padding-top: 20px;
           padding-left: 20px;
           padding-right: 20px;
-        ">
+        "
+      >
         <mat-form-field appearance="outline">
           <mat-label>Download Path</mat-label>
           <input
             formControlName="downloadPath"
             matInput
             name="downloadPath"
-            required />
+            required
+          />
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -32,7 +35,8 @@
             matInput
             name="autoQueueThreshold"
             min="0"
-            required />
+            required
+          />
         </mat-form-field>
 
         <div style="display: flex; align-items: center">
@@ -51,8 +55,8 @@
         <div style="display: flex; align-items: center">
           <mat-checkbox
             color="primary"
-            formControlName="forumSubfolder"
-            name="forumSubfolder"
+            formControlName="forumSubDirectory"
+            name="forumSubDirectory"
             >Save posts in sub folders
           </mat-checkbox>
           <mat-icon
@@ -124,7 +128,8 @@
           padding-top: 20px;
           padding-left: 20px;
           padding-right: 20px;
-        ">
+        "
+      >
         <mat-form-field appearance="outline">
           <mat-label>Global concurrent downloads</mat-label>
           <input
@@ -134,7 +139,8 @@
             min="0"
             name="maxConcurrentPerHost"
             required
-            type="number" />
+            type="number"
+          />
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Concurrent downloads per host</mat-label>
@@ -145,7 +151,8 @@
             min="1"
             name="maxGlobalConcurrent"
             required
-            type="number" />
+            type="number"
+          />
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Connection timeout</mat-label>
@@ -156,7 +163,8 @@
             min="1"
             name="timeout"
             required
-            type="number" />
+            type="number"
+          />
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Maximum attempts</mat-label>
@@ -167,7 +175,8 @@
             min="1"
             name="maxAttempts"
             required
-            type="number" />
+            type="number"
+          />
         </mat-form-field>
       </form>
     </mat-tab>
@@ -181,15 +190,15 @@
           padding-top: 20px;
           padding-left: 20px;
           padding-right: 20px;
-        ">
+        "
+      >
         <mat-form-field appearance="outline">
           <mat-label>Select a proxy</mat-label>
           <mat-select formControlName="host" name="host">
-            <mat-option
-              *ngFor="let mirror of mirrors | async"
-              [value]="mirror"
-              >{{ mirror }}</mat-option
-            >
+            <mat-option *ngFor="let mirror of mirrors()" [value]="mirror">{{
+              mirror
+              }}
+            </mat-option>
           </mat-select>
         </mat-form-field>
 
@@ -197,13 +206,15 @@
           color="primary"
           formControlName="login"
           name="login"
-          style="padding-bottom: 20px">
+          style="padding-bottom: 20px"
+        >
           Enable ViperGirls Authentication
         </mat-slide-toggle>
 
         <div
           *ngIf="viperGirlsSettingsForm.controls['login'].value"
-          style="display: flex; flex-direction: column">
+          style="display: flex; flex-direction: column"
+        >
           <mat-form-field appearance="outline">
             <mat-label>ViperGirls Username</mat-label>
             <input formControlName="username" matInput name="username" />
@@ -215,7 +226,8 @@
               formControlName="password"
               matInput
               name="password"
-              type="password" />
+              type="password"
+            />
           </mat-form-field>
 
           <div style="display: flex; align-items: center">
@@ -239,18 +251,11 @@
           padding-top: 20px;
           padding-left: 20px;
           padding-right: 20px;
-        ">
+        "
+      >
         <mat-form-field appearance="outline">
           <mat-label>Temporary Path</mat-label>
           <input formControlName="tempPath" matInput name="tempPath" required />
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Cache Path</mat-label>
-          <input
-            formControlName="cachePath"
-            matInput
-            name="cachePath"
-            required />
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Maximum log entries</mat-label>
@@ -258,10 +263,11 @@
             formControlName="maxEventLog"
             matInput
             max="10000"
-            min="100"
+            min="10"
             name="maxEventLog"
             required
-            type="number" />
+            type="number"
+          />
         </mat-form-field>
       </form>
     </mat-tab>

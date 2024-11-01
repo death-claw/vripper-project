@@ -4,12 +4,12 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
-import me.vripper.delegate.LoggerDelegate
 import me.vripper.entities.ThreadEntity
 import me.vripper.gui.model.ThreadModel
 import me.vripper.gui.model.ThreadSelectionModel
 import me.vripper.model.ThreadPostId
 import me.vripper.services.IAppEndpointService
+import me.vripper.utilities.LoggerDelegate
 import org.koin.core.component.KoinComponent
 import tornadofx.Controller
 

@@ -61,6 +61,7 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
         }
 
         tableView = tableview(items) {
+            isTableMenuButtonVisible = true
             addClass(Styles.DENSE)
             selectionModel.selectionMode = SelectionMode.MULTIPLE
             setRowFactory {
@@ -85,46 +86,20 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
                 }
                 val contextMenu = ContextMenu()
                 contextMenu.items.addAll(urlItem)
-                tableRow.contextMenuProperty().bind(tableRow.emptyProperty()
-                    .map { empty -> if (empty) null else contextMenu })
+                tableRow.contextMenuProperty().bind(
+                    tableRow.emptyProperty()
+                        .map { empty -> if (empty) null else contextMenu })
 
                 tableRow
             }
-            contextMenu = ContextMenu()
-            contextMenu.items.add(MenuItem("Setup columns").apply {
-                setOnAction {
-                    find<ColumnSelectionFragment>(
-                        mapOf(
-                            ColumnSelectionFragment::map to mapOf(
-                                Pair(
-                                    "Preview",
-                                    widgetsController.currentSettings.threadSelectionColumnsModel.previewProperty
-                                ),
-                                Pair(
-                                    "Post Index",
-                                    widgetsController.currentSettings.threadSelectionColumnsModel.indexProperty
-                                ),
-                                Pair(
-                                    "Title",
-                                    widgetsController.currentSettings.threadSelectionColumnsModel.titleProperty
-                                ),
-                                Pair(
-                                    "URL",
-                                    widgetsController.currentSettings.threadSelectionColumnsModel.linkProperty
-                                ),
-                                Pair(
-                                    "Hosts",
-                                    widgetsController.currentSettings.threadSelectionColumnsModel.hostsProperty
-                                ),
-                            )
-                        )
-                    ).openModal()
-                }
-                graphic = FontIcon.of(Feather.COLUMNS)
-            })
             column("Preview", ThreadSelectionModel::previewListProperty) {
+                isVisible = widgetsController.currentSettings.threadSelectionColumnsModel.previewProperty.get()
+                visibleProperty().onChange {
+                    widgetsController.currentSettings.threadSelectionColumnsModel.previewProperty.set(
+                        it
+                    )
+                }
                 prefWidth = 100.0
-                visibleProperty().bind(widgetsController.currentSettings.threadSelectionColumnsModel.previewProperty)
                 cellFactory = Callback {
                     val cell = PreviewTableCell<ThreadSelectionModel>()
                     cell.onMouseExited = EventHandler {
@@ -154,20 +129,30 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
                 }
             }
             column("Post Index", ThreadSelectionModel::indexProperty) {
+                isVisible = widgetsController.currentSettings.threadSelectionColumnsModel.indexProperty.get()
+                visibleProperty().onChange {
+                    widgetsController.currentSettings.threadSelectionColumnsModel.indexProperty.set(
+                        it
+                    )
+                }
                 prefWidth = widgetsController.currentSettings.threadSelectionColumnsWidthModel.index
                 coroutineScope.launch {
                     widthProperty().asFlow().debounce(200).collect {
                         widgetsController.currentSettings.threadSelectionColumnsWidthModel.index = it as Double
                     }
                 }
-                visibleProperty().bind(widgetsController.currentSettings.threadSelectionColumnsModel.indexProperty)
                 sortOrder.add(this)
                 cellFactory = Callback {
                     TextFieldTableCell<ThreadSelectionModel?, Number?>().apply { alignment = Pos.CENTER_LEFT }
                 }
             }
             column("Title", ThreadSelectionModel::titleProperty) {
-                visibleProperty().bind(widgetsController.currentSettings.threadSelectionColumnsModel.titleProperty)
+                isVisible = widgetsController.currentSettings.threadSelectionColumnsModel.titleProperty.get()
+                visibleProperty().onChange {
+                    widgetsController.currentSettings.threadSelectionColumnsModel.titleProperty.set(
+                        it
+                    )
+                }
                 prefWidth = widgetsController.currentSettings.threadSelectionColumnsWidthModel.title
                 coroutineScope.launch {
                     widthProperty().asFlow().debounce(200).collect {
@@ -179,7 +164,12 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
                 }
             }
             column("URL", ThreadSelectionModel::urlProperty) {
-                visibleProperty().bind(widgetsController.currentSettings.threadSelectionColumnsModel.linkProperty)
+                isVisible = widgetsController.currentSettings.threadSelectionColumnsModel.linkProperty.get()
+                visibleProperty().onChange {
+                    widgetsController.currentSettings.threadSelectionColumnsModel.linkProperty.set(
+                        it
+                    )
+                }
                 prefWidth = widgetsController.currentSettings.threadSelectionColumnsWidthModel.link
                 coroutineScope.launch {
                     widthProperty().asFlow().debounce(200).collect {
@@ -191,13 +181,18 @@ class ThreadSelectionTableFragment : Fragment("Thread") {
                 }
             }
             column("Hosts", ThreadSelectionModel::hostsProperty) {
+                isVisible = widgetsController.currentSettings.threadSelectionColumnsModel.hostsProperty.get()
+                visibleProperty().onChange {
+                    widgetsController.currentSettings.threadSelectionColumnsModel.hostsProperty.set(
+                        it
+                    )
+                }
                 prefWidth = widgetsController.currentSettings.threadSelectionColumnsWidthModel.hosts
                 coroutineScope.launch {
                     widthProperty().asFlow().debounce(200).collect {
                         widgetsController.currentSettings.threadSelectionColumnsWidthModel.hosts = it as Double
                     }
                 }
-                visibleProperty().bind(widgetsController.currentSettings.threadSelectionColumnsModel.hostsProperty)
                 cellFactory = Callback {
                     TextFieldTableCell<ThreadSelectionModel?, String?>().apply { alignment = Pos.CENTER_LEFT }
                 }

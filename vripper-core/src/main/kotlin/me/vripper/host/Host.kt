@@ -3,8 +3,11 @@ package me.vripper.host
 import me.vripper.download.ImageDownloadContext
 import me.vripper.exception.DownloadException
 import me.vripper.exception.HostException
-import me.vripper.services.*
+import me.vripper.services.DataTransaction
+import me.vripper.services.DownloadSpeedService
+import me.vripper.services.HTTPService
 import me.vripper.utilities.HtmlUtils
+import me.vripper.utilities.LoggerDelegate
 import me.vripper.utilities.PathUtils.getFileNameWithoutExtension
 import org.apache.hc.client5.http.classic.methods.HttpGet
 import org.apache.hc.client5.http.classic.methods.HttpHead
@@ -14,15 +17,18 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.w3c.dom.Document
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
+import java.time.LocalDateTime
+import kotlin.Throws
 
-abstract class Host(
+internal abstract class Host(
     val hostName: String,
     val hostId: Byte,
     private val httpService: HTTPService,
     private val dataTransaction: DataTransaction,
     private val downloadSpeedService: DownloadSpeedService
 ) {
-    private val log by me.vripper.delegate.LoggerDelegate()
+    private val log by LoggerDelegate()
 
     companion object {
         private const val READ_BUFFER_SIZE = 8192
@@ -118,14 +124,21 @@ abstract class Host(
             )
             val buffer = ByteArray(READ_BUFFER_SIZE)
             var read: Int
+            var lastImageUpdateDate = LocalDateTime.now()
             while (response.entity.content.read(buffer, 0, READ_BUFFER_SIZE)
                     .also { read = it } != -1 && !context.stopped
             ) {
                 fos.write(buffer, 0, read)
                 image.downloaded += read
-                dataTransaction.updateImage(image)
+                if (Duration.between(lastImageUpdateDate, LocalDateTime.now()).toMillis() > 1750) {
+                    dataTransaction.updateImage(image)
+                    lastImageUpdateDate = LocalDateTime.now()
+                } else {
+                    dataTransaction.updateImage(image, false)
+                }
                 downloadSpeedService.reportDownloadedBytes(read.toLong())
             }
+            dataTransaction.updateImage(image)
             Pair(tempImage, mimeType)
         }
     }

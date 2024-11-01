@@ -12,6 +12,7 @@ import me.vripper.event.SettingsUpdateEvent
 import me.vripper.exception.ValidationException
 import me.vripper.model.Settings
 import me.vripper.utilities.ApplicationProperties.VRIPPER_DIR
+import me.vripper.utilities.LoggerDelegate
 import org.apache.commons.codec.digest.DigestUtils
 import java.io.FileWriter
 import java.nio.file.*
@@ -19,7 +20,7 @@ import kotlin.io.path.readText
 
 class SettingsService(private val eventBus: EventBus) {
 
-    private val log by me.vripper.delegate.LoggerDelegate()
+    private val log by LoggerDelegate()
     private val configPath = VRIPPER_DIR.resolve("config.json")
     private val customProxiesPath = VRIPPER_DIR.resolve("proxies.json")
     private val proxies: MutableSet<String> = HashSet()
@@ -42,7 +43,6 @@ class SettingsService(private val eventBus: EventBus) {
         coroutineScope.launch {
             eventBus.publishEvent(SettingsUpdateEvent(settings))
         }
-
     }
 
     private fun loadViperProxies() {
@@ -57,7 +57,7 @@ class SettingsService(private val eventBus: EventBus) {
                             customProxiesPath.readText()
                         )
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        log.error("Failed to read custom proxies", e)
                         emptyList()
                     }
                 } else {
@@ -111,7 +111,7 @@ class SettingsService(private val eventBus: EventBus) {
                 settings = json.decodeFromString(configPath.readText())
             }
         } catch (e: Exception) {
-            log.error("Failed restore user settings", e)
+            log.error("Failed to restore user settings", e)
             settings = Settings()
         }
         if (!proxies.contains(settings.viperSettings.host)) {

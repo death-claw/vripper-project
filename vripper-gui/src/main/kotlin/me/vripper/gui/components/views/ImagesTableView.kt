@@ -1,6 +1,7 @@
 package me.vripper.gui.components.views
 
 import atlantafx.base.theme.Styles
+import atlantafx.base.theme.Tweaks
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.event.EventHandler
@@ -11,17 +12,16 @@ import javafx.scene.input.MouseButton
 import javafx.util.Callback
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.javafx.asFlow
-import me.vripper.entities.domain.Status
+import me.vripper.entities.Status
 import me.vripper.gui.components.cells.PreviewTableCell
 import me.vripper.gui.components.cells.ProgressTableCell
 import me.vripper.gui.components.cells.StatusTableCell
-import me.vripper.gui.components.fragments.ColumnSelectionFragment
 import me.vripper.gui.controller.ImageController
 import me.vripper.gui.controller.WidgetsController
 import me.vripper.gui.event.GuiEventBus
 import me.vripper.gui.model.ImageModel
+import me.vripper.gui.utils.ActiveUICoroutines
 import me.vripper.gui.utils.Preview
 import me.vripper.gui.utils.openLink
 import me.vripper.services.IAppEndpointService
@@ -40,7 +40,6 @@ class ImagesTableView : View("Photos") {
     private val coroutineScope = CoroutineScope(SupervisorJob())
     private val items: ObservableList<ImageModel> = FXCollections.observableArrayList()
     private var preview: Preview? = null
-    private val jobs = mutableListOf<Job>()
 
     override val root = vbox(alignment = Pos.CENTER_RIGHT) {}
 
@@ -52,26 +51,28 @@ class ImagesTableView : View("Photos") {
         }
 
         coroutineScope.launch {
-            GuiEventBus.events.filterIsInstance(GuiEventBus.ChangingSession::class).collect {
-                jobs.forEach { it.cancel() }
-                items.clear()
+            GuiEventBus.events.collect { event ->
+                when (event) {
+                    is GuiEventBus.LocalSession -> {
+                        imageController.appEndpointService = localAppEndpointService
+                    }
+
+                    is GuiEventBus.RemoteSession -> {
+                        imageController.appEndpointService = remoteAppEndpointService
+                    }
+
+                    is GuiEventBus.ChangingSession -> {
+                        ActiveUICoroutines.images.forEach { it.cancelAndJoin() }
+                        ActiveUICoroutines.images.clear()
+                    }
+                }
             }
         }
 
-        coroutineScope.launch {
-            GuiEventBus.events.filterIsInstance(GuiEventBus.LocalSession::class).collect {
-                imageController.appEndpointService = localAppEndpointService
-            }
-        }
-
-        coroutineScope.launch {
-            GuiEventBus.events.filterIsInstance(GuiEventBus.RemoteSession::class).collect {
-                imageController.appEndpointService = remoteAppEndpointService
-            }
-        }
         with(root) {
             tableView = tableview(items) {
-                addClass(Styles.DENSE)
+                isTableMenuButtonVisible = true
+                addClass(Styles.DENSE, Tweaks.EDGE_TO_EDGE)
                 setRowFactory {
                     val tableRow = TableRow<ImageModel>()
                     val urlItem = MenuItem("Open link").apply {
@@ -82,56 +83,18 @@ class ImagesTableView : View("Photos") {
                     }
                     val contextMenu = ContextMenu()
                     contextMenu.items.addAll(urlItem)
-                    tableRow.contextMenuProperty().bind(tableRow.emptyProperty()
-                        .map { empty -> if (empty) null else contextMenu })
+                    tableRow.contextMenuProperty().bind(
+                        tableRow.emptyProperty()
+                            .map { empty -> if (empty) null else contextMenu })
                     tableRow
                 }
-                contextMenu = ContextMenu()
-                contextMenu.items.add(MenuItem("Setup columns").apply {
-                    setOnAction {
-                        find<ColumnSelectionFragment>(
-                            mapOf(
-                                ColumnSelectionFragment::map to mapOf(
-                                    Pair(
-                                        "Preview",
-                                        widgetsController.currentSettings.imagesColumnsModel.previewProperty
-                                    ),
-                                    Pair(
-                                        "Index",
-                                        widgetsController.currentSettings.imagesColumnsModel.indexProperty
-                                    ),
-                                    Pair(
-                                        "Link",
-                                        widgetsController.currentSettings.imagesColumnsModel.linkProperty
-                                    ),
-                                    Pair(
-                                        "Progress",
-                                        widgetsController.currentSettings.imagesColumnsModel.progressProperty
-                                    ),
-                                    Pair(
-                                        "Filename",
-                                        widgetsController.currentSettings.imagesColumnsModel.filenameProperty
-                                    ),
-                                    Pair(
-                                        "Status",
-                                        widgetsController.currentSettings.imagesColumnsModel.statusProperty
-                                    ),
-                                    Pair(
-                                        "Size",
-                                        widgetsController.currentSettings.imagesColumnsModel.sizeProperty
-                                    ),
-                                    Pair(
-                                        "Downloaded",
-                                        widgetsController.currentSettings.imagesColumnsModel.downloadedProperty
-                                    ),
-                                )
-                            )
-                        ).openModal()
-                    }
-                    graphic = FontIcon.of(Feather.COLUMNS)
-                })
                 column("Preview", ImageModel::thumbUrlProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.imagesColumnsModel.previewProperty)
+                    isVisible = widgetsController.currentSettings.imagesColumnsModel.previewProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.imagesColumnsModel.previewProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.imagesColumnsWidthModel.preview
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -167,7 +130,12 @@ class ImagesTableView : View("Photos") {
                     }
                 }
                 column("Index", ImageModel::indexProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.imagesColumnsModel.indexProperty)
+                    isVisible = widgetsController.currentSettings.imagesColumnsModel.indexProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.imagesColumnsModel.indexProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.imagesColumnsWidthModel.index
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -180,7 +148,12 @@ class ImagesTableView : View("Photos") {
                     }
                 }
                 column("Link", ImageModel::urlProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.imagesColumnsModel.linkProperty)
+                    isVisible = widgetsController.currentSettings.imagesColumnsModel.linkProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.imagesColumnsModel.linkProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.imagesColumnsWidthModel.link
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -192,7 +165,12 @@ class ImagesTableView : View("Photos") {
                     }
                 }
                 column("Progress", ImageModel::progressProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.imagesColumnsModel.progressProperty)
+                    isVisible = widgetsController.currentSettings.imagesColumnsModel.progressProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.imagesColumnsModel.progressProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.imagesColumnsWidthModel.progress
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -218,7 +196,12 @@ class ImagesTableView : View("Photos") {
                     }
                 }
                 column("Filename", ImageModel::filenameProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.imagesColumnsModel.filenameProperty)
+                    isVisible = widgetsController.currentSettings.imagesColumnsModel.filenameProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.imagesColumnsModel.filenameProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.imagesColumnsWidthModel.filename
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -230,7 +213,12 @@ class ImagesTableView : View("Photos") {
                     }
                 }
                 column("Status", ImageModel::statusProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.imagesColumnsModel.statusProperty)
+                    isVisible = widgetsController.currentSettings.imagesColumnsModel.statusProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.imagesColumnsModel.statusProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.imagesColumnsWidthModel.status
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -242,7 +230,12 @@ class ImagesTableView : View("Photos") {
                     }
                 }
                 column("Size", ImageModel::sizeProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.imagesColumnsModel.sizeProperty)
+                    isVisible = widgetsController.currentSettings.imagesColumnsModel.sizeProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.imagesColumnsModel.sizeProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.imagesColumnsWidthModel.size
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -254,7 +247,12 @@ class ImagesTableView : View("Photos") {
                     }
                 }
                 column("Downloaded", ImageModel::downloadedProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.imagesColumnsModel.downloadedProperty)
+                    isVisible = widgetsController.currentSettings.imagesColumnsModel.downloadedProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.imagesColumnsModel.downloadedProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.imagesColumnsWidthModel.downloaded
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -273,8 +271,8 @@ class ImagesTableView : View("Photos") {
     }
 
     fun setPostId(postId: Long?) {
-        jobs.forEach { it.cancel() }
-        jobs.clear()
+        ActiveUICoroutines.images.forEach { it.cancel() }
+        ActiveUICoroutines.images.clear()
         items.clear()
         if (postId == null) {
             return
@@ -303,7 +301,7 @@ class ImagesTableView : View("Photos") {
                     )
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.images.add(it) }
 
         coroutineScope.launch {
             imageController.onStopped().collect {
@@ -315,6 +313,6 @@ class ImagesTableView : View("Photos") {
                     }
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.images.add(it) }
     }
 }

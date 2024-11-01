@@ -11,8 +11,8 @@ import kotlin.io.path.Path
 import kotlin.io.path.listDirectoryEntries
 
 
-object PathUtils {
-    private val log by me.vripper.delegate.LoggerDelegate()
+internal object PathUtils {
+    private val log by LoggerDelegate()
     private val imageExtensions = listOf("bmp", "gif", "jpg", "jpeg", "png", "webp")
 
 
@@ -54,7 +54,7 @@ object PathUtils {
                 try {
                     Files.delete(currentDownloadDirectory)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    log.error("Failed to delete directory $currentDownloadDirectory", e)
                 }
             }
         } catch (e: IOException) {

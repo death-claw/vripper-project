@@ -14,16 +14,17 @@ import me.vripper.proto.ImageOuterClass.Image
 import me.vripper.proto.ImagesOuterClass.Images
 import me.vripper.proto.LogOuterClass.Log
 import me.vripper.proto.ThreadsOuterClass.Threads
-import me.vripper.services.AppEndpointService
+import me.vripper.services.IAppEndpointService
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.koin.core.qualifier.named
 import org.springframework.stereotype.Service
 import java.time.format.DateTimeFormatter
 
 @Service
 class GrpcServerAppEndpointService : EndpointServiceGrpcKt.EndpointServiceCoroutineImplBase(), KoinComponent {
 
-    private val appEndpointService: AppEndpointService by inject()
+    private val appEndpointService: IAppEndpointService by inject(named("localAppEndpointService"))
 
     override suspend fun scanLinks(request: Links): EmptyResponse {
         appEndpointService.scanLinks(request.links)
@@ -64,10 +65,12 @@ class GrpcServerAppEndpointService : EndpointServiceGrpcKt.EndpointServiceCorout
         Images.newBuilder().addAllImages(appEndpointService.findImagesByPostId(request.id).map(::mapper)).build()
 
 
-    override fun onUpdateImages(request: Id): Flow<Image> = appEndpointService.onUpdateImages(request.id).map(::mapper)
+    override fun onUpdateImages(request: EmptyRequest): Flow<Image> = appEndpointService.onUpdateImages().map(::mapper)
+    override fun onUpdateImagesByPostId(request: Id): Flow<Image> =
+        appEndpointService.onUpdateImagesByPostId(request.id).map(::mapper)
 
     override fun onDownloadSpeed(request: EmptyRequest): Flow<DownloadSpeed> =
-        appEndpointService.onDownloadSpeed().map { DownloadSpeed.newBuilder().setSpeed(it).build() }
+        appEndpointService.onDownloadSpeed().map { DownloadSpeed.newBuilder().setSpeed(it.speed).build() }
 
     override fun onVGUserUpdate(request: EmptyRequest): Flow<VGUser> =
         appEndpointService.onVGUserUpdate().map { VGUser.newBuilder().setUser(it).build() }
@@ -76,7 +79,7 @@ class GrpcServerAppEndpointService : EndpointServiceGrpcKt.EndpointServiceCorout
         .map { QueueState.newBuilder().setRunning(it.running).setRemaining(it.remaining).build() }
 
     override fun onErrorCountUpdate(request: EmptyRequest): Flow<ErrorCount> =
-        appEndpointService.onErrorCountUpdate().map { ErrorCount.newBuilder().setCount(it).build() }
+        appEndpointService.onErrorCountUpdate().map { ErrorCount.newBuilder().setCount(it.count).build() }
 
     override fun onTasksRunning(request: EmptyRequest): Flow<TasksRunning> =
         appEndpointService.onTasksRunning().map { TasksRunning.newBuilder().setRunning(it).build() }
@@ -109,25 +112,13 @@ class GrpcServerAppEndpointService : EndpointServiceGrpcKt.EndpointServiceCorout
         return appEndpointService.onStopped().map { Id.newBuilder().setId(it).build() }
     }
 
-    override suspend fun logClear(request: EmptyRequest): EmptyResponse {
-        appEndpointService.logClear()
-        return EmptyResponse.getDefaultInstance()
-    }
-
-    override suspend fun findAllLogs(request: EmptyRequest): LogsOuterClass.Logs {
-        return LogsOuterClass.Logs.newBuilder().addAllLogs(appEndpointService.findAllLogs().map(::mapper)).build()
-    }
-
     override fun onNewLog(request: EmptyRequest): Flow<Log> {
         return appEndpointService.onNewLog().map(::mapper)
     }
 
-    override fun onUpdateLog(request: EmptyRequest): Flow<Log> {
-        return appEndpointService.onUpdateLog().map(::mapper)
-    }
-
-    override fun onDeleteLogs(request: EmptyRequest): Flow<Id> {
-        return appEndpointService.onDeleteLogs().map { Id.newBuilder().setId(it).build() }
+    override suspend fun initLogger(request: EmptyRequest): EmptyResponse {
+        appEndpointService.initLogger()
+        return EmptyResponse.getDefaultInstance()
     }
 
     override fun onNewThread(request: EmptyRequest): Flow<ThreadOuterClass.Thread> {
@@ -225,6 +216,10 @@ class GrpcServerAppEndpointService : EndpointServiceGrpcKt.EndpointServiceCorout
 
     override suspend fun getVersion(request: EmptyRequest): Version =
         Version.newBuilder().setVersion(appEndpointService.getVersion()).build()
+
+    override suspend fun dbMigration(request: EmptyRequest): DBMigrationResponse =
+        DBMigrationResponse.newBuilder().setMessage(appEndpointService.dbMigration()).build()
+
 
     private fun mapper(settings: Settings): SettingsOuterClass.Settings {
         val viperSettings = with(SettingsOuterClass.ViperSettings.newBuilder()) {
@@ -331,11 +326,12 @@ class GrpcServerAppEndpointService : EndpointServiceGrpcKt.EndpointServiceCorout
 
     private fun mapper(log: LogEntry): Log {
         return with(Log.newBuilder()) {
-            id = log.id
-            type = log.type.name
-            status = log.status.name
-            time = log.time.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            message = log.message
+            timestamp = log.timestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            threadName = log.threadName
+            loggerName = log.loggerName
+            levelString = log.levelString
+            formattedMessage = log.formattedMessage
+            throwable = log.throwable
             build()
         }
     }

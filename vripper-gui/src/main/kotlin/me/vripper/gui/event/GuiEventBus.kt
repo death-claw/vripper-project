@@ -12,8 +12,9 @@ object GuiEventBus {
         _events.emit(event)
     }
 
-    object ApplicationInitialized
+    data class ApplicationInitialized(val args: List<String>)
     object ChangingSession
     object LocalSession
     object RemoteSession
+    object RemoteSessionFailure
 }

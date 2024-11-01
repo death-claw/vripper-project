@@ -3,13 +3,12 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { AppComponent } from './app/app.component';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { BASE_URL, WS_BASE_URL } from './app/base-url.token';
-import { HttpClientModule } from '@angular/common/http';
-import { importProvidersFrom } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
 
 bootstrapApplication(AppComponent, {
   providers: [
+    provideHttpClient(),
     provideAnimations(),
-    importProvidersFrom(HttpClientModule),
     {
       provide: BASE_URL,
       useFactory: () => '',
