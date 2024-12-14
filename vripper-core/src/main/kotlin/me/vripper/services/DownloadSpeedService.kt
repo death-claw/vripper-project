@@ -8,7 +8,7 @@ import me.vripper.event.QueueStateEvent
 import me.vripper.model.DownloadSpeed
 import java.util.concurrent.atomic.AtomicLong
 
-class DownloadSpeedService(
+internal class DownloadSpeedService(
     private val eventBus: EventBus,
 ) {
 

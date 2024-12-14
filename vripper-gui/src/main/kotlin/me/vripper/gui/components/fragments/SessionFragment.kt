@@ -12,19 +12,21 @@ import javafx.scene.control.ToggleGroup
 import javafx.scene.layout.VBox
 import kotlinx.coroutines.*
 import me.vripper.gui.VripperGuiApplication
-import me.vripper.gui.components.views.AppView
 import me.vripper.gui.controller.WidgetsController
 import me.vripper.gui.event.GuiEventBus
-import me.vripper.gui.services.DatabaseManager
+import me.vripper.gui.listener.GuiStartupLister
 import me.vripper.gui.services.GrpcEndpointService
+import me.vripper.gui.utils.ActiveUICoroutines
+import me.vripper.services.IAppEndpointService
+import me.vripper.utilities.DatabaseManager
 import tornadofx.*
 
 class SessionFragment : Fragment("Change Session") {
 
-    val component: UIComponent by param()
     private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val widgetsController: WidgetsController by inject()
     private val grpcEndpointService: GrpcEndpointService by di("remoteAppEndpointService")
+    private val appEndpointService: IAppEndpointService by di("localAppEndpointService")
     private val toggleGroup = ToggleGroup()
     private val disableConfirm = SimpleBooleanProperty(false)
     private val message = SimpleStringProperty()
@@ -86,12 +88,15 @@ class SessionFragment : Fragment("Change Session") {
                                             message.set("Starting...")
                                         }
                                         widgetsController.currentSettings.localSession = true
-                                        DatabaseManager.connect()
                                         GuiEventBus.publishEvent(GuiEventBus.ChangingSession)
+                                        while (ActiveUICoroutines.all().isNotEmpty()) {
+                                            delay(200)
+                                        }
                                         grpcEndpointService.disconnect()
+                                        DatabaseManager.connect()
+                                        GuiStartupLister().run()
                                         GuiEventBus.publishEvent(GuiEventBus.LocalSession)
                                         runLater {
-                                            component.replaceWith(find<AppView>())
                                             close()
                                         }
                                     }
@@ -103,19 +108,25 @@ class SessionFragment : Fragment("Change Session") {
                                             disableConfirm.set(true)
                                             message.set("Connecting...")
                                         }
+                                        if (widgetsController.currentSettings.localSession) {
+                                            appEndpointService.stopAll()
+                                        }
                                         widgetsController.currentSettings.localSession = false
-                                        DatabaseManager.disconnect()
                                         GuiEventBus.publishEvent(GuiEventBus.ChangingSession)
+                                        while (ActiveUICoroutines.all().isNotEmpty()) {
+                                            delay(200)
+                                        }
+                                        DatabaseManager.disconnect()
                                         grpcEndpointService.disconnect()
                                         grpcEndpointService.connect(
                                             widgetsController.currentSettings.remoteSessionModel.host,
                                             widgetsController.currentSettings.remoteSessionModel.port
                                         )
+
                                         repeat(10) {
                                             if (grpcEndpointService.connectionState() == ConnectivityState.READY) {
                                                 GuiEventBus.publishEvent(GuiEventBus.RemoteSession)
                                                 runLater {
-                                                    component.replaceWith(find<AppView>())
                                                     close()
                                                 }
                                                 cancel()
@@ -123,6 +134,9 @@ class SessionFragment : Fragment("Change Session") {
                                             delay(333)
                                         }
                                         runLater {
+                                            runBlocking {
+                                                GuiEventBus.publishEvent(GuiEventBus.RemoteSessionFailure)
+                                            }
                                             disableConfirm.set(false)
                                             message.set("Unable to connect")
                                         }

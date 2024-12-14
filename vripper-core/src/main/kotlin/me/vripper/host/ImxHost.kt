@@ -6,6 +6,7 @@ import me.vripper.exception.HtmlProcessorException
 import me.vripper.exception.XpathException
 import me.vripper.services.*
 import me.vripper.utilities.HtmlUtils
+import me.vripper.utilities.LoggerDelegate
 import me.vripper.utilities.XpathUtils
 import org.apache.hc.client5.http.classic.methods.HttpPost
 import org.apache.hc.client5.http.entity.UrlEncodedFormEntity
@@ -14,12 +15,12 @@ import org.w3c.dom.Document
 import org.w3c.dom.Node
 import java.io.IOException
 
-class ImxHost(
+internal class ImxHost(
     private val httpService: HTTPService,
     dataTransaction: DataTransaction,
     downloadSpeedService: DownloadSpeedService,
 ) : Host("imx.to", 8, httpService, dataTransaction, downloadSpeedService) {
-    private val log by me.vripper.delegate.LoggerDelegate()
+    private val log by LoggerDelegate()
 
     @Throws(HostException::class)
     override fun resolve(

@@ -5,6 +5,7 @@ import javafx.scene.control.SplitPane
 import javafx.scene.layout.Priority
 import kotlinx.coroutines.*
 import me.vripper.gui.controller.WidgetsController
+import me.vripper.gui.utils.WidgetSettings
 import tornadofx.*
 
 class PostsTabView : View() {
@@ -57,7 +58,7 @@ class PostsTabView : View() {
                     if (dividerPosition != null && lastDividerPosition != dividerPosition) {
                         lastDividerPosition = dividerPosition
                         widgetsController.currentSettings.infoPanelDividerPosition = lastDividerPosition
-                        widgetsController.update()
+                        WidgetSettings.update(widgetsController.currentSettings)
                     }
                 }
                 delay(1_000)

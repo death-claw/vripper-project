@@ -1,12 +1,11 @@
 package me.vripper.web.restendpoints
 
-import me.vripper.exception.ValidationException
+import kotlinx.coroutines.runBlocking
 import me.vripper.model.Settings
-import me.vripper.services.SettingsService
-import me.vripper.web.restendpoints.domain.Theme
-import me.vripper.web.restendpoints.exceptions.BadRequestException
+import me.vripper.services.IAppEndpointService
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.koin.core.qualifier.named
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
@@ -15,43 +14,27 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api")
 class SettingsRestEndpoint : KoinComponent {
 
-    private val log by me.vripper.delegate.LoggerDelegate()
-    private val settingsService: SettingsService by inject()
-
-    @PostMapping("/settings/theme")
-    @ResponseStatus(value = HttpStatus.OK)
-    fun postTheme(@RequestBody theme: Theme): Theme {
-        return theme
-    }
-
-    @GetMapping("/settings/theme")
-    @ResponseStatus(value = HttpStatus.OK)
-    fun getTheme(): Theme? {
-        return Theme(true)
-    }
+    private val appEndpointService: IAppEndpointService by inject(named("localAppEndpointService"))
 
     @GetMapping("/settings")
     @ResponseStatus(value = HttpStatus.OK)
-    fun getAppSettingsService(): Settings? {
-        return settingsService.settings
+    fun getAppSettingsService(): Settings {
+        return runBlocking { appEndpointService.getSettings() }
     }
 
     @PostMapping("/settings")
     @ResponseStatus(value = HttpStatus.OK)
-    fun postSettings(@RequestBody settings: Settings?): Settings {
-        try {
-            settingsService.check(settings!!)
-        } catch (e: ValidationException) {
-            log.error("Invalid settings", e)
-            throw BadRequestException(e.message)
+    fun postSettings(@RequestBody settings: Settings): Settings {
+        return runBlocking {
+            appEndpointService.saveSettings(settings)
+            appEndpointService.getSettings()
         }
-        settingsService.newSettings(settings)
-        return settingsService.settings
     }
 
     @GetMapping("/settings/proxies")
     @ResponseStatus(value = HttpStatus.OK)
     fun mirrors(): List<String> {
-        return settingsService.getProxies()
+        return runBlocking { appEndpointService.getProxies() }
     }
+
 }

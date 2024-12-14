@@ -1,22 +1,19 @@
-import { Component, Inject } from '@angular/core';
-import { AsyncPipe, CommonModule, NgForOf, NgIf } from '@angular/common';
+import { DialogRef } from '@angular/cdk/dialog';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { CommonModule, NgForOf, NgIf } from '@angular/common';
+import { Component, Inject, signal } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import {
-  MAT_DIALOG_DATA,
-  MatDialogModule,
-  MatDialogRef,
-} from '@angular/material/dialog';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatOptionModule } from '@angular/material/core';
+import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatOptionModule } from '@angular/material/core';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { EMPTY, Observable } from 'rxjs';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import {
   ConnectionSettings,
   DownloadSettings,
@@ -25,17 +22,13 @@ import {
   ViperSettings,
 } from '../domain/settings.model';
 import { ApplicationEndpointService } from '../services/application-endpoint.service';
-import { DialogRef } from '@angular/cdk/dialog';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 
 @Component({
   selector: 'app-settings',
-  standalone: true,
   imports: [
     CommonModule,
     MatButtonModule,
     MatDialogModule,
-    AsyncPipe,
     MatCheckboxModule,
     MatFormFieldModule,
     MatIconModule,
@@ -50,10 +43,10 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
     MatSlideToggleModule,
   ],
   templateUrl: './settings.component.html',
-  styleUrls: ['./settings.component.scss'],
+  standalone: true,
 })
 export class SettingsComponent {
-  mirrors: Observable<string[]> = EMPTY;
+  mirrors = signal([]);
 
   viperGirlsSettingsForm = new FormGroup({
     login: new FormControl(false),
@@ -68,7 +61,7 @@ export class SettingsComponent {
     autoStart: new FormControl(false),
     autoQueueThreshold: new FormControl(0),
     forceOrder: new FormControl(false),
-    forumSubfolder: new FormControl(false),
+    forumSubDirectory: new FormControl(false),
     threadSubLocation: new FormControl(false),
     clearCompleted: new FormControl(false),
     appendPostId: new FormControl(false),
@@ -83,8 +76,9 @@ export class SettingsComponent {
 
   systemSettingsForm = new FormGroup({
     tempPath: new FormControl(''),
-    cachePath: new FormControl(''),
     maxEventLog: new FormControl(0),
+    enableClipboardMonitoring: new FormControl(false),
+    clipboardPollingRate: new FormControl(500),
   });
 
   constructor(
@@ -99,7 +93,7 @@ export class SettingsComponent {
     this.systemSettingsForm.reset(data.systemSettings);
     breakpointObserver
       .observe(Breakpoints.HandsetPortrait)
-      .subscribe(result => {
+      .subscribe((result) => {
         if (result.matches) {
           this.dialogRef.updateSize('100vw', '80vh');
         } else {

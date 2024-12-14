@@ -8,17 +8,18 @@ import kotlinx.coroutines.sync.withPermit
 import me.vripper.entities.MetadataEntity
 import me.vripper.exception.DownloadException
 import me.vripper.exception.VripperException
+import me.vripper.tasks.Tasks
 import me.vripper.utilities.HtmlUtils
 import me.vripper.utilities.RequestLimit
-import me.vripper.utilities.Tasks
 import me.vripper.utilities.XpathUtils
 import org.apache.hc.client5.http.classic.methods.HttpGet
+import org.apache.hc.core5.http.io.entity.EntityUtils
 import org.apache.hc.core5.net.URIBuilder
 import org.w3c.dom.Node
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.stream.Collectors
 
-class MetadataService(
+internal class MetadataService(
     private val httpService: HTTPService,
     private val settingsService: SettingsService,
     private val dataTransaction: DataTransaction,
@@ -36,45 +37,42 @@ class MetadataService(
     fun fetchMetadata(postId: Long) {
         Tasks.increment()
         coroutineScope.launch {
-            RequestLimit.semaphore.withPermit {
-                try {
-                    val httpGet = HttpGet(URIBuilder(settingsService.settings.viperSettings.host + "/threads/").also {
-                        it.setParameter(
-                            "p", postId.toString()
-                        )
-                    }.build())
+            try {
+                val httpGet = HttpGet(URIBuilder(settingsService.settings.viperSettings.host + "/threads/").also {
+                    it.setParameter(
+                        "p", postId.toString()
+                    )
+                }.build())
 
-                    val metadataEntity = httpService.client.execute(httpGet, vgAuthService.context) {
+                val response = RequestLimit.semaphore.withPermit {
+                    httpService.client.execute(httpGet, vgAuthService.context) {
                         if (it.code / 100 != 2) {
                             throw DownloadException("Unexpected response code '${it.code}' for $httpGet")
                         }
-                        val document = HtmlUtils.clean(it.entity.content)
-                        val postNode: Node = XpathUtils.getAsNode(
-                            document,
-                            "//li[@id='post_$postId']/div[contains(@class, 'postdetails')]",
-
-                            ) ?: throw VripperException("Unable to find post #'$postId'")
-
-                        val postedBy: String = XpathUtils.getAsNode(
-                            postNode, "./div[contains(@class, 'userinfo')]//a[contains(@class, 'username')]//font"
-                        )?.textContent?.trim()
-                            ?: throw VripperException("Unable to find the poster for post #'$postId'")
-
-
-                        val node: Node = XpathUtils.getAsNode(
-                            document, java.lang.String.format("//div[@id='post_message_%s']", postId)
-                        ) ?: throw VripperException("Unable to locate post content")
-                        val titles = findTitleInContent(node)
-                        MetadataEntity(postId, MetadataEntity.Data(postedBy, titles))
+                        EntityUtils.toString(it.entity)
                     }
-                    try {
-                        dataTransaction.saveMetadata(metadataEntity)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                } finally {
-                    Tasks.decrement()
                 }
+                val document = HtmlUtils.clean(response)
+                val postNode: Node = XpathUtils.getAsNode(
+                    document,
+                    "//li[@id='post_$postId']/div[contains(@class, 'postdetails')]",
+
+                    ) ?: throw VripperException("Unable to find post #'$postId'")
+
+                val postedBy: String = XpathUtils.getAsNode(
+                    postNode, "./div[contains(@class, 'userinfo')]//a[contains(@class, 'username')]//font"
+                )?.textContent?.trim()
+                    ?: throw VripperException("Unable to find the poster for post #'$postId'")
+
+
+                val node: Node = XpathUtils.getAsNode(
+                    document, java.lang.String.format("//div[@id='post_message_%s']", postId)
+                ) ?: throw VripperException("Unable to locate post content")
+                val titles = findTitleInContent(node)
+                val metadataEntity = MetadataEntity(postId, MetadataEntity.Data(postedBy, titles))
+                dataTransaction.saveMetadata(metadataEntity)
+            } finally {
+                Tasks.decrement()
             }
         }
     }

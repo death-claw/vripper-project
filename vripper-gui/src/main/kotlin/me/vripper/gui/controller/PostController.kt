@@ -4,10 +4,10 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
-import me.vripper.delegate.LoggerDelegate
 import me.vripper.gui.model.PostModel
 import me.vripper.model.Post
 import me.vripper.services.IAppEndpointService
+import me.vripper.utilities.LoggerDelegate
 import me.vripper.utilities.formatSI
 import tornadofx.Controller
 import java.time.format.DateTimeFormatter
@@ -72,7 +72,8 @@ class PostController : Controller() {
             progressCount(post.total, post.done, post.downloaded),
             post.previews,
             post.resolvedNames,
-            post.postedBy
+            post.postedBy,
+            post.threadId
         )
     }
 

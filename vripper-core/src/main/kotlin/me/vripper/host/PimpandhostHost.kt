@@ -5,18 +5,19 @@ import me.vripper.exception.HostException
 import me.vripper.exception.XpathException
 import me.vripper.services.*
 import me.vripper.utilities.HtmlUtils
+import me.vripper.utilities.LoggerDelegate
 import me.vripper.utilities.XpathUtils
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import java.net.URI
 import java.net.URISyntaxException
 
-class PimpandhostHost(
+internal class PimpandhostHost(
     httpService: HTTPService,
     dataTransaction: DataTransaction,
     downloadSpeedService: DownloadSpeedService,
 ) : Host("pimpandhost.com", 9, httpService, dataTransaction, downloadSpeedService) {
-    private val log by me.vripper.delegate.LoggerDelegate()
+    private val log by LoggerDelegate()
 
     @Throws(HostException::class)
     override fun resolve(

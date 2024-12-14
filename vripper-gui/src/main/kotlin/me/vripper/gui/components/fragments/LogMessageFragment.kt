@@ -10,7 +10,8 @@ import tornadofx.*
 class LogMessageFragment : Fragment("Log message") {
 
     val logModel: LogModel by param()
-    private val textAreaProperty = SimpleStringProperty(logModel.message)
+    private val textAreaProperty =
+        SimpleStringProperty(logModel.formattedMessage + logModel.throwable.let { if (it.isEmpty()) "" else "\n------------\n" + logModel.throwable })
 
     override val root = vbox(alignment = Pos.CENTER_RIGHT) {
         padding = insets(all = 5)

@@ -5,9 +5,8 @@ import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import me.vripper.entities.ImageEntity
-import me.vripper.entities.LogEntryEntity
 import me.vripper.entities.PostEntity
-import me.vripper.entities.domain.Status
+import me.vripper.entities.Status
 import me.vripper.event.ErrorCountEvent
 import me.vripper.event.EventBus
 import me.vripper.event.QueueStateEvent
@@ -19,16 +18,15 @@ import me.vripper.services.DataTransaction
 import me.vripper.services.RetryPolicyService
 import me.vripper.services.SettingsService
 import me.vripper.services.VGAuthService
-import me.vripper.utilities.GLOBAL_EXECUTOR
-import me.vripper.utilities.formatToString
+import me.vripper.utilities.GlobalScopeCoroutine
+import me.vripper.utilities.LoggerDelegate
 import net.jodah.failsafe.Failsafe
 import net.jodah.failsafe.RetryPolicy
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class DownloadService(
+internal class DownloadService(
     private val settingsService: SettingsService,
     private val dataTransaction: DataTransaction,
     private val retryPolicyService: RetryPolicyService,
@@ -36,7 +34,7 @@ class DownloadService(
     private val eventBus: EventBus
 ) {
     private val maxPoolSize: Int = 24
-    private val log by me.vripper.delegate.LoggerDelegate()
+    private val log by LoggerDelegate()
     private val running: MutableMap<Byte, MutableList<ImageDownloadRunnable>> = mutableMapOf()
     private val pending: MutableMap<Byte, MutableList<ImageDownloadRunnable>> = mutableMapOf()
     private val lock = ReentrantLock()
@@ -163,6 +161,9 @@ class DownloadService(
         lock.withLock {
             pending.values.clear()
             running.values.flatten().forEach { obj: ImageDownloadRunnable -> obj.stop() }
+            while (running.values.flatten().count { !it.context.completed } > 0) {
+                Thread.sleep(100)
+            }
             dataTransaction.findAllNonCompletedPostIds().forEach {
                 dataTransaction.stopImagesByPostIdAndIsNotCompleted(it)
                 dataTransaction.finishPost(it)
@@ -179,6 +180,11 @@ class DownloadService(
                 running.values.flatten()
                     .filter { p: ImageDownloadRunnable -> p.context.imageEntity.postId == postId }
                     .forEach { obj: ImageDownloadRunnable -> obj.stop() }
+                while (running.values.flatten()
+                        .count { !it.context.completed && it.context.imageEntity.postId == postId } > 0
+                ) {
+                    Thread.sleep(100)
+                }
             }
             postIds.forEach {
                 dataTransaction.stopImagesByPostIdAndIsNotCompleted(it)
@@ -230,49 +236,43 @@ class DownloadService(
 
     private fun scheduleForDownload(imageDownloadRunnable: ImageDownloadRunnable) {
         log.debug("Scheduling a job for ${imageDownloadRunnable.context.imageEntity.url}")
-        CompletableFuture.runAsync({
+        GlobalScopeCoroutine.launch {
             coroutineScope.launch {
                 eventBus.publishEvent(QueueStateEvent(QueueState(runningCount(), pendingCount())))
             }
-            Failsafe.with<Any, RetryPolicy<Any>>(retryPolicyService.buildRetryPolicyForDownload())
-                .onFailure {
-                    try {
-                        dataTransaction.saveLog(
-                            LogEntryEntity(
-                                type = LogEntryEntity.Type.DOWNLOAD,
-                                status = LogEntryEntity.Status.ERROR,
-                                message = "Failed to download ${imageDownloadRunnable.context.imageEntity.url}\n ${it.failure.formatToString()}"
-                            )
+            try {
+                Failsafe.with<Any, RetryPolicy<Any>>(retryPolicyService.buildRetryPolicyForDownload("Failed to download ${imageDownloadRunnable.context.imageEntity.url}: "))
+                    .onFailure {
+                        log.error(
+                            "Failed to download ${imageDownloadRunnable.context.imageEntity.url} after ${it.attemptCount} tries",
+                            it.failure
                         )
-                    } catch (exp: Exception) {
-                        log.error("Failed to save event", exp)
+                        val image = imageDownloadRunnable.context.imageEntity
+                        image.status = Status.ERROR
+                        dataTransaction.updateImage(image)
                     }
-                    log.error(
-                        "Failed to download ${imageDownloadRunnable.context.imageEntity.url} after ${it.attemptCount} tries",
-                        it.failure
-                    )
-                    val image = imageDownloadRunnable.context.imageEntity
-                    image.status = Status.ERROR
-                    dataTransaction.updateImage(image)
-                }.onComplete {
-                    afterJobFinish(imageDownloadRunnable)
-                    coroutineScope.launch {
-                        eventBus.publishEvent(
-                            QueueStateEvent(
-                                QueueState(
-                                    runningCount(), pendingCount()
+                    .onComplete {
+                        afterJobFinish(imageDownloadRunnable)
+                        coroutineScope.launch {
+                            eventBus.publishEvent(
+                                QueueStateEvent(
+                                    QueueState(
+                                        runningCount(), pendingCount()
+                                    )
                                 )
                             )
+                        }
+                        coroutineScope.launch {
+                            eventBus.publishEvent(ErrorCountEvent(ErrorCount(dataTransaction.countImagesInError())))
+                        }
+                        log.debug(
+                            "Finished downloading ${imageDownloadRunnable.context.imageEntity.url}"
                         )
-                    }
-                    coroutineScope.launch {
-                        eventBus.publishEvent(ErrorCountEvent(ErrorCount(dataTransaction.countImagesInError())))
-                    }
-                    log.debug(
-                        "Finished downloading ${imageDownloadRunnable.context.imageEntity.url}"
-                    )
-                }.run(imageDownloadRunnable::run)
-        }, GLOBAL_EXECUTOR)
+                    }.run(imageDownloadRunnable::run)
+            } catch (e: Exception) {
+                log.error("Download Failure", e)
+            }
+        }
     }
 
     private fun afterJobFinish(imageDownloadRunnable: ImageDownloadRunnable) {

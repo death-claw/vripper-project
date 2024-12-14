@@ -1,172 +1,145 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
-  <changeSet author="death-claw" id="0001">
-    <createTable tableName="POST">
-      <column autoIncrement="true" name="ID" type="BIGINT">
-        <constraints nullable="false" primaryKey="true" primaryKeyName="POST_PK"/>
-      </column>
-      <column name="DONE" type="INT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="HOSTS" type="VARCHAR(70)">
-        <constraints nullable="false"/>
-      </column>
-      <column name="OUTPUT_PATH" type="VARCHAR(260)"/>
-      <column name="POST_ID" type="BIGINT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="STATUS" type="VARCHAR(15)">
-        <constraints nullable="false"/>
-      </column>
-      <column name="THREAD_ID" type="BIGINT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="POST_TITLE" type="VARCHAR(255)">
-        <constraints nullable="false"/>
-      </column>
-      <column name="THREAD_TITLE" type="VARCHAR(255)">
-        <constraints nullable="false"/>
-      </column>
-      <column name="FORUM" type="VARCHAR(255)">
-        <constraints nullable="false"/>
-      </column>
-      <column name="TOTAL" type="INT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="SIZE" type="BIGINT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="DOWNLOADED" type="BIGINT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="URL" type="VARCHAR(200)">
-        <constraints nullable="false"/>
-      </column>
-      <column name="TOKEN" type="VARCHAR(51)">
-        <constraints nullable="false"/>
-      </column>
-      <column defaultValueComputed="CURRENT_TIMESTAMP" name="ADDED_AT" type="TIMESTAMP">
-        <constraints nullable="false"/>
-      </column>
-      <column defaultValue="0" name="RANK" type="INT">
-        <constraints nullable="false"/>
-      </column>
-    </createTable>
-  </changeSet>
-  <changeSet author="death-claw" id="0002">
-    <createTable tableName="IMAGE">
-      <column autoIncrement="true" name="ID" type="BIGINT">
-        <constraints nullable="false" primaryKey="true" primaryKeyName="IMAGE_PK"/>
-      </column>
-      <column name="DOWNLOADED" type="BIGINT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="HOST" type="TINYINT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="INDEX" type="INT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="POST_ID" type="BIGINT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="STATUS" type="VARCHAR(15)">
-        <constraints nullable="false"/>
-      </column>
-      <column name="SIZE" type="BIGINT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="URL" type="VARCHAR(200)">
-        <constraints nullable="false"/>
-      </column>
-      <column name="THUMB_URL" type="VARCHAR(200)">
-        <constraints nullable="false"/>
-      </column>
-      <column name="POST_ID_REF" type="BIGINT">
-        <constraints foreignKeyName="IMAGE_POST_ID_REF_POST_ID_FK" nullable="false"
-          references="POST(ID)"/>
-      </column>
-    </createTable>
-  </changeSet>
-  <changeSet author="death-claw" id="0003">
-    <createTable tableName="THREAD">
-      <column autoIncrement="true" name="ID" type="BIGINT">
-        <constraints nullable="false" primaryKey="true" primaryKeyName="THREAD_PK"/>
-      </column>
-      <column name="TOTAL" type="INT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="URL" type="VARCHAR(200)">
-        <constraints nullable="false"/>
-      </column>
-      <column name="THREAD_ID" type="BIGINT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="TITLE" type="VARCHAR(255)">
-        <constraints nullable="false"/>
-      </column>
-    </createTable>
-  </changeSet>
-  <changeSet author="death-claw" id="0004">
-    <createTable tableName="LOG">
-      <column autoIncrement="true" name="ID" type="BIGINT">
-        <constraints nullable="false" primaryKey="true" primaryKeyName="EVENT_PK"/>
-      </column>
-      <column name="TYPE" type="VARCHAR(8)">
-        <constraints nullable="false"/>
-      </column>
-      <column name="STATUS" type="VARCHAR(10)">
-        <constraints nullable="false"/>
-      </column>
-      <column defaultValueComputed="CURRENT_TIMESTAMP" name="TIME" type="TIMESTAMP">
-        <constraints nullable="false"/>
-      </column>
-      <column name="MESSAGE" type="VARCHAR(500)">
-        <constraints nullable="false"/>
-      </column>
-    </createTable>
-  </changeSet>
-  <changeSet author="vripper" id="0005">
-    <createIndex indexName="IMAGE_POST_ID_IDX" tableName="IMAGE">
-      <column name="POST_ID"/>
-    </createIndex>
-    <createIndex indexName="IMAGE_STATUS_IDX" tableName="IMAGE">
-      <column name="STATUS"/>
-    </createIndex>
-    <createIndex indexName="POST_POST_ID_IDX" tableName="POST">
-      <column name="POST_ID"/>
-    </createIndex>
-    <createIndex indexName="POST_STATUS_IDX" tableName="POST">
-      <column name="STATUS"/>
-    </createIndex>
-    <createIndex indexName="THREAD_THREAD_ID_IDX" tableName="THREAD">
-      <column name="THREAD_ID"/>
-    </createIndex>
-  </changeSet>
-  <changeSet id="0006" author="vripper">
-    <addColumn tableName="POST">
-      <column name="FOLDER_NAME" type="VARCHAR(260)" afterColumn="OUTPUT_PATH" defaultValue=""/>
-    </addColumn>
-  </changeSet>
-  <changeSet author="vripper" id="0007">
-    <createTable tableName="METADATA">
-      <column name="POST_ID" type="BIGINT">
-        <constraints unique="true" nullable="false"/>
-      </column>
-      <column name="DATA" type="VARCHAR">
-        <constraints nullable="true"/>
-      </column>
-    </createTable>
-  </changeSet>
-  <changeSet author="vripper" id="0008">
-    <addColumn tableName="IMAGE">
-      <column name="FILENAME" type="VARCHAR(260)" afterColumn="STATUS" defaultValue=""/>
-    </addColumn>
-  </changeSet>
-  <changeSet id="0009" author="vripper">
-    <addUniqueConstraint tableName="POST" columnNames="POST_ID" constraintName="POST__POST_ID_UQ"/>
-    <addUniqueConstraint tableName="THREAD" columnNames="THREAD_ID" constraintName="THREAD__THREAD_ID_UQ"/>
-  </changeSet>
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+    <changeSet author="vripper" id="0001">
+        <createTable tableName="POST">
+            <column autoIncrement="true" name="ID" type="INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="POST_PK"/>
+            </column>
+            <column name="DONE" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="HOSTS" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="OUTPUT_PATH" type="TEXT"/>
+            <column name="POST_ID" type="INTEGER">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="STATUS" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="THREAD_ID" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="POST_TITLE" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="THREAD_TITLE" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="FOLDER_NAME" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="FORUM" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="TOTAL" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SIZE" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="DOWNLOADED" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="URL" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="TOKEN" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="ADDED_AT" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValue="0" name="RANK" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="vripper" id="0002">
+        <createTable tableName="IMAGE">
+            <column autoIncrement="true" name="ID" type="INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="IMAGE_PK"/>
+            </column>
+            <column name="DOWNLOADED" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="HOST" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="INDEX" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="POST_ID" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="STATUS" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="FILENAME" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SIZE" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="URL" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="THUMB_URL" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="POST_ID_REF" type="INTEGER">
+                <constraints foreignKeyName="IMAGE_POST_ID_REF_POST_ID_FK" nullable="false"
+                             references="POST(ID)"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="vripper" id="0003">
+        <createTable tableName="THREAD">
+            <column autoIncrement="true" name="ID" type="INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="THREAD_PK"/>
+            </column>
+            <column name="TOTAL" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="URL" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="THREAD_ID" type="INTEGER">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="TITLE" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="vripper" id="0005">
+        <createIndex indexName="IMAGE_POST_ID_IDX" tableName="IMAGE">
+            <column name="POST_ID"/>
+        </createIndex>
+        <createIndex indexName="IMAGE_STATUS_IDX" tableName="IMAGE">
+            <column name="STATUS"/>
+        </createIndex>
+        <createIndex indexName="POST_POST_ID_IDX" tableName="POST">
+            <column name="POST_ID"/>
+        </createIndex>
+        <createIndex indexName="POST_STATUS_IDX" tableName="POST">
+            <column name="STATUS"/>
+        </createIndex>
+        <createIndex indexName="THREAD_THREAD_ID_IDX" tableName="THREAD">
+            <column name="THREAD_ID"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="vripper" id="0006">
+        <createTable tableName="METADATA">
+            <column name="POST_ID" type="INTEGER">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="DATA" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
 </databaseChangeLog>

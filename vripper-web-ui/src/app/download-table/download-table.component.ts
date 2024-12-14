@@ -1,13 +1,29 @@
+import { DataSource, SelectionModel } from '@angular/cdk/collections';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import {
+  Overlay,
+  OverlayModule,
+  OverlayPositionBuilder,
+} from '@angular/cdk/overlay';
+import { ComponentPortal, PortalModule } from '@angular/cdk/portal';
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   ComponentRef,
-  EventEmitter,
-  Output,
+  output,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Post } from '../domain/post.model';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import {
+  MatDialog,
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTableModule } from '@angular/material/table';
 import {
   BehaviorSubject,
   EMPTY,
@@ -16,47 +32,29 @@ import {
   Subscription,
   take,
 } from 'rxjs';
+import {
+  ConfirmComponent,
+  ConfirmDialogData,
+} from '../confirm/confirm.component';
+import { PostRow } from '../domain/post-row.model';
+import { Post } from '../domain/post.model';
+import { ImageDialogData, ImagesComponent } from '../images/images.component';
+import { PostContextmenuComponent } from '../post-contextmenu/post-contextmenu.component';
+import {
+  RenameDialogComponent,
+  RenameDialogData,
+  RenameDialogResult,
+} from '../rename-dialog/rename-dialog.component';
 import { ApplicationEndpointService } from '../services/application-endpoint.service';
-import {
-  Overlay,
-  OverlayModule,
-  OverlayPositionBuilder,
-} from '@angular/cdk/overlay';
-import { ComponentPortal, PortalModule } from '@angular/cdk/portal';
-import {
-  MatDialog,
-  MatDialogModule,
-  MatDialogRef,
-} from '@angular/material/dialog';
-import { MatListModule } from '@angular/material/list';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { MatTableModule } from '@angular/material/table';
-import { DataSource, SelectionModel } from '@angular/cdk/collections';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 import {
   isDisplayed,
   progress,
   statusIcon,
   totalFormatter,
 } from '../utils/utils';
-import { ImageDialogData, ImagesComponent } from '../images/images.component';
-import { PostContextmenuComponent } from '../post-contextmenu/post-contextmenu.component';
-import {
-  ConfirmComponent,
-  ConfirmDialogData,
-} from '../confirm/confirm.component';
-import { PostRow } from '../domain/post-row.model';
-import {
-  RenameDialogComponent,
-  RenameDialogData,
-  RenameDialogResult,
-} from '../rename-dialog/rename-dialog.component';
 
 @Component({
   selector: 'app-download-table',
-  standalone: true,
   imports: [
     CommonModule,
     OverlayModule,
@@ -71,17 +69,16 @@ import {
   templateUrl: './download-table.component.html',
   styleUrls: ['./download-table.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
 })
 export class DownloadTableComponent {
   dataSource = new PostDataSource(this.applicationEndpoint);
 
-  @Output()
-  rowCountChange = new EventEmitter<number>();
+  rowCountChange = output<number>();
 
-  @Output()
-  selectedPostsChange = new EventEmitter<Post[]>();
-  @Output()
-  selectedPostChange = new EventEmitter<Post>();
+  selectedPostsChange = output<Post[]>();
+
+  selectedPostChange = output<Post>();
 
   displayedColumns: string[] = [
     'title',
@@ -111,16 +108,16 @@ export class DownloadTableComponent {
     private dialog: MatDialog,
     private breakpointObserver: BreakpointObserver
   ) {
-    this.dataSource._dataStream.subscribe(v =>
+    this.dataSource._dataStream.subscribe((v) =>
       this.rowCountChange.emit(v.length)
     );
-    this.selection.changed.subscribe(selectionChange => {
+    this.selection.changed.subscribe((selectionChange) => {
       this.selectedPostChange.emit(selectionChange.added[0]);
       this.selectedPostsChange.emit(this.selection.selected);
     });
     this.breakpointObserver
       .observe([Breakpoints.XSmall, Breakpoints.Small, Breakpoints.Medium])
-      .subscribe(result => {
+      .subscribe((result) => {
         if (result.matches) {
           this.columnsToDisplay.set(['title', 'progress', 'status']);
         } else {
@@ -241,7 +238,7 @@ export class DownloadTableComponent {
       dialog
         .afterClosed()
         .pipe(
-          mergeMap(result => {
+          mergeMap((result) => {
             if (result) {
               return this.applicationEndpoint.renamePost(result);
             } else {
@@ -275,7 +272,6 @@ export class DownloadTableComponent {
       .outsidePointerEvents()
       .pipe(take(1))
       .subscribe(() => {
-        console.log('click away');
         postContextMenuOverlayRef?.detach();
         postContextMenuOverlayRef?.dispose();
         ref.destroy();
@@ -297,7 +293,7 @@ class PostDataSource extends DataSource<PostRow> {
         this._dataStream.next([
           ...this._dataStream.value,
           ...newPosts.map(
-            e =>
+            (e) =>
               new PostRow(
                 e.postId,
                 e.postTitle,
@@ -322,7 +318,7 @@ class PostDataSource extends DataSource<PostRow> {
       this.applicationEndpoint.deletedPosts$.subscribe((e: number[]) => {
         this._dataStream.next([
           ...this._dataStream.value.filter(
-            v => e.find(d => d === v.postId) == null
+            (v) => e.find((d) => d === v.postId) == null
           ),
         ]);
       })
@@ -330,9 +326,9 @@ class PostDataSource extends DataSource<PostRow> {
 
     this.subscriptions.push(
       this.applicationEndpoint.updatedPosts$.subscribe((e: Post[]) => {
-        e.forEach(v => {
+        e.forEach((v) => {
           const rowNode = this._dataStream.value.find(
-            d => d.postId === v.postId
+            (d) => d.postId === v.postId
           );
           if (rowNode != null) {
             Object.assign(rowNode, v);
@@ -348,6 +344,6 @@ class PostDataSource extends DataSource<PostRow> {
   }
 
   disconnect(): void {
-    this.subscriptions.forEach(e => e.unsubscribe());
+    this.subscriptions.forEach((e) => e.unsubscribe());
   }
 }

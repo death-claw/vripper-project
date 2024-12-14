@@ -1,10 +1,13 @@
 package me.vripper.model
 
-import me.vripper.entities.domain.Status
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
+import me.vripper.entities.Status
 import java.time.LocalDateTime
 import kotlin.io.path.Path
 import kotlin.io.path.pathString
 
+@Serializable
 data class Post(
     val id: Long = -1,
     val postTitle: String,
@@ -17,7 +20,7 @@ data class Post(
     val total: Int,
     val hosts: Set<String>,
     val downloadDirectory: String,
-    val addedOn: LocalDateTime = LocalDateTime.now(),
+    @Contextual val addedOn: LocalDateTime = LocalDateTime.now(),
     var folderName: String,
     var status: Status = Status.STOPPED,
     var done: Int = 0,
@@ -28,7 +31,5 @@ data class Post(
     val postedBy: String,
     val resolvedNames: List<String>
 ) {
-    fun getDownloadFolder(): String {
-        return Path(downloadDirectory, folderName).pathString
-    }
+    fun getDownloadFolder() = Path(downloadDirectory, folderName).pathString
 }

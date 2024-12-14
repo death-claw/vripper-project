@@ -1,9 +1,11 @@
 export class Log {
   constructor(
-    public id: number,
-    public type: string,
-    public status: string,
-    public time: string,
-    public message: string
+    public sequence: number,
+    public timestamp: string,
+    public threadName: string,
+    public loggerName: string,
+    public levelString: string,
+    public formattedMessage: string,
+    public throwable: string,
   ) {}
 }

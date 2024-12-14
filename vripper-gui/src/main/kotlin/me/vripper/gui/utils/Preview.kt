@@ -11,7 +11,7 @@ import javafx.scene.layout.HBox
 import javafx.stage.Popup
 import javafx.stage.Stage
 import kotlinx.coroutines.*
-import me.vripper.delegate.LoggerDelegate
+import me.vripper.utilities.LoggerDelegate
 import me.vripper.utilities.hash256
 import tornadofx.bind
 import tornadofx.runLater

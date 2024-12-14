@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+
+    <sequenceNumberGenerator class="ch.qos.logback.core.spi.BasicSequenceNumberGenerator"/>
+
     <appender class="ch.qos.logback.core.ConsoleAppender" name="STDOUT">
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
@@ -21,10 +24,17 @@
         </rollingPolicy>
     </appender>
 
+    <appender name="RING" class="me.vripper.RingAppender">
+
+    </appender>
+
     <logger name="Exposed" level="OFF"/>
+    <logger name="me.vripper" level="info"/>
+    <logger name="org.springframework.web.socket.config.WebSocketMessageBrokerStats" level="off"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
+        <appender-ref ref="RING"/>
     </root>
 </configuration>

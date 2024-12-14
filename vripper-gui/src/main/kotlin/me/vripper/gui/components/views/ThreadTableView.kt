@@ -1,18 +1,21 @@
 package me.vripper.gui.components.views
 
 import atlantafx.base.theme.Styles
+import atlantafx.base.theme.Tweaks
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.scene.control.*
+import javafx.scene.input.KeyCode
+import javafx.scene.input.KeyEvent
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.javafx.asFlow
-import me.vripper.gui.components.fragments.ColumnSelectionFragment
 import me.vripper.gui.components.fragments.ThreadSelectionTableFragment
 import me.vripper.gui.controller.ThreadController
 import me.vripper.gui.controller.WidgetsController
 import me.vripper.gui.event.GuiEventBus
 import me.vripper.gui.model.ThreadModel
+import me.vripper.gui.utils.ActiveUICoroutines
 import me.vripper.gui.utils.openLink
 import me.vripper.services.IAppEndpointService
 import org.kordamp.ikonli.feather.Feather
@@ -24,11 +27,11 @@ class ThreadTableView : View() {
     private val coroutineScope = CoroutineScope(SupervisorJob())
     private val threadController: ThreadController by inject()
     private val widgetsController: WidgetsController by inject()
+    private val mainView: MainView by inject()
     private val localAppEndpointService: IAppEndpointService by di("localAppEndpointService")
     private val remoteAppEndpointService: IAppEndpointService by di("remoteAppEndpointService")
     private val tableView: TableView<ThreadModel>
     private val items: ObservableList<ThreadModel> = FXCollections.observableArrayList()
-    private val jobs = mutableListOf<Job>()
 
     override val root = vbox {}
 
@@ -47,8 +50,11 @@ class ThreadTableView : View() {
                     }
 
                     is GuiEventBus.ChangingSession -> {
-                        jobs.forEach { it.cancel() }
-                        jobs.clear()
+                        ActiveUICoroutines.threads.forEach { it.cancelAndJoin() }
+                        ActiveUICoroutines.threads.clear()
+                        runLater {
+                            tableView.placeholder = Label("Loading")
+                        }
                     }
                 }
             }
@@ -56,7 +62,15 @@ class ThreadTableView : View() {
 
         with(root) {
             tableView = tableview(items) {
-                addClass(Styles.DENSE)
+                isTableMenuButtonVisible = true
+                primaryStage.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
+                    if (event.code == KeyCode.DELETE) {
+                        if (isCurrentTab() && selectionModel.selectedItems.isNotEmpty()) {
+                            deleteSelected()
+                        }
+                    }
+                }
+                addClass(Styles.DENSE, Tweaks.EDGE_TO_EDGE)
                 selectionModel.selectionMode = SelectionMode.MULTIPLE
                 setRowFactory {
                     val tableRow = TableRow<ThreadModel>()
@@ -95,26 +109,7 @@ class ThreadTableView : View() {
                     tableRow
                 }
                 contextMenu = ContextMenu()
-                contextMenu.items.addAll(MenuItem("Setup columns").apply {
-                    setOnAction {
-                        find<ColumnSelectionFragment>(
-                            mapOf(
-                                ColumnSelectionFragment::map to mapOf(
-                                    Pair(
-                                        "Title", widgetsController.currentSettings.threadsColumnsModel.titleProperty
-                                    ),
-                                    Pair(
-                                        "URL", widgetsController.currentSettings.threadsColumnsModel.linkProperty
-                                    ),
-                                    Pair(
-                                        "Count", widgetsController.currentSettings.threadsColumnsModel.countProperty
-                                    ),
-                                )
-                            )
-                        ).openModal()
-                    }
-                    graphic = FontIcon.of(Feather.COLUMNS)
-                }, SeparatorMenuItem(), MenuItem("Clear", FontIcon.of(Feather.TRASH_2)).apply {
+                contextMenu.items.add(MenuItem("Clear", FontIcon.of(Feather.TRASH_2)).apply {
                     setOnAction {
                         confirm(
                             "",
@@ -131,7 +126,12 @@ class ThreadTableView : View() {
                     }
                 })
                 column("Title", ThreadModel::titleProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.threadsColumnsModel.titleProperty)
+                    isVisible = widgetsController.currentSettings.threadsColumnsModel.titleProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.threadsColumnsModel.titleProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.threadsColumnsWidthModel.title
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -140,7 +140,12 @@ class ThreadTableView : View() {
                     }
                 }
                 column("URL", ThreadModel::linkProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.threadsColumnsModel.linkProperty)
+                    isVisible = widgetsController.currentSettings.threadsColumnsModel.linkProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.threadsColumnsModel.linkProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.threadsColumnsWidthModel.link
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -149,7 +154,12 @@ class ThreadTableView : View() {
                     }
                 }
                 column("Count", ThreadModel::totalProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.threadsColumnsModel.countProperty)
+                    isVisible = widgetsController.currentSettings.threadsColumnsModel.countProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.threadsColumnsModel.countProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.threadsColumnsWidthModel.count
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -188,7 +198,7 @@ class ThreadTableView : View() {
                     items.add(it)
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.threads.add(it) }
 
         coroutineScope.launch {
             threadController.onUpdateThread().collect { thread ->
@@ -198,7 +208,7 @@ class ThreadTableView : View() {
                     threadModel.title = thread.title
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.threads.add(it) }
 
         coroutineScope.launch {
             threadController.onDeleteThread().collect { threadId ->
@@ -206,7 +216,7 @@ class ThreadTableView : View() {
                     tableView.items.removeIf { it.threadId == threadId }
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.threads.add(it) }
 
         coroutineScope.launch {
             threadController.onClearThreads().collect {
@@ -214,8 +224,10 @@ class ThreadTableView : View() {
                     tableView.items.clear()
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.threads.add(it) }
     }
+
+    private fun isCurrentTab(): Boolean = mainView.root.selectionModel.selectedItem.id == "thread-tab"
 
     private fun deleteSelected() {
         val threadIdList = tableView.selectionModel.selectedItems.map { it.threadId }

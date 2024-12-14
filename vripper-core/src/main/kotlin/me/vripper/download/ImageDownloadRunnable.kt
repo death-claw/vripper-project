@@ -1,8 +1,7 @@
 package me.vripper.download
 
-import kotlinx.coroutines.*
 import me.vripper.entities.ImageEntity
-import me.vripper.entities.domain.Status
+import me.vripper.entities.Status
 import me.vripper.exception.DownloadException
 import me.vripper.exception.HostException
 import me.vripper.host.DownloadedImage
@@ -10,6 +9,7 @@ import me.vripper.host.Host
 import me.vripper.host.ImageMimeType
 import me.vripper.model.Settings
 import me.vripper.services.*
+import me.vripper.utilities.LoggerDelegate
 import me.vripper.utilities.PathUtils.getExtension
 import me.vripper.utilities.PathUtils.getFileNameWithoutExtension
 import me.vripper.utilities.PathUtils.sanitize
@@ -24,20 +24,15 @@ import java.util.*
 import kotlin.io.path.Path
 import kotlin.io.path.pathString
 
-class ImageDownloadRunnable(
+internal class ImageDownloadRunnable(
     private val imageEntity: ImageEntity, val postRank: Int, private val settings: Settings
 ) : KoinComponent, CheckedRunnable {
-    private val log by me.vripper.delegate.LoggerDelegate()
+    private val log by LoggerDelegate()
 
     private val dataTransaction: DataTransaction by inject()
     private val hosts: List<Host> = getKoin().getAll()
 
     val context: ImageDownloadContext = ImageDownloadContext(imageEntity, settings)
-    private var stopped: Boolean
-        get() = context.stopped
-        set(value) {
-            context.stopped = value
-        }
 
     @Throws(DownloadException::class)
     fun download() {
@@ -74,7 +69,7 @@ class ImageDownloadRunnable(
                 dataTransaction.updateImage(imageEntity)
             }
         } catch (e: Exception) {
-            if (stopped) {
+            if (context.stopped) {
                 return
             }
             imageEntity.status = Status.ERROR
@@ -125,10 +120,14 @@ class ImageDownloadRunnable(
 
     @Throws(Exception::class)
     override fun run() {
-        if (stopped) {
-            return
+        try {
+            if (context.stopped) {
+                return
+            }
+            download()
+        } finally {
+            context.completed = true
         }
-        download()
     }
 
     override fun equals(other: Any?): Boolean {
@@ -144,6 +143,6 @@ class ImageDownloadRunnable(
 
     fun stop() {
         context.requests.forEach { it.abort() }
-        stopped = true
+        context.stopped = true
     }
 }

@@ -1,24 +1,18 @@
 package me.vripper.web.wsendpoints
 
-import me.vripper.entities.ImageEntity
-import me.vripper.entities.LogEntryEntity
-import me.vripper.entities.PostEntity
-import me.vripper.entities.ThreadEntity
-import me.vripper.model.DownloadSpeed
-import me.vripper.model.ErrorCount
-import me.vripper.model.QueueState
-import me.vripper.services.DataTransaction
-import me.vripper.services.VGAuthService
+import kotlinx.coroutines.runBlocking
+import me.vripper.model.*
+import me.vripper.services.IAppEndpointService
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.koin.core.qualifier.named
 import org.springframework.messaging.handler.annotation.DestinationVariable
 import org.springframework.messaging.simp.annotation.SubscribeMapping
 import org.springframework.stereotype.Controller
 
 @Controller
 class DataController : KoinComponent {
-    private val dataTransaction: DataTransaction by inject()
-    private val vgAuthService: VGAuthService by inject()
+    private val appEndpointService: IAppEndpointService by inject(named("localAppEndpointService"))
 
     @SubscribeMapping("/queue-state")
     fun queueState(): QueueState {
@@ -32,7 +26,7 @@ class DataController : KoinComponent {
 
     @SubscribeMapping("/vg-username")
     fun vgUsername(): String {
-        return vgAuthService.loggedUser
+        return runBlocking { appEndpointService.loggedInUser() }
     }
 
     @SubscribeMapping("/error-count")
@@ -41,22 +35,17 @@ class DataController : KoinComponent {
     }
 
     @SubscribeMapping("/posts/new")
-    fun posts(): Collection<PostEntity> {
-        return dataTransaction.findAllPosts()
+    fun posts(): List<Post> {
+        return runBlocking { appEndpointService.findAllPosts() }
     }
 
     @SubscribeMapping("/images/{postId}")
-    fun postsDetails(@DestinationVariable("postId") postId: Long): List<ImageEntity> {
-        return dataTransaction.findImagesByPostId(postId)
+    fun postsDetails(@DestinationVariable("postId") postId: Long): List<Image> {
+        return runBlocking { appEndpointService.findImagesByPostId(postId) }
     }
 
     @SubscribeMapping("/threads")
-    fun queued(): List<ThreadEntity> {
-        return dataTransaction.findAllThreads()
-    }
-
-    @SubscribeMapping("/logs/new")
-    fun events(): List<LogEntryEntity> {
-        return dataTransaction.findAllLogs()
+    fun queued(): List<Thread> {
+        return runBlocking { appEndpointService.findAllThreads() }
     }
 }

@@ -1,53 +1,66 @@
 <table [dataSource]="dataSource" class="mat-elevation-z4" mat-table>
   <ng-container
-    *ngIf="isDisplayed(columnsToDisplay(), 'time')"
-    matColumnDef="time">
+    *ngIf="isDisplayed(columnsToDisplay(), 'timestamp')"
+    matColumnDef="timestamp">
     <th *matHeaderCellDef mat-header-cell>Time</th>
     <td
       *matCellDef="let element"
-      [title]="element.time"
+      [title]="element.timestamp"
       class="truncate-cell"
       mat-cell>
-      {{ element.time }}
+      {{ element.timestamp }}
     </td>
   </ng-container>
 
   <ng-container
-    *ngIf="isDisplayed(columnsToDisplay(), 'type')"
-    matColumnDef="type">
-    <th *matHeaderCellDef mat-header-cell>Type</th>
+    *ngIf="isDisplayed(columnsToDisplay(), 'threadName')"
+    matColumnDef="threadName">
+    <th *matHeaderCellDef mat-header-cell>Thread</th>
     <td
       *matCellDef="let element"
-      [title]="element.type"
+      [title]="element.threadName"
       class="truncate-cell"
       mat-cell>
-      {{ element.type }}
+      {{ element.threadName }}
     </td>
   </ng-container>
 
   <ng-container
-    *ngIf="isDisplayed(columnsToDisplay(), 'status')"
-    matColumnDef="status">
-    <th *matHeaderCellDef mat-header-cell>Status</th>
+    *ngIf="isDisplayed(columnsToDisplay(), 'loggerName')"
+    matColumnDef="loggerName">
+    <th *matHeaderCellDef mat-header-cell>Logger</th>
     <td
       *matCellDef="let element"
-      [title]="element.statusSignal()"
+      [title]="element.loggerName"
       class="truncate-cell"
       mat-cell>
-      {{ element.statusSignal() }}
+      {{ element.loggerName }}
     </td>
   </ng-container>
 
   <ng-container
-    *ngIf="isDisplayed(columnsToDisplay(), 'message')"
-    matColumnDef="message">
+    *ngIf="isDisplayed(columnsToDisplay(), 'levelString')"
+    matColumnDef="levelString">
+    <th *matHeaderCellDef mat-header-cell>Level</th>
+    <td
+      *matCellDef="let element"
+      [title]="element.levelString"
+      class="truncate-cell"
+      mat-cell>
+      {{ element.levelString }}
+    </td>
+  </ng-container>
+
+  <ng-container
+    *ngIf="isDisplayed(columnsToDisplay(), 'formattedMessage')"
+    matColumnDef="formattedMessage">
     <th *matHeaderCellDef mat-header-cell>Message</th>
     <td
       *matCellDef="let element"
-      [title]="element.messageSignal()"
+      [title]="element.formattedMessage"
       class="truncate-cell"
       mat-cell>
-      {{ element.messageSignal() }}
+      {{ element.formattedMessage }}
     </td>
   </ng-container>
 

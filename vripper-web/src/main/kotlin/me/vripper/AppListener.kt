@@ -1,6 +1,6 @@
 package me.vripper
 
-import me.vripper.listeners.AppLock
+import me.vripper.utilities.AppLock
 import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent
 import org.springframework.context.ApplicationListener
 

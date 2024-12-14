@@ -1,18 +1,19 @@
 package me.vripper.gui.components.views
 
 import atlantafx.base.theme.Styles
+import atlantafx.base.theme.Tweaks
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.scene.control.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.javafx.asFlow
-import me.vripper.gui.components.fragments.ColumnSelectionFragment
 import me.vripper.gui.components.fragments.LogMessageFragment
 import me.vripper.gui.controller.LogController
 import me.vripper.gui.controller.WidgetsController
 import me.vripper.gui.event.GuiEventBus
 import me.vripper.gui.model.LogModel
+import me.vripper.gui.utils.ActiveUICoroutines
 import me.vripper.services.IAppEndpointService
 import org.kordamp.ikonli.feather.Feather
 import org.kordamp.ikonli.javafx.FontIcon
@@ -27,35 +28,15 @@ class LogTableView : View() {
     private val tableView: TableView<LogModel>
     private val coroutineScope = CoroutineScope(SupervisorJob())
     private val items: ObservableList<LogModel> = FXCollections.observableArrayList()
-    private val jobs = mutableListOf<Job>()
+    private var maxLogEvent = 0
 
     override val root = vbox {}
 
     init {
-        coroutineScope.launch {
-            GuiEventBus.events.collect { event ->
-                when (event) {
-                    is GuiEventBus.LocalSession -> {
-                        logController.appEndpointService = localAppEndpointService
-                        connect()
-                    }
-
-                    is GuiEventBus.RemoteSession -> {
-                        logController.appEndpointService = remoteAppEndpointService
-                        connect()
-                    }
-
-                    is GuiEventBus.ChangingSession -> {
-                        jobs.forEach { it.cancel() }
-                        jobs.clear()
-                    }
-                }
-            }
-        }
-
         with(root) {
             tableView = tableview(items) {
-                addClass(Styles.DENSE)
+                isTableMenuButtonVisible = true
+                addClass(Styles.DENSE, Tweaks.EDGE_TO_EDGE)
                 selectionModel.selectionMode = SelectionMode.SINGLE
                 setRowFactory {
                     val tableRow = TableRow<LogModel>()
@@ -67,29 +48,7 @@ class LogTableView : View() {
                     tableRow
                 }
                 contextMenu = ContextMenu()
-                contextMenu.items.addAll(MenuItem("Setup columns").apply {
-                    setOnAction {
-                        find<ColumnSelectionFragment>(
-                            mapOf(
-                                ColumnSelectionFragment::map to mapOf(
-                                    Pair(
-                                        "Time", widgetsController.currentSettings.logsColumnsModel.timeProperty
-                                    ),
-                                    Pair(
-                                        "Type", widgetsController.currentSettings.logsColumnsModel.typeProperty
-                                    ),
-                                    Pair(
-                                        "Status", widgetsController.currentSettings.logsColumnsModel.statusProperty
-                                    ),
-                                    Pair(
-                                        "Message", widgetsController.currentSettings.logsColumnsModel.messageProperty
-                                    ),
-                                )
-                            )
-                        ).openModal()
-                    }
-                    graphic = FontIcon.of(Feather.COLUMNS)
-                }, SeparatorMenuItem(), MenuItem("Clear", FontIcon.of(Feather.TRASH_2)).apply {
+                contextMenu.items.add(MenuItem("Clear", FontIcon.of(Feather.TRASH_2)).apply {
                     setOnAction {
                         confirm(
                             "",
@@ -101,7 +60,6 @@ class LogTableView : View() {
                         ) {
                             coroutineScope.launch {
                                 coroutineScope {
-                                    async { logController.clear() }.await()
                                     runLater {
                                         items.clear()
                                     }
@@ -110,8 +68,9 @@ class LogTableView : View() {
                         }
                     }
                 })
-                column("Time", LogModel::timeProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.logsColumnsModel.timeProperty)
+                column("Time", LogModel::timestampProperty) {
+                    isVisible = widgetsController.currentSettings.logsColumnsModel.timeProperty.get()
+                    visibleProperty().onChange { widgetsController.currentSettings.logsColumnsModel.timeProperty.set(it) }
                     id = "time"
                     prefWidth = widgetsController.currentSettings.logsColumnsWidthModel.time
                     coroutineScope.launch {
@@ -121,37 +80,68 @@ class LogTableView : View() {
                     }
                     sortType = TableColumn.SortType.DESCENDING
                 }
-                column("Type", LogModel::typeProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.logsColumnsModel.typeProperty)
-                    prefWidth = widgetsController.currentSettings.logsColumnsWidthModel.type
+                column("Thread", LogModel::threadNameProperty) {
+                    isVisible = widgetsController.currentSettings.logsColumnsModel.threadNameProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.logsColumnsModel.threadNameProperty.set(
+                            it
+                        )
+                    }
+                    prefWidth = widgetsController.currentSettings.logsColumnsWidthModel.threadName
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
-                            widgetsController.currentSettings.logsColumnsWidthModel.type = it as Double
+                            widgetsController.currentSettings.logsColumnsWidthModel.threadName = it as Double
                         }
                     }
                     id = "type"
                     isSortable = false
                 }
-                column("Status", LogModel::statusProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.logsColumnsModel.statusProperty)
-                    prefWidth = widgetsController.currentSettings.logsColumnsWidthModel.status
+                column("Logger", LogModel::loggerNameProperty) {
+                    isVisible = widgetsController.currentSettings.logsColumnsModel.loggerNameProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.logsColumnsModel.loggerNameProperty.set(
+                            it
+                        )
+                    }
+                    prefWidth = widgetsController.currentSettings.logsColumnsWidthModel.loggerName
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
-                            widgetsController.currentSettings.logsColumnsWidthModel.status = it as Double
+                            widgetsController.currentSettings.logsColumnsWidthModel.loggerName = it as Double
                         }
                     }
                     id = "status"
                     isSortable = false
                 }
-                column("Message", LogModel::messageProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.logsColumnsModel.messageProperty)
+                column("Level", LogModel::levelStringProperty) {
+                    isVisible = widgetsController.currentSettings.logsColumnsModel.levelStringProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.logsColumnsModel.levelStringProperty.set(
+                            it
+                        )
+                    }
+                    prefWidth = widgetsController.currentSettings.logsColumnsWidthModel.levelString
+                    coroutineScope.launch {
+                        widthProperty().asFlow().debounce(200).collect {
+                            widgetsController.currentSettings.logsColumnsWidthModel.levelString = it as Double
+                        }
+                    }
+                    id = "status"
+                    isSortable = false
+                }
+                column("Message", LogModel::formattedMessageProperty) {
+                    isVisible = widgetsController.currentSettings.logsColumnsModel.messageProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.logsColumnsModel.messageProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.logsColumnsWidthModel.message
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
                             widgetsController.currentSettings.logsColumnsWidthModel.message = it as Double
                         }
                     }
-                    id = "message"
+                    id = "status"
                     isSortable = false
                 }
             }
@@ -168,48 +158,72 @@ class LogTableView : View() {
         tableView.sortOrder.add(tableView.columns.first { it.id == "time" })
     }
 
-    private fun connect() {
+    override fun onDock() {
         coroutineScope.launch {
-            val list = coroutineScope.async {
-                logController.findAll().sortedByDescending { it.time }
-            }.await()
-            runLater {
-                items.clear()
-                items.addAll(list)
-                tableView.placeholder = Label("No content in table")
-            }
-        }
+            GuiEventBus.events.collect { event ->
+                when (event) {
+                    is GuiEventBus.LocalSession -> {
+                        runLater {
+                            tableView.placeholder = Label("No Content in table")
+                        }
+                        logController.appEndpointService = localAppEndpointService
+                        connect()
+                    }
 
-        coroutineScope.launch {
-            logController.onNewLog().collect {
-                runLater {
-                    items.add(it)
-                    tableView.sort()
-                }
-            }
-        }.also { jobs.add(it) }
+                    is GuiEventBus.RemoteSession -> {
+                        runLater {
+                            tableView.placeholder = Label("No Content in table")
+                        }
+                        logController.appEndpointService = remoteAppEndpointService
+                        connect()
+                    }
 
-        coroutineScope.launch {
-            logController.onUpdateLog().collect {
-                val find = items.find { threadModel -> threadModel.id == it.id }
-                if (find != null) {
-                    runLater {
-                        find.apply {
-                            status = it.status.name
-                            message = it.message
+                    is GuiEventBus.RemoteSessionFailure -> {
+                        runLater {
+                            items.clear()
+                            tableView.placeholder = Label("Connection Failure")
+                        }
+                    }
+
+                    is GuiEventBus.ChangingSession -> {
+                        ActiveUICoroutines.logs.forEach { it.cancelAndJoin() }
+                        ActiveUICoroutines.logs.clear()
+                        runLater {
+                            tableView.placeholder = Label("Loading")
+                            items.clear()
                         }
                     }
                 }
             }
-        }.also { jobs.add(it) }
+        }
+    }
 
+    private fun connect() {
+        runBlocking {
+            maxLogEvent = logController.appEndpointService.getSettings().systemSettings.maxEventLog
+        }
         coroutineScope.launch {
-            logController.onDeleteLogs().collect { deletedId ->
+            logController.onNewLog().collect {
                 runLater {
-                    items.removeIf { it.id == deletedId }
+                    items.sortWith(Comparator.comparing { it.sequence })
+                    while (items.isNotEmpty() && (items.size >= maxLogEvent)) {
+                        items.removeFirst()
+                    }
+                    items.add(it)
+                    tableView.sort()
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.logs.add(it) }
+        coroutineScope.launch {
+            logController.appEndpointService.onUpdateSettings().collect {
+                maxLogEvent = it.systemSettings.maxEventLog
+            }
+        }.also { ActiveUICoroutines.logs.add(it) }
+        runLater {
+            runBlocking {
+                logController.initLogger()
+            }
+        }
     }
 
     private fun openLog(item: LogModel) {

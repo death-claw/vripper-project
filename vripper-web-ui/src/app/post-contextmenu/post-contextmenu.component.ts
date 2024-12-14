@@ -1,5 +1,3 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { CommonModule, NgIf } from '@angular/common';
 import {
   animate,
   state,
@@ -7,27 +5,27 @@ import {
   transition,
   trigger,
 } from '@angular/animations';
+import { CommonModule, NgIf } from '@angular/common';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
-import { MatListModule } from '@angular/material/list';
-import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
-import { ImageDialogData, ImagesComponent } from '../images/images.component';
+import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
 import { PostRow } from '../domain/post-row.model';
+import { ImageDialogData, ImagesComponent } from '../images/images.component';
 
 @Component({
   selector: 'app-post-contextmenu',
-  standalone: true,
   imports: [CommonModule, MatCardModule, MatListModule, MatIconModule, NgIf],
   templateUrl: './post-contextmenu.component.html',
-  styleUrls: ['./post-contextmenu.component.scss'],
   animations: [
     trigger('simpleFadeAnimation', [
       state('in', style({ opacity: 1 })),
-
       transition(':enter', [style({ opacity: 0 }), animate(300)]),
     ]),
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
 })
 export class PostContextmenuComponent {
   post!: PostRow;

@@ -1,12 +1,12 @@
-import { ChangeDetectionStrategy, Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, Inject } from '@angular/core';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
   MatDialogModule,
   MatDialogRef,
 } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 
@@ -22,7 +22,6 @@ export interface RenameDialogResult {
 
 @Component({
   selector: 'app-rename-dialog',
-  standalone: true,
   imports: [
     CommonModule,
     MatDialogModule,
@@ -33,8 +32,8 @@ export interface RenameDialogResult {
     ReactiveFormsModule,
   ],
   templateUrl: './rename-dialog.component.html',
-  styleUrls: ['./rename-dialog.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
 })
 export class RenameDialogComponent {
   formControl = new FormControl(this.data.name);

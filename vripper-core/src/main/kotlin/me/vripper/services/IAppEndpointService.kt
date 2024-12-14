@@ -17,13 +17,10 @@ interface IAppEndpointService {
     fun onDeletePosts(): Flow<Long>
     fun onUpdateMetadata(): Flow<Metadata>
     suspend fun findImagesByPostId(postId: Long): List<Image>
-    fun onUpdateImages(postId: Long): Flow<Image>
+    fun onUpdateImagesByPostId(postId: Long): Flow<Image>
+    fun onUpdateImages(): Flow<Image>
     fun onStopped(): Flow<Long>
-    suspend fun logClear()
-    suspend fun findAllLogs(): List<LogEntry>
     fun onNewLog(): Flow<LogEntry>
-    fun onUpdateLog(): Flow<LogEntry>
-    fun onDeleteLogs(): Flow<Long>
     fun onNewThread(): Flow<Thread>
     fun onUpdateThread(): Flow<Thread>
     fun onDeleteThread(): Flow<Long>
@@ -33,10 +30,10 @@ interface IAppEndpointService {
     suspend fun threadClear()
     suspend fun grab(threadId: Long): List<PostSelection>
     suspend fun download(posts: List<ThreadPostId>)
-    fun onDownloadSpeed(): Flow<Long>
+    fun onDownloadSpeed(): Flow<DownloadSpeed>
     fun onVGUserUpdate(): Flow<String>
     fun onQueueStateUpdate(): Flow<QueueState>
-    fun onErrorCountUpdate(): Flow<Int>
+    fun onErrorCountUpdate(): Flow<ErrorCount>
     fun onTasksRunning(): Flow<Boolean>
     suspend fun getSettings(): Settings
     suspend fun saveSettings(settings: Settings)
@@ -45,4 +42,7 @@ interface IAppEndpointService {
     suspend fun loggedInUser(): String
     suspend fun getVersion(): String
     suspend fun renameToFirst(postIds: List<Long>)
+    fun ready(): Boolean
+    suspend fun dbMigration(): String
+    suspend fun initLogger()
 }

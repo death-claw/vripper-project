@@ -1,10 +1,16 @@
 package me.vripper
 
+import me.vripper.data.repositories.ImageRepository
+import me.vripper.data.repositories.MetadataRepository
+import me.vripper.data.repositories.PostDownloadStateRepository
+import me.vripper.data.repositories.ThreadRepository
+import me.vripper.data.repositories.impl.ImageRepositoryImpl
+import me.vripper.data.repositories.impl.MetadataRepositoryImpl
+import me.vripper.data.repositories.impl.PostDownloadStateRepositoryImpl
+import me.vripper.data.repositories.impl.ThreadRepositoryImpl
 import me.vripper.download.DownloadService
 import me.vripper.event.EventBus
 import me.vripper.host.*
-import me.vripper.repositories.*
-import me.vripper.repositories.impl.*
 import me.vripper.services.*
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
@@ -16,6 +22,9 @@ val coreModule = module {
     }
     single<SettingsService> {
         SettingsService(get())
+    }
+    single<LogService> {
+        LogService(get())
     }
     single<ImageRepository> {
         ImageRepositoryImpl()
@@ -29,11 +38,8 @@ val coreModule = module {
     single<ThreadRepository> {
         ThreadRepositoryImpl()
     }
-    single<LogRepository> {
-        LogRepositoryImpl(get())
-    }
     single<DataTransaction> {
-        DataTransaction(get(), get(), get(), get(), get(), get(), get())
+        DataTransaction(get(), get(), get(), get(), get(), get())
     }
     single<RetryPolicyService> {
         RetryPolicyService(get(), get())
@@ -55,11 +61,11 @@ val coreModule = module {
     }
 
     single<AppEndpointService> {
-        AppEndpointService(get(), get(), get(), get(), get())
+        AppEndpointService(get(), get(), get(), get(), get(), get())
     }
 
     single((named("localAppEndpointService"))) {
-        AppEndpointService(get(), get(), get(), get(), get())
+        AppEndpointService(get(), get(), get(), get(), get(), get())
     } bind IAppEndpointService::class
 
     single<MetadataService> {

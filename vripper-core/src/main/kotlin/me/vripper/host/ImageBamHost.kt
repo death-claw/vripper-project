@@ -5,6 +5,7 @@ import me.vripper.exception.HostException
 import me.vripper.exception.XpathException
 import me.vripper.services.*
 import me.vripper.utilities.HtmlUtils
+import me.vripper.utilities.LoggerDelegate
 import me.vripper.utilities.XpathUtils
 import org.apache.hc.client5.http.impl.cookie.BasicClientCookie
 import org.w3c.dom.Document
@@ -14,12 +15,12 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.*
 
-class ImageBamHost(
+internal class ImageBamHost(
     httpService: HTTPService,
     dataTransaction: DataTransaction,
     downloadSpeedService: DownloadSpeedService,
 ) : Host("imagebam.com", 2, httpService, dataTransaction, downloadSpeedService) {
-    private val log by me.vripper.delegate.LoggerDelegate()
+    private val log by LoggerDelegate()
 
     @Throws(HostException::class)
     override fun resolve(

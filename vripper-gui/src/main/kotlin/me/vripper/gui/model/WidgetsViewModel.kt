@@ -3,12 +3,21 @@ package me.vripper.gui.model
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleDoubleProperty
 import javafx.beans.property.SimpleStringProperty
-import me.vripper.gui.controller.WidgetsController
+import me.vripper.gui.utils.WidgetSettings.ImagesTableColumns
+import me.vripper.gui.utils.WidgetSettings.ImagesTableColumnsWidth
+import me.vripper.gui.utils.WidgetSettings.LogsTableColumns
+import me.vripper.gui.utils.WidgetSettings.LogsTableColumnsWidth
+import me.vripper.gui.utils.WidgetSettings.PostsTableColumns
+import me.vripper.gui.utils.WidgetSettings.PostsTableColumnsWidth
+import me.vripper.gui.utils.WidgetSettings.RemoteSession
+import me.vripper.gui.utils.WidgetSettings.ThreadSelectionTableColumns
+import me.vripper.gui.utils.WidgetSettings.ThreadSelectionTableColumnsWidth
+import me.vripper.gui.utils.WidgetSettings.ThreadsTableColumns
+import me.vripper.gui.utils.WidgetSettings.ThreadsTableColumnsWidth
 import tornadofx.getValue
 import tornadofx.setValue
 
 class WidgetsViewModel(
-    firstRun: Boolean,
     localSession: Boolean,
     visibleInfoPanel: Boolean,
     visibleToolbarPanel: Boolean,
@@ -18,20 +27,18 @@ class WidgetsViewModel(
     width: Double,
     height: Double,
     cachePath: String,
-    postsTableColumns: WidgetsController.PostsTableColumns,
-    imagesTableColumns: WidgetsController.ImagesTableColumns,
-    threadsTableColumns: WidgetsController.ThreadsTableColumns,
-    logsTableColumns: WidgetsController.LogsTableColumns,
-    threadSelectionColumns: WidgetsController.ThreadSelectionTableColumns,
-    remoteSession: WidgetsController.RemoteSession,
-    postsTableColumnsWidth: WidgetsController.PostsTableColumnsWidth,
-    imagesTableColumnsWidth: WidgetsController.ImagesTableColumnsWidth,
-    threadsTableColumnsWidth: WidgetsController.ThreadsTableColumnsWidth,
-    threadSelectionColumnsWidth: WidgetsController.ThreadSelectionTableColumnsWidth,
-    logsTableColumnsWidth: WidgetsController.LogsTableColumnsWidth,
+    postsTableColumns: PostsTableColumns,
+    imagesTableColumns: ImagesTableColumns,
+    threadsTableColumns: ThreadsTableColumns,
+    logsTableColumns: LogsTableColumns,
+    threadSelectionColumns: ThreadSelectionTableColumns,
+    remoteSession: RemoteSession,
+    postsTableColumnsWidth: PostsTableColumnsWidth,
+    imagesTableColumnsWidth: ImagesTableColumnsWidth,
+    threadsTableColumnsWidth: ThreadsTableColumnsWidth,
+    threadSelectionColumnsWidth: ThreadSelectionTableColumnsWidth,
+    logsTableColumnsWidth: LogsTableColumnsWidth,
 ) {
-    val firstRunProperty = SimpleBooleanProperty(firstRun)
-    var firstRun: Boolean by firstRunProperty
 
     val localSessionProperty = SimpleBooleanProperty(localSession)
     var localSession: Boolean by localSessionProperty
@@ -120,15 +127,17 @@ class WidgetsViewModel(
 
     val logsColumnsModel = LogsColumnsModel(
         logsTableColumns.time,
-        logsTableColumns.type,
-        logsTableColumns.status,
+        logsTableColumns.threadName,
+        logsTableColumns.loggerName,
+        logsTableColumns.levelString,
         logsTableColumns.message,
     )
 
     val logsColumnsWidthModel = LogsColumnsWidthModel(
         logsTableColumnsWidth.time,
-        logsTableColumnsWidth.type,
-        logsTableColumnsWidth.status,
+        logsTableColumnsWidth.threadName,
+        logsTableColumnsWidth.loggerName,
+        logsTableColumnsWidth.levelString,
         logsTableColumnsWidth.message,
     )
 

@@ -1,18 +1,18 @@
+import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable, signal } from '@angular/core';
+import { RxStomp, RxStompConfig, RxStompState } from '@stomp/rx-stomp';
 import { Observable } from 'rxjs';
 import { map, share } from 'rxjs/operators';
-import { RxStomp, RxStompConfig, RxStompState } from '@stomp/rx-stomp';
-import { Post } from '../domain/post.model';
 import { BASE_URL, WS_BASE_URL } from '../base-url.token';
-import { Thread } from '../domain/thread.model';
-import { Log } from '../domain/log.model';
-import { Image } from '../domain/image.model';
-import { HttpClient } from '@angular/common/http';
-import { PostItem } from '../domain/post-item.model';
-import { Settings } from '../domain/settings.model';
-import { QueueState } from '../domain/queue-state.model';
 import { DownloadSpeed } from '../domain/download.speed';
 import { ErrorCount } from '../domain/error.count';
+import { Image } from '../domain/image.model';
+import { Log } from '../domain/log.model';
+import { PostItem } from '../domain/post-item.model';
+import { Post } from '../domain/post.model';
+import { QueueState } from '../domain/queue-state.model';
+import { Settings } from '../domain/settings.model';
+import { Thread } from '../domain/thread.model';
 
 @Injectable({
   providedIn: 'root',
@@ -54,9 +54,9 @@ export class ApplicationEndpointService {
     return this.threads;
   }
 
-  private threadRemove!: Observable<string[]>;
+  private threadRemove!: Observable<number>;
 
-  get threadRemove$(): Observable<string[]> {
+  get threadRemove$(): Observable<number> {
     return this.threadRemove;
   }
 
@@ -66,27 +66,21 @@ export class ApplicationEndpointService {
     return this.threadRemoveAll;
   }
 
-  private newLogs!: Observable<Log[]>;
+  private newLogs!: Observable<Log>;
 
-  get newLogs$(): Observable<Log[]> {
+  get newLogs$(): Observable<Log> {
     return this.newLogs;
   }
 
-  private updatedLogs!: Observable<Log[]>;
+  private settingsUpdate!: Observable<Settings>;
 
-  get updatedLogs$(): Observable<Log[]> {
-    return this.updatedLogs;
-  }
-
-  private logsRemove!: Observable<number[]>;
-
-  get logsRemove$(): Observable<number[]> {
-    return this.logsRemove;
+  get settingsUpdate$(): Observable<Settings> {
+    return this.settingsUpdate;
   }
 
   postDetails$(postId: number): Observable<Image[]> {
     return this.rxStomp.watch('/topic/images/' + postId).pipe(
-      map(e => {
+      map((e) => {
         return JSON.parse(e.body).map((element: any) => {
           return new Image(
             element.postId,
@@ -146,46 +140,32 @@ export class ApplicationEndpointService {
   }
 
   prepareTopics() {
-    this.rxStomp.connectionState$.subscribe(e => this.connectionState.set(e));
+    this.rxStomp.connectionState$.subscribe((e) => this.connectionState.set(e));
 
     this.downloadSpeed = this.rxStomp.watch('/topic/download-speed').pipe(
-      map(e => {
+      map((e) => {
         return JSON.parse(e.body);
       }),
       share()
     );
 
     this.vgUsername = this.rxStomp.watch('/topic/vg-username').pipe(
-      map(e => {
+      map((e) => {
         return e.body;
       }),
       share()
     );
 
     this.errorCount = this.rxStomp.watch('/topic/error-count').pipe(
-      map(e => {
-        return JSON.parse(e.body);
-      }),
-      share()
-    );
-
-    this.deletedPosts = this.rxStomp.watch('/topic/posts/deleted').pipe(
-      map(e => {
-        return JSON.parse(e.body);
-      }),
-      share()
-    );
-
-    this.logsRemove = this.rxStomp.watch('/topic/logs/deleted').pipe(
-      map(e => {
+      map((e) => {
         return JSON.parse(e.body);
       }),
       share()
     );
 
     this.threadRemove = this.rxStomp.watch('/topic/threads/deleted').pipe(
-      map(e => {
-        return JSON.parse(e.body);
+      map((e) => {
+        return parseInt(e.body);
       }),
       share()
     );
@@ -198,15 +178,23 @@ export class ApplicationEndpointService {
     );
 
     this.queueState = this.rxStomp.watch('/topic/queue-state').pipe(
-      map(e => {
+      map((e) => {
         const state: QueueState = JSON.parse(e.body);
         return state;
       }),
       share()
     );
 
+    this.settingsUpdate = this.rxStomp.watch('/topic/settings/update').pipe(
+      map((e) => {
+        const state: Settings = JSON.parse(e.body);
+        return state;
+      }),
+      share()
+    );
+
     this.newPosts = this.rxStomp.watch('/topic/posts/new').pipe(
-      map(e => {
+      map((e) => {
         return JSON.parse(e.body).map((element: any) => {
           return new Post(
             element.postId,
@@ -229,7 +217,7 @@ export class ApplicationEndpointService {
     );
 
     this.updatedPosts = this.rxStomp.watch('/topic/posts/updated').pipe(
-      map(e => {
+      map((e) => {
         return JSON.parse(e.body).map((element: any) => {
           return new Post(
             element.postId,
@@ -251,38 +239,22 @@ export class ApplicationEndpointService {
       share()
     );
 
-    this.newLogs = this.rxStomp.watch('/topic/logs/new').pipe(
-      map(e => {
-        return JSON.parse(e.body).map((element: any) => {
-          return new Log(
-            element.id,
-            element.type,
-            element.status,
-            element.time,
-            element.message
-          );
-        });
+    this.deletedPosts = this.rxStomp.watch('/topic/posts/deleted').pipe(
+      map((e) => {
+        return JSON.parse(e.body);
       }),
       share()
     );
 
-    this.updatedLogs = this.rxStomp.watch('/topic/logs/updated').pipe(
-      map(e => {
-        return JSON.parse(e.body).map((element: any) => {
-          return new Log(
-            element.id,
-            element.type,
-            element.status,
-            element.time,
-            element.message
-          );
-        });
+    this.newLogs = this.rxStomp.watch('/topic/logs/new').pipe(
+      map((e: any) => {
+        return JSON.parse(e.body);
       }),
       share()
     );
 
     this.threads = this.rxStomp.watch('/topic/threads').pipe(
-      map(e => {
+      map((e) => {
         return JSON.parse(e.body).map((element: any) => {
           return new Thread(
             element.link,
@@ -299,14 +271,14 @@ export class ApplicationEndpointService {
   startPosts(posts: Post[]) {
     return this.httpClient.post<void>(
       this.baseUrl + '/api/post/restart',
-      posts.map(e => e.postId)
+      posts.map((e) => e.postId)
     );
   }
 
   stopPosts(posts: Post[]) {
     return this.httpClient.post<void>(
       this.baseUrl + '/api/post/stop',
-      posts.map(e => e.postId)
+      posts.map((e) => e.postId)
     );
   }
 
@@ -345,30 +317,26 @@ export class ApplicationEndpointService {
   download(items: PostItem[]) {
     return this.httpClient.post<void>(
       this.baseUrl + '/api/post/add',
-      items.map(e => ({ threadId: e.threadId, postId: e.postId }))
+      items.map((e) => ({ threadId: e.threadId, postId: e.postId }))
     );
   }
 
   deletePosts(posts: Post[]) {
     return this.httpClient.post<void>(
       this.baseUrl + '/api/post/remove',
-      posts.map(e => e.postId)
+      posts.map((e) => e.postId)
     );
   }
 
   deleteThreads(threads: Thread[]) {
     return this.httpClient.post<void>(
       this.baseUrl + '/api/grab/remove',
-      threads.map(e => e.threadId)
+      threads.map((e) => e.threadId)
     );
   }
 
   clearDownloads() {
     return this.httpClient.post<void>(this.baseUrl + '/api/post/clear/all', {});
-  }
-
-  clearLogs() {
-    return this.httpClient.get<void>(this.baseUrl + '/api/events/clear');
   }
 
   clearThreads() {

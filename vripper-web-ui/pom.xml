@@ -9,7 +9,6 @@
     <version>${revision}</version>
   </parent>
 
-  <groupId>me.vripper</groupId>
   <artifactId>vripper-web-ui</artifactId>
   <version>${revision}</version>
   <name>vripper-web-ui</name>
@@ -17,7 +16,7 @@
   <build>
     <resources>
       <resource>
-        <directory>dist/vripper-web-ui</directory>
+        <directory>dist/vripper-web-ui/browser</directory>
         <targetPath>META-INF/resources</targetPath>
       </resource>
     </resources>
@@ -27,29 +26,28 @@
         <artifactId>frontend-maven-plugin</artifactId>
         <version>1.15.0</version>
         <configuration>
-          <nodeVersion>v20.10.0</nodeVersion>
-          <yarnVersion>v1.22.21</yarnVersion>
+          <nodeVersion>v22.12.0</nodeVersion>
         </configuration>
         <executions>
           <execution>
-            <id>install node and yarn</id>
+            <id>install node and npm</id>
             <goals>
-              <goal>install-node-and-yarn</goal>
+              <goal>install-node-and-npm</goal>
             </goals>
           </execution>
           <execution>
-            <id>yarn install</id>
+            <id>npm install</id>
             <goals>
-              <goal>yarn</goal>
+              <goal>npm</goal>
             </goals>
             <configuration>
               <arguments>install</arguments>
             </configuration>
           </execution>
           <execution>
-            <id>yarn run build</id>
+            <id>npm run build</id>
             <goals>
-              <goal>yarn</goal>
+              <goal>npm</goal>
             </goals>
             <configuration>
               <arguments>run build</arguments>

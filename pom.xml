@@ -15,27 +15,29 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <revision>5.8.0</revision>
-        <kotlin.version>1.9.22</kotlin.version>
-        <slf4j.version>2.0.12</slf4j.version>
-        <logback.version>1.5.0</logback.version>
-        <kotlinx-coroutines.version>1.8.0</kotlinx-coroutines.version>
-        <exposed.version>0.47.0</exposed.version>
+        <revision>6.0.0</revision>
+        <kotlin.version>2.0.21</kotlin.version>
+        <slf4j.version>2.0.16</slf4j.version>
+        <logback.version>1.5.12</logback.version>
+        <kotlinx-coroutines.version>1.9.0</kotlinx-coroutines.version>
+        <exposed.version>0.55.0</exposed.version>
         <snakeyaml.version>2.0</snakeyaml.version>
-        <koin.version>3.5.3</koin.version>
+        <koin.version>4.0.0</koin.version>
         <h2.version>2.2.224</h2.version>
         <htmlcleaner.version>2.29</htmlcleaner.version>
         <failsafe.version>2.4.4</failsafe.version>
         <caffeine.version>3.1.8</caffeine.version>
         <jna-platform.version>5.14.0</jna-platform.version>
-        <kotlinx-serialization-json.version>1.6.2</kotlinx-serialization-json.version>
-        <httpclient5.version>5.3.1</httpclient5.version>
-        <commons-codec.version>1.16.1</commons-codec.version>
-        <liquibase-core.version>4.26.0</liquibase-core.version>
+        <kotlinx-serialization-json.version>1.7.3</kotlinx-serialization-json.version>
+        <httpclient5.version>5.4</httpclient5.version>
+        <httpcore5.version>5.3</httpcore5.version>
+        <commons-codec.version>1.17.1</commons-codec.version>
+        <liquibase-core.version>4.29.2</liquibase-core.version>
         <liquibase-slf4j.version>5.0.0</liquibase-slf4j.version>
         <grpc.kotlin.version>1.4.1</grpc.kotlin.version>
-        <java.grpc.version>1.62.2</java.grpc.version>
-        <protobuf.version>3.25.3</protobuf.version>
+        <java.grpc.version>1.68.1</java.grpc.version>
+        <protobuf.version>3.25.5</protobuf.version>
+        <sqlite-jdbc.version>3.47.0.0</sqlite-jdbc.version>
     </properties>
     <build>
         <plugins>
@@ -130,6 +132,11 @@
                 <version>${h2.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.xerial</groupId>
+                <artifactId>sqlite-jdbc</artifactId>
+                <version>${sqlite-jdbc.version}</version>
+            </dependency>
+            <dependency>
                 <artifactId>htmlcleaner</artifactId>
                 <groupId>net.sourceforge.htmlcleaner</groupId>
                 <version>${htmlcleaner.version}</version>
@@ -170,6 +177,16 @@
                 <version>${httpclient5.version}</version>
             </dependency>
             <dependency>
+                <artifactId>httpcore5</artifactId>
+                <groupId>org.apache.httpcomponents.core5</groupId>
+                <version>${httpcore5.version}</version>
+            </dependency>
+            <dependency>
+                <artifactId>httpcore5-h2</artifactId>
+                <groupId>org.apache.httpcomponents.core5</groupId>
+                <version>${httpcore5.version}</version>
+            </dependency>
+            <dependency>
                 <artifactId>commons-codec</artifactId>
                 <groupId>commons-codec</groupId>
                 <version>${commons-codec.version}</version>
@@ -195,14 +212,14 @@
                 <version>${java.grpc.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.google.protobuf</groupId>
-                <artifactId>protobuf-kotlin</artifactId>
-                <version>${protobuf.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-netty-shaded</artifactId>
                 <version>${java.grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-kotlin</artifactId>
+                <version>${protobuf.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

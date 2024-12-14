@@ -6,10 +6,11 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterIsInstance
-import me.vripper.delegate.LoggerDelegate
 import me.vripper.gui.controller.PostController
 import me.vripper.gui.event.GuiEventBus
 import me.vripper.gui.model.PostModel
+import me.vripper.gui.utils.ActiveUICoroutines
+import me.vripper.utilities.LoggerDelegate
 import org.kordamp.ikonli.feather.Feather
 import org.kordamp.ikonli.javafx.FontIcon
 import tornadofx.*
@@ -19,9 +20,8 @@ class PostInfoView : View() {
     private val postController: PostController by inject()
     private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob())
     private val imagesTableView: ImagesTableView by inject()
-    private val jobs = mutableListOf<Job>()
     private val postModel: PostModel = PostModel(
-        -1, "", 0.0, "", "", 0, 0, "", "", -1, "", "", "", emptyList(), emptyList(), ""
+        -1, "", 0.0, "", "", 0, 0, "", "", -1, "", "", "", emptyList(), emptyList(), "", 0
     )
 
     override val root = tabpane()
@@ -29,8 +29,8 @@ class PostInfoView : View() {
     init {
         coroutineScope.launch {
             GuiEventBus.events.filterIsInstance(GuiEventBus.ChangingSession::class).collect {
-                jobs.forEach { it.cancel() }
-                jobs.clear()
+                ActiveUICoroutines.postInfo.forEach { it.cancelAndJoin() }
+                ActiveUICoroutines.postInfo.clear()
             }
         }
         with(root) {
@@ -87,8 +87,8 @@ class PostInfoView : View() {
     }
 
     fun setPostId(postId: Long?) {
-        jobs.forEach { it.cancel() }
-        jobs.clear()
+        ActiveUICoroutines.postInfo.forEach { it.cancel() }
+        ActiveUICoroutines.postInfo.clear()
         imagesTableView.setPostId(postId)
         if (postId == null) {
             postModel.apply {
@@ -164,7 +164,7 @@ class PostInfoView : View() {
                     postModel.folderName = post.folderName
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.postInfo.add(it) }
 
         coroutineScope.launch {
             postController.onUpdateMetadata().catch {
@@ -178,6 +178,6 @@ class PostInfoView : View() {
                     postModel.postedBy = it.data.postedBy
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.postInfo.add(it) }
     }
 }

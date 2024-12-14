@@ -1,28 +1,31 @@
 package me.vripper.gui.components.views
 
 import atlantafx.base.theme.Styles
+import atlantafx.base.theme.Tweaks
 import javafx.collections.FXCollections
-import javafx.collections.ObservableList
 import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.control.cell.TextFieldTableCell
+import javafx.scene.input.KeyCode
+import javafx.scene.input.KeyEvent
 import javafx.scene.input.MouseButton
 import javafx.util.Callback
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.javafx.asFlow
+import me.vripper.gui.components.Shared
 import me.vripper.gui.components.cells.PreviewTableCell
 import me.vripper.gui.components.cells.ProgressTableCell
 import me.vripper.gui.components.cells.StatusTableCell
 import me.vripper.gui.components.fragments.AddLinksFragment
-import me.vripper.gui.components.fragments.ColumnSelectionFragment
 import me.vripper.gui.components.fragments.RenameFragment
 import me.vripper.gui.controller.PostController
 import me.vripper.gui.controller.WidgetsController
 import me.vripper.gui.event.GuiEventBus
 import me.vripper.gui.model.PostModel
 import me.vripper.gui.services.ClipboardService
+import me.vripper.gui.utils.ActiveUICoroutines
 import me.vripper.gui.utils.Preview
 import me.vripper.gui.utils.openFileDirectory
 import me.vripper.gui.utils.openLink
@@ -38,17 +41,26 @@ class PostsTableView : View() {
     private val postController: PostController by inject()
     private val widgetsController: WidgetsController by inject()
     private val clipboardService: ClipboardService by inject()
+    private val mainView: MainView by inject()
     private val localAppEndpointService: IAppEndpointService by di("localAppEndpointService")
     private val remoteAppEndpointService: IAppEndpointService by di("remoteAppEndpointService")
-    private val jobs = mutableListOf<Job>()
 
     val tableView: TableView<PostModel>
-    var items: ObservableList<PostModel> = FXCollections.observableArrayList()
+    var items: SortedFilteredList<PostModel> = SortedFilteredList()
     private var preview: Preview? = null
 
     override val root = vbox {}
 
     init {
+
+        items.filterWhen(Shared.searchInput) { query, item ->
+            item.title.contains(query, ignoreCase = true)
+                    || item.postId.toString().contains(query)
+                    || item.threadId.toString().contains(query)
+                    || item.hosts.contains(query, ignoreCase = true)
+                    || item.status.contains(query, ignoreCase = true)
+                    || item.path.contains(query, ignoreCase = true)
+        }
         coroutineScope.launch {
             GuiEventBus.events.collect { event ->
                 when (event) {
@@ -62,9 +74,19 @@ class PostsTableView : View() {
                         connect()
                     }
 
+                    is GuiEventBus.RemoteSessionFailure -> {
+                        runLater {
+                            items.clear()
+                            tableView.placeholder = Label("Connection Failure")
+                        }
+                    }
+
                     is GuiEventBus.ChangingSession -> {
-                        jobs.forEach { it.cancel() }
-                        jobs.clear()
+                        ActiveUICoroutines.posts.forEach { it.cancelAndJoin() }
+                        ActiveUICoroutines.posts.clear()
+                        runLater {
+                            tableView.placeholder = Label("Loading")
+                        }
                     }
                 }
             }
@@ -72,7 +94,15 @@ class PostsTableView : View() {
 
         with(root) {
             tableView = tableview(items) {
-                addClass(Styles.DENSE)
+                isTableMenuButtonVisible = true
+                primaryStage.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
+                    if (event.code == KeyCode.DELETE) {
+                        if (isCurrentTab() && selectionModel.selectedItems.isNotEmpty()) {
+                            deleteSelected()
+                        }
+                    }
+                }
+                addClass(Styles.DENSE, Tweaks.EDGE_TO_EDGE)
                 selectionModel.selectionMode = SelectionMode.MULTIPLE
                 setRowFactory {
                     val tableRow = TableRow<PostModel>()
@@ -98,11 +128,11 @@ class PostsTableView : View() {
                         graphic = FontIcon.of(Feather.EDIT)
                     }
 
-                    val bulkRenameItem = MenuItem("Bulk rename").apply {
+                    val bulkRenameItem = MenuItem("Auto rename").apply {
                         setOnAction {
                             bulkRenameSelected()
                         }
-                        graphic = FontIcon.of(Feather.EDIT_3)
+                        graphic = FontIcon.of(Feather.EDIT)
                     }
 
                     val deleteItem = MenuItem("Delete").apply {
@@ -150,46 +180,14 @@ class PostsTableView : View() {
                             input.clear()
                         }.openModal()
                     }
-                }, SeparatorMenuItem(), MenuItem("Setup columns").apply {
-                    graphic = FontIcon.of(Feather.COLUMNS)
-                    setOnAction {
-                        find<ColumnSelectionFragment>(
-                            mapOf(
-                                ColumnSelectionFragment::map to mapOf(
-                                    Pair(
-                                        "Preview", widgetsController.currentSettings.postsColumnsModel.previewProperty
-                                    ),
-                                    Pair(
-                                        "Title", widgetsController.currentSettings.postsColumnsModel.titleProperty
-                                    ),
-                                    Pair(
-                                        "Progress", widgetsController.currentSettings.postsColumnsModel.progressProperty
-                                    ),
-                                    Pair(
-                                        "Status", widgetsController.currentSettings.postsColumnsModel.statusProperty
-                                    ),
-                                    Pair(
-                                        "Path", widgetsController.currentSettings.postsColumnsModel.pathProperty
-                                    ),
-                                    Pair(
-                                        "Total", widgetsController.currentSettings.postsColumnsModel.totalProperty
-                                    ),
-                                    Pair(
-                                        "Hosts", widgetsController.currentSettings.postsColumnsModel.hostsProperty
-                                    ),
-                                    Pair(
-                                        "Added On", widgetsController.currentSettings.postsColumnsModel.addedOnProperty
-                                    ),
-                                    Pair(
-                                        "Order", widgetsController.currentSettings.postsColumnsModel.orderProperty
-                                    ),
-                                )
-                            )
-                        ).openModal()
-                    }
                 })
                 column("Preview", PostModel::previewListProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.postsColumnsModel.previewProperty)
+                    isVisible = widgetsController.currentSettings.postsColumnsModel.previewProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.postsColumnsModel.previewProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.postsColumnsWidthModel.preview
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -225,7 +223,12 @@ class PostsTableView : View() {
                     }
                 }
                 column("Title", PostModel::titleProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.postsColumnsModel.titleProperty)
+                    isVisible = widgetsController.currentSettings.postsColumnsModel.titleProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.postsColumnsModel.titleProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.postsColumnsWidthModel.title
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -237,7 +240,12 @@ class PostsTableView : View() {
                     }
                 }
                 column("Progress", PostModel::progressProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.postsColumnsModel.progressProperty)
+                    isVisible = widgetsController.currentSettings.postsColumnsModel.progressProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.postsColumnsModel.progressProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.postsColumnsWidthModel.progress
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -284,7 +292,12 @@ class PostsTableView : View() {
                     }
                 }
                 column("Status", PostModel::statusProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.postsColumnsModel.statusProperty)
+                    isVisible = widgetsController.currentSettings.postsColumnsModel.statusProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.postsColumnsModel.statusProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.postsColumnsWidthModel.status
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -296,7 +309,8 @@ class PostsTableView : View() {
                     }
                 }
                 column("Path", PostModel::pathProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.postsColumnsModel.pathProperty)
+                    isVisible = widgetsController.currentSettings.postsColumnsModel.pathProperty.get()
+                    visibleProperty().onChange { widgetsController.currentSettings.postsColumnsModel.pathProperty.set(it) }
                     prefWidth = widgetsController.currentSettings.postsColumnsWidthModel.path
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -308,7 +322,12 @@ class PostsTableView : View() {
                     }
                 }
                 column("Total", PostModel::progressCountProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.postsColumnsModel.totalProperty)
+                    isVisible = widgetsController.currentSettings.postsColumnsModel.totalProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.postsColumnsModel.totalProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.postsColumnsWidthModel.total
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -320,7 +339,12 @@ class PostsTableView : View() {
                     }
                 }
                 column("Hosts", PostModel::hostsProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.postsColumnsModel.hostsProperty)
+                    isVisible = widgetsController.currentSettings.postsColumnsModel.hostsProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.postsColumnsModel.hostsProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.postsColumnsWidthModel.hosts
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -332,7 +356,12 @@ class PostsTableView : View() {
                     }
                 }
                 column("Added On", PostModel::addedOnProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.postsColumnsModel.addedOnProperty)
+                    isVisible = widgetsController.currentSettings.postsColumnsModel.addedOnProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.postsColumnsModel.addedOnProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.postsColumnsWidthModel.addedOn
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -344,7 +373,12 @@ class PostsTableView : View() {
                     }
                 }
                 column("Order", PostModel::orderProperty) {
-                    visibleProperty().bind(widgetsController.currentSettings.postsColumnsModel.orderProperty)
+                    isVisible = widgetsController.currentSettings.postsColumnsModel.orderProperty.get()
+                    visibleProperty().onChange {
+                        widgetsController.currentSettings.postsColumnsModel.orderProperty.set(
+                            it
+                        )
+                    }
                     prefWidth = widgetsController.currentSettings.postsColumnsWidthModel.order
                     coroutineScope.launch {
                         widthProperty().asFlow().debounce(200).collect {
@@ -362,6 +396,8 @@ class PostsTableView : View() {
         tableView.prefHeightProperty().bind(root.heightProperty())
         tableView.placeholder = Label("Loading")
     }
+
+    private fun isCurrentTab(): Boolean = mainView.root.selectionModel.selectedItem.id == "download-tab"
 
     private fun connect() {
         coroutineScope.launch {
@@ -382,7 +418,7 @@ class PostsTableView : View() {
                     tableView.sort()
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.posts.add(it) }
 
         coroutineScope.launch {
             postController.onUpdatePosts().collect { post ->
@@ -402,7 +438,7 @@ class PostsTableView : View() {
                     postModel.folderName = post.folderName
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.posts.add(it) }
 
         coroutineScope.launch {
             postController.onDeletePosts().collect {
@@ -411,7 +447,7 @@ class PostsTableView : View() {
                     tableView.sort()
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.posts.add(it) }
 
         coroutineScope.launch {
             postController.onUpdateMetadata().collect {
@@ -422,7 +458,7 @@ class PostsTableView : View() {
                     postModel.postedBy = it.data.postedBy
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.posts.add(it) }
     }
 
     private fun rename(post: PostModel) {

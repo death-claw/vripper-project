@@ -1,8 +1,10 @@
 package me.vripper.entities
 
-import me.vripper.entities.domain.Status
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
 
+@Serializable
 data class PostEntity(
     val id: Long = -1,
     val postTitle: String,
@@ -15,7 +17,7 @@ data class PostEntity(
     val total: Int,
     val hosts: Set<String>,
     val downloadDirectory: String,
-    val addedOn: LocalDateTime = LocalDateTime.now(),
+    @Contextual val addedOn: LocalDateTime = LocalDateTime.now(),
     var folderName: String,
     var status: Status = Status.STOPPED,
     var done: Int = 0,

@@ -1,3 +1,11 @@
+import { DataSource, SelectionModel } from '@angular/cdk/collections';
+import {
+  Overlay,
+  OverlayModule,
+  OverlayPositionBuilder,
+} from '@angular/cdk/overlay';
+import { ComponentPortal, PortalModule } from '@angular/cdk/portal';
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,41 +14,32 @@ import {
   Output,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { BehaviorSubject, Observable, Subscription, take } from 'rxjs';
-import { ApplicationEndpointService } from '../services/application-endpoint.service';
-import { Thread } from '../domain/thread.model';
-import { ComponentPortal, PortalModule } from '@angular/cdk/portal';
-import {
-  Overlay,
-  OverlayModule,
-  OverlayPositionBuilder,
-} from '@angular/cdk/overlay';
-import { ThreadContextmenuComponent } from '../thread-contextmenu/thread-contextmenu.component';
-import {
-  ThreadDialogData,
-  ThreadSelectionComponent,
-} from '../thread-selection/thread-selection.component';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import {
   MatDialog,
   MatDialogModule,
   MatDialogRef,
 } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTableModule } from '@angular/material/table';
+import { BehaviorSubject, Observable, Subscription, take } from 'rxjs';
 import {
   ConfirmComponent,
   ConfirmDialogData,
 } from '../confirm/confirm.component';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatTableModule } from '@angular/material/table';
-import { DataSource, SelectionModel } from '@angular/cdk/collections';
-import { isDisplayed } from '../utils/utils';
 import { ThreadRow } from '../domain/thread-row.model';
+import { Thread } from '../domain/thread.model';
+import { ApplicationEndpointService } from '../services/application-endpoint.service';
+import { ThreadContextmenuComponent } from '../thread-contextmenu/thread-contextmenu.component';
+import {
+  ThreadDialogData,
+  ThreadSelectionComponent,
+} from '../thread-selection/thread-selection.component';
+import { isDisplayed } from '../utils/utils';
 
 @Component({
   selector: 'app-thread-table',
-  standalone: true,
   imports: [
     CommonModule,
     OverlayModule,
@@ -52,8 +51,8 @@ import { ThreadRow } from '../domain/thread-row.model';
     MatTableModule,
   ],
   templateUrl: './thread-table.component.html',
-  styleUrls: ['./thread-table.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
 })
 export class ThreadTableComponent {
   dataSource = new ThreadDataSource(this.applicationEndpoint);
@@ -77,7 +76,7 @@ export class ThreadTableComponent {
     private overlay: Overlay,
     private dialog: MatDialog
   ) {
-    this.dataSource._dataStream.subscribe(v =>
+    this.dataSource._dataStream.subscribe((v) =>
       this.rowCountChange.emit(v.length)
     );
     this.selection.changed.subscribe(() =>
@@ -177,7 +176,6 @@ export class ThreadTableComponent {
       .outsidePointerEvents()
       .pipe(take(1))
       .subscribe(() => {
-        console.log('click away');
         threadContextMenuOverlayRef?.detach();
         threadContextMenuOverlayRef?.dispose();
         ref.destroy();
@@ -234,9 +232,9 @@ class ThreadDataSource extends DataSource<Thread> {
   connect(): Observable<Thread[]> {
     this.subscriptions.push(
       this.applicationEndpoint.threads$.subscribe((newThreads: Thread[]) => {
-        newThreads.forEach(thread => {
+        newThreads.forEach((thread) => {
           const rowNode = this._dataStream.value.find(
-            d => d.link === thread.link
+            (d) => d.link === thread.link
           );
           if (rowNode == null) {
             this._dataStream.next([
@@ -255,11 +253,9 @@ class ThreadDataSource extends DataSource<Thread> {
       })
     );
     this.subscriptions.push(
-      this.applicationEndpoint.threadRemove$.subscribe((e: string[]) => {
+      this.applicationEndpoint.threadRemove$.subscribe((e: number) => {
         this._dataStream.next([
-          ...this._dataStream.value.filter(
-            v => e.find(d => d === v.link) == null
-          ),
+          ...this._dataStream.value.filter((v) => v.threadId !== e),
         ]);
       })
     );
@@ -272,6 +268,6 @@ class ThreadDataSource extends DataSource<Thread> {
   }
 
   disconnect(): void {
-    this.subscriptions.forEach(e => e.unsubscribe());
+    this.subscriptions.forEach((e) => e.unsubscribe());
   }
 }

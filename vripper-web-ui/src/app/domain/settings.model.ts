@@ -17,7 +17,7 @@ export interface DownloadSettings {
   autoStart: boolean;
   autoQueueThreshold: number;
   forceOrder: boolean;
-  forumSubfolder: boolean;
+  forumSubDirectory: boolean;
   threadSubLocation: boolean;
   clearCompleted: boolean;
   appendPostId: boolean;
@@ -28,11 +28,12 @@ export interface ViperSettings {
   username: string;
   password: string;
   thanks: boolean;
-  proxy: string;
+  host: string;
 }
 
 export interface SystemSettings {
   tempPath: string;
-  cachePath: string;
   maxEventLog: number;
+  enableClipboardMonitoring: boolean;
+  clipboardPollingRate: number;
 }

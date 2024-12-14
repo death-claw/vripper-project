@@ -17,7 +17,7 @@ import org.apache.hc.core5.pool.PoolReusePolicy
 import org.apache.hc.core5.util.TimeValue
 import org.apache.hc.core5.util.Timeout
 
-class HTTPService(
+internal class HTTPService(
     private val eventBus: EventBus,
     settingsService: SettingsService
 ) {

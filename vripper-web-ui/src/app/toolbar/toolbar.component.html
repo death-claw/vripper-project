@@ -6,17 +6,20 @@
           display: flex;
           justify-content: space-between;
           align-items: center;
-        ">
+        "
+      >
         <button
           mat-icon-button
           matTooltip="Add links"
-          (click)="openScanDialog()">
+          (click)="openScanDialog()"
+        >
           <mat-icon>add</mat-icon>
         </button>
-        <ng-container *ngIf="selectedTab === 0">
+        <ng-container *ngIf="selectedTab() === 0">
           <mat-divider
             [vertical]="true"
-            style="height: 20px; flex-grow: 0"></mat-divider>
+            style="height: 20px; flex-grow: 0"
+          ></mat-divider>
           <button (click)="startClick()" mat-icon-button matTooltip="Start">
             <mat-icon>skip_next</mat-icon>
           </button>
@@ -25,62 +28,71 @@
           </button>
           <mat-divider
             [vertical]="true"
-            style="height: 20px; flex-grow: 0"></mat-divider>
+            style="height: 20px; flex-grow: 0"
+          ></mat-divider>
           <ng-container *ngIf="handsetPortrait$ | async as handsetPortrait">
             @if (!handsetPortrait.matches) {
             <button
               [disabled]="disableSelected()"
               (click)="startSelectedClick()"
               mat-icon-button
-              matTooltip="Start selected">
+              matTooltip="Start selected"
+            >
               <mat-icon>play_arrow</mat-icon>
             </button>
             <button
               [disabled]="disableSelected()"
               (click)="stopSelectedClick()"
               mat-icon-button
-              matTooltip="Stop selected">
+              matTooltip="Stop selected"
+            >
               <mat-icon>pause</mat-icon>
             </button>
             <button
-              [disabled]='disableSelected()'
-              (click)='renameSelectedClick()'
+              [disabled]="disableSelected()"
+              (click)="renameSelectedClick()"
               mat-icon-button
-              matTooltip='Rename selected'>
+              matTooltip="Rename selected"
+            >
               <mat-icon>edit</mat-icon>
             </button>
-              <button
+            <button
               [disabled]="disableSelected()"
               (click)="removeSelectedClick()"
               mat-icon-button
-              matTooltip="Remove selected">
+              matTooltip="Remove selected"
+            >
               <mat-icon>delete</mat-icon>
             </button>
             }
           </ng-container>
           <mat-divider
             [vertical]="true"
-            style="height: 20px; flex-grow: 0"></mat-divider>
+            style="height: 20px; flex-grow: 0"
+          ></mat-divider>
           <button
             (click)="clearDownloadsClick()"
             mat-icon-button
-            matTooltip="Clear completed">
+            matTooltip="Clear completed"
+          >
             <mat-icon>delete_sweep</mat-icon>
           </button>
         </ng-container>
-        <ng-container *ngIf="selectedTab === 1">
+        <ng-container *ngIf="selectedTab() === 1">
           <button
             (click)="clearThreadsClick()"
             mat-icon-button
-            matTooltip="Remove all">
+            matTooltip="Remove all"
+          >
             <mat-icon>delete_sweep</mat-icon>
           </button>
         </ng-container>
-        <ng-container *ngIf="selectedTab === 2">
+        <ng-container *ngIf="selectedTab() === 2">
           <button
             (click)="clearLogsClick()"
             mat-icon-button
-            matTooltip="Clear all">
+            matTooltip="Clear all"
+          >
             <mat-icon>delete_sweep</mat-icon>
           </button>
         </ng-container>

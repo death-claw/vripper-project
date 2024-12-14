@@ -8,7 +8,6 @@ import javafx.scene.input.KeyCodeCombination
 import javafx.scene.input.KeyCombination
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.catch
-import me.vripper.delegate.LoggerDelegate
 import me.vripper.gui.VripperGuiApplication
 import me.vripper.gui.components.fragments.AboutFragment
 import me.vripper.gui.components.fragments.AddLinksFragment
@@ -17,11 +16,11 @@ import me.vripper.gui.components.fragments.SettingsFragment
 import me.vripper.gui.controller.PostController
 import me.vripper.gui.controller.WidgetsController
 import me.vripper.gui.event.GuiEventBus
-import me.vripper.gui.services.GrpcEndpointService
+import me.vripper.gui.utils.ActiveUICoroutines
 import me.vripper.gui.utils.openLink
-import me.vripper.services.AppEndpointService
 import me.vripper.services.IAppEndpointService
 import me.vripper.utilities.ApplicationProperties
+import me.vripper.utilities.LoggerDelegate
 import org.kordamp.ikonli.feather.Feather
 import org.kordamp.ikonli.javafx.FontIcon
 import tornadofx.*
@@ -33,10 +32,10 @@ class MenuBarView : View() {
     private val postsTableView: PostsTableView by inject()
     private val widgetsController: WidgetsController by inject()
     private val postController: PostController by inject()
-    private val grpcEndpointService: GrpcEndpointService by di("remoteAppEndpointService")
-    private val localEndpointService: AppEndpointService by di("localAppEndpointService")
+    private val grpcEndpointService: IAppEndpointService by di("remoteAppEndpointService")
+    private val localEndpointService: IAppEndpointService by di("localAppEndpointService")
+    private lateinit var appEndpointService: IAppEndpointService
     private val running = SimpleIntegerProperty(0)
-    private val jobs = mutableListOf<Job>()
 
     override val root = menubar {}
 
@@ -45,16 +44,18 @@ class MenuBarView : View() {
             GuiEventBus.events.collect { event ->
                 when (event) {
                     is GuiEventBus.LocalSession -> {
+                        appEndpointService = localEndpointService
                         connect(localEndpointService)
                     }
 
                     is GuiEventBus.RemoteSession -> {
+                        appEndpointService = grpcEndpointService
                         connect(grpcEndpointService)
                     }
 
                     is GuiEventBus.ChangingSession -> {
-                        jobs.forEach { it.cancel() }
-                        jobs.clear()
+                        ActiveUICoroutines.menuBar.forEach { it.cancelAndJoin() }
+                        ActiveUICoroutines.menuBar.clear()
                     }
                 }
             }
@@ -88,55 +89,6 @@ class MenuBarView : View() {
                         }
                     }
                 }
-                separator()
-                item(
-                    "Start", KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN)
-                ).apply {
-                    graphic = FontIcon.of(Feather.PLAY)
-                    enableWhen(
-                        postsTableView.tableView.selectionModel.selectedItems.sizeProperty.greaterThan(
-                            0
-                        )
-                    )
-                    action {
-                        postsTableView.startSelected()
-                    }
-                }
-                item(
-                    "Stop", KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN)
-                ).apply {
-                    graphic = FontIcon.of(Feather.SQUARE)
-                    enableWhen(
-                        postsTableView.tableView.selectionModel.selectedItems.sizeProperty.greaterThan(
-                            0
-                        )
-                    )
-                    action {
-                        postsTableView.stopSelected()
-                    }
-                }
-                item("Rename", KeyCodeCombination(KeyCode.R, KeyCombination.CONTROL_DOWN)).apply {
-                    graphic = FontIcon.of(Feather.EDIT)
-                    enableWhen(
-                        postsTableView.tableView.selectionModel.selectedItems.sizeProperty.greaterThan(
-                            0
-                        )
-                    )
-                    action {
-                        postsTableView.renameSelected()
-                    }
-                }
-                item("Delete", KeyCodeCombination(KeyCode.DELETE)).apply {
-                    graphic = FontIcon.of(Feather.TRASH)
-                    enableWhen(
-                        postsTableView.tableView.selectionModel.selectedItems.sizeProperty.greaterThan(
-                            0
-                        )
-                    )
-                    action {
-                        postsTableView.deleteSelected()
-                    }
-                }
                 item("Clear", KeyCodeCombination(KeyCode.DELETE, KeyCombination.CONTROL_DOWN)).apply {
                     graphic = FontIcon.of(Feather.TRASH_2)
                     action {
@@ -158,20 +110,17 @@ class MenuBarView : View() {
                     }
                 }
                 separator()
-                item("Settings", KeyCodeCombination(KeyCode.S)).apply {
+                item("Settings", KeyCodeCombination(KeyCode.P, KeyCombination.CONTROL_DOWN)).apply {
                     graphic = FontIcon.of(Feather.SETTINGS)
                     action {
-                        find<SettingsFragment>().openModal(owner = primaryStage)?.apply {
-                            minWidth = 700.0
-                            minHeight = 400.0
-                        }
+                        find<SettingsFragment>().openModal(owner = primaryStage)
                     }
                 }
                 separator()
-                item("Change session", KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN)) {
+                item("Change session", KeyCodeCombination(KeyCode.S, KeyCombination.SHIFT_DOWN)) {
                     graphic = FontIcon.of(Feather.LINK_2)
                     action {
-                        find<SessionFragment>(mapOf(SessionFragment::component to find<AppView>())).openModal()
+                        find<SessionFragment>().openModal()
                     }
                 }
                 separator()
@@ -197,6 +146,33 @@ class MenuBarView : View() {
                 ).bind(widgetsController.currentSettings.darkModeProperty)
             }
             menu("Help") {
+                item("Database migration").apply {
+                    graphic = FontIcon.of(Feather.DATABASE)
+                    action {
+                        confirm(
+                            "",
+                            "Do you want to import your data from the previous 5.x version?",
+                            ButtonType.YES,
+                            ButtonType.NO,
+                            owner = primaryStage,
+                            title = "Database Migration"
+                        ) {
+                            coroutineScope.launch {
+                                val message = appEndpointService.dbMigration()
+                                runLater {
+                                    information(
+                                        header = "",
+                                        content = message,
+                                        title = "Database migration",
+                                        owner = primaryStage,
+                                    )
+                                }
+                            }
+                        }
+
+                    }
+                }
+                separator()
                 item("Check for updates").apply {
                     graphic = FontIcon.of(Feather.REFRESH_CCW)
                     action {
@@ -250,6 +226,6 @@ class MenuBarView : View() {
                     running.set(it.running)
                 }
             }
-        }.also { jobs.add(it) }
+        }.also { ActiveUICoroutines.menuBar.add(it) }
     }
 }

@@ -4,16 +4,17 @@ import me.vripper.download.ImageDownloadContext
 import me.vripper.exception.HostException
 import me.vripper.exception.XpathException
 import me.vripper.services.*
+import me.vripper.utilities.LoggerDelegate
 import me.vripper.utilities.XpathUtils
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 
-class PixhostHost(
+internal class PixhostHost(
     httpService: HTTPService,
     dataTransaction: DataTransaction,
     downloadSpeedService: DownloadSpeedService,
 ) : Host("pixhost.to", 10, httpService, dataTransaction, downloadSpeedService) {
-    private val log by me.vripper.delegate.LoggerDelegate()
+    private val log by LoggerDelegate()
 
     @Throws(HostException::class)
     override fun resolve(

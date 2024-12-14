@@ -1,157 +1,15 @@
 package me.vripper.gui.controller
 
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import me.vripper.gui.model.WidgetsViewModel
-import me.vripper.utilities.ApplicationProperties
+import me.vripper.gui.utils.WidgetSettings
+import me.vripper.gui.utils.WidgetSettings.loadSettings
 import tornadofx.Controller
 import tornadofx.onChange
-import java.nio.file.Files
-
-private val WIDGETS_CONFIG_PATH = ApplicationProperties.VRIPPER_DIR.resolve("widgets-config.json")
 
 class WidgetsController : Controller() {
 
-    private val json = Json {
-        prettyPrint = true
-        allowSpecialFloatingPointValues = true
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-    }
-
-    @Serializable
-    data class ThreadSelectionTableColumns(
-        val preview: Boolean = true,
-        val index: Boolean = true,
-        val title: Boolean = true,
-        val link: Boolean = true,
-        val hosts: Boolean = true,
-    )
-
-    @Serializable
-    data class ThreadSelectionTableColumnsWidth(
-        val preview: Double = 100.0,
-        val index: Double = 100.0,
-        val title: Double = 200.0,
-        val link: Double = 200.0,
-        val hosts: Double = 100.0,
-    )
-
-    @Serializable
-    data class LogsTableColumns(
-        val time: Boolean = true,
-        val type: Boolean = true,
-        val status: Boolean = true,
-        val message: Boolean = true,
-    )
-
-    @Serializable
-    data class LogsTableColumnsWidth(
-        val time: Double = 150.0,
-        val type: Double = 200.0,
-        val status: Double = 200.0,
-        val message: Double = 300.0,
-    )
-
-    @Serializable
-    data class ThreadsTableColumns(
-        val title: Boolean = true,
-        val link: Boolean = true,
-        val count: Boolean = true,
-    )
-
-    @Serializable
-    data class ThreadsTableColumnsWidth(
-        val title: Double = 350.0,
-        val link: Double = 350.0,
-        val count: Double = 100.0,
-    )
-
-    @Serializable
-    data class PostsTableColumns(
-        val preview: Boolean = true,
-        val title: Boolean = true,
-        val progress: Boolean = true,
-        val status: Boolean = true,
-        val path: Boolean = true,
-        val total: Boolean = true,
-        val hosts: Boolean = true,
-        val addedOn: Boolean = true,
-        val order: Boolean = true,
-    )
-
-    @Serializable
-    data class PostsTableColumnsWidth(
-        val preview: Double = 100.0,
-        val title: Double = 250.0,
-        val progress: Double = 100.0,
-        val status: Double = 100.0,
-        val path: Double = 250.0,
-        val total: Double = 150.0,
-        val hosts: Double = 100.0,
-        val addedOn: Double = 125.0,
-        val order: Double = 100.0,
-    )
-
-    @Serializable
-    data class ImagesTableColumns(
-        val preview: Boolean = true,
-        val index: Boolean = true,
-        val link: Boolean = true,
-        val progress: Boolean = true,
-        val filename: Boolean = true,
-        val status: Boolean = true,
-        val size: Boolean = true,
-        val downloaded: Boolean = true,
-    )
-
-    @Serializable
-    data class ImagesTableColumnsWidth(
-        val preview: Double = 100.0,
-        val index: Double = 100.0,
-        val link: Double = 200.0,
-        val progress: Double = 100.0,
-        val filename: Double = 150.0,
-        val status: Double = 100.0,
-        val size: Double = 75.0,
-        val downloaded: Double = 125.0,
-    )
-
-    @Serializable
-    data class RemoteSession(
-        val host: String = "",
-        val port: Int = 30000,
-    )
-
-    @Serializable
-    data class WidgetsSettings(
-        val firstRun: Boolean = true,
-        val localSession: Boolean = true,
-        val visibleInfoPanel: Boolean = true,
-        val visibleToolbarPanel: Boolean = true,
-        val visibleStatusBarPanel: Boolean = true,
-        val darkMode: Boolean = false,
-        val infoPanelDividerPosition: Double = 0.7,
-        val width: Double = 1366.0,
-        val height: Double = 768.0,
-        val cachePath: String = System.getProperty("java.io.tmpdir"),
-        val postsTableColumns: PostsTableColumns = PostsTableColumns(),
-        val imagesTableColumns: ImagesTableColumns = ImagesTableColumns(),
-        val threadsTableColumns: ThreadsTableColumns = ThreadsTableColumns(),
-        val logsTableColumns: LogsTableColumns = LogsTableColumns(),
-        val threadSelectionColumns: ThreadSelectionTableColumns = ThreadSelectionTableColumns(),
-        val remoteSession: RemoteSession = RemoteSession(),
-        val postsTableColumnsWidth: PostsTableColumnsWidth = PostsTableColumnsWidth(),
-        val imagesTableColumnsWidth: ImagesTableColumnsWidth = ImagesTableColumnsWidth(),
-        val threadsTableColumnsWidth: ThreadsTableColumnsWidth = ThreadsTableColumnsWidth(),
-        val threadSelectionColumnsWidth: ThreadSelectionTableColumnsWidth = ThreadSelectionTableColumnsWidth(),
-        val logsTableColumnsWidth: LogsTableColumnsWidth = LogsTableColumnsWidth(),
-    )
-
     var currentSettings: WidgetsViewModel = loadSettings().let {
         WidgetsViewModel(
-            it.firstRun,
             it.localSession,
             it.visibleInfoPanel,
             it.visibleToolbarPanel,
@@ -176,342 +34,209 @@ class WidgetsController : Controller() {
     }
 
     init {
-        currentSettings.firstRunProperty.onChange {
-            update()
-        }
         currentSettings.localSessionProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.visibleInfoPanelProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.visibleToolbarPanelProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.visibleStatusBarPanelProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.darkModeProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsModel.previewProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsModel.progressProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsModel.addedOnProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsModel.hostsProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsModel.orderProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsModel.pathProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsModel.statusProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsModel.titleProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsModel.totalProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsWidthModel.previewProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsWidthModel.progressProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsWidthModel.addedOnProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsWidthModel.hostsProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsWidthModel.orderProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsWidthModel.pathProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsWidthModel.statusProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsWidthModel.titleProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.postsColumnsWidthModel.totalProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsModel.previewProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsModel.indexProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsModel.linkProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsModel.progressProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsModel.filenameProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsModel.statusProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsModel.sizeProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsModel.downloadedProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsWidthModel.previewProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsWidthModel.indexProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsWidthModel.linkProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsWidthModel.progressProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsWidthModel.filenameProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsWidthModel.statusProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsWidthModel.sizeProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.imagesColumnsWidthModel.downloadedProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadsColumnsModel.titleProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadsColumnsModel.linkProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadsColumnsModel.countProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadsColumnsWidthModel.titleProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadsColumnsWidthModel.linkProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadsColumnsWidthModel.countProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadSelectionColumnsModel.previewProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadSelectionColumnsModel.indexProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadSelectionColumnsModel.titleProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadSelectionColumnsModel.linkProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadSelectionColumnsModel.hostsProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadSelectionColumnsWidthModel.previewProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadSelectionColumnsWidthModel.indexProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadSelectionColumnsWidthModel.titleProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadSelectionColumnsWidthModel.linkProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.threadSelectionColumnsWidthModel.hostsProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.logsColumnsModel.timeProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
-        currentSettings.logsColumnsModel.typeProperty.onChange {
-            update()
+        currentSettings.logsColumnsModel.threadNameProperty.onChange {
+            WidgetSettings.update(currentSettings)
         }
-        currentSettings.logsColumnsModel.statusProperty.onChange {
-            update()
+        currentSettings.logsColumnsModel.loggerNameProperty.onChange {
+            WidgetSettings.update(currentSettings)
+        }
+        currentSettings.logsColumnsModel.levelStringProperty.onChange {
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.logsColumnsModel.messageProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.logsColumnsWidthModel.timeProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
-        currentSettings.logsColumnsWidthModel.typeProperty.onChange {
-            update()
+        currentSettings.logsColumnsWidthModel.threadNameProperty.onChange {
+            WidgetSettings.update(currentSettings)
         }
-        currentSettings.logsColumnsWidthModel.statusProperty.onChange {
-            update()
+        currentSettings.logsColumnsWidthModel.loggerNameProperty.onChange {
+            WidgetSettings.update(currentSettings)
+        }
+        currentSettings.logsColumnsWidthModel.levelStringProperty.onChange {
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.logsColumnsWidthModel.messageProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.remoteSessionModel.hostProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.remoteSessionModel.portProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
         currentSettings.cachePathProperty.onChange {
-            update()
+            WidgetSettings.update(currentSettings)
         }
-    }
-
-    private fun loadSettings(): WidgetsSettings {
-        if (!Files.exists(WIDGETS_CONFIG_PATH)) {
-            val widgetsSettings = WidgetsSettings()
-            currentSettings = WidgetsViewModel(
-                widgetsSettings.firstRun,
-                widgetsSettings.localSession,
-                widgetsSettings.visibleInfoPanel,
-                widgetsSettings.visibleToolbarPanel,
-                widgetsSettings.visibleStatusBarPanel,
-                widgetsSettings.darkMode,
-                widgetsSettings.infoPanelDividerPosition,
-                widgetsSettings.width,
-                widgetsSettings.height,
-                widgetsSettings.cachePath,
-                widgetsSettings.postsTableColumns,
-                widgetsSettings.imagesTableColumns,
-                widgetsSettings.threadsTableColumns,
-                widgetsSettings.logsTableColumns,
-                widgetsSettings.threadSelectionColumns,
-                widgetsSettings.remoteSession,
-                widgetsSettings.postsTableColumnsWidth,
-                widgetsSettings.imagesTableColumnsWidth,
-                widgetsSettings.threadsTableColumnsWidth,
-                widgetsSettings.threadSelectionColumnsWidth,
-                widgetsSettings.logsTableColumnsWidth
-            )
-            synchronized(this) {
-                update()
-            }
-        }
-        return (json.decodeFromString(Files.readString(WIDGETS_CONFIG_PATH)) as WidgetsSettings)
-
-    }
-
-    @Synchronized
-    fun update() {
-        Files.writeString(
-            WIDGETS_CONFIG_PATH, json.encodeToString(
-                WidgetsSettings(
-                    currentSettings.firstRun,
-                    currentSettings.localSession,
-                    currentSettings.visibleInfoPanel,
-                    currentSettings.visibleToolbarPanel,
-                    currentSettings.visibleStatusBarPanel,
-                    currentSettings.darkMode,
-                    currentSettings.infoPanelDividerPosition,
-                    currentSettings.width,
-                    currentSettings.height,
-                    currentSettings.cachePath,
-                    PostsTableColumns(
-                        currentSettings.postsColumnsModel.preview,
-                        currentSettings.postsColumnsModel.title,
-                        currentSettings.postsColumnsModel.progress,
-                        currentSettings.postsColumnsModel.status,
-                        currentSettings.postsColumnsModel.path,
-                        currentSettings.postsColumnsModel.total,
-                        currentSettings.postsColumnsModel.hosts,
-                        currentSettings.postsColumnsModel.addedOn,
-                        currentSettings.postsColumnsModel.order,
-                    ),
-                    ImagesTableColumns(
-                        currentSettings.imagesColumnsModel.preview,
-                        currentSettings.imagesColumnsModel.index,
-                        currentSettings.imagesColumnsModel.link,
-                        currentSettings.imagesColumnsModel.progress,
-                        currentSettings.imagesColumnsModel.filename,
-                        currentSettings.imagesColumnsModel.status,
-                        currentSettings.imagesColumnsModel.size,
-                        currentSettings.imagesColumnsModel.downloaded,
-                    ),
-                    ThreadsTableColumns(
-                        currentSettings.threadsColumnsModel.title,
-                        currentSettings.threadsColumnsModel.link,
-                        currentSettings.threadsColumnsModel.count,
-                    ),
-                    LogsTableColumns(
-                        currentSettings.logsColumnsModel.time,
-                        currentSettings.logsColumnsModel.type,
-                        currentSettings.logsColumnsModel.status,
-                        currentSettings.logsColumnsModel.message,
-                    ),
-                    ThreadSelectionTableColumns(
-                        currentSettings.threadSelectionColumnsModel.preview,
-                        currentSettings.threadSelectionColumnsModel.index,
-                        currentSettings.threadSelectionColumnsModel.title,
-                        currentSettings.threadSelectionColumnsModel.link,
-                        currentSettings.threadSelectionColumnsModel.hosts,
-                    ),
-                    RemoteSession(
-                        currentSettings.remoteSessionModel.host,
-                        currentSettings.remoteSessionModel.port
-                    ),
-                    PostsTableColumnsWidth(
-                        currentSettings.postsColumnsWidthModel.preview,
-                        currentSettings.postsColumnsWidthModel.title,
-                        currentSettings.postsColumnsWidthModel.progress,
-                        currentSettings.postsColumnsWidthModel.status,
-                        currentSettings.postsColumnsWidthModel.path,
-                        currentSettings.postsColumnsWidthModel.total,
-                        currentSettings.postsColumnsWidthModel.hosts,
-                        currentSettings.postsColumnsWidthModel.addedOn,
-                        currentSettings.postsColumnsWidthModel.order,
-                    ),
-                    ImagesTableColumnsWidth(
-                        currentSettings.imagesColumnsWidthModel.preview,
-                        currentSettings.imagesColumnsWidthModel.index,
-                        currentSettings.imagesColumnsWidthModel.link,
-                        currentSettings.imagesColumnsWidthModel.progress,
-                        currentSettings.imagesColumnsWidthModel.filename,
-                        currentSettings.imagesColumnsWidthModel.status,
-                        currentSettings.imagesColumnsWidthModel.size,
-                        currentSettings.imagesColumnsWidthModel.downloaded,
-                    ),
-                    ThreadsTableColumnsWidth(
-                        currentSettings.threadsColumnsWidthModel.title,
-                        currentSettings.threadsColumnsWidthModel.link,
-                        currentSettings.threadsColumnsWidthModel.count,
-                    ),
-                    ThreadSelectionTableColumnsWidth(
-                        currentSettings.threadSelectionColumnsWidthModel.preview,
-                        currentSettings.threadSelectionColumnsWidthModel.index,
-                        currentSettings.threadSelectionColumnsWidthModel.title,
-                        currentSettings.threadSelectionColumnsWidthModel.link,
-                        currentSettings.threadSelectionColumnsWidthModel.hosts,
-                    ),
-                    LogsTableColumnsWidth(
-                        currentSettings.logsColumnsWidthModel.time,
-                        currentSettings.logsColumnsWidthModel.type,
-                        currentSettings.logsColumnsWidthModel.status,
-                        currentSettings.logsColumnsWidthModel.message,
-                    ),
-                )
-            )
-        )
     }
 }

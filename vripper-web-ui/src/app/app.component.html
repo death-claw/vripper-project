@@ -1,6 +1,6 @@
 <ng-container *ngIf="!loading(); else loadingTemplate">
   <app-toolbar
-    [disableSelected]="noPostSelected"
+    [disableSelected]="noPostSelected()"
     [selectedTab]="tabIndex()"
     (links)="onLinks($event)"
     (settings)="onSettings()"

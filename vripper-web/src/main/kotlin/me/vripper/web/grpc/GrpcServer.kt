@@ -2,7 +2,7 @@ package me.vripper.web.grpc
 
 import io.grpc.Server
 import io.grpc.ServerBuilder
-import me.vripper.delegate.LoggerDelegate
+import me.vripper.utilities.LoggerDelegate
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import javax.annotation.PostConstruct
@@ -10,6 +10,7 @@ import javax.annotation.PostConstruct
 
 @Component
 class GrpcServer(
+    @Value("\${grpc.enabled}") private val enabled: Boolean,
     @Value("\${grpc.port}") private val port: Int,
     grpcServerAppEndpointService: GrpcServerAppEndpointService
 ) {
@@ -21,7 +22,11 @@ class GrpcServer(
 
     @PostConstruct
     fun start() {
-        log.info("Starting gRPC server on port $port")
-        server.start()
+        if (enabled) {
+            log.info("gRPC is enabled, starting gRPC server on port $port")
+            server.start()
+        } else {
+            log.info("gRPC is disabled, remote connection to this instance is not possible")
+        }
     }
 }

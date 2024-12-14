@@ -1,24 +1,21 @@
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { CommonModule, NgIf } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
-  Input,
-  Output,
-  Signal,
+  input,
+  output,
 } from '@angular/core';
-import { CommonModule, NgIf } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ScanComponent } from '../scan/scan.component';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatDividerModule } from '@angular/material/divider';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 
 @Component({
   selector: 'app-toolbar',
-  standalone: true,
   imports: [
     CommonModule,
     MatButtonModule,
@@ -30,48 +27,23 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
     MatDividerModule,
   ],
   templateUrl: './toolbar.component.html',
-  styleUrls: ['./toolbar.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
 })
 export class ToolbarComponent {
-  @Input({ required: true })
-  selectedTab!: number;
-
-  @Output()
-  links = new EventEmitter<string>();
-
-  @Output()
-  startSelected = new EventEmitter<void>();
-
-  @Output()
-  stopSelected = new EventEmitter<void>();
-
-  @Output()
-  deleteSelected = new EventEmitter<void>();
-
-  @Output()
-  renameSelected = new EventEmitter<void>();
-
-  @Output()
-  clearDownload = new EventEmitter<void>();
-
-  @Output()
-  clearLogs = new EventEmitter<void>();
-
-  @Output()
-  clearThreads = new EventEmitter<void>();
-
-  @Output()
-  startDownload = new EventEmitter<void>();
-
-  @Output()
-  stopDownload = new EventEmitter<void>();
-
-  @Output()
-  settings = new EventEmitter<void>();
-
-  @Input({ required: true })
-  disableSelected!: Signal<boolean>;
+  selectedTab = input.required();
+  links = output<string>();
+  startSelected = output<void>();
+  stopSelected = output<void>();
+  deleteSelected = output<void>();
+  renameSelected = output<void>();
+  clearDownload = output<void>();
+  clearLogs = output<void>();
+  clearThreads = output<void>();
+  startDownload = output<void>();
+  stopDownload = output<void>();
+  settings = output<void>();
+  disableSelected = input.required();
 
   handsetPortrait$ = this.breakpointObserver.observe(
     Breakpoints.HandsetPortrait
@@ -89,9 +61,9 @@ export class ToolbarComponent {
         maxHeight: '100vh',
       })
       .afterClosed()
-      .subscribe(v => {
+      .subscribe((v) => {
         if (v) {
-          this.links.next(v);
+          this.links.emit(v);
         }
       });
   }
@@ -113,19 +85,19 @@ export class ToolbarComponent {
   }
 
   settingsClick() {
-    this.settings.next();
+    this.settings.emit();
   }
 
   removeSelectedClick() {
-    this.deleteSelected.next();
+    this.deleteSelected.emit();
   }
 
   renameSelectedClick() {
-    this.renameSelected.next();
+    this.renameSelected.emit();
   }
 
   clearDownloadsClick() {
-    this.clearDownload.next();
+    this.clearDownload.emit();
   }
 
   clearLogsClick() {
