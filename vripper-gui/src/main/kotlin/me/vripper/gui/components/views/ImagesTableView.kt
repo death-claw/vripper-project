@@ -273,7 +273,9 @@ class ImagesTableView : View("Photos") {
     fun setPostId(postId: Long?) {
         ActiveUICoroutines.images.forEach { it.cancel() }
         ActiveUICoroutines.images.clear()
-        items.clear()
+        runLater {
+            items.clear()
+        }
         if (postId == null) {
             return
         }

@@ -65,7 +65,7 @@ class ThreadTableView : View() {
                 isTableMenuButtonVisible = true
                 primaryStage.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
                     if (event.code == KeyCode.DELETE) {
-                        if (isCurrentTab() && selectionModel.selectedItems.isNotEmpty()) {
+                        if (isCurrentTab() && selectionModel.selectedItems.isNotEmpty() && this.isFocused) {
                             deleteSelected()
                         }
                     }

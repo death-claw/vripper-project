@@ -97,7 +97,7 @@ class PostsTableView : View() {
                 isTableMenuButtonVisible = true
                 primaryStage.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
                     if (event.code == KeyCode.DELETE) {
-                        if (isCurrentTab() && selectionModel.selectedItems.isNotEmpty()) {
+                        if (isCurrentTab() && selectionModel.selectedItems.isNotEmpty() && this.isFocused) {
                             deleteSelected()
                         }
                     }
@@ -414,7 +414,7 @@ class PostsTableView : View() {
         coroutineScope.launch {
             postController.onNewPosts().collect {
                 runLater {
-                    tableView.items.addAll(it)
+                    items.addAll(it)
                     tableView.sort()
                 }
             }
@@ -443,7 +443,7 @@ class PostsTableView : View() {
         coroutineScope.launch {
             postController.onDeletePosts().collect {
                 runLater {
-                    items.removeIf { p -> p.postId == it }
+                    items.items.removeIf { p -> p.postId == it }
                     tableView.sort()
                 }
             }
@@ -500,7 +500,7 @@ class PostsTableView : View() {
             coroutineScope.launch {
                 postController.delete(postIdList)
                 runLater {
-                    tableView.items.removeIf { postIdList.contains(it.postId) }
+                    items.items.removeIf { postIdList.contains(it.postId) }
                 }
             }
         }
