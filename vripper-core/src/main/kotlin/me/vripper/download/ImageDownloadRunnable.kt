@@ -8,7 +8,7 @@ import me.vripper.host.DownloadedImage
 import me.vripper.host.Host
 import me.vripper.host.ImageMimeType
 import me.vripper.model.Settings
-import me.vripper.services.*
+import me.vripper.services.DataTransaction
 import me.vripper.utilities.LoggerDelegate
 import me.vripper.utilities.PathUtils.getExtension
 import me.vripper.utilities.PathUtils.getFileNameWithoutExtension
@@ -21,6 +21,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.*
+import kotlin.Throws
 import kotlin.io.path.Path
 import kotlin.io.path.pathString
 
@@ -127,6 +128,7 @@ internal class ImageDownloadRunnable(
             download()
         } finally {
             context.completed = true
+            context.cancelCoroutines()
         }
     }
 
@@ -143,6 +145,8 @@ internal class ImageDownloadRunnable(
 
     fun stop() {
         context.requests.forEach { it.abort() }
+        context.cancelCoroutines()
         context.stopped = true
+        dataTransaction.updateImage(context.imageEntity)
     }
 }

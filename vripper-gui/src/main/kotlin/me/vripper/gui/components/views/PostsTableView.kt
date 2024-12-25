@@ -178,7 +178,10 @@ class PostsTableView : View() {
                     action {
                         find<AddLinksFragment>().apply {
                             input.clear()
-                        }.openModal()
+                        }.openModal()?.apply {
+                            minWidth = 100.0
+                            minHeight = 100.0
+                        }
                     }
                 })
                 column("Preview", PostModel::previewListProperty) {
@@ -469,7 +472,8 @@ class PostsTableView : View() {
                 RenameFragment::altTitles to post.altTitles
             )
         ).openModal()?.apply {
-            minWidth = 450.0
+            minWidth = 100.0
+            minHeight = 100.0
         }
     }
 

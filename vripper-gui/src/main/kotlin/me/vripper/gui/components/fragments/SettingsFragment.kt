@@ -31,8 +31,9 @@ class SettingsFragment : Fragment("Settings") {
         tabpane {
             tabClosingPolicy = TabPane.TabClosingPolicy.UNAVAILABLE
             VBox.setVgrow(this, Priority.ALWAYS)
-            minWidth = 700.0
-            minHeight = 400.0
+            minWidth = 100.0
+            minHeight = 100.0
+            prefHeight = 400.0
             tab(downloadSettingsFragment.title) {
                 add(downloadSettingsFragment)
                 graphic = FontIcon.of(Feather.FOLDER)

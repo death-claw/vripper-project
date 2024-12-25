@@ -50,10 +50,7 @@ internal class VGAuthService(
             log.debug("Authentication option is disabled")
             context.cookieStore.clear()
             loggedUser = ""
-            coroutineScope.launch {
-                eventBus.publishEvent(VGUserLoginEvent(loggedUser))
-            }
-
+            eventBus.publishEvent(VGUserLoginEvent(loggedUser))
             return
         }
         val username = settings.viperSettings.username
@@ -62,11 +59,7 @@ internal class VGAuthService(
             log.error("Cannot authenticate with ViperGirls credentials, username or password is empty")
             context.cookieStore.clear()
             loggedUser = ""
-
-            coroutineScope.launch {
-                eventBus.publishEvent(VGUserLoginEvent(loggedUser))
-            }
-
+            eventBus.publishEvent(VGUserLoginEvent(loggedUser))
             return
         }
         val postAuth = HttpPost(settings.viperSettings.host + "/login.php?do=login").also {
@@ -103,11 +96,7 @@ internal class VGAuthService(
         } catch (e: Exception) {
             context.cookieStore.clear()
             loggedUser = ""
-
-            coroutineScope.launch {
-                eventBus.publishEvent(VGUserLoginEvent(loggedUser))
-            }
-
+            eventBus.publishEvent(VGUserLoginEvent(loggedUser))
             log.error(
                 "Failed to authenticate user with " + settings.viperSettings.host, e
             )
@@ -115,10 +104,7 @@ internal class VGAuthService(
         }
         authenticated = true
         loggedUser = username
-
-        coroutineScope.launch {
-            eventBus.publishEvent(VGUserLoginEvent(loggedUser))
-        }
+        eventBus.publishEvent(VGUserLoginEvent(loggedUser))
     }
 
     fun leaveThanks(postEntity: PostEntity) {

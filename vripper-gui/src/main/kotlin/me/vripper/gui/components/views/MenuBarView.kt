@@ -67,7 +67,10 @@ class MenuBarView : View() {
                     action {
                         find<AddLinksFragment>().apply {
                             input.clear()
-                        }.openModal()
+                        }.openModal()?.apply {
+                            minWidth = 100.0
+                            minHeight = 100.0
+                        }
                     }
                 }
                 separator()
@@ -113,14 +116,20 @@ class MenuBarView : View() {
                 item("Settings", KeyCodeCombination(KeyCode.P, KeyCombination.CONTROL_DOWN)).apply {
                     graphic = FontIcon.of(Feather.SETTINGS)
                     action {
-                        find<SettingsFragment>().openModal(owner = primaryStage)
+                        find<SettingsFragment>().openModal()?.apply {
+                            minWidth = 100.0
+                            minHeight = 100.0
+                        }
                     }
                 }
                 separator()
                 item("Change session", KeyCodeCombination(KeyCode.S, KeyCombination.SHIFT_DOWN)) {
                     graphic = FontIcon.of(Feather.LINK_2)
                     action {
-                        find<SessionFragment>().openModal()
+                        find<SessionFragment>().openModal()?.apply {
+                            minWidth = 100.0
+                            minHeight = 100.0
+                        }
                     }
                 }
                 separator()
@@ -206,8 +215,8 @@ class MenuBarView : View() {
                     graphic = FontIcon.of(Feather.INFO)
                     action {
                         find<AboutFragment>().openModal()?.apply {
-                            this.minWidth = 625.0
-                            this.minHeight = 200.0
+                            this.minWidth = 100.0
+                            this.minHeight = 100.0
                         }
                     }
                 }

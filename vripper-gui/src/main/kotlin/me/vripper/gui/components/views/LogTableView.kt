@@ -228,8 +228,8 @@ class LogTableView : View() {
 
     private fun openLog(item: LogModel) {
         find<LogMessageFragment>(mapOf(LogMessageFragment::logModel to item)).openModal()?.apply {
-            minWidth = 600.0
-            minHeight = 400.0
+            minWidth = 100.0
+            minHeight = 100.0
         }
     }
 }
