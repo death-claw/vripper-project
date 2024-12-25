@@ -1,5 +1,9 @@
 package me.vripper.host
 
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.runBlocking
 import me.vripper.download.ImageDownloadContext
 import me.vripper.exception.DownloadException
 import me.vripper.exception.HostException
@@ -15,10 +19,9 @@ import org.apache.hc.core5.http.ClassicHttpResponse
 import org.apache.hc.core5.http.Header
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.w3c.dom.Document
+import java.io.BufferedOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
-import java.time.Duration
-import java.time.LocalDateTime
 import kotlin.Throws
 
 internal abstract class Host(
@@ -100,7 +103,7 @@ internal abstract class Host(
             "vripper_",
             ".tmp"
         )
-        return Files.newOutputStream(tempImage).use { fos ->
+        return BufferedOutputStream(Files.newOutputStream(tempImage)).use { bos ->
             val image = context.imageEntity
             synchronized(image.postId.toString().intern()) {
                 val post = dataTransaction.findPostById(context.postId).orElseThrow()
@@ -124,19 +127,21 @@ internal abstract class Host(
             )
             val buffer = ByteArray(READ_BUFFER_SIZE)
             var read: Int
-            var lastImageUpdateDate = LocalDateTime.now()
-            while (response.entity.content.read(buffer, 0, READ_BUFFER_SIZE)
+            val reporterJob = context.launchCoroutine {
+                while (isActive) {
+                    dataTransaction.updateImage(image, false)
+                    delay(100)
+                }
+            }
+            while (response.entity.content.read(buffer)
                     .also { read = it } != -1 && !context.stopped
             ) {
-                fos.write(buffer, 0, read)
+                bos.write(buffer, 0, read)
                 image.downloaded += read
-                if (Duration.between(lastImageUpdateDate, LocalDateTime.now()).toMillis() > 1750) {
-                    dataTransaction.updateImage(image)
-                    lastImageUpdateDate = LocalDateTime.now()
-                } else {
-                    dataTransaction.updateImage(image, false)
-                }
                 downloadSpeedService.reportDownloadedBytes(read.toLong())
+            }
+            runBlocking {
+                reporterJob.cancelAndJoin()
             }
             dataTransaction.updateImage(image)
             Pair(tempImage, mimeType)

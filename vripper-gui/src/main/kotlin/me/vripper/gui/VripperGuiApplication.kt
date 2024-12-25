@@ -49,8 +49,8 @@ class VripperGuiApplication : App(
         with(stage) {
             width = widgetsController.currentSettings.width
             height = widgetsController.currentSettings.height
-            minWidth = 800.0
-            minHeight = 600.0
+            minWidth = 100.0
+            minHeight = 100.0
             icons.addAll(
                 listOf(
                     Image("icons/16x16.png"),

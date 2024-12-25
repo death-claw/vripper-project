@@ -1,9 +1,5 @@
 package me.vripper.services
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
@@ -24,7 +20,6 @@ class SettingsService(private val eventBus: EventBus) {
     private val configPath = VRIPPER_DIR.resolve("config.json")
     private val customProxiesPath = VRIPPER_DIR.resolve("proxies.json")
     private val proxies: MutableSet<String> = HashSet()
-    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val json = Json {
         encodeDefaults = true
@@ -40,9 +35,7 @@ class SettingsService(private val eventBus: EventBus) {
     private fun init() {
         loadViperProxies()
         restore()
-        coroutineScope.launch {
-            eventBus.publishEvent(SettingsUpdateEvent(settings))
-        }
+        eventBus.publishEvent(SettingsUpdateEvent(settings))
     }
 
     private fun loadViperProxies() {
@@ -100,9 +93,7 @@ class SettingsService(private val eventBus: EventBus) {
         }
         this.settings = settings.copy(viperSettings = viperSettings)
         save()
-        coroutineScope.launch {
-            eventBus.publishEvent(SettingsUpdateEvent(this@SettingsService.settings))
-        }
+        eventBus.publishEvent(SettingsUpdateEvent(this@SettingsService.settings))
     }
 
     private fun restore() {

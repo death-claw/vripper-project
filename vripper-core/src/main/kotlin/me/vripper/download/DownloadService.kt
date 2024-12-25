@@ -1,8 +1,6 @@
 package me.vripper.download
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Runnable
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import me.vripper.entities.ImageEntity
 import me.vripper.entities.PostEntity
@@ -39,7 +37,6 @@ internal class DownloadService(
     private val pending: MutableMap<Byte, MutableList<ImageDownloadRunnable>> = mutableMapOf()
     private val lock = ReentrantLock()
     private val condition = lock.newCondition()
-    private val coroutineScope = CoroutineScope(SupervisorJob())
 
     init {
         Thread.ofVirtual().name("Download Loop").unstarted(Runnable {
@@ -74,14 +71,10 @@ internal class DownloadService(
     fun stop(postIds: List<Long> = emptyList()) {
         if (postIds.isNotEmpty()) {
             stopInternal(postIds)
-            coroutineScope.launch {
-                eventBus.publishEvent(StoppedEvent(postIds))
-            }
+            eventBus.publishEvent(StoppedEvent(postIds))
         } else {
             stopAll()
-            coroutineScope.launch {
-                eventBus.publishEvent(StoppedEvent(listOf(-1)))
-            }
+            eventBus.publishEvent(StoppedEvent(listOf(-1)))
         }
     }
 
@@ -89,8 +82,9 @@ internal class DownloadService(
         if (postEntityIds.isNotEmpty()) {
             restart(postEntityIds.associateWith { dataTransaction.findByPostIdAndIsNotCompleted(it.postId) })
         } else {
-            restart(dataTransaction.findAllPosts()
-                .associateWith { dataTransaction.findByPostIdAndIsNotCompleted(it.postId) })
+            restart(
+                dataTransaction.findAllPosts()
+                    .associateWith { dataTransaction.findByPostIdAndIsNotCompleted(it.postId) })
         }
     }
 
@@ -237,9 +231,7 @@ internal class DownloadService(
     private fun scheduleForDownload(imageDownloadRunnable: ImageDownloadRunnable) {
         log.debug("Scheduling a job for ${imageDownloadRunnable.context.imageEntity.url}")
         GlobalScopeCoroutine.launch {
-            coroutineScope.launch {
-                eventBus.publishEvent(QueueStateEvent(QueueState(runningCount(), pendingCount())))
-            }
+            eventBus.publishEvent(QueueStateEvent(QueueState(runningCount(), pendingCount())))
             try {
                 Failsafe.with<Any, RetryPolicy<Any>>(retryPolicyService.buildRetryPolicyForDownload("Failed to download ${imageDownloadRunnable.context.imageEntity.url}: "))
                     .onFailure {
@@ -253,18 +245,14 @@ internal class DownloadService(
                     }
                     .onComplete {
                         afterJobFinish(imageDownloadRunnable)
-                        coroutineScope.launch {
-                            eventBus.publishEvent(
-                                QueueStateEvent(
-                                    QueueState(
-                                        runningCount(), pendingCount()
-                                    )
+                        eventBus.publishEvent(
+                            QueueStateEvent(
+                                QueueState(
+                                    runningCount(), pendingCount()
                                 )
                             )
-                        }
-                        coroutineScope.launch {
-                            eventBus.publishEvent(ErrorCountEvent(ErrorCount(dataTransaction.countImagesInError())))
-                        }
+                        )
+                        eventBus.publishEvent(ErrorCountEvent(ErrorCount(dataTransaction.countImagesInError())))
                         log.debug(
                             "Finished downloading ${imageDownloadRunnable.context.imageEntity.url}"
                         )

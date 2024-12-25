@@ -30,7 +30,6 @@ internal class DownloadSpeedService(
                             while (isActive) {
                                 delay(DOWNLOAD_POLL_RATE.toLong())
                                 val newValue = bytesCount.getAndSet(0)
-
                                 eventBus.publishEvent(DownloadSpeedEvent(DownloadSpeed(((newValue * 1000) / DOWNLOAD_POLL_RATE))))
                             }
                         }

@@ -60,7 +60,10 @@ class ActionBarView : View() {
                 action {
                     find<AddLinksFragment>().apply {
                         input.clear()
-                    }.openModal()
+                    }.openModal()?.apply {
+                        minWidth = 100.0
+                        minHeight = 100.0
+                    }
                 }
             }
             separator(Orientation.VERTICAL)
@@ -111,7 +114,10 @@ class ActionBarView : View() {
                 contentDisplay = ContentDisplay.GRAPHIC_ONLY
                 tooltip("Open settings menu [Ctrl+P]")
                 action {
-                    find<SettingsFragment>().openModal(owner = primaryStage)
+                    find<SettingsFragment>().openModal()?.apply {
+                        minWidth = 100.0
+                        minHeight = 100.0
+                    }
                 }
             }
             separator(Orientation.VERTICAL)

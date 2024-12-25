@@ -51,10 +51,12 @@ class LoadingView : View("VRipper") {
                     if (!grpcEndpointService.ready()) {
                         val sessionView = find<SessionFragment>()
                         runLater {
-                            sessionView.openModal().also {
-                                it?.setOnCloseRequest {
+                            sessionView.openModal()?.apply {
+                                setOnCloseRequest {
                                     VripperGuiApplication.APP_INSTANCE.stop()
                                 }
+                                minWidth = 100.0
+                                minHeight = 100.0
                             }
                         }
                     }

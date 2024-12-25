@@ -248,10 +248,8 @@ class ThreadTableView : View() {
     private fun selectPosts(threadId: Long) {
         find<ThreadSelectionTableFragment>(mapOf(ThreadSelectionTableFragment::threadId to threadId)).openModal()
             ?.apply {
-                minWidth = 600.0
-                minHeight = 400.0
-                width = 800.0
-                height = 600.0
+                minWidth = 100.0
+                minHeight = 100.0
             }
     }
 }
