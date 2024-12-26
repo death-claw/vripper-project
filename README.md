@@ -1,10 +1,13 @@
 # VRipper!
 
-This is my spin for a cross-platform gallery ripper for [vipergirls.to](https://vipergirls.to).
-
+This is my spin for a cross-platform gallery ripper for [vipergirls.to](https://vipergirls.to)
 
 ![GitHub Image](/image.png)
 
+## Donation
+To support this project, you can make a donation to its current maintainer
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/marwenlahm4)
 
 ## Requirements
 Direct access to `vipergirls.to` domain.
