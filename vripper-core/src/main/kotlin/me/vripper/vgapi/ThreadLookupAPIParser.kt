@@ -1,5 +1,7 @@
 package me.vripper.vgapi
 
+import dev.failsafe.Failsafe
+import dev.failsafe.function.CheckedSupplier
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.withPermit
 import me.vripper.exception.DownloadException
@@ -11,8 +13,6 @@ import me.vripper.services.VGAuthService
 import me.vripper.tasks.Tasks
 import me.vripper.utilities.LoggerDelegate
 import me.vripper.utilities.RequestLimit
-import net.jodah.failsafe.Failsafe
-import net.jodah.failsafe.function.CheckedSupplier
 import org.apache.hc.client5.http.classic.methods.HttpGet
 import org.apache.hc.core5.http.io.entity.EntityUtils
 import org.apache.hc.core5.net.URIBuilder
@@ -43,10 +43,10 @@ internal class ThreadLookupAPIParser(private val threadId: Long) : KoinComponent
         log.debug("Requesting {}", httpGet)
         Tasks.increment()
         return try {
-            Failsafe.with(retryPolicyService.buildGenericRetryPolicy<Any>("Failed to parse $httpGet: ")).onFailure {
+            Failsafe.with(retryPolicyService.buildRetryPolicy<Any>("Failed to parse $httpGet: ")).onFailure {
                 log.error(
                     "Failed to process thread $threadId",
-                    it.failure
+                    it.exception
                 )
             }.get(CheckedSupplier {
                 runBlocking {

@@ -1,5 +1,6 @@
 package me.vripper.download
 
+import dev.failsafe.function.CheckedRunnable
 import me.vripper.entities.ImageEntity
 import me.vripper.entities.Status
 import me.vripper.exception.DownloadException
@@ -13,7 +14,6 @@ import me.vripper.utilities.LoggerDelegate
 import me.vripper.utilities.PathUtils.getExtension
 import me.vripper.utilities.PathUtils.getFileNameWithoutExtension
 import me.vripper.utilities.PathUtils.sanitize
-import net.jodah.failsafe.function.CheckedRunnable
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.IOException
@@ -26,23 +26,23 @@ import kotlin.io.path.Path
 import kotlin.io.path.pathString
 
 internal class ImageDownloadRunnable(
-    private val imageEntity: ImageEntity, val postRank: Int, private val settings: Settings
+    val imageEntity: ImageEntity, val postRank: Int, private val settings: Settings
 ) : KoinComponent, CheckedRunnable {
     private val log by LoggerDelegate()
-
     private val dataTransaction: DataTransaction by inject()
     private val hosts: List<Host> = getKoin().getAll()
+    var completed = false
+    var stopped = false
 
-    val context: ImageDownloadContext = ImageDownloadContext(imageEntity, settings)
+    private lateinit var context: ImageDownloadContext
 
-    @Throws(DownloadException::class)
     fun download() {
         try {
             imageEntity.status = Status.DOWNLOADING
             imageEntity.downloaded = 0
             dataTransaction.updateImage(imageEntity)
             synchronized(imageEntity.postId.toString().intern()) {
-                val post = dataTransaction.findPostById(context.postId).orElseThrow()
+                val post = dataTransaction.findPostById(context.postId)
                 if (post.status != Status.DOWNLOADING) {
                     post.status = Status.DOWNLOADING
                     dataTransaction.updatePost(post)
@@ -54,7 +54,7 @@ internal class ImageDownloadRunnable(
             log.debug("Resolved name for ${imageEntity.url}: ${downloadedImage.name}")
             log.debug("Downloaded image {} to {}", imageEntity.url, downloadedImage.path)
             synchronized(imageEntity.postId.toString().intern()) {
-                val post = dataTransaction.findPostById(context.postId).orElseThrow()
+                val post = dataTransaction.findPostById(context.postId)
                 val downloadDirectory = Path(post.downloadDirectory, post.folderName).pathString
                 checkImageTypeAndRename(
                     downloadDirectory, downloadedImage, imageEntity.index
@@ -70,7 +70,7 @@ internal class ImageDownloadRunnable(
                 dataTransaction.updateImage(imageEntity)
             }
         } catch (e: Exception) {
-            if (context.stopped) {
+            if (stopped) {
                 return
             }
             imageEntity.status = Status.ERROR
@@ -119,17 +119,24 @@ internal class ImageDownloadRunnable(
         }
     }
 
-    @Throws(Exception::class)
     override fun run() {
+        context = ImageDownloadContext(imageEntity, settings)
         try {
-            if (context.stopped) {
+            if (stopped) {
                 return
             }
             download()
         } finally {
-            context.completed = true
+            completed = true
             context.cancelCoroutines()
         }
+    }
+
+    fun stop() {
+        stopped = true
+        context.requests.forEach { it.abort() }
+        context.cancelCoroutines()
+        dataTransaction.updateImage(context.imageEntity)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -141,12 +148,5 @@ internal class ImageDownloadRunnable(
 
     override fun hashCode(): Int {
         return Objects.hash(imageEntity.id)
-    }
-
-    fun stop() {
-        context.requests.forEach { it.abort() }
-        context.cancelCoroutines()
-        context.stopped = true
-        dataTransaction.updateImage(context.imageEntity)
     }
 }
