@@ -15,8 +15,6 @@ internal class ImageDownloadContext(val imageEntity: ImageEntity, val settings: 
         HttpClientContext.create().apply { cookieStore = BasicCookieStore() }
     val requests = mutableListOf<HttpUriRequestBase>()
     val postId = imageEntity.postIdRef
-    var stopped = false
-    var completed = false
 
     fun cancelCoroutines() {
         runBlocking {

@@ -106,7 +106,7 @@ internal abstract class Host(
         return BufferedOutputStream(Files.newOutputStream(tempImage)).use { bos ->
             val image = context.imageEntity
             synchronized(image.postId.toString().intern()) {
-                val post = dataTransaction.findPostById(context.postId).orElseThrow()
+                val post = dataTransaction.findPostById(context.postId)
                 val size = if (image.size < 0) {
                     response.entity.contentLength
                 } else {
@@ -134,7 +134,7 @@ internal abstract class Host(
                 }
             }
             while (response.entity.content.read(buffer)
-                    .also { read = it } != -1 && !context.stopped
+                    .also { read = it } != -1
             ) {
                 bos.write(buffer, 0, read)
                 image.downloaded += read

@@ -25,7 +25,7 @@
         <koin.version>4.0.0</koin.version>
         <h2.version>2.2.224</h2.version>
         <htmlcleaner.version>2.29</htmlcleaner.version>
-        <failsafe.version>2.4.4</failsafe.version>
+        <failsafe.version>3.3.2</failsafe.version>
         <caffeine.version>3.1.8</caffeine.version>
         <jna-platform.version>5.14.0</jna-platform.version>
         <kotlinx-serialization-json.version>1.7.3</kotlinx-serialization-json.version>
@@ -142,8 +142,8 @@
                 <version>${htmlcleaner.version}</version>
             </dependency>
             <dependency>
+                <groupId>dev.failsafe</groupId>
                 <artifactId>failsafe</artifactId>
-                <groupId>net.jodah</groupId>
                 <version>${failsafe.version}</version>
             </dependency>
             <dependency>

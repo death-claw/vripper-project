@@ -14,7 +14,6 @@ import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy
 import org.apache.hc.core5.pool.PoolReusePolicy
-import org.apache.hc.core5.util.TimeValue
 import org.apache.hc.core5.util.Timeout
 
 internal class HTTPService(
@@ -41,8 +40,10 @@ internal class HTTPService(
         buildConnectionPool()
         buildClientBuilder()
         coroutineScope.launch {
-            pcm.closeIdle(TimeValue.ofSeconds(60))
-            delay(15000)
+            while (isActive) {
+                pcm.closeExpired()
+                delay(60_000)
+            }
         }
         coroutineScope.launch {
             eventBus
@@ -64,8 +65,8 @@ internal class HTTPService(
 
     private fun buildConnectionPool() {
         pcm = PoolingHttpClientConnectionManagerBuilder.create()
-            .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.STRICT)
-            .setConnPoolPolicy(PoolReusePolicy.LIFO)
+            .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.LAX)
+            .setConnPoolPolicy(PoolReusePolicy.FIFO)
             .setDefaultConnectionConfig(cc)
             .setMaxConnTotal(Int.MAX_VALUE)
             .setMaxConnPerRoute(Int.MAX_VALUE)
@@ -83,7 +84,6 @@ internal class HTTPService(
         cc = ConnectionConfig.custom()
             .setConnectTimeout(Timeout.ofSeconds(connectionTimeout.toLong()))
             .setSocketTimeout(Timeout.ofSeconds(connectionTimeout.toLong()))
-            .setTimeToLive(TimeValue.ofMinutes(10))
             .build()
     }
 

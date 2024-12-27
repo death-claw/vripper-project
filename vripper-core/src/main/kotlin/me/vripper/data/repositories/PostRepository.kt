@@ -1,12 +1,11 @@
 package me.vripper.data.repositories
 
 import me.vripper.entities.PostEntity
-import java.util.*
 
-internal interface PostDownloadStateRepository {
+internal interface PostRepository {
     fun save(postEntities: List<PostEntity>): List<PostEntity>
-    fun findByPostId(postId: Long): Optional<PostEntity>
-    fun findById(id: Long): Optional<PostEntity>
+    fun findByPostId(postId: Long): PostEntity?
+    fun findById(id: Long): PostEntity?
     fun findCompleted(): List<Long>
     fun findAll(): List<PostEntity>
     fun existByPostId(postId: Long): Boolean

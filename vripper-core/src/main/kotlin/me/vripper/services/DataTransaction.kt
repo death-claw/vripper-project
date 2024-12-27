@@ -1,8 +1,10 @@
 package me.vripper.services
 
+import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.LoadingCache
 import me.vripper.data.repositories.ImageRepository
 import me.vripper.data.repositories.MetadataRepository
-import me.vripper.data.repositories.PostDownloadStateRepository
+import me.vripper.data.repositories.PostRepository
 import me.vripper.data.repositories.ThreadRepository
 import me.vripper.entities.*
 import me.vripper.event.*
@@ -12,12 +14,13 @@ import me.vripper.utilities.PathUtils.sanitize
 import me.vripper.vgapi.PostItem
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.pathString
 
 internal class DataTransaction(
     private val settingsService: SettingsService,
-    private val postDownloadStateRepository: PostDownloadStateRepository,
+    private val postRepository: PostRepository,
     private val imageRepository: ImageRepository,
     private val threadRepository: ThreadRepository,
     private val metadataRepository: MetadataRepository,
@@ -25,15 +28,24 @@ internal class DataTransaction(
 ) {
 
     private val nextRank = AtomicInteger(transaction { getQueuePosition() }?.plus(1) ?: 0)
+    private val postEntityIdCache: LoadingCache<Long, PostEntity> =
+        Caffeine.newBuilder().expireAfterAccess(5, TimeUnit.MINUTES).build { id ->
+            transaction { postRepository.findById(id) }
+        }
+
+    private val postPostIdCache: LoadingCache<Long, PostEntity> =
+        Caffeine.newBuilder().expireAfterAccess(5, TimeUnit.MINUTES).build { id ->
+            transaction { postRepository.findByPostId(id) }
+        }
 
     private fun save(postEntities: List<PostEntity>): List<PostEntity> {
-        return transaction { postDownloadStateRepository.save(postEntities) }
+        return transaction { postRepository.save(postEntities) }
     }
 
     fun saveAndNotify(postEntity: PostEntity, images: List<ImageEntity>) {
         val savedPost = transaction {
             val savedPost =
-                postDownloadStateRepository.save(listOf(postEntity.copy(rank = nextRank.andIncrement))).first()
+                postRepository.save(listOf(postEntity.copy(rank = nextRank.andIncrement))).first()
             save(images.map { it.copy(postIdRef = savedPost.id) })
             savedPost
         }
@@ -41,12 +53,18 @@ internal class DataTransaction(
     }
 
     fun updatePosts(postEntities: List<PostEntity>) {
-        transaction { postDownloadStateRepository.update(postEntities) }
+        transaction { postRepository.update(postEntities) }
+        postEntities.forEach { postEntity ->
+            postPostIdCache.put(postEntity.postId, postEntity)
+            postEntityIdCache.put(postEntity.id, postEntity)
+        }
         eventBus.publishEvent(PostUpdateEvent(postEntities))
     }
 
     fun updatePost(postEntity: PostEntity) {
-        transaction { postDownloadStateRepository.update(postEntity) }
+        transaction { postRepository.update(postEntity) }
+        postPostIdCache.put(postEntity.postId, postEntity)
+        postEntityIdCache.put(postEntity.id, postEntity)
         eventBus.publishEvent(PostUpdateEvent(listOf(postEntity)))
     }
 
@@ -75,7 +93,10 @@ internal class DataTransaction(
     }
 
     fun exists(postId: Long): Boolean {
-        return transaction { postDownloadStateRepository.existByPostId(postId) }
+        if (postPostIdCache.getIfPresent(postId) != null) {
+            return true
+        }
+        return transaction { postRepository.existByPostId(postId) }
     }
 
     @Synchronized
@@ -128,7 +149,7 @@ internal class DataTransaction(
     }
 
     private fun getQueuePosition(): Int? {
-        return postDownloadStateRepository.findMaxRank()
+        return postRepository.findMaxRank()
     }
 
     private fun save(imageEntities: List<ImageEntity>) {
@@ -136,7 +157,7 @@ internal class DataTransaction(
     }
 
     fun finishPost(postId: Long, automatic: Boolean = false) {
-        val post = findPostByPostId(postId).orElseThrow()
+        val post = findPostByPostId(postId)
         val imagesInErrorStatus = findByPostIdAndIsError(post.postId)
         if (imagesInErrorStatus.isNotEmpty()) {
             post.status = Status.ERROR
@@ -167,8 +188,12 @@ internal class DataTransaction(
         transaction {
             metadataRepository.deleteAllByPostId(postIds)
             imageRepository.deleteAllByPostId(postIds)
-            postDownloadStateRepository.deleteAll(postIds)
+            postRepository.deleteAll(postIds)
             sortPostsByRank()
+        }
+        postIds.forEach { postId ->
+            postPostIdCache.get(postId)?.let { postEntityIdCache.invalidate(it.id) }
+            postPostIdCache.invalidate(postId)
         }
         eventBus.publishEvent(PostDeleteEvent(postIds = postIds))
         eventBus.publishEvent(ErrorCountEvent(ErrorCount(countImagesInError())))
@@ -180,7 +205,7 @@ internal class DataTransaction(
     }
 
     fun clearCompleted(): List<Long> {
-        val completed = transaction { postDownloadStateRepository.findCompleted() }
+        val completed = transaction { postRepository.findCompleted() }
         remove(completed)
         return completed
     }
@@ -225,15 +250,15 @@ internal class DataTransaction(
     }
 
     fun setDownloadingToStopped() {
-        transaction { postDownloadStateRepository.setDownloadingToStopped() }
+        transaction { postRepository.setDownloadingToStopped() }
     }
 
     fun findAllPosts(): List<PostEntity> {
-        return transaction { postDownloadStateRepository.findAll() }
+        return transaction { postRepository.findAll() }
     }
 
-    fun findPostById(id: Long): Optional<PostEntity> {
-        return transaction { postDownloadStateRepository.findById(id) }
+    fun findPostById(id: Long): PostEntity {
+        return postEntityIdCache.get(id) ?: throw NoSuchElementException("Post with id = $id does not exist")
     }
 
     fun findImagesByPostId(postId: Long): List<ImageEntity> {
@@ -262,8 +287,8 @@ internal class DataTransaction(
         return transaction { imageRepository.countError() }
     }
 
-    fun findPostByPostId(postId: Long): Optional<PostEntity> {
-        return transaction { postDownloadStateRepository.findByPostId(postId) }
+    fun findPostByPostId(postId: Long): PostEntity {
+        return postPostIdCache.get(postId) ?: throw NoSuchElementException("Post with postId = $postId does not exist")
     }
 
     fun findThreadByThreadId(threadId: Long): Optional<ThreadEntity> {
@@ -271,7 +296,7 @@ internal class DataTransaction(
     }
 
     fun findAllNonCompletedPostIds(): List<Long> {
-        return transaction { postDownloadStateRepository.findAllNonCompletedPostIds() }
+        return transaction { postRepository.findAllNonCompletedPostIds() }
     }
 
     fun findMetadataByPostId(postId: Long): Optional<MetadataEntity> {

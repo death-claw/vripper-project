@@ -1,14 +1,13 @@
 package me.vripper.tasks
 
-import kotlinx.coroutines.launch
 import me.vripper.entities.ThreadEntity
 import me.vripper.model.Settings
 import me.vripper.model.ThreadPostId
 import me.vripper.services.DataTransaction
 import me.vripper.services.SettingsService
 import me.vripper.services.ThreadCacheService
-import me.vripper.utilities.GlobalScopeCoroutine
 import me.vripper.utilities.LoggerDelegate
+import me.vripper.utilities.executorService
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -34,15 +33,14 @@ internal class ThreadLookupTask(private val threadId: Long, private val settings
                 }
 
                 if (threadLookupResult.postItemList.size <= settings.downloadSettings.autoQueueThreshold) {
-                    GlobalScopeCoroutine.launch {
+                    executorService.submit(
                         AddPostTask(threadLookupResult.postItemList.map {
                             ThreadPostId(
                                 it.threadId, it.postId
                             )
-                        }).run()
-                    }
+                        })
+                    )
                 } else {
-                    try {
                         dataTransaction.save(
                             ThreadEntity(
                                 title = threadLookupResult.title,
@@ -51,9 +49,6 @@ internal class ThreadLookupTask(private val threadId: Long, private val settings
                                 total = threadLookupResult.postItemList.size
                             )
                         )
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
                 }
             }
         } catch (e: Exception) {

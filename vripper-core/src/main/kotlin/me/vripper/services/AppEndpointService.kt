@@ -1,7 +1,6 @@
 package me.vripper.services
 
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.time.sample
 import kotlinx.serialization.json.Json
 import me.vripper.download.DownloadService
@@ -13,9 +12,9 @@ import me.vripper.tasks.AddPostTask
 import me.vripper.tasks.ThreadLookupTask
 import me.vripper.utilities.ApplicationProperties
 import me.vripper.utilities.ApplicationProperties.VRIPPER_DIR
-import me.vripper.utilities.GlobalScopeCoroutine
 import me.vripper.utilities.LoggerDelegate
 import me.vripper.utilities.PathUtils
+import me.vripper.utilities.executorService
 import org.h2.jdbc.JdbcSQLNonTransientConnectionException
 import java.sql.DriverManager
 import java.time.Duration
@@ -59,17 +58,17 @@ internal class AppEndpointService(
                     threadId = m.group(1).toLong()
                     postId = m.group(4)?.toLong()
                     if (postId == null) {
-                        GlobalScopeCoroutine.launch {
+                        executorService.submit(
                             ThreadLookupTask(
                                 threadId, settingsService.settings
-                            ).run()
-                        }
+                            )
+                        )
                     } else {
-                        GlobalScopeCoroutine.launch {
+                        executorService.submit(
                             AddPostTask(
                                 listOf(ThreadPostId(threadId, postId))
-                            ).run()
-                        }
+                            )
+                        )
                     }
                 } else {
                     log.error("Invalid link $link, link is missing the threadId")
@@ -81,15 +80,13 @@ internal class AppEndpointService(
 
     override suspend fun restartAll(posIds: List<Long>) {
         lock.withLock {
-            downloadService.restartAll(posIds.map { dataTransaction.findPostByPostId(it) }.filter { it.isPresent }
-                .map { it.get() })
+            downloadService.restartAll(posIds.filter { dataTransaction.exists(it) }
+                .map { dataTransaction.findPostByPostId(it) })
         }
     }
 
     override suspend fun download(posts: List<ThreadPostId>) {
-        GlobalScopeCoroutine.launch {
-            AddPostTask(posts).run()
-        }
+        executorService.submit(AddPostTask(posts))
     }
 
     override suspend fun stopAll(postIdList: List<Long>) {
@@ -185,16 +182,21 @@ internal class AppEndpointService(
     }
 
     override suspend fun rename(postId: Long, newName: String) {
-        GlobalScopeCoroutine.launch {
+        executorService.submit {
             synchronized(postId.toString().intern()) {
-                dataTransaction.findPostByPostId(postId).ifPresent { post ->
-                    if (Path(post.downloadDirectory, post.folderName).exists()) {
-                        PathUtils.rename(
-                            dataTransaction.findImagesByPostId(postId), post.downloadDirectory, post.folderName, newName
-                        )
+                if (dataTransaction.exists(postId)) {
+                    dataTransaction.findPostByPostId(postId).let { post ->
+                        if (Path(post.downloadDirectory, post.folderName).exists()) {
+                            PathUtils.rename(
+                                dataTransaction.findImagesByPostId(postId),
+                                post.downloadDirectory,
+                                post.folderName,
+                                newName
+                            )
+                        }
+                        post.folderName = PathUtils.sanitize(newName)
+                        dataTransaction.updatePost(post)
                     }
-                    post.folderName = PathUtils.sanitize(newName)
-                    dataTransaction.updatePost(post)
                 }
             }
         }
@@ -251,7 +253,7 @@ internal class AppEndpointService(
     }
 
     override suspend fun findPost(postId: Long): Post {
-        return mapper(dataTransaction.findPostByPostId(postId).orElseThrow())
+        return mapper(dataTransaction.findPostByPostId(postId))
     }
 
     override suspend fun findImagesByPostId(postId: Long): List<Image> {
@@ -353,7 +355,7 @@ internal class AppEndpointService(
                         val addedAt = it.getTimestamp("ADDED_AT")
                         val folderName = it.getString("FOLDER_NAME") ?: ""
 
-                        val exists = dataTransaction.findPostByPostId(postId).isPresent
+                        val exists = dataTransaction.exists(postId)
                         if (exists) {
                             continue
                         }

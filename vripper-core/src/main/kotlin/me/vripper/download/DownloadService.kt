@@ -1,7 +1,8 @@
 package me.vripper.download
 
+import dev.failsafe.Failsafe
+import dev.failsafe.RetryPolicy
 import kotlinx.coroutines.Runnable
-import kotlinx.coroutines.launch
 import me.vripper.entities.ImageEntity
 import me.vripper.entities.PostEntity
 import me.vripper.entities.Status
@@ -16,10 +17,8 @@ import me.vripper.services.DataTransaction
 import me.vripper.services.RetryPolicyService
 import me.vripper.services.SettingsService
 import me.vripper.services.VGAuthService
-import me.vripper.utilities.GlobalScopeCoroutine
 import me.vripper.utilities.LoggerDelegate
-import net.jodah.failsafe.Failsafe
-import net.jodah.failsafe.RetryPolicy
+import me.vripper.utilities.executorService
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -46,14 +45,14 @@ internal class DownloadService(
                 lock.withLock {
                     candidates.addAll(getCandidates(candidateCount()))
                     candidates.forEach {
-                        if (canRun(it.context.imageEntity.host)) {
+                        if (canRun(it.imageEntity.host)) {
                             accepted.add(it)
-                            running[it.context.imageEntity.host]!!.add(it)
-                            log.debug("${it.context.imageEntity.url} accepted to run")
+                            running[it.imageEntity.host]!!.add(it)
+                            log.debug("${it.imageEntity.url} accepted to run")
                         }
                     }
                     accepted.forEach {
-                        pending[it.context.imageEntity.host]?.remove(it)
+                        pending[it.imageEntity.host]?.remove(it)
                         scheduleForDownload(it)
                     }
                     accepted.clear()
@@ -144,18 +143,18 @@ internal class DownloadService(
     }
 
     private fun isPending(postId: Long): Boolean {
-        return pending.values.flatten().any { it.context.imageEntity.postId == postId }
+        return pending.values.flatten().any { it.imageEntity.postId == postId }
     }
 
     private fun isRunning(postId: Long): Boolean {
-        return running.values.flatten().any { it.context.imageEntity.postId == postId }
+        return running.values.flatten().any { it.imageEntity.postId == postId }
     }
 
     private fun stopAll() {
         lock.withLock {
             pending.values.clear()
             running.values.flatten().forEach { obj: ImageDownloadRunnable -> obj.stop() }
-            while (running.values.flatten().count { !it.context.completed } > 0) {
+            while (running.values.flatten().count { !it.completed } > 0) {
                 Thread.sleep(100)
             }
             dataTransaction.findAllNonCompletedPostIds().forEach {
@@ -169,13 +168,13 @@ internal class DownloadService(
         lock.withLock {
             for (postId in postIds) {
                 pending.values.forEach { pending ->
-                    pending.removeIf { it.context.imageEntity.postId == postId }
+                    pending.removeIf { it.imageEntity.postId == postId }
                 }
                 running.values.flatten()
-                    .filter { p: ImageDownloadRunnable -> p.context.imageEntity.postId == postId }
+                    .filter { p: ImageDownloadRunnable -> p.imageEntity.postId == postId }
                     .forEach { obj: ImageDownloadRunnable -> obj.stop() }
                 while (running.values.flatten()
-                        .count { !it.context.completed && it.context.imageEntity.postId == postId } > 0
+                        .count { !it.completed && it.imageEntity.postId == postId } > 0
                 ) {
                     Thread.sleep(100)
                 }
@@ -213,7 +212,7 @@ internal class DownloadService(
 
             val list: List<ImageDownloadRunnable> =
                 pending[host]!!.sortedWith(Comparator.comparingInt<ImageDownloadRunnable> { it.postRank }
-                    .thenComparingInt { it.context.imageEntity.index })
+                    .thenComparingInt { it.imageEntity.index })
 
             for (imageDownloadRunnable in list) {
                 val count = hostIntegerMap[host] ?: 0
@@ -229,47 +228,42 @@ internal class DownloadService(
     }
 
     private fun scheduleForDownload(imageDownloadRunnable: ImageDownloadRunnable) {
-        log.debug("Scheduling a job for ${imageDownloadRunnable.context.imageEntity.url}")
-        GlobalScopeCoroutine.launch {
-            eventBus.publishEvent(QueueStateEvent(QueueState(runningCount(), pendingCount())))
-            try {
-                Failsafe.with<Any, RetryPolicy<Any>>(retryPolicyService.buildRetryPolicyForDownload("Failed to download ${imageDownloadRunnable.context.imageEntity.url}: "))
-                    .onFailure {
-                        log.error(
-                            "Failed to download ${imageDownloadRunnable.context.imageEntity.url} after ${it.attemptCount} tries",
-                            it.failure
-                        )
-                        val image = imageDownloadRunnable.context.imageEntity
-                        image.status = Status.ERROR
-                        dataTransaction.updateImage(image)
-                    }
-                    .onComplete {
-                        afterJobFinish(imageDownloadRunnable)
-                        eventBus.publishEvent(
-                            QueueStateEvent(
-                                QueueState(
-                                    runningCount(), pendingCount()
-                                )
-                            )
-                        )
-                        eventBus.publishEvent(ErrorCountEvent(ErrorCount(dataTransaction.countImagesInError())))
-                        log.debug(
-                            "Finished downloading ${imageDownloadRunnable.context.imageEntity.url}"
-                        )
-                    }.run(imageDownloadRunnable::run)
-            } catch (e: Exception) {
-                log.error("Download Failure", e)
+        log.debug("Scheduling a job for ${imageDownloadRunnable.imageEntity.url}")
+        eventBus.publishEvent(QueueStateEvent(QueueState(runningCount(), pendingCount())))
+        Failsafe.with<Any, RetryPolicy<Any>>(retryPolicyService.buildRetryPolicy("Failed to download ${imageDownloadRunnable.imageEntity.url}: "))
+            .with(executorService)
+            .onFailure {
+                log.error(
+                    "Failed to download ${imageDownloadRunnable.imageEntity.url} after ${it.attemptCount} tries",
+                    it.exception
+                )
+                val image = imageDownloadRunnable.imageEntity
+                image.status = Status.ERROR
+                dataTransaction.updateImage(image)
             }
-        }
+            .onComplete {
+                afterJobFinish(imageDownloadRunnable)
+                eventBus.publishEvent(
+                    QueueStateEvent(
+                        QueueState(
+                            runningCount(), pendingCount()
+                        )
+                    )
+                )
+                eventBus.publishEvent(ErrorCountEvent(ErrorCount(dataTransaction.countImagesInError())))
+                log.debug(
+                    "Finished downloading ${imageDownloadRunnable.imageEntity.url}"
+                )
+            }.runAsync(imageDownloadRunnable)
     }
 
     private fun afterJobFinish(imageDownloadRunnable: ImageDownloadRunnable) {
         lock.withLock {
-            val image = imageDownloadRunnable.context.imageEntity
+            val image = imageDownloadRunnable.imageEntity
             running[image.host]!!.remove(imageDownloadRunnable)
             if (!isPending(image.postId) && !isRunning(
                     image.postId
-                ) && !imageDownloadRunnable.context.stopped
+                ) && !imageDownloadRunnable.stopped
             ) {
                 dataTransaction.finishPost(image.postId, true)
             }

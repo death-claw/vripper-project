@@ -1,6 +1,6 @@
 package me.vripper.data.repositories.impl
 
-import me.vripper.data.repositories.PostDownloadStateRepository
+import me.vripper.data.repositories.PostRepository
 import me.vripper.data.tables.PostTable
 import me.vripper.entities.PostEntity
 import me.vripper.entities.Status
@@ -8,10 +8,9 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import java.sql.Connection
-import java.util.*
 
-internal class PostDownloadStateRepositoryImpl :
-    PostDownloadStateRepository {
+internal class PostRepositoryImpl :
+    PostRepository {
 
     private val delimiter = ";"
 
@@ -37,15 +36,11 @@ internal class PostDownloadStateRepositoryImpl :
         }.map(::transform)
     }
 
-    override fun findByPostId(postId: Long): Optional<PostEntity> {
+    override fun findByPostId(postId: Long): PostEntity? {
         val result = PostTable.selectAll().where {
             PostTable.postId eq postId
         }.map(::transform)
-        return if (result.isEmpty()) {
-            Optional.empty()
-        } else {
-            Optional.of(result.first())
-        }
+        return result.firstOrNull()
     }
 
     override fun findCompleted(): List<Long> {
@@ -54,16 +49,11 @@ internal class PostDownloadStateRepositoryImpl :
         }.map { it[PostTable.postId] }
     }
 
-    override fun findById(id: Long): Optional<PostEntity> {
+    override fun findById(id: Long): PostEntity? {
         val result = PostTable.selectAll().where {
             PostTable.id eq id
         }.map { transform(it) }
-
-        return if (result.isEmpty()) {
-            Optional.empty()
-        } else {
-            Optional.of(result.first())
-        }
+        return result.firstOrNull()
     }
 
     override fun findAll(): List<PostEntity> {

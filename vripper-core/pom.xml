@@ -69,7 +69,7 @@
         </dependency>
         <dependency>
             <artifactId>failsafe</artifactId>
-            <groupId>net.jodah</groupId>
+            <groupId>dev.failsafe</groupId>
         </dependency>
         <dependency>
             <artifactId>caffeine</artifactId>

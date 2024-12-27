@@ -23,8 +23,7 @@ class AboutFragment : Fragment("About") {
                     padding = Insets(15.0, 15.0, 15.0, 15.0)
                     spacing = 15.0
                     imageview("icons/64x64.png")
-                    vbox {
-                        spacing = 5.0
+                    vbox(spacing = 5.0) {
                         text("VRipper") {
                             style {
                                 fontWeight = FontWeight.BOLD
@@ -32,15 +31,29 @@ class AboutFragment : Fragment("About") {
                             }
                         }
                         text("Version ${ApplicationProperties.VERSION}")
-                        text("Developed by death-claw and VRipper working group")
-                        hyperlink("Home Page") {
-                            action {
-                                openLink("https://github.com/death-claw/vripper-project")
+                        text("Developed by dev-claw and VRipper working group")
+                        hbox(spacing = 5.0) {
+                            hyperlink {
+                                imageview("icons/github-mark.png").apply {
+                                    isPreserveRatio = true
+                                    fitHeight = 32.0
+                                }
+                                action {
+                                    openLink("https://github.com/dev-claw/vripper-project")
+                                }
+                            }
+                            hyperlink {
+                                imageview("icons/buymeacoffee-logo.png").apply {
+                                    isPreserveRatio = true
+                                    fitHeight = 32.0
+                                }
+                                action {
+                                    openLink("https://buymeacoffee.com/devclaw")
+                                }
                             }
                         }
                     }
                 }
-
             }
             tab("System") {
                 form {

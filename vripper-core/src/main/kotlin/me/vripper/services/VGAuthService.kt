@@ -12,8 +12,8 @@ import me.vripper.event.VGUserLoginEvent
 import me.vripper.exception.VripperException
 import me.vripper.model.Settings
 import me.vripper.tasks.LeaveThanksTask
-import me.vripper.utilities.GlobalScopeCoroutine
 import me.vripper.utilities.LoggerDelegate
+import me.vripper.utilities.executorService
 import org.apache.hc.client5.http.classic.methods.HttpPost
 import org.apache.hc.client5.http.cookie.BasicCookieStore
 import org.apache.hc.client5.http.cookie.Cookie
@@ -108,8 +108,8 @@ internal class VGAuthService(
     }
 
     fun leaveThanks(postEntity: PostEntity) {
-        GlobalScopeCoroutine.launch {
-            LeaveThanksTask(postEntity, authenticated, context).run()
-        }
+        executorService.submit(
+            LeaveThanksTask(postEntity, authenticated, context)
+        )
     }
 }

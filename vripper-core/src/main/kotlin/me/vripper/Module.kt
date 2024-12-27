@@ -2,11 +2,11 @@ package me.vripper
 
 import me.vripper.data.repositories.ImageRepository
 import me.vripper.data.repositories.MetadataRepository
-import me.vripper.data.repositories.PostDownloadStateRepository
+import me.vripper.data.repositories.PostRepository
 import me.vripper.data.repositories.ThreadRepository
 import me.vripper.data.repositories.impl.ImageRepositoryImpl
 import me.vripper.data.repositories.impl.MetadataRepositoryImpl
-import me.vripper.data.repositories.impl.PostDownloadStateRepositoryImpl
+import me.vripper.data.repositories.impl.PostRepositoryImpl
 import me.vripper.data.repositories.impl.ThreadRepositoryImpl
 import me.vripper.download.DownloadService
 import me.vripper.event.EventBus
@@ -29,8 +29,8 @@ val coreModule = module {
     single<ImageRepository> {
         ImageRepositoryImpl()
     }
-    single<PostDownloadStateRepository> {
-        PostDownloadStateRepositoryImpl()
+    single<PostRepository> {
+        PostRepositoryImpl()
     }
     single<MetadataRepository> {
         MetadataRepositoryImpl()
