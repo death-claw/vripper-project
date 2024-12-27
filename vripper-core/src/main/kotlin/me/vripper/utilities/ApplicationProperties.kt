@@ -35,7 +35,7 @@ object ApplicationProperties {
 
     fun latestVersion(): String {
         val request = HttpRequest.newBuilder()
-            .uri(URI.create("https://api.github.com/repos/death-claw/vripper-project/releases/latest")).build()
+            .uri(URI.create("https://api.github.com/repos/dev-claw/vripper-project/releases/latest")).build()
         return HttpClient.newHttpClient().use {
             val response = it.send(request, HttpResponse.BodyHandlers.ofString())
             if (response.statusCode() / 100 != 2) {

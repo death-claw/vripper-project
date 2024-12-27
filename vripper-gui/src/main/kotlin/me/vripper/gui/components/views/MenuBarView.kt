@@ -197,7 +197,7 @@ class MenuBarView : View() {
                                 owner = primaryStage,
                             ) {
                                 if (it == ButtonType.YES) {
-                                    openLink("https://github.com/death-claw/vripper-project/releases/tag/$latestVersion")
+                                    openLink("https://github.com/dev-claw/vripper-project/releases/tag/$latestVersion")
                                 }
                             }
                         } else {
