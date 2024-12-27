@@ -7,7 +7,7 @@ This is my spin for a cross-platform gallery ripper for [vipergirls.to](https://
 ## Donation
 To support this project, you can make a donation to its current maintainer
 
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/naulindev)
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/devclaw)
 
 ## Requirements
 Direct access to `vipergirls.to` domain.
