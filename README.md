@@ -9,6 +9,12 @@ To support this project, you can make a donation to its current maintainer
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/devclaw)
 
+Or with Cryptocurrency
+
+ETH: 0xDdac82B16dC5E3D742fc915ffF583D8548A301cA
+
+BTC: bc1qcqudnkrndwyadsjwrxww42svkf8trnzx3c8vlr
+
 ## Requirements
 Direct access to `vipergirls.to` domain.
 
